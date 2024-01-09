@@ -1,0 +1,87 @@
+# Define a function to get the current user name
+function Get-CurrentUserName {
+   <#
+   .SYNOPSIS
+   Gets the current user name.
+
+   .DESCRIPTION
+   Uses the 'whoami' command to get the current user name.
+
+   .EXAMPLE
+   PS C:\> Get-CurrentUserName
+   Returns the current user name.
+   #>
+   try {
+       (whoami)
+   } catch {
+       Write-Error "Failed to get the current user name: $_"
+   }
+}
+
+# Define a function to create an email address
+function New-EmailAddress {
+   param (
+       [Parameter(Mandatory=$true)]
+       [string]$UserName
+   )
+
+   <#
+   .SYNOPSIS
+   Creates an email address.
+
+   .DESCRIPTION
+   Appends '@ss.local' to the given user name to create an email address.
+
+   .PARAMETER UserName
+   The user name to append to '@ss.local'.
+
+   .EXAMPLE
+   PS C:\> New-EmailAddress -UserName 'john.doe'
+   Returns 'john.doe@ss.local'.
+   #>
+   "$UserName@ss.local"
+}
+
+# Define a function to set the Git config values
+function Set-GitConfigValues {
+   param (
+       [Parameter(Mandatory=$true)]
+       [string]$UserName,
+
+       [Parameter(Mandatory=$true)]
+       [string]$Email
+   )
+
+   <#
+   .SYNOPSIS
+   Sets the Git config values.
+
+   .DESCRIPTION
+   Sets the Git config values for the user name and email.
+
+   .PARAMETER UserName
+   The user name to set in the Git config.
+
+   .PARAMETER Email
+   The email to set in the Git config.
+
+   .EXAMPLE
+   PS C:\> Set-GitConfigValues -UserName 'john.doe' -Email 'john.doe@ss.local'
+   Sets the Git config values for the user name and email.
+   #>
+   try {
+       git config --global user.name $UserName
+       git config --global user.email $Email
+   } catch {
+       Write-Error "Failed to set the Git config values: $_"
+   }
+}
+
+# Get the current user name
+$username = Get-CurrentUserName
+
+# Create the email
+$email = New-EmailAddress -UserName $username
+
+# Set the Git config values
+Set-GitConfigValues -UserName $username -Email $email
