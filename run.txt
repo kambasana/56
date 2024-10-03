@@ -1,0 +1,11 @@
+Use these command to run Dockerfile
+docker build -t comfy-ui:v1 .
+
+# command for build DockerImage
+
+#command for run docker image
+docker run -d -p 3030:3000 --name=comfyui comfy-ui:v1
+
+Also,
+
+Ensure NVIDIA Driver is Installed on Host System
