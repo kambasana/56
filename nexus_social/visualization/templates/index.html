@@ -19,6 +19,7 @@
     </header>
 
     <nav class="tabs">
+        <button class="tab" data-tab="scenarios">Scenario Builder</button>
         <button class="tab active" data-tab="feed">Feed</button>
         <button class="tab" data-tab="network">Network Graph</button>
         <button class="tab" data-tab="analytics">Analytics</button>
@@ -28,10 +29,53 @@
     </nav>
 
     <main>
+        <!-- Scenario Builder Tab -->
+        <section id="tab-scenarios" class="tab-content">
+            <div class="scenario-builder">
+                <div class="builder-section">
+                    <h2>Pre-Made Scenarios</h2>
+                    <p class="hint">Pick a ready-to-go scenario or build your own below.</p>
+                    <div id="scenario-cards"></div>
+                </div>
+
+                <div class="builder-section">
+                    <h2>Custom Scenario Builder</h2>
+                    <p class="hint">Define organizations, teams, locations, and agents with rich personas.</p>
+
+                    <div class="builder-form">
+                        <div class="form-row">
+                            <label>Scenario Name</label>
+                            <input type="text" id="custom-name" placeholder="My Scenario" value="Custom Scenario">
+                        </div>
+                        <div class="form-row">
+                            <label>Description</label>
+                            <input type="text" id="custom-desc" placeholder="What's the scenario about?">
+                        </div>
+
+                        <div id="org-builder">
+                            <h3>Organizations <button class="btn-small" onclick="addOrgBlock()">+ Add Org</button></h3>
+                            <div id="org-blocks"></div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn-primary" onclick="loadCustomScenario()">Launch Custom Scenario</button>
+                            <button onclick="exportScenario()">Export Current as JSON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="builder-section">
+                    <h2>Persona Templates</h2>
+                    <p class="hint">Use these when adding agents. Each defines MBTI, communication style, behavior patterns.</p>
+                    <div id="persona-templates"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- Feed Tab -->
         <section id="tab-feed" class="tab-content active">
             <div id="feed-container">
-                <p class="empty-state">Click "Simulate" to generate social interactions...</p>
+                <p class="empty-state">Click "Simulate" to generate social interactions, or pick a scenario first.</p>
             </div>
         </section>
 

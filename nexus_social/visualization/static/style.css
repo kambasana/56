@@ -401,10 +401,295 @@ main { padding: 20px 30px; }
     font-size: 16px;
 }
 
+/* Scenario Builder */
+.scenario-builder { max-width: 1100px; margin: 0 auto; }
+
+.builder-section {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.builder-section h2 {
+    font-size: 18px;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, #58a6ff, #bc8cff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hint { font-size: 13px; color: #8b949e; margin-bottom: 16px; }
+
+#scenario-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+}
+
+.scenario-card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scenario-card:hover { border-color: #58a6ff; transform: translateY(-2px); }
+
+.scenario-card h3 { font-size: 15px; color: #e1e4e8; margin-bottom: 6px; }
+.scenario-card p { font-size: 12px; color: #8b949e; line-height: 1.4; margin-bottom: 8px; }
+
+.scenario-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.scenario-tag {
+    background: #1f2937;
+    color: #58a6ff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+}
+
+.scenario-stat {
+    font-size: 11px;
+    color: #7ee787;
+    font-weight: 600;
+}
+
+/* Builder Form */
+.builder-form { margin-top: 12px; }
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.form-row label {
+    width: 120px;
+    font-size: 13px;
+    color: #8b949e;
+    flex-shrink: 0;
+}
+
+.form-row input, .form-row select, .form-row textarea {
+    flex: 1;
+    background: #0d1117;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.form-row input:focus, .form-row select:focus {
+    border-color: #58a6ff;
+    outline: none;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #30363d;
+}
+
+.btn-primary {
+    background: #238636;
+    color: white;
+    border: 1px solid #2ea043;
+    padding: 10px 24px;
+    font-weight: 600;
+}
+
+.btn-primary:hover { background: #2ea043; }
+
+.btn-small {
+    background: #21262d;
+    color: #58a6ff;
+    border: 1px solid #30363d;
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.btn-small:hover { background: #30363d; }
+
+.btn-danger {
+    background: #21262d;
+    color: #f85149;
+    border: 1px solid #30363d;
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-danger:hover { background: #3d1f1f; }
+
+/* Org Block */
+.org-block {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 3px solid #58a6ff;
+}
+
+.org-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.org-block-header h4 { font-size: 14px; color: #58a6ff; }
+
+.team-block {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    margin-left: 16px;
+    border-left: 2px solid #bc8cff;
+}
+
+.team-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.team-block-header h5 { font-size: 13px; color: #bc8cff; }
+
+.agent-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 4px 0;
+    margin-left: 12px;
+    padding: 6px 8px;
+    background: #0d1117;
+    border-radius: 4px;
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+
+.agent-row input, .agent-row select {
+    background: #161b22;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.agent-row input { width: 130px; }
+.agent-row select { width: 140px; }
+
+.location-row {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0;
+    font-size: 12px;
+}
+
+.location-row input {
+    background: #161b22;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 120px;
+}
+
+#org-builder h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+/* Persona Templates */
+#persona-templates {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+}
+
+.persona-template-card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.persona-template-card h4 {
+    font-size: 13px;
+    color: #bc8cff;
+    margin-bottom: 4px;
+    text-transform: capitalize;
+}
+
+.persona-template-card .mbti-badge {
+    display: inline-block;
+    background: #1f2937;
+    color: #f0883e;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.persona-template-card .persona-detail {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.persona-template-card .persona-worldview {
+    font-size: 11px;
+    color: #7ee787;
+    font-style: italic;
+    margin-top: 6px;
+}
+
+/* Loading state */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 17, 23, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    font-size: 18px;
+    color: #58a6ff;
+}
+
 @media (max-width: 768px) {
     header { flex-direction: column; align-items: flex-start; }
     .controls { margin-left: 0; }
     .analytics-grid { grid-template-columns: repeat(2, 1fr); }
     .charts-row { grid-template-columns: 1fr; }
     .doc-panels { grid-template-columns: 1fr; }
+    #scenario-cards { grid-template-columns: 1fr; }
+    #persona-templates { grid-template-columns: 1fr; }
 }

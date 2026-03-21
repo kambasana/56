@@ -43,9 +43,11 @@ class SocialPlatform:
         self.current_time += timedelta(hours=hours_delta)
         tick_events = []
 
-        # Phase 1: Some agents create new posts
+        # Phase 1: Some agents create new posts (persona-aware)
         for agent in self.agents:
-            if random.random() < agent.activity_level * 0.25:
+            persona = getattr(agent, "_persona", None)
+            post_freq = persona.posting_frequency if persona else agent.activity_level
+            if random.random() < post_freq * 0.3:
                 post = self._agent_creates_post(agent)
                 tick_events.append(
                     SimulationEvent(
@@ -70,12 +72,14 @@ class SocialPlatform:
                     post.add_reaction(reaction, agent)
                     post.reach += 1
 
-                # Comments
-                comment_chance = 0.08
+                # Comments (persona-aware reply probability)
+                persona = getattr(agent, "_persona", None)
+                base_reply = persona.reply_probability if persona else 0.08
+                comment_chance = base_reply * 0.4
                 if agent.team.id == post.author.team.id:
-                    comment_chance = 0.25
+                    comment_chance = base_reply
                 elif agent.org.id == post.author.org.id:
-                    comment_chance = 0.12
+                    comment_chance = base_reply * 0.6
 
                 if random.random() < comment_chance:
                     comment = self._agent_comments(agent, post)

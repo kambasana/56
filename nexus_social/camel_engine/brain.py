@@ -49,9 +49,22 @@ class CamelBrain:
         if not self.use_camel:
             return None
         if profile.id not in self._agents:
+            # Use rich persona prompt if available, else basic prompt
+            persona = getattr(profile, "_persona", None)
+            if persona:
+                prompt_content = persona.to_system_prompt(
+                    role=profile.role.value,
+                    team=profile.team.name,
+                    org=profile.org.name,
+                    location=profile.location.city,
+                    team_focus=profile.team.focus,
+                )
+            else:
+                prompt_content = profile.system_prompt()
+
             sys_msg = BaseMessage.make_assistant_message(
                 role_name=profile.name,
-                content=profile.system_prompt(),
+                content=prompt_content,
             )
             self._agents[profile.id] = ChatAgent(
                 system_message=sys_msg,
