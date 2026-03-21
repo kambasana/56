@@ -135,7 +135,7 @@ async function loadPreMadeScenario(name) {
 
         document.getElementById('tick-count').textContent = 'Tick: 0';
         hideLoading();
-        alert(`Loaded "${name}": ${data.organizations} orgs, ${data.agents} agents, ${data.teams} teams.\n\nSwitch to Feed tab and click Simulate!`);
+        showToast(`Loaded "${name}": ${data.organizations} orgs, ${data.agents} agents, ${data.teams} teams. Switch to Feed tab and click Simulate!`);
 
         // Switch to feed
         document.querySelector('[data-tab="feed"]').click();
@@ -322,7 +322,7 @@ function buildCustomConfig() {
 async function loadCustomScenario() {
     const config = buildCustomConfig();
     if (!config.organizations.length) {
-        alert('Add at least one organization first!');
+        showToast('Add at least one organization first!', true);
         return;
     }
 
@@ -340,7 +340,7 @@ async function loadCustomScenario() {
 
         document.getElementById('tick-count').textContent = 'Tick: 0';
         hideLoading();
-        alert(`Custom scenario loaded: ${data.organizations} orgs, ${data.agents} agents.\n\nSwitch to Feed and click Simulate!`);
+        showToast(`Custom scenario loaded: ${data.organizations} orgs, ${data.agents} agents. Switch to Feed and click Simulate!`);
         document.querySelector('[data-tab="feed"]').click();
         loadFeed();
     } catch (e) {
@@ -360,6 +360,23 @@ async function exportScenario() {
     a.download = 'nexus-scenario.json';
     a.click();
     URL.revokeObjectURL(url);
+}
+
+function showToast(msg, isError) {
+    let toast = document.getElementById('toast-notification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notification';
+        toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:10000;padding:14px 28px;border-radius:8px;font-size:14px;max-width:600px;text-align:center;transition:opacity 0.3s;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+        document.body.appendChild(toast);
+    }
+    toast.style.background = isError ? '#da3633' : '#238636';
+    toast.style.color = '#fff';
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    toast.style.display = 'block';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.style.display = 'none', 300); }, 4000);
 }
 
 function showLoading(msg) {
