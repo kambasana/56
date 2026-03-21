@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  nexus:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SURREAL_URL=ws://surrealdb:8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    depends_on:
+      - surrealdb
+    command: >
+      python -m nexus_social serve
+      --host 0.0.0.0 --port 8000
+      --surreal-url ws://surrealdb:8000
+
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    ports:
+      - "8001:8000"
+    command: start --user root --pass root --bind 0.0.0.0:8000 memory

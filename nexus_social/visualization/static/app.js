@@ -50,6 +50,9 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (target === 'documents') loadDocuments();
         if (target === 'agents') loadAgents();
         if (target === 'events') loadEvents();
+        if (target === 'observer') loadObserver();
+        if (target === 'influence') loadInfluence();
+        if (target === 'inject') loadInjectionHistory();
         if (target === 'scenarios') loadScenarioBuilder();
     });
 });
@@ -724,6 +727,264 @@ async function loadEvents() {
             <span class="event-type ${e.type}">${e.type.replace(/_/g, ' ')}</span>
             <span class="event-desc">${e.description}</span>
             <span class="event-time">${new Date(e.timestamp).toLocaleTimeString()}</span>
+        </div>
+    `).join('');
+}
+
+// ===================== Observer =====================
+let currentPatternFilter = 'all';
+
+async function loadObserver() {
+    const [summaryRes, patternsRes] = await Promise.all([
+        fetch('/api/observer/summary'),
+        fetch('/api/observer/patterns'),
+    ]);
+    const summary = await summaryRes.json();
+    const patterns = await patternsRes.json();
+
+    // Stats
+    const statsEl = document.getElementById('observer-stats');
+    statsEl.innerHTML = `
+        <div class="observer-stat-card"><div class="val">${summary.total_patterns || 0}</div><div class="lbl">Total Patterns</div></div>
+        <div class="observer-stat-card"><div class="val">${summary.ticks_observed || 0}</div><div class="lbl">Ticks Observed</div></div>
+        <div class="observer-stat-card"><div class="val">${Object.keys(summary.by_type || {}).length}</div><div class="lbl">Pattern Types</div></div>
+    `;
+
+    document.getElementById('pattern-count').textContent = patterns.length;
+    renderPatterns(patterns);
+
+    // Wire up filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPatternFilter = btn.dataset.filter;
+            renderPatterns(patterns);
+        });
+    });
+}
+
+function renderPatterns(patterns) {
+    const filtered = currentPatternFilter === 'all'
+        ? patterns
+        : patterns.filter(p => p.type === currentPatternFilter);
+
+    const container = document.getElementById('patterns-list');
+    if (!filtered.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:20px">No patterns detected yet. Run more simulation ticks!</p>';
+        return;
+    }
+
+    container.innerHTML = filtered.map(p => {
+        const severity = p.severity > 0.7 ? 'high' : p.severity > 0.4 ? 'medium' : 'low';
+        const agents = (p.agents || []).slice(0, 8);
+        return `
+            <div class="pattern-card severity-${severity}">
+                <div class="pattern-type">${p.type.replace(/_/g, ' ')}</div>
+                <div class="pattern-desc">${p.description || ''}</div>
+                <div class="pattern-meta">
+                    Severity: ${(p.severity * 100).toFixed(0)}%
+                    ${p.tick !== undefined ? ` · Tick ${p.tick}` : ''}
+                    ${p.org ? ` · ${p.org}` : ''}
+                </div>
+                ${agents.length ? `<div class="pattern-agents">${agents.map(a => `<span class="tag">${a}</span>`).join('')}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// ===================== WebSocket =====================
+let ws = null;
+
+function connectWebSocket() {
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${location.host}/ws/simulation`);
+
+    ws.onopen = () => {
+        document.getElementById('ws-dot').classList.add('connected');
+        document.getElementById('ws-label').textContent = 'WebSocket: Connected';
+        addWsMessage('Connected to simulation stream');
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.tick !== undefined) {
+                document.getElementById('tick-count').textContent = `Tick: ${data.tick}`;
+                addWsMessage(`Tick ${data.tick}: ${data.active_agents || 0} active, ${data.new_posts || 0} posts`);
+            }
+            if (data.patterns) {
+                data.patterns.forEach(p => {
+                    addWsMessage(`Pattern: ${p.type} — ${p.description}`, '#bc8cff');
+                });
+            }
+        } catch (e) {
+            addWsMessage(event.data);
+        }
+    };
+
+    ws.onclose = () => {
+        document.getElementById('ws-dot').classList.remove('connected');
+        document.getElementById('ws-label').textContent = 'WebSocket: Disconnected';
+        addWsMessage('Disconnected');
+    };
+
+    ws.onerror = () => {
+        addWsMessage('WebSocket error', '#f85149');
+    };
+}
+
+function addWsMessage(text, color) {
+    const container = document.getElementById('ws-messages');
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'ws-msg';
+    div.innerHTML = `<span class="ws-time">${time}</span><span style="color:${color || '#c9d1d9'}">${text}</span>`;
+    container.prepend(div);
+    // Keep max 100 messages
+    while (container.children.length > 100) container.removeChild(container.lastChild);
+}
+
+// ===================== Influence =====================
+async function loadInfluence() {
+    await Promise.all([loadInfluenceRankings(), loadCommunities(), loadBridgeAgents(), loadStressClusters()]);
+}
+
+async function loadInfluenceRankings() {
+    const res = await fetch('/api/graph/influence');
+    const data = await res.json();
+    const container = document.getElementById('influence-rankings');
+    if (!data.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:20px">Run simulation first</p>';
+        return;
+    }
+    const maxPR = Math.max(...data.map(d => d.pagerank || 0), 0.001);
+    container.innerHTML = data.slice(0, 20).map((d, i) => `
+        <div class="influence-row">
+            <span class="influence-rank">#${i + 1}</span>
+            <span class="influence-name">${d.name}
+                <span style="font-size:11px;color:${getOrgColor(d.org)}">${d.org}</span>
+            </span>
+            <div class="influence-bar">
+                <div class="influence-bar-fill" style="width:${((d.pagerank || 0) / maxPR * 100).toFixed(1)}%;background:${getOrgColor(d.org)}"></div>
+            </div>
+            <span class="influence-score">${(d.pagerank || 0).toFixed(4)}</span>
+        </div>
+    `).join('');
+}
+
+async function loadCommunities() {
+    const method = document.getElementById('community-method')?.value || 'louvain';
+    const res = await fetch(`/api/graph/communities?method=${method}`);
+    const data = await res.json();
+    const container = document.getElementById('communities-list');
+    if (!data.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:20px">No communities detected</p>';
+        return;
+    }
+    container.innerHTML = data.map((c, i) => `
+        <div class="community-card">
+            <div class="community-header">Community ${i + 1} — ${c.dominant_org || 'Mixed'}</div>
+            <div class="community-meta">${c.size} agents · Modularity: ${(c.modularity || 0).toFixed(3)}</div>
+            <div class="community-agents">
+                ${(c.agents || []).slice(0, 12).map(a => `<span class="tag">${a}</span>`).join('')}
+                ${(c.agents || []).length > 12 ? `<span class="tag">+${c.agents.length - 12} more</span>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadBridgeAgents() {
+    const res = await fetch('/api/graph/bridges');
+    const data = await res.json();
+    const container = document.getElementById('bridge-agents');
+    if (!data.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:20px">No bridge agents found</p>';
+        return;
+    }
+    const maxBC = Math.max(...data.map(d => d.betweenness || 0), 0.001);
+    container.innerHTML = data.slice(0, 10).map(d => `
+        <div class="influence-row">
+            <span class="influence-name">${d.name}
+                <span style="font-size:11px;color:${getOrgColor(d.org)}">${d.org}</span>
+            </span>
+            <div class="influence-bar">
+                <div class="influence-bar-fill" style="width:${((d.betweenness || 0) / maxBC * 100).toFixed(1)}%;background:#bc8cff"></div>
+            </div>
+            <span class="influence-score">${(d.betweenness || 0).toFixed(4)}</span>
+        </div>
+    `).join('');
+}
+
+async function loadStressClusters() {
+    const res = await fetch('/api/graph/stress-clusters');
+    const data = await res.json();
+    const container = document.getElementById('stress-clusters');
+    if (!data.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:20px">No stress clusters</p>';
+        return;
+    }
+    container.innerHTML = data.map(c => `
+        <div class="community-card" style="border-left:3px solid #f85149">
+            <div class="community-header" style="color:#f85149">Stress Cluster — ${c.dominant_org || 'Mixed'}</div>
+            <div class="community-meta">
+                ${c.size} agents · Avg stress: ${(c.avg_stress || 0).toFixed(2)} · Avg morale: ${(c.avg_morale || 0).toFixed(2)}
+            </div>
+            <div class="community-agents">
+                ${(c.agents || []).slice(0, 8).map(a => `<span class="tag">${a}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// ===================== Injection =====================
+function fillInjection(type, desc) {
+    document.getElementById('inject-type').value = type;
+    document.getElementById('inject-desc').value = desc;
+}
+
+async function submitInjection() {
+    const desc = document.getElementById('inject-desc').value;
+    if (!desc) { showToast('Enter an event description', true); return; }
+
+    const body = {
+        type: document.getElementById('inject-type').value,
+        description: desc,
+    };
+    const orgs = document.getElementById('inject-orgs').value.trim();
+    if (orgs) body.target_orgs = orgs.split(',').map(s => s.trim());
+    const agents = document.getElementById('inject-agents').value.trim();
+    if (agents) body.target_agents = agents.split(',').map(s => s.trim());
+
+    try {
+        const res = await fetch('/api/inject', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        showToast(`Injected: ${body.type} — ${data.effects?.length || 0} effects applied`);
+        document.getElementById('inject-desc').value = '';
+        loadInjectionHistory();
+    } catch (e) {
+        showToast('Injection failed: ' + e.message, true);
+    }
+}
+
+async function loadInjectionHistory() {
+    const res = await fetch('/api/inject/history');
+    const history = await res.json();
+    const container = document.getElementById('injection-history');
+    if (!history.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:20px">No injections yet</p>';
+        return;
+    }
+    container.innerHTML = history.map(h => `
+        <div class="injection-card">
+            <div class="injection-type">${h.type}</div>
+            <div class="injection-desc">${h.description}</div>
+            <div class="injection-meta">Tick ${h.tick || '?'} · ${h.effects?.length || 0} effects</div>
+            ${h.effects?.length ? `<div class="injection-effects">${h.effects.slice(0, 3).map(e => e.description || e.type).join(' · ')}</div>` : ''}
         </div>
     `).join('');
 }

@@ -24,6 +24,9 @@
         <button class="tab" data-tab="network">Network Graph</button>
         <button class="tab" data-tab="analytics">Analytics</button>
         <button class="tab" data-tab="documents">Documents</button>
+        <button class="tab" data-tab="observer">Observer</button>
+        <button class="tab" data-tab="influence">Influence</button>
+        <button class="tab" data-tab="inject">Inject</button>
         <button class="tab" data-tab="agents">Agents</button>
         <button class="tab" data-tab="events">Event Log</button>
     </nav>
@@ -157,6 +160,116 @@
             <div class="doc-panel full-width">
                 <h3>Knowledge Graph</h3>
                 <canvas id="knowledge-canvas" width="1200" height="500"></canvas>
+            </div>
+        </section>
+
+        <!-- Observer Tab -->
+        <section id="tab-observer" class="tab-content">
+            <div class="observer-layout">
+                <div class="observer-summary" id="observer-summary">
+                    <h3>Observer Agent Summary</h3>
+                    <div class="observer-stats" id="observer-stats"></div>
+                </div>
+                <div class="observer-patterns">
+                    <h3>Detected Patterns <span id="pattern-count" class="badge">0</span></h3>
+                    <div class="pattern-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="stress_cascade">Stress Cascade</button>
+                        <button class="filter-btn" data-filter="echo_chamber">Echo Chamber</button>
+                        <button class="filter-btn" data-filter="influence_concentration">Influence</button>
+                        <button class="filter-btn" data-filter="coalition">Coalition</button>
+                        <button class="filter-btn" data-filter="suspicious_silence">Silence</button>
+                    </div>
+                    <div id="patterns-list"></div>
+                </div>
+                <div class="ws-status" id="ws-status">
+                    <span class="ws-dot" id="ws-dot"></span>
+                    <span id="ws-label">WebSocket: Disconnected</span>
+                    <button class="btn-small" onclick="connectWebSocket()">Connect</button>
+                </div>
+                <div class="ws-feed" id="ws-feed">
+                    <h3>Live Stream</h3>
+                    <div id="ws-messages"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Influence Tab -->
+        <section id="tab-influence" class="tab-content">
+            <div class="influence-layout">
+                <div class="influence-panel">
+                    <h3>Influence Rankings (PageRank)</h3>
+                    <div id="influence-rankings"></div>
+                </div>
+                <div class="influence-panel">
+                    <h3>Communities</h3>
+                    <div class="form-row" style="margin-bottom:12px">
+                        <label>Method</label>
+                        <select id="community-method" onchange="loadCommunities()">
+                            <option value="louvain">Louvain</option>
+                            <option value="leiden">Leiden</option>
+                        </select>
+                    </div>
+                    <div id="communities-list"></div>
+                </div>
+                <div class="influence-panel">
+                    <h3>Bridge Agents</h3>
+                    <div id="bridge-agents"></div>
+                </div>
+                <div class="influence-panel">
+                    <h3>Stress Clusters</h3>
+                    <div id="stress-clusters"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Injection Tab -->
+        <section id="tab-inject" class="tab-content">
+            <div class="inject-layout">
+                <div class="inject-form-panel">
+                    <h3>Counterfactual Injection</h3>
+                    <p class="hint">Inject events mid-simulation to test "what-if" scenarios.</p>
+                    <div class="inject-presets">
+                        <button class="btn-small" onclick="fillInjection('news_break','Breaking: Major security breach reported across coalition networks')">News Break</button>
+                        <button class="btn-small" onclick="fillInjection('crisis_event','Category 5 hurricane approaching primary operations zone')">Crisis</button>
+                        <button class="btn-small" onclick="fillInjection('leak','Classified strategic plans leaked to rival organization')">Leak</button>
+                        <button class="btn-small" onclick="fillInjection('leadership_change','CEO replaced by board due to performance concerns')">Leadership Change</button>
+                        <button class="btn-small" onclick="fillInjection('technology_change','New AI system deployed across all departments')">Tech Change</button>
+                    </div>
+                    <div class="form-row">
+                        <label>Type</label>
+                        <select id="inject-type">
+                            <option value="custom">Custom</option>
+                            <option value="news_break">News Break</option>
+                            <option value="agent_defection">Agent Defection</option>
+                            <option value="resource_shock">Resource Shock</option>
+                            <option value="leadership_change">Leadership Change</option>
+                            <option value="alliance_shift">Alliance Shift</option>
+                            <option value="crisis_event">Crisis Event</option>
+                            <option value="leak">Leak</option>
+                            <option value="technology_change">Technology Change</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Description</label>
+                        <textarea id="inject-desc" rows="3" style="flex:1;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:8px;border-radius:6px;font-size:13px;font-family:inherit" placeholder="What happens?"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label>Target Orgs</label>
+                        <input type="text" id="inject-orgs" placeholder="Comma-separated org names (optional)">
+                    </div>
+                    <div class="form-row">
+                        <label>Target Agents</label>
+                        <input type="text" id="inject-agents" placeholder="Comma-separated agent IDs (optional)">
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-primary" onclick="submitInjection()">Inject Event</button>
+                    </div>
+                </div>
+                <div class="inject-history-panel">
+                    <h3>Injection History</h3>
+                    <div id="injection-history"></div>
+                </div>
             </div>
         </section>
 
