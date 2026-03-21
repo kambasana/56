@@ -621,3 +621,259 @@ def list_persona_templates() -> list[dict]:
         }
         for name, t in PERSONA_TEMPLATES.items()
     ]
+
+
+# =============================================================================
+# Narrative Arcs - Story engines for each scenario
+# =============================================================================
+
+from nexus_social.core.narrative import NarrativeArc, NarrativeEvent, NarrativePhase
+
+NARRATIVE_ARCS: dict[str, NarrativeArc] = {}
+
+
+def _register_arc(arc: NarrativeArc):
+    NARRATIVE_ARCS[arc.scenario_name] = arc
+
+
+# --- Coalition Strike Narrative ---
+_register_arc(NarrativeArc(
+    scenario_name="Coalition Strike",
+    phases=[
+        NarrativePhase(
+            name="Planning",
+            description="Coalition forces are in the planning phase. Intelligence is being gathered, targets identified, and operational plans drafted. Tension between US-led ground forces and UK intelligence over threat assessment methodology.",
+            start_tick=0,
+            base_tension=0.3,
+            base_urgency=0.3,
+            active_themes=["target selection", "intel sharing", "rules of engagement", "coalition coordination"],
+            situation_details=[
+                "SIGINT intercepts suggest adversary is reinforcing defensive positions.",
+                "Satellite imagery shows new vehicle movements near the target area.",
+                "Coalition partners disagree on the timeline - UK wants more intel, US wants to move.",
+                "Local source reports indicate civilian presence near primary target.",
+                "Weather window for the operation is narrowing.",
+            ],
+        ),
+        NarrativePhase(
+            name="Escalation",
+            description="An IED attack on a coalition patrol kills two soldiers and wounds four. Pressure mounts to accelerate the operation. Media coverage intensifies. NGOs demand humanitarian corridors.",
+            start_tick=5,
+            base_tension=0.6,
+            base_urgency=0.6,
+            active_themes=["casualties", "retaliation pressure", "media scrutiny", "humanitarian concerns"],
+            situation_details=[
+                "Medevac helicopters are running constant sorties.",
+                "Command is under pressure from politicians to show results.",
+                "Sara Al-Rashid's reporting on civilian impact is going viral.",
+                "Intelligence suggests a mole may be leaking operational plans.",
+                "Forward Element reports increased hostile activity near FOB Sentinel.",
+            ],
+        ),
+        NarrativePhase(
+            name="Execution",
+            description="The strike operation is underway. Cyber operations have degraded adversary communications. Ground forces are moving to contact. Everything is happening fast and fog of war is thick.",
+            start_tick=10,
+            base_tension=0.85,
+            base_urgency=0.9,
+            active_themes=["fog of war", "communications breakdown", "civilian risk", "mission success"],
+            situation_details=[
+                "Ground forces report contact with hostiles at two locations simultaneously.",
+                "Drone feed shows movement near the secondary target - could be civilians.",
+                "Cyber ops has taken down adversary C2 network but it may come back.",
+                "Friendly fire incident reported but unconfirmed.",
+                "Coalition partner forces are 30 minutes behind schedule.",
+            ],
+        ),
+        NarrativePhase(
+            name="Aftermath",
+            description="The operation is complete. Assessing damage, casualties, and political fallout. Media is asking hard questions. Intel is being reviewed for lessons learned.",
+            start_tick=15,
+            base_tension=0.5,
+            base_urgency=0.3,
+            active_themes=["battle damage assessment", "lessons learned", "media response", "political fallout"],
+            situation_details=[
+                "Initial BDA shows primary target destroyed but secondary target status unclear.",
+                "Three coalition casualties and an unknown number of adversary KIA.",
+                "NGO reports of civilian casualties near the strike zone.",
+                "Political leadership wants a full briefing within 24 hours.",
+                "Intelligence is reviewing whether the pre-strike assessment was accurate.",
+            ],
+        ),
+    ],
+    events=[
+        NarrativeEvent(tick_trigger=1, name="Intel Disagreement",
+                       description="UK intelligence challenges US threat assessment. Dr. Blackwood's analysis contradicts Maj. Vasquez's SIGINT conclusions. Tension in the joint intel cell.",
+                       stress_impact=0.1, morale_impact=-0.05,
+                       tags=["intel", "disagreement"]),
+        NarrativeEvent(tick_trigger=3, name="Media Leak",
+                       description="Sara Al-Rashid publishes a report suggesting the coalition is planning strikes near populated areas. Command is furious about the leak.",
+                       stress_impact=0.15, morale_impact=-0.1,
+                       tags=["media", "leak", "opsec"]),
+        NarrativeEvent(tick_trigger=5, name="IED Attack",
+                       description="URGENT: IED attack on coalition patrol near FOB Sentinel. 2 KIA, 4 WIA. Medevac inbound. All units on high alert.",
+                       stress_impact=0.3, morale_impact=-0.25,
+                       tags=["attack", "casualties", "ied"]),
+        NarrativeEvent(tick_trigger=7, name="Humanitarian Demand",
+                       description="Dr. Lindgren and MSF formally demand a 48-hour humanitarian pause. Coalition command must respond.",
+                       stress_impact=0.1, morale_impact=0.0,
+                       target_orgs=["Task Force Vanguard", "International Crisis Watch"],
+                       tags=["humanitarian", "pause", "demand"]),
+        NarrativeEvent(tick_trigger=10, name="Operation Launched",
+                       description="EXECUTE EXECUTE EXECUTE. Operation Thunderclap is go. All elements moving to their assault positions. Radio discipline in effect.",
+                       stress_impact=0.25, morale_impact=0.1,
+                       target_orgs=["Task Force Vanguard"],
+                       tags=["operation", "execute", "assault"]),
+        NarrativeEvent(tick_trigger=12, name="Civilian Casualty Report",
+                       description="FLASH: Reports of civilian casualties at Grid Reference 4827. Drone footage being reviewed. Media already asking questions.",
+                       stress_impact=0.3, morale_impact=-0.3,
+                       tags=["civcas", "investigation", "media"]),
+        NarrativeEvent(tick_trigger=15, name="Mission Complete",
+                       description="Operation Thunderclap declared complete. Primary objective achieved. Full BDA and AAR to follow. But questions remain about the civilian casualty reports.",
+                       stress_impact=-0.1, morale_impact=0.15,
+                       tags=["complete", "bda", "review"]),
+    ],
+    baked_tensions={
+        "Col. Hawkins vs Dr. Blackwood": "Hawkins thinks Blackwood's analysis is too cautious and is slowing the operation. Blackwood thinks Hawkins is rushing to action without sufficient intel.",
+        "Sara Al-Rashid vs Maj. Reeves": "Al-Rashid suspects Reeves' PSYOP division is planting stories. Reeves sees Al-Rashid as a security risk who could compromise operations.",
+        "Dr. Lindgren vs Col. Hawkins": "Lindgren blames military operations for civilian suffering. Hawkins sees NGO demands as naive interference in military necessity.",
+        "Maj. Vasquez vs Dr. Blackwood": "Vasquez trusts SIGINT data. Blackwood distrusts raw signals and wants HUMINT verification. Their analyses keep contradicting each other.",
+    },
+))
+
+
+# --- Cyber Siege Narrative ---
+_register_arc(NarrativeArc(
+    scenario_name="Cyber Siege",
+    phases=[
+        NarrativePhase(
+            name="Detection",
+            description="Anomalous network activity detected across multiple critical infrastructure sectors. Initial indicators suggest a sophisticated nation-state actor. The scope is unclear but growing.",
+            start_tick=0, base_tension=0.4, base_urgency=0.5,
+            active_themes=["anomaly detection", "attribution", "scope assessment", "coordination"],
+            situation_details=[
+                "Power grid monitoring systems showing irregular data patterns.",
+                "Financial sector CERT reports similar indicators of compromise.",
+                "Initial forensics suggest the malware has been dormant for weeks.",
+                "Three ISPs report unusual outbound traffic to known C2 infrastructure.",
+            ],
+        ),
+        NarrativePhase(
+            name="Containment",
+            description="The attack scope is now clear: water treatment, power grid, and financial systems are all compromised. Containment efforts are underway but the adversary is adapting in real time.",
+            start_tick=5, base_tension=0.7, base_urgency=0.8,
+            active_themes=["containment", "adversary adaptation", "public safety", "political pressure"],
+            situation_details=[
+                "Water treatment facility in Ohio has lost SCADA control.",
+                "Rolling blackouts hitting the Eastern seaboard.",
+                "Adversary deploying new malware variants faster than patches can be applied.",
+                "White House demanding hourly updates. Congressional briefing scheduled.",
+            ],
+        ),
+        NarrativePhase(
+            name="Counterattack",
+            description="Offensive cyber operations authorized. The team is fighting back while simultaneously trying to restore critical services. Attribution is confirmed but the political response is still being debated.",
+            start_tick=10, base_tension=0.85, base_urgency=0.9,
+            active_themes=["offensive operations", "attribution", "restoration", "escalation risk"],
+            situation_details=[
+                "Counter-operations targeting adversary C2 infrastructure.",
+                "Partial power grid restoration in progress.",
+                "Adversary threatening to release stolen data if operations continue.",
+                "Diplomatic back-channel activated to de-escalate.",
+            ],
+        ),
+    ],
+    events=[
+        NarrativeEvent(tick_trigger=2, name="SCADA Breach Confirmed",
+                       description="CRITICAL: SCADA breach confirmed at 3 water treatment facilities. Adversary has the ability to alter chemical treatment levels. Public safety at risk.",
+                       stress_impact=0.25, morale_impact=-0.2, tags=["scada", "water", "critical"]),
+        NarrativeEvent(tick_trigger=5, name="Grid Goes Down",
+                       description="FLASH: Eastern seaboard power grid experiencing cascading failures. 12 million people without power. Emergency services overwhelmed.",
+                       stress_impact=0.35, morale_impact=-0.3, tags=["grid", "blackout", "emergency"]),
+        NarrativeEvent(tick_trigger=8, name="Attribution Confirmed",
+                       description="NSA confirms attribution to Unit 74455 (Sandworm). Evidence chain is solid. President convening NSC meeting.",
+                       stress_impact=0.1, morale_impact=0.1, tags=["attribution", "nsc", "policy"]),
+        NarrativeEvent(tick_trigger=10, name="Offensive Ops Authorized",
+                       description="POTUS has authorized offensive cyber operations against adversary infrastructure. Cyber Command executing Operation Digital Storm.",
+                       stress_impact=0.15, morale_impact=0.2,
+                       target_orgs=["Cyber Command Unit"], tags=["offensive", "authorized"]),
+        NarrativeEvent(tick_trigger=13, name="Data Ransom Threat",
+                       description="Adversary threatens to dump 2TB of stolen government data unless offensive operations cease within 24 hours.",
+                       stress_impact=0.25, morale_impact=-0.15, tags=["ransom", "data", "threat"]),
+    ],
+    baked_tensions={
+        "Col. Chen vs Director Hale": "Chen wants to go full offensive. Hale worries about escalation and wants to prioritize civilian infrastructure restoration.",
+        "Capt. Okonkwo vs Agent Liu Wei": "Okonkwo found suspicious traffic patterns that Liu Wei dismissed. Building mistrust about whether counter-intel is compromised.",
+        "Sen. Advisor Brennan vs Col. Chen": "Brennan is focused on political optics and congressional fallout. Chen thinks politics are getting in the way of the mission.",
+    },
+))
+
+
+# --- Evacuation Under Fire Narrative ---
+_register_arc(NarrativeArc(
+    scenario_name="Evacuation Under Fire",
+    phases=[
+        NarrativePhase(
+            name="Alert",
+            description="Embassy ordered to prepare for emergency evacuation. Fighting has reached the outskirts of the capital. Task Force Extraction is staging offshore.",
+            start_tick=0, base_tension=0.5, base_urgency=0.6,
+            active_themes=["evacuation planning", "route security", "classified destruction", "civilian protection"],
+            situation_details=[
+                "Militia forces have seized 2 of 3 bridges leading to the airport.",
+                "Ambassador Holt refuses to leave until all 47 staff are accounted for.",
+                "RSO Gutierrez reports the compound perimeter is secure but won't hold long.",
+                "Drone ISR shows armed technicals moving toward the embassy district.",
+            ],
+        ),
+        NarrativePhase(
+            name="Insertion",
+            description="Assault Element has been inserted at Rally Point Alpha. They must reach the embassy compound through hostile territory. Communication is intermittent.",
+            start_tick=4, base_tension=0.75, base_urgency=0.85,
+            active_themes=["urban movement", "hostile contact", "comm breakdown", "time pressure"],
+            situation_details=[
+                "Assault Element took small arms fire during insertion.",
+                "Two embassy staff unaccounted for - possibly at a separate safe house.",
+                "Local militia leader offering safe passage in exchange for unspecified concession.",
+                "USS Resolute reports helicopter assets are 45 minutes out.",
+            ],
+        ),
+        NarrativePhase(
+            name="Extraction",
+            description="Link-up with embassy complete. Now fighting their way to the extraction point while protecting 47 civilians. Every minute counts.",
+            start_tick=8, base_tension=0.95, base_urgency=0.95,
+            active_themes=["fighting withdrawal", "civilian protection", "helicopter extraction", "casualties"],
+            situation_details=[
+                "Heavy contact at the intersection of Al-Gamhoria and Nile Street.",
+                "Doc Rivera treating multiple casualties while on the move.",
+                "Helicopters inbound but LZ is not yet secured.",
+                "Ambassador insisting on bringing locally employed staff - 12 additional people.",
+            ],
+        ),
+    ],
+    events=[
+        NarrativeEvent(tick_trigger=1, name="Bridge Seized",
+                       description="Militia forces have seized the Al-Mak Nimir Bridge. Primary extraction route is now compromised. Planning alternate routes.",
+                       stress_impact=0.2, morale_impact=-0.15, tags=["bridge", "route", "compromised"]),
+        NarrativeEvent(tick_trigger=4, name="Contact on Insertion",
+                       description="Assault Element taking fire during infiltration. One operator wounded. SSgt. Kim Soo-jin returning fire. Continuing to push through.",
+                       stress_impact=0.25, morale_impact=-0.2,
+                       target_orgs=["Task Force Extraction"], tags=["contact", "wounded"]),
+        NarrativeEvent(tick_trigger=6, name="Missing Staff",
+                       description="Two embassy staff confirmed at a secondary safe house 3km from compound. Someone has to go get them.",
+                       stress_impact=0.2, morale_impact=-0.1, tags=["missing", "rescue", "diversion"]),
+        NarrativeEvent(tick_trigger=8, name="Embassy Link-Up",
+                       description="Assault Element has reached the embassy compound. Perimeter is holding. Beginning evacuation preparations. 47 civilians plus 12 local staff.",
+                       stress_impact=-0.05, morale_impact=0.2, tags=["linkup", "embassy", "evacuation"]),
+        NarrativeEvent(tick_trigger=10, name="Heavy Contact",
+                       description="TROOPS IN CONTACT. Heavy fire from multiple directions en route to LZ. Two casualties. Doc Rivera working under fire. Requesting immediate air support.",
+                       stress_impact=0.35, morale_impact=-0.25, tags=["tic", "casualties", "air_support"]),
+        NarrativeEvent(tick_trigger=12, name="Helicopters Inbound",
+                       description="Two MH-60 Black Hawks inbound. ETA 8 minutes. LZ must be secured. Barrett's team pushing to clear the landing zone.",
+                       stress_impact=0.1, morale_impact=0.15, tags=["helo", "extraction", "lz"]),
+    ],
+    baked_tensions={
+        "Maj. Barrett vs Amb. Holt": "Barrett wants to leave now with who they have. Holt won't leave without every staff member, including local employees.",
+        "Capt. Osman vs Maj. Barrett": "Osman wants to control the operation from offshore. Barrett thinks she can't see the ground truth from the ship.",
+        "RSO Gutierrez vs Advisor Ibrahim": "Gutierrez has a by-the-book evacuation plan. Ibrahim says the militia leader's offer of safe passage is the smarter play.",
+    },
+))

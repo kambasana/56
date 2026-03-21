@@ -1,30 +1,35 @@
 #!/usr/bin/env python3
-"""NexusSocial - Multi-Agent Social Platform powered by CAMEL AI.
+"""NexusSocial - Multi-Agent Social Media Analysis Platform.
 
-A scenario-driven, multi-agent social platform. Define personas, groups,
-teams, locations, and organizations - then watch them interact. Pick
-pre-made scenarios or build custom ones.
+Powered by CAMEL-AI OASIS for social simulation, with scenario-driven
+narratives, deep persona psychology, agent memory, and geo-aware analysis.
 
 Usage:
     python main.py                              # Start with scenario picker
-    python main.py --scenario "Tech Rivalry"    # Start with a specific scenario
+    python main.py --scenario "Coalition Strike" # Start with a specific scenario
     python main.py --headless 20                # Run 20 ticks, no UI
     python main.py --list-scenarios             # List available scenarios
     python main.py --port 8080                  # Custom port
 """
 
 import argparse
+import asyncio
 import logging
+import os
+import threading
 
-from nexus_social.camel_engine.brain import CamelBrain
+from nexus_social.core.memory import MemorySystem
+from nexus_social.core.narrative import NarrativeEngine
 from nexus_social.core.scenarios import (
+    NARRATIVE_ARCS,
     SCENARIOS,
     ScenarioBuilder,
     list_scenarios,
 )
-from nexus_social.core.world import build_default_world
 from nexus_social.documents.intelligence import DocumentIntelligence
-from nexus_social.social.platform import SocialPlatform
+from nexus_social.oasis_engine.analysis import SocialAnalyzer
+from nexus_social.oasis_engine.bridge import OASISBridge
+from nexus_social.oasis_engine.runner import SimulationRunner
 from nexus_social.visualization.server import create_app
 
 logging.basicConfig(
@@ -34,115 +39,159 @@ logging.basicConfig(
 logger = logging.getLogger("nexus_social")
 
 
-def _load_scenario(scenario_name: str | None, brain: CamelBrain):
-    """Load a scenario by name or fall back to default world."""
+def _load_scenario(scenario_name: str | None):
+    """Load a scenario and build all components."""
     if scenario_name and scenario_name in SCENARIOS:
         config = SCENARIOS[scenario_name]
         builder = ScenarioBuilder()
         orgs, agents = builder.build(config)
+        arc = NARRATIVE_ARCS.get(config.name)
         print(f"Loaded scenario: {config.name}")
         print(f"  {config.description}")
+        if arc:
+            print(f"  Narrative arc: {len(arc.phases)} phases, {len(arc.events)} events")
     else:
         if scenario_name:
-            print(f"Scenario '{scenario_name}' not found, using default world.")
-        orgs, agents = build_default_world()
+            print(f"Scenario '{scenario_name}' not found.")
+            print(f"Available: {', '.join(SCENARIOS.keys())}")
+            return None, None, None, None
+        # Default to first scenario
+        config = list(SCENARIOS.values())[0]
+        builder = ScenarioBuilder()
+        orgs, agents = builder.build(config)
+        arc = NARRATIVE_ARCS.get(config.name)
+        print(f"Using default scenario: {config.name}")
 
-    return orgs, agents
+    return config, orgs, agents, arc
 
 
-def run_headless(ticks: int, scenario_name: str | None = None):
+async def run_headless(ticks: int, scenario_name: str | None = None):
     """Run simulation without web UI and print results."""
-    brain = CamelBrain()
-    platform = SocialPlatform(brain)
-    doc_intel = DocumentIntelligence()
+    config, orgs, agents, arc = _load_scenario(scenario_name)
+    if not agents:
+        return
 
-    orgs, agents = _load_scenario(scenario_name, brain)
-    platform.register_agents(agents)
+    # Build the stack
+    db_path = f"./data/{config.name.lower().replace(' ', '_')}_headless.db"
+    bridge = OASISBridge(db_path=db_path)
+    narrative = NarrativeEngine(arc)
+    memory = MemorySystem()
+    runner = SimulationRunner(bridge, narrative, memory)
+    analyzer = SocialAnalyzer(bridge, memory)
 
-    print(f"\n=== NexusSocial Simulation ===")
+    print(f"\n=== NexusSocial Simulation (OASIS-powered) ===")
     print(f"Organizations: {', '.join(o.name for o in orgs)}")
     print(f"Agents: {len(agents)}")
     print(f"Locations: {sum(len(o.locations) for o in orgs)}")
-    print(f"Teams: {sum(len(o.teams) for o in orgs)}")
     print(f"Running {ticks} ticks...\n")
 
-    for i in range(ticks):
-        events = platform.simulate_tick()
-        for doc in platform.documents:
-            if doc not in doc_intel.documents:
-                doc_intel.ingest(doc)
-        print(f"  Tick {i+1}: {len(events)} events")
+    # Initialize
+    await runner.initialize(agents)
 
-    analytics = platform.get_analytics()
+    # Run ticks
+    for i in range(ticks):
+        summary = await runner.tick()
+        phase = summary.get("phase", "?")
+        tension = summary.get("tension", 0)
+        events = summary.get("narrative_events", [])
+        event_str = f" | Events: {', '.join(events)}" if events else ""
+        print(f"  Tick {i+1}: {summary['active_agents']} active | "
+              f"Phase: {phase} | Tension: {tension:.1f}{event_str}")
+
+    # Results
+    analytics = analyzer.get_analytics()
     print(f"\n=== Results ===")
-    print(f"Total Posts: {analytics['total_posts']}")
-    print(f"Total Comments: {analytics['total_comments']}")
-    print(f"Total Reactions: {analytics['total_reactions']}")
-    print(f"Direct Messages: {analytics['total_dms']}")
-    print(f"Documents Created: {analytics['total_documents']}")
-    print(f"Cross-Org Interactions: {analytics['cross_org_interactions']}")
+    print(f"Total Posts: {analytics.get('total_posts', 0)}")
+    print(f"Total Comments: {analytics.get('total_comments', 0)}")
+    print(f"Cross-Org Interactions: {analytics.get('cross_org_interactions', 0)}")
 
     print(f"\n--- Activity by Organization ---")
     for org, count in sorted(analytics.get("org_activity", {}).items(), key=lambda x: -x[1]):
         print(f"  {org}: {count} posts")
 
-    print(f"\n--- Activity by Location ---")
-    for loc, count in sorted(analytics.get("location_activity", {}).items(), key=lambda x: -x[1]):
-        print(f"  {loc}: {count} posts")
+    print(f"\n--- Activity by Geography ---")
+    geo = analyzer.get_geo_breakdown()
+    for geo_key, data in geo.items():
+        print(f"  {geo_key}: {data['post_count']} posts, "
+              f"stress={data['avg_stress']:.1f}, morale={data['avg_morale']:.1f}")
+
+    print(f"\n--- Faction Dynamics ---")
+    factions = analyzer.get_faction_analysis()
+    for org, data in factions.items():
+        print(f"  {org}: stress={data['avg_stress']:.1f}, morale={data['avg_morale']:.1f}")
+        for target, sent in data.get("sentiment_toward", {}).items():
+            print(f"    -> {target}: sentiment={sent['avg_sentiment']:.2f} ({sent['dominant_dynamic']})")
 
     print(f"\n--- Sentiment Distribution ---")
     for sentiment, count in analytics.get("sentiment_distribution", {}).items():
         print(f"  {sentiment}: {count}")
 
-    if doc_intel.documents:
-        print(f"\n--- Trending Topics ---")
-        for topic in doc_intel.get_trending_topics(5):
-            print(f"  {topic['topic']}: {topic['count']} mentions")
-
-    feed = platform.get_feed(limit=5)
+    feed = analyzer.get_feed(limit=5)
     print(f"\n--- Latest Posts ---")
     for post in feed:
-        print(f"\n  [{post['author_org']}] {post['author']} ({post['author_role']})")
-        print(f"  {post['content']}")
-        if post['comments']:
-            for c in post['comments'][:2]:
-                print(f"    -> {c['author']}: {c['content']}")
+        author = post.get("author_name", post.get("user_id", "?"))
+        org = post.get("author_org", "?")
+        role = post.get("author_role", "?")
+        content = post.get("content", "")
+        print(f"\n  [{org}] {author} ({role})")
+        print(f"  {content[:200]}")
 
-    graph = platform.get_network_graph()
-    print(f"\n--- Network ---")
-    print(f"  Nodes: {len(graph['nodes'])}")
-    print(f"  Connections: {len(graph['edges'])}")
-
-    return analytics
+    # Shutdown
+    await runner.shutdown()
+    print(f"\n=== Simulation complete ===")
 
 
 def run_server(port: int, host: str, scenario_name: str | None = None):
     """Run the web visualization server."""
-    brain = CamelBrain()
-    platform = SocialPlatform(brain)
+    config, orgs, agents, arc = _load_scenario(scenario_name)
+    if not agents:
+        return
+
+    # Build the stack
+    db_path = f"./data/{config.name.lower().replace(' ', '_')}.db"
+    bridge = OASISBridge(db_path=db_path)
+    narrative = NarrativeEngine(arc)
+    memory = MemorySystem()
+    runner = SimulationRunner(bridge, narrative, memory)
+    analyzer = SocialAnalyzer(bridge, memory)
     doc_intel = DocumentIntelligence()
 
-    orgs, agents = _load_scenario(scenario_name, brain)
-    platform.register_agents(agents)
+    # Initialize OASIS in a background event loop
+    loop = asyncio.new_event_loop()
 
-    print(f"\n=== NexusSocial Platform ===")
+    def run_loop():
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    loop_thread = threading.Thread(target=run_loop, daemon=True)
+    loop_thread.start()
+
+    # Initialize the runner
+    future = asyncio.run_coroutine_threadsafe(runner.initialize(agents), loop)
+    future.result(timeout=60)
+
+    print(f"\n=== NexusSocial Platform (OASIS-powered) ===")
     print(f"Organizations: {', '.join(o.name for o in orgs)}")
     print(f"Agents: {len(agents)}")
     print(f"Teams: {sum(len(o.teams) for o in orgs)}")
-    print(f"Engine: {'CAMEL AI' if brain.use_camel else 'Built-in Simulation'}")
+    print(f"Narrative: {len(arc.phases)} phases, {len(arc.events)} events" if arc else "No narrative arc")
     print(f"\nDashboard: http://{host}:{port}")
-    print(f"Use the Scenario Builder tab to switch scenarios or build custom ones.\n")
+    print(f"Use the Scenario Builder tab to switch scenarios.\n")
 
-    print(f"Available pre-made scenarios:")
+    print(f"Available scenarios:")
     for s in list_scenarios():
-        print(f"  - {s['name']}: {s['description'][:60]}... ({s['agent_count']} agents)")
+        has_arc = s["name"] in NARRATIVE_ARCS
+        arc_str = " [has narrative]" if has_arc else ""
+        print(f"  - {s['name']}: {s['description'][:60]}... ({s['agent_count']} agents){arc_str}")
 
-    app = create_app(platform, doc_intel, brain)
+    app = create_app(runner, analyzer, doc_intel, loop=loop)
     app.run(host=host, port=port, debug=False)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="NexusSocial - Multi-Agent Social Platform")
+    parser = argparse.ArgumentParser(
+        description="NexusSocial - Multi-Agent Social Media Analysis Platform (OASIS-powered)"
+    )
     parser.add_argument("--scenario", type=str, help="Load a pre-made scenario by name")
     parser.add_argument("--headless", type=int, metavar="TICKS",
                         help="Run N simulation ticks without web UI")
@@ -155,7 +204,9 @@ def main():
     if args.list_scenarios:
         print("\n=== Available Scenarios ===\n")
         for s in list_scenarios():
-            print(f"  {s['name']}")
+            has_arc = s["name"] in NARRATIVE_ARCS
+            arc_str = " [narrative arc]" if has_arc else ""
+            print(f"  {s['name']}{arc_str}")
             print(f"    {s['description']}")
             print(f"    Category: {s['category']} | Orgs: {s['org_count']} | Agents: {s['agent_count']}")
             print(f"    Tags: {', '.join(s['tags'])}")
@@ -163,7 +214,7 @@ def main():
         return
 
     if args.headless:
-        run_headless(args.headless, args.scenario)
+        asyncio.run(run_headless(args.headless, args.scenario))
     else:
         run_server(args.port, args.host, args.scenario)
 

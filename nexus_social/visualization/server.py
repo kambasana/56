@@ -1,15 +1,20 @@
-"""Web server for the NexusSocial visualization dashboard."""
+"""Web server for the NexusSocial visualization dashboard.
+
+Now powered by OASIS for social simulation, with our narrative/memory/analysis
+layer on top.
+"""
 
 from __future__ import annotations
 
-import json
+import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING
 
 from flask import Flask, jsonify, render_template, request
 
-from nexus_social.camel_engine.brain import CamelBrain
+from nexus_social.core.memory import MemorySystem
+from nexus_social.core.narrative import NarrativeEngine
 from nexus_social.core.scenarios import (
     SCENARIOS,
     ScenarioBuilder,
@@ -18,7 +23,9 @@ from nexus_social.core.scenarios import (
     list_scenarios,
 )
 from nexus_social.documents.intelligence import DocumentIntelligence
-from nexus_social.social.platform import SocialPlatform
+from nexus_social.oasis_engine.analysis import SocialAnalyzer
+from nexus_social.oasis_engine.bridge import OASISBridge
+from nexus_social.oasis_engine.runner import SimulationRunner
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +33,21 @@ logger = logging.getLogger(__name__)
 _state: dict = {}
 
 
+def _run_async(coro):
+    """Run an async coroutine from synchronous Flask context."""
+    loop = _state.get("loop")
+    if loop and loop.is_running():
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return future.result(timeout=120)
+    else:
+        return asyncio.run(coro)
+
+
 def create_app(
-    platform: SocialPlatform,
+    runner: SimulationRunner,
+    analyzer: SocialAnalyzer,
     doc_intel: DocumentIntelligence,
-    brain: CamelBrain | None = None,
+    loop: asyncio.AbstractEventLoop | None = None,
 ) -> Flask:
     """Create and configure the Flask application."""
 
@@ -37,12 +55,16 @@ def create_app(
     static_dir = os.path.join(os.path.dirname(__file__), "static")
     app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-    _state["platform"] = platform
+    _state["runner"] = runner
+    _state["analyzer"] = analyzer
     _state["doc_intel"] = doc_intel
-    _state["brain"] = brain or CamelBrain()
+    _state["loop"] = loop
 
-    def _platform() -> SocialPlatform:
-        return _state["platform"]
+    def _runner() -> SimulationRunner:
+        return _state["runner"]
+
+    def _analyzer() -> SocialAnalyzer:
+        return _state["analyzer"]
 
     def _doc_intel() -> DocumentIntelligence:
         return _state["doc_intel"]
@@ -56,61 +78,61 @@ def create_app(
     @app.route("/api/feed")
     def feed():
         limit = request.args.get("limit", 50, type=int)
-        return jsonify(_platform().get_feed(limit=limit))
+        return jsonify(_analyzer().get_feed(limit=limit))
 
     @app.route("/api/analytics")
     def analytics():
-        return jsonify(_platform().get_analytics())
+        return jsonify(_analyzer().get_analytics())
 
     @app.route("/api/network")
     def network():
-        return jsonify(_platform().get_network_graph())
+        return jsonify(_analyzer().get_network_graph())
 
     @app.route("/api/events")
     def events():
+        """Return tick log as events."""
         limit = request.args.get("limit", 100, type=int)
-        recent = _platform().events[-limit:]
-        return jsonify([e.to_dict() for e in reversed(recent)])
+        log = _runner().tick_log[-limit:]
+        return jsonify(list(reversed(log)))
 
     @app.route("/api/agents")
     def agents():
-        p = _platform()
-        return jsonify([
-            {
-                "id": a.id,
-                "name": a.name,
-                "role": a.role.value,
-                "org": a.org.name,
-                "team": a.team.name,
-                "location": a.location.city,
-                "activity_level": a.activity_level,
-                "traits": a.personality_traits,
-                "expertise": a.expertise,
-                "persona": getattr(a, "_persona", None).to_dict() if getattr(a, "_persona", None) else None,
-            }
-            for a in p.agents
-        ])
+        return jsonify(_analyzer().get_agent_details())
 
     @app.route("/api/simulate", methods=["POST"])
     def simulate():
-        p = _platform()
-        di = _doc_intel()
         ticks = request.json.get("ticks", 1) if request.json else 1
         ticks = min(ticks, 20)
-        all_events = []
-        for _ in range(ticks):
-            evts = p.simulate_tick()
-            all_events.extend(evts)
 
-        for doc in p.documents:
-            if doc not in di.documents:
-                di.ingest(doc)
+        results = _run_async(_runner().run(ticks))
 
         return jsonify({
             "ticks_run": ticks,
-            "events": [e.to_dict() for e in all_events],
-            "analytics": p.get_analytics(),
+            "tick_results": results,
+            "analytics": _analyzer().get_analytics(),
         })
+
+    # === Analysis ===
+
+    @app.route("/api/analysis/geo")
+    def geo_breakdown():
+        """Geographic activity breakdown."""
+        return jsonify(_analyzer().get_geo_breakdown())
+
+    @app.route("/api/analysis/factions")
+    def faction_analysis():
+        """Inter-faction dynamics analysis."""
+        return jsonify(_analyzer().get_faction_analysis())
+
+    @app.route("/api/analysis/narrative")
+    def narrative_state():
+        """Current narrative arc state."""
+        return jsonify(_runner().narrative.to_dict())
+
+    @app.route("/api/analysis/memory")
+    def memory_state():
+        """Agent memory and relationship data."""
+        return jsonify(_runner().memory.to_dict())
 
     # === Documents ===
 
@@ -151,33 +173,39 @@ def create_app(
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        # If loading by name
         scenario_name = data.get("name")
         if scenario_name and scenario_name in SCENARIOS:
             config = SCENARIOS[scenario_name]
         else:
-            # Custom scenario config
             config = ScenarioConfig.from_dict(data)
 
         builder = ScenarioBuilder()
         orgs, agents = builder.build(config)
 
-        # Reset platform
-        brain = _state["brain"]
-        brain._agents.clear()
-        new_platform = SocialPlatform(brain)
-        new_platform.register_agents(agents)
+        # Get narrative arc if available
+        from nexus_social.core.scenarios import NARRATIVE_ARCS
+        arc = NARRATIVE_ARCS.get(config.name)
 
-        new_doc_intel = DocumentIntelligence()
+        # Build new runner
+        bridge = OASISBridge(db_path=f"./data/{config.name.lower().replace(' ', '_')}.db")
+        narrative = NarrativeEngine(arc)
+        memory = MemorySystem()
+        new_runner = SimulationRunner(bridge, narrative, memory)
+        new_analyzer = SocialAnalyzer(bridge, memory)
 
-        _state["platform"] = new_platform
-        _state["doc_intel"] = new_doc_intel
+        # Initialize asynchronously
+        _run_async(new_runner.initialize(agents))
+
+        _state["runner"] = new_runner
+        _state["analyzer"] = new_analyzer
+        _state["doc_intel"] = DocumentIntelligence()
 
         return jsonify({
             "loaded": config.name,
             "organizations": len(orgs),
             "agents": len(agents),
             "teams": sum(len(o.teams) for o in orgs),
+            "has_narrative": arc is not None,
             "orgs": [
                 {
                     "name": o.name,
@@ -196,12 +224,12 @@ def create_app(
 
     @app.route("/api/scenario/export")
     def export_scenario():
-        """Export current scenario config (agents, orgs, etc.) as JSON."""
-        p = _platform()
+        """Export current scenario config as JSON."""
+        bridge = _runner().bridge
         orgs_data = []
         seen_orgs: dict[str, dict] = {}
 
-        for agent in p.agents:
+        for agent_id, agent in bridge._profile_map.items():
             org = agent.org
             if org.id not in seen_orgs:
                 seen_orgs[org.id] = {
@@ -210,13 +238,13 @@ def create_app(
                     "description": org.description,
                     "locations": [
                         {
-                            "name": l.name,
-                            "city": l.city,
-                            "country": l.country,
-                            "timezone": l.timezone,
-                            "type": l.location_type.value,
+                            "name": loc.name,
+                            "city": loc.city,
+                            "country": loc.country,
+                            "timezone": loc.timezone,
+                            "type": loc.location_type.value,
                         }
-                        for l in org.locations
+                        for loc in org.locations
                     ],
                     "teams": {},
                 }
@@ -225,7 +253,7 @@ def create_app(
             org_data = seen_orgs[org.id]
             if team.id not in org_data["teams"]:
                 loc_idx = next(
-                    (i for i, l in enumerate(org.locations) if l.id == team.location.id),
+                    (i for i, loc in enumerate(org.locations) if loc.id == team.location.id),
                     0,
                 )
                 org_data["teams"][team.id] = {
@@ -235,14 +263,10 @@ def create_app(
                     "agents": [],
                 }
 
-            persona = getattr(agent, "_persona", None)
-            agent_data = {
-                "name": agent.name,
-                "role": agent.role.value,
-            }
+            persona = bridge.get_persona(agent_id)
+            agent_data = {"name": agent.name, "role": agent.role.value}
             if persona:
                 agent_data.update(persona.to_dict())
-                del agent_data["name"]
                 agent_data["name"] = agent.name
 
             org_data["teams"][team.id]["agents"].append(agent_data)
@@ -257,7 +281,6 @@ def create_app(
             "category": "custom",
             "organizations": orgs_data,
         }
-
         return jsonify(config)
 
     return app
