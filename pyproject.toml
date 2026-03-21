@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexus-social"
+version = "0.2.0"
+description = "Multi-agent social simulation platform powered by CAMEL-AI OASIS"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "camel-ai[all]>=0.2.78",
+    "camel-oasis>=0.2.5",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "websockets>=11.0",
+    "httpx>=0.24.0",
+    "python-igraph>=0.11.0",
+    "surrealdb>=0.3.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "httpx>=0.24.0",
+]
+
+[project.scripts]
+nexus-social = "nexus_social.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["nexus_social*"]
+
+[tool.setuptools.package-data]
+"nexus_social.visualization" = ["templates/*.html", "static/*.css", "static/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

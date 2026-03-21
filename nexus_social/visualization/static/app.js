@@ -793,6 +793,33 @@ function renderPatterns(patterns) {
     }).join('');
 }
 
+// ===================== Narrative Spread =====================
+async function trackNarrativeSpread() {
+    const keyword = document.getElementById('narrative-keyword').value.trim();
+    if (!keyword) { showToast('Enter a keyword to track', true); return; }
+
+    const res = await fetch(`/api/analysis/narrative-spread?keyword=${encodeURIComponent(keyword)}`);
+    const data = await res.json();
+    const container = document.getElementById('narrative-spread-result');
+
+    if (!data.length) {
+        container.innerHTML = `<p class="empty-state" style="padding:15px">No mentions of "${keyword}" found in the simulation.</p>`;
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px">${data.length} mentions of "<strong style="color:#bc8cff">${keyword}</strong>" found</div>
+        ${data.map(d => `
+            <div class="pattern-card severity-low" style="border-left-color:#bc8cff">
+                <div style="font-weight:600;font-size:13px;color:#e1e4e8">${d.agent || d.author || 'Unknown'}
+                    <span style="font-size:11px;color:#8b949e"> · Tick ${d.tick || '?'}</span>
+                </div>
+                <div class="pattern-desc">${d.content || d.text || ''}</div>
+            </div>
+        `).join('')}
+    `;
+}
+
 // ===================== WebSocket =====================
 let ws = null;
 
@@ -847,7 +874,63 @@ function addWsMessage(text, color) {
 
 // ===================== Influence =====================
 async function loadInfluence() {
-    await Promise.all([loadInfluenceRankings(), loadCommunities(), loadBridgeAgents(), loadStressClusters()]);
+    await Promise.all([loadInfluenceRankings(), loadCommunities(), loadBridgeAgents(), loadStressClusters(), populateAgentDropdown()]);
+}
+
+// Populate seed agent dropdown when influence tab loads
+async function populateAgentDropdown() {
+    const select = document.getElementById('spread-agent');
+    if (!select || select.options.length > 1) return;
+    try {
+        const res = await fetch('/api/agents');
+        const agents = await res.json();
+        select.innerHTML = agents.map(a =>
+            `<option value="${a.id || a.name}">${a.name} (${a.org})</option>`
+        ).join('');
+    } catch (e) { /* ignore */ }
+}
+
+// Threshold slider
+document.getElementById('spread-threshold')?.addEventListener('input', function() {
+    document.getElementById('spread-threshold-val').textContent = this.value;
+});
+
+async function runInfluenceSpread() {
+    const agentId = document.getElementById('spread-agent').value;
+    const threshold = parseFloat(document.getElementById('spread-threshold').value);
+    if (!agentId) { showToast('Select an agent first', true); return; }
+
+    const res = await fetch('/api/graph/influence-spread', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({agent_id: agentId, threshold}),
+    });
+    const data = await res.json();
+    const container = document.getElementById('spread-result');
+
+    if (!data.length) {
+        container.innerHTML = '<p class="empty-state" style="padding:15px">No influence spread detected at this threshold.</p>';
+        return;
+    }
+
+    // Group by round
+    const rounds = {};
+    data.forEach(d => {
+        const r = d.round || 0;
+        if (!rounds[r]) rounds[r] = [];
+        rounds[r].push(d);
+    });
+
+    container.innerHTML = Object.entries(rounds).map(([round, agents]) => `
+        <div style="margin-bottom:12px">
+            <div style="font-weight:600;font-size:13px;color:#58a6ff;margin-bottom:4px">
+                Round ${round} <span style="color:#8b949e;font-weight:400">(${agents.length} agents reached)</span>
+            </div>
+            <div class="community-agents">
+                ${agents.map(a => `<span class="tag" style="background:${getOrgColor(a.org || '')}">${a.agent || a.name}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
 }
 
 async function loadInfluenceRankings() {
