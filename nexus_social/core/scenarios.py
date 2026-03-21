@@ -192,106 +192,97 @@ def _register(config: ScenarioConfig):
     SCENARIOS[config.name] = config
 
 
-# --- Scenario 1: Tech Rivalry ---
+# --- Scenario 1: Coalition Joint Operations ---
 _register(ScenarioConfig(
-    name="Tech Rivalry",
-    description="Two competing tech companies and a consulting firm. Watch how employees interact across org lines, share intel, and compete for talent.",
-    category="competition",
-    tags=["tech", "competition", "multi-org", "enterprise"],
+    name="Coalition Strike",
+    description="A multinational military coalition coordinates a joint operation against a shared threat. Watch command hierarchies clash, intelligence sharing break down, and field operators improvise.",
+    category="military",
+    tags=["military", "coalition", "joint-ops", "multi-org"],
     organizations=[
         {
-            "name": "Quantum Labs",
-            "industry": "AI/ML Platform",
-            "description": "Fast-growing AI startup disrupting the enterprise market",
+            "name": "Task Force Vanguard",
+            "industry": "Military - Ground Forces",
+            "description": "US-led ground task force spearheading the coalition operation",
             "locations": [
-                {"name": "QL HQ", "city": "San Francisco", "country": "USA", "timezone": "US/Pacific", "type": "headquarters"},
-                {"name": "QL London", "city": "London", "country": "UK", "timezone": "Europe/London", "type": "branch"},
+                {"name": "Camp Liberty", "city": "Kuwait City", "country": "Kuwait", "timezone": "Asia/Kuwait", "type": "headquarters"},
+                {"name": "FOB Sentinel", "city": "Erbil", "country": "Iraq", "timezone": "Asia/Baghdad", "type": "branch"},
             ],
             "teams": [
                 {
-                    "name": "Core ML", "location_index": 0, "focus": "foundation models and training infrastructure",
+                    "name": "Command Element", "location_index": 0, "focus": "operational planning and force coordination",
                     "agents": [
-                        {"name": "Alex Reeves", "role": "manager", "persona_template": "visionary_ceo",
-                         "expertise": ["ML systems", "distributed computing"], "age": 36},
-                        {"name": "Priya Nair", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["PyTorch", "CUDA optimization"]},
-                        {"name": "Jake Torres", "role": "engineer", "persona_template": "ambitious_newcomer",
-                         "expertise": ["data pipelines", "MLOps"]},
+                        {"name": "Col. James Hawkins", "role": "commander", "persona_template": "commanding_officer",
+                         "expertise": ["combined arms", "coalition warfare"],
+                         "background": "Three combat deployments, known for aggressive but calculated operations"},
+                        {"name": "Maj. Elena Vasquez", "role": "analyst", "persona_template": "intelligence_analyst",
+                         "expertise": ["threat assessment", "SIGINT fusion"]},
+                        {"name": "Capt. Derek Osei", "role": "operator", "persona_template": "field_operator",
+                         "expertise": ["special reconnaissance", "direct action"]},
                     ],
                 },
                 {
-                    "name": "Product", "location_index": 0, "focus": "developer experience and API design",
+                    "name": "Cyber Operations", "location_index": 0, "focus": "offensive and defensive cyber warfare",
                     "agents": [
-                        {"name": "Maya Goldstein", "role": "manager", "persona_template": "empathetic_manager",
-                         "expertise": ["product strategy", "developer tools"]},
-                        {"name": "Leo Park", "role": "designer", "persona_template": "creative_rebel",
-                         "expertise": ["UX design", "design systems"]},
+                        {"name": "Lt. Yuki Tanaka", "role": "engineer", "persona_template": "cyber_warfare_specialist",
+                         "expertise": ["network exploitation", "zero-day research"]},
+                        {"name": "Sgt. Marcus Hall", "role": "operator", "persona_template": "drone_operator",
+                         "expertise": ["ISR platforms", "target acquisition"]},
                     ],
                 },
                 {
-                    "name": "Go-to-Market", "location_index": 1, "focus": "enterprise sales in EMEA",
+                    "name": "Forward Element", "location_index": 1, "focus": "forward reconnaissance and target development",
                     "agents": [
-                        {"name": "Sophie Laurent", "role": "sales", "persona_template": "connector",
-                         "expertise": ["enterprise sales", "EMEA markets"]},
-                        {"name": "Ravi Mehta", "role": "marketing", "persona_template": "social_butterfly",
-                         "expertise": ["content marketing", "community building"]},
+                        {"name": "MSgt. Rourke Flynn", "role": "operator", "persona_template": "spec_ops_commander",
+                         "expertise": ["unconventional warfare", "indigenous force training"]},
+                        {"name": "Sgt. Amira Khoury", "role": "medic", "persona_template": "combat_medic",
+                         "expertise": ["trauma surgery", "CASEVAC coordination"]},
                     ],
                 },
             ],
         },
         {
-            "name": "Nexus AI",
-            "industry": "AI/ML Platform",
-            "description": "Established AI company defending market position",
+            "name": "Allied Intelligence Bureau",
+            "industry": "Intelligence",
+            "description": "UK-led multinational intelligence fusion center",
             "locations": [
-                {"name": "NAI HQ", "city": "New York", "country": "USA", "timezone": "US/Eastern", "type": "headquarters"},
-                {"name": "NAI Berlin", "city": "Berlin", "country": "Germany", "timezone": "Europe/Berlin", "type": "branch"},
+                {"name": "Station Crossroads", "city": "Nicosia", "country": "Cyprus", "timezone": "Asia/Nicosia", "type": "headquarters"},
+                {"name": "Station Northgate", "city": "London", "country": "UK", "timezone": "Europe/London", "type": "branch"},
             ],
             "teams": [
                 {
-                    "name": "Research", "location_index": 0, "focus": "advanced model architectures and safety",
+                    "name": "Analysis Cell", "location_index": 0, "focus": "all-source intelligence analysis and threat assessment",
                     "agents": [
-                        {"name": "Dr. Helen Zhao", "role": "researcher", "persona_template": "research_purist",
-                         "expertise": ["transformer architectures", "alignment"]},
-                        {"name": "Marcus Webb", "role": "engineer", "persona_template": "data_skeptic",
-                         "expertise": ["benchmarking", "evaluation systems"]},
+                        {"name": "Dr. Fiona Blackwood", "role": "analyst", "persona_template": "intelligence_analyst",
+                         "expertise": ["geopolitical analysis", "HUMINT evaluation"],
+                         "background": "Former MI6 analyst, methodical and distrustful of raw signals intelligence"},
+                        {"name": "Lt. Col. Pierre Moreau", "role": "strategist", "persona_template": "defense_strategist",
+                         "expertise": ["strategic planning", "NATO doctrine"]},
                     ],
                 },
                 {
-                    "name": "Platform", "location_index": 0, "focus": "enterprise deployment and scalability",
+                    "name": "PSYOP Division", "location_index": 1, "focus": "information warfare and influence operations",
                     "agents": [
-                        {"name": "Diana Cruz", "role": "manager", "persona_template": "process_guardian",
-                         "expertise": ["platform engineering", "SRE"]},
-                        {"name": "Sam Fischer", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["Kubernetes", "infrastructure as code"]},
-                        {"name": "Amir Hassan", "role": "engineer", "persona_template": "ambitious_newcomer",
-                         "expertise": ["cloud architecture", "cost optimization"]},
-                    ],
-                },
-                {
-                    "name": "Sales EMEA", "location_index": 1, "focus": "European enterprise accounts",
-                    "agents": [
-                        {"name": "Lena Richter", "role": "sales", "persona_template": "connector",
-                         "expertise": ["enterprise sales", "German market"]},
+                        {"name": "Maj. Dominic Reeves", "role": "advisor", "persona_template": "psyops_specialist",
+                         "expertise": ["narrative warfare", "social media exploitation"]},
                     ],
                 },
             ],
         },
         {
-            "name": "Apex Consulting",
-            "industry": "Technology Consulting",
-            "description": "Neutral consulting firm that works with both AI companies",
+            "name": "International Crisis Watch",
+            "industry": "Humanitarian / Media",
+            "description": "NGO and press corps monitoring the operation",
             "locations": [
-                {"name": "Apex HQ", "city": "Chicago", "country": "USA", "timezone": "US/Central", "type": "headquarters"},
+                {"name": "ICW Press Hub", "city": "Amman", "country": "Jordan", "timezone": "Asia/Amman", "type": "headquarters"},
             ],
             "teams": [
                 {
-                    "name": "AI Advisory", "location_index": 0, "focus": "advising enterprises on AI strategy",
+                    "name": "Field Coverage", "location_index": 0, "focus": "frontline journalism and humanitarian monitoring",
                     "agents": [
-                        {"name": "Jordan Blake", "role": "analyst", "persona_template": "data_skeptic",
-                         "expertise": ["AI strategy", "market analysis"]},
-                        {"name": "Tina Okafor", "role": "manager", "persona_template": "empathetic_manager",
-                         "expertise": ["change management", "stakeholder alignment"]},
+                        {"name": "Sara Al-Rashid", "role": "correspondent", "persona_template": "war_correspondent",
+                         "expertise": ["conflict reporting", "Arabic fluency"]},
+                        {"name": "Dr. Anna Lindgren", "role": "aid_worker", "persona_template": "ngo_aid_worker",
+                         "expertise": ["refugee coordination", "medical logistics"]},
                     ],
                 },
             ],
@@ -299,129 +290,64 @@ _register(ScenarioConfig(
     ],
 ))
 
-# --- Scenario 2: Startup vs. Corporation ---
+# --- Scenario 2: Cyber Siege ---
 _register(ScenarioConfig(
-    name="David vs. Goliath",
-    description="A scrappy 5-person startup disrupting a 50-year-old corporation. See how culture, speed, and communication styles clash.",
-    category="competition",
-    tags=["startup", "corporate", "culture-clash", "disruption"],
-    organizations=[
-        {
-            "name": "FlashPay",
-            "industry": "Fintech",
-            "description": "Move-fast fintech startup, 2 years old",
-            "locations": [
-                {"name": "FlashPay Garage", "city": "Austin", "country": "USA", "timezone": "US/Central", "type": "headquarters"},
-            ],
-            "teams": [
-                {
-                    "name": "The Whole Company", "location_index": 0, "focus": "instant payments and crypto integration",
-                    "agents": [
-                        {"name": "Zoe Chang", "role": "executive", "persona_template": "visionary_ceo",
-                         "expertise": ["fintech", "fundraising", "product vision"],
-                         "background": "Former Stripe engineer, dropped out of MBA to start FlashPay"},
-                        {"name": "Kai Okonkwo", "role": "engineer", "persona_template": "creative_rebel",
-                         "expertise": ["full-stack", "blockchain", "rapid prototyping"]},
-                        {"name": "Mia Santos", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["security", "cryptography", "systems"]},
-                        {"name": "Tyler Reed", "role": "marketing", "persona_template": "social_butterfly",
-                         "expertise": ["growth hacking", "social media", "memes"]},
-                        {"name": "Nisha Patel", "role": "designer", "persona_template": "creative_rebel",
-                         "expertise": ["mobile UX", "user research"]},
-                    ],
-                },
-            ],
-        },
-        {
-            "name": "GlobalBank Corp",
-            "industry": "Banking",
-            "description": "150-year-old traditional bank trying to modernize",
-            "locations": [
-                {"name": "GBC Tower", "city": "New York", "country": "USA", "timezone": "US/Eastern", "type": "headquarters"},
-                {"name": "GBC London", "city": "London", "country": "UK", "timezone": "Europe/London", "type": "branch"},
-                {"name": "GBC Singapore", "city": "Singapore", "country": "Singapore", "timezone": "Asia/Singapore", "type": "branch"},
-            ],
-            "teams": [
-                {
-                    "name": "Digital Innovation", "location_index": 0, "focus": "digital banking transformation",
-                    "agents": [
-                        {"name": "Robert Chen", "role": "executive", "persona_template": "process_guardian",
-                         "expertise": ["banking regulation", "digital transformation"],
-                         "background": "30 years in banking, skeptical of crypto but knows change is needed"},
-                        {"name": "Amanda Foster", "role": "manager", "persona_template": "empathetic_manager",
-                         "expertise": ["project management", "agile transformation"]},
-                        {"name": "Dev Krishnamurthy", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["COBOL modernization", "cloud migration"]},
-                    ],
-                },
-                {
-                    "name": "Compliance", "location_index": 1, "focus": "regulatory compliance and risk",
-                    "agents": [
-                        {"name": "Victoria Shaw", "role": "analyst", "persona_template": "data_skeptic",
-                         "expertise": ["regulatory compliance", "risk assessment"]},
-                        {"name": "James Whitmore", "role": "manager", "persona_template": "process_guardian",
-                         "expertise": ["SOX compliance", "audit"]},
-                    ],
-                },
-                {
-                    "name": "APAC Operations", "location_index": 2, "focus": "Asia-Pacific market expansion",
-                    "agents": [
-                        {"name": "Grace Tan", "role": "manager", "persona_template": "connector",
-                         "expertise": ["APAC banking", "partnerships"]},
-                        {"name": "Hiroshi Yamada", "role": "analyst", "persona_template": "research_purist",
-                         "expertise": ["market research", "competitive intelligence"]},
-                    ],
-                },
-            ],
-        },
-    ],
-))
-
-# --- Scenario 3: Remote-First Crisis ---
-_register(ScenarioConfig(
-    name="Crisis Response",
-    description="A product security breach unfolds across a globally distributed company. Watch how remote teams coordinate, blame shifts, and leaders emerge.",
+    name="Cyber Siege",
+    description="A nation-state cyber attack targets critical infrastructure. Military cyber units, intelligence agencies, and civilian responders race to contain the breach.",
     category="crisis",
-    tags=["crisis", "remote", "security", "incident-response"],
+    tags=["cyber", "crisis", "infrastructure", "defense"],
     organizations=[
         {
-            "name": "CloudVault",
-            "industry": "Cloud Security",
-            "description": "Cloud security company dealing with a major incident",
+            "name": "Cyber Command Unit",
+            "industry": "Military - Cyber",
+            "description": "National cyber warfare command responding to the attack",
             "locations": [
-                {"name": "CV Seattle", "city": "Seattle", "country": "USA", "timezone": "US/Pacific", "type": "headquarters"},
-                {"name": "CV Tel Aviv", "city": "Tel Aviv", "country": "Israel", "timezone": "Asia/Jerusalem", "type": "branch"},
-                {"name": "CV Remote", "city": "Distributed", "country": "Global", "timezone": "UTC", "type": "remote"},
+                {"name": "Cyber HQ", "city": "Fort Meade", "country": "USA", "timezone": "US/Eastern", "type": "headquarters"},
+                {"name": "West Coast Node", "city": "San Antonio", "country": "USA", "timezone": "US/Central", "type": "branch"},
             ],
             "teams": [
                 {
-                    "name": "Security Response", "location_index": 1, "focus": "incident response and threat analysis",
+                    "name": "Threat Hunt", "location_index": 0, "focus": "identifying and neutralizing adversary presence in networks",
                     "agents": [
-                        {"name": "Noam Levine", "role": "manager", "persona_template": "visionary_ceo",
-                         "expertise": ["cybersecurity", "incident command"],
-                         "background": "Former IDF cyber unit, calm under pressure"},
-                        {"name": "Yael Cohen", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["forensics", "malware analysis"]},
+                        {"name": "Col. Victor Chen", "role": "commander", "persona_template": "commanding_officer",
+                         "expertise": ["cyber operations command", "joint force integration"],
+                         "background": "Stood up the first offensive cyber battalion"},
+                        {"name": "Capt. Zara Okonkwo", "role": "engineer", "persona_template": "cyber_warfare_specialist",
+                         "expertise": ["malware reverse engineering", "threat intelligence"]},
+                        {"name": "Spc. Danny Kim", "role": "operator", "persona_template": "drone_operator",
+                         "expertise": ["network monitoring", "anomaly detection"],
+                         "background": "Former SOC analyst, sees patterns others miss"},
                     ],
                 },
                 {
-                    "name": "Engineering", "location_index": 0, "focus": "platform reliability and patching",
+                    "name": "Counter-Intel", "location_index": 1, "focus": "attribution and adversary profiling",
                     "agents": [
-                        {"name": "Chris Malone", "role": "manager", "persona_template": "empathetic_manager",
-                         "expertise": ["SRE", "incident management"]},
-                        {"name": "Deepa Rajan", "role": "engineer", "persona_template": "data_skeptic",
-                         "expertise": ["infrastructure", "monitoring"]},
-                        {"name": "Ryan Foster", "role": "engineer", "persona_template": "ambitious_newcomer",
-                         "expertise": ["backend", "API security"]},
+                        {"name": "Maj. Rachel Torres", "role": "analyst", "persona_template": "intelligence_analyst",
+                         "expertise": ["APT tracking", "OSINT"]},
+                        {"name": "Agent Liu Wei", "role": "analyst", "persona_template": "psyops_specialist",
+                         "expertise": ["deception operations", "counter-propaganda"]},
                     ],
                 },
+            ],
+        },
+        {
+            "name": "National Crisis Center",
+            "industry": "Government - Emergency Management",
+            "description": "Civilian crisis coordination center managing the response",
+            "locations": [
+                {"name": "NCC Operations", "city": "Washington DC", "country": "USA", "timezone": "US/Eastern", "type": "headquarters"},
+            ],
+            "teams": [
                 {
-                    "name": "Communications", "location_index": 2, "focus": "customer communication and PR",
+                    "name": "Interagency Response", "location_index": 0, "focus": "coordinating military, civilian, and private sector response",
                     "agents": [
-                        {"name": "Lila Washington", "role": "marketing", "persona_template": "connector",
-                         "expertise": ["crisis communications", "PR"]},
-                        {"name": "Oliver Grant", "role": "executive", "persona_template": "process_guardian",
-                         "expertise": ["legal", "regulatory response"]},
+                        {"name": "Director Patricia Hale", "role": "executive", "persona_template": "crisis_coordinator",
+                         "expertise": ["interagency coordination", "FEMA protocols"]},
+                        {"name": "Sen. Advisor Mark Brennan", "role": "advisor", "persona_template": "political_advisor",
+                         "expertise": ["national security policy", "congressional liaison"],
+                         "background": "Former NSC staffer, understands the political dimensions of cyber crises"},
+                        {"name": "Cmdr. Nadia Petrova", "role": "analyst", "persona_template": "logistics_officer",
+                         "expertise": ["supply chain security", "infrastructure resilience"]},
                     ],
                 },
             ],
@@ -429,70 +355,83 @@ _register(ScenarioConfig(
     ],
 ))
 
-# --- Scenario 4: Cross-Industry Collaboration ---
+# --- Scenario 3: Peacekeeping Breakdown ---
 _register(ScenarioConfig(
-    name="Innovation Alliance",
-    description="Three companies from different industries form a joint innovation lab. Watch silos break down (or not) as healthcare, tech, and academia collide.",
-    category="collaboration",
-    tags=["cross-industry", "innovation", "healthcare", "academia"],
+    name="Peacekeeping Breakdown",
+    description="A UN peacekeeping mission deteriorates as factional violence escalates. Military, diplomatic, and humanitarian actors clash over priorities.",
+    category="crisis",
+    tags=["peacekeeping", "UN", "humanitarian", "diplomacy"],
     organizations=[
         {
-            "name": "MedCore",
-            "industry": "Healthcare",
-            "description": "Mid-size healthcare tech company",
+            "name": "UNMIS Force",
+            "industry": "Military - Peacekeeping",
+            "description": "UN multinational peacekeeping force on the ground",
             "locations": [
-                {"name": "MedCore HQ", "city": "Boston", "country": "USA", "timezone": "US/Eastern", "type": "headquarters"},
+                {"name": "UNMIS HQ", "city": "Juba", "country": "South Sudan", "timezone": "Africa/Juba", "type": "headquarters"},
+                {"name": "Sector North", "city": "Malakal", "country": "South Sudan", "timezone": "Africa/Juba", "type": "branch"},
             ],
             "teams": [
                 {
-                    "name": "Clinical AI", "location_index": 0, "focus": "AI-assisted diagnostics",
+                    "name": "Force Command", "location_index": 0, "focus": "peacekeeping operations and force protection",
                     "agents": [
-                        {"name": "Dr. Sarah Kim", "role": "researcher", "persona_template": "research_purist",
-                         "expertise": ["radiology AI", "clinical validation"]},
-                        {"name": "Ben Okafor", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["medical imaging", "DICOM"]},
-                        {"name": "Lisa Park", "role": "manager", "persona_template": "empathetic_manager",
-                         "expertise": ["healthcare compliance", "HIPAA"]},
+                        {"name": "Gen. Kwame Asante", "role": "commander", "persona_template": "commanding_officer",
+                         "expertise": ["peacekeeping doctrine", "rules of engagement"],
+                         "background": "Ghanaian Army general, 4 peacekeeping tours, believes in restraint"},
+                        {"name": "Col. Ingrid Svensson", "role": "strategist", "persona_template": "defense_strategist",
+                         "expertise": ["protection of civilians", "conflict de-escalation"]},
+                        {"name": "Capt. Jean-Baptiste Noel", "role": "medic", "persona_template": "combat_medic",
+                         "expertise": ["mass casualty triage", "tropical medicine"]},
+                    ],
+                },
+                {
+                    "name": "Sector North Patrol", "location_index": 1, "focus": "patrol operations and community engagement in contested area",
+                    "agents": [
+                        {"name": "Lt. Priya Sharma", "role": "operator", "persona_template": "field_operator",
+                         "expertise": ["patrol tactics", "local liaison"]},
+                        {"name": "Sgt. Thomas Okello", "role": "operator", "persona_template": "spec_ops_commander",
+                         "expertise": ["close protection", "checkpoint operations"],
+                         "background": "Ugandan NCO, respected by local population"},
                     ],
                 },
             ],
         },
         {
-            "name": "NeuroTech",
-            "industry": "Technology",
-            "description": "AI infrastructure company providing compute",
+            "name": "UN Political Mission",
+            "industry": "Diplomacy",
+            "description": "UN diplomatic and political affairs team",
             "locations": [
-                {"name": "NT Bay Area", "city": "Palo Alto", "country": "USA", "timezone": "US/Pacific", "type": "headquarters"},
+                {"name": "UNMIS Political Office", "city": "Juba", "country": "South Sudan", "timezone": "Africa/Juba", "type": "headquarters"},
             ],
             "teams": [
                 {
-                    "name": "Applied AI", "location_index": 0, "focus": "model deployment and optimization",
+                    "name": "Political Affairs", "location_index": 0, "focus": "ceasefire negotiations and political dialogue",
                     "agents": [
-                        {"name": "Kevin Zhang", "role": "engineer", "persona_template": "ambitious_newcomer",
-                         "expertise": ["GPU clusters", "model serving"]},
-                        {"name": "Rachel Green", "role": "manager", "persona_template": "connector",
-                         "expertise": ["partnerships", "business development"]},
+                        {"name": "Amb. Catherine Dubois", "role": "diplomat", "persona_template": "diplomatic_envoy",
+                         "expertise": ["mediation", "ceasefire negotiation"],
+                         "background": "French career diplomat, negotiated 3 peace agreements"},
+                        {"name": "Dr. Hassan Mahmoud", "role": "advisor", "persona_template": "political_advisor",
+                         "expertise": ["regional politics", "factional dynamics"]},
                     ],
                 },
             ],
         },
         {
-            "name": "Harwell University",
-            "industry": "Academia",
-            "description": "Research university bringing theoretical expertise",
+            "name": "Doctors Without Borders",
+            "industry": "Humanitarian",
+            "description": "MSF medical and humanitarian operation",
             "locations": [
-                {"name": "Harwell Campus", "city": "Cambridge", "country": "UK", "timezone": "Europe/London", "type": "headquarters"},
+                {"name": "MSF Field Hospital", "city": "Malakal", "country": "South Sudan", "timezone": "Africa/Juba", "type": "headquarters"},
             ],
             "teams": [
                 {
-                    "name": "AI Ethics Lab", "location_index": 0, "focus": "responsible AI and fairness in healthcare",
+                    "name": "Medical Team", "location_index": 0, "focus": "emergency medical care and humanitarian access",
                     "agents": [
-                        {"name": "Prof. Eleanor Voss", "role": "researcher", "persona_template": "research_purist",
-                         "expertise": ["AI ethics", "fairness", "bias detection"],
-                         "background": "Published 200+ papers, concerned about AI hype"},
-                        {"name": "Marco Silva", "role": "researcher", "persona_template": "creative_rebel",
-                         "expertise": ["interpretability", "adversarial ML"],
-                         "background": "PhD student, challenges established wisdom"},
+                        {"name": "Dr. Lena Hoffmann", "role": "aid_worker", "persona_template": "ngo_aid_worker",
+                         "expertise": ["emergency surgery", "humanitarian law"],
+                         "background": "German surgeon, furious about restrictions on humanitarian access"},
+                        {"name": "Miguel Santos", "role": "correspondent", "persona_template": "war_correspondent",
+                         "expertise": ["humanitarian reporting", "documentary"],
+                         "background": "Embedded journalist documenting the deteriorating situation"},
                     ],
                 },
             ],
@@ -500,60 +439,147 @@ _register(ScenarioConfig(
     ],
 ))
 
-# --- Scenario 5: Merger Chaos ---
+# --- Scenario 4: Proxy War Intelligence ---
 _register(ScenarioConfig(
-    name="Merger Mayhem",
-    description="Two companies are merging. Duplicate teams, conflicting cultures, and power struggles play out on the internal social platform.",
-    category="corporate",
-    tags=["merger", "culture", "politics", "restructuring"],
+    name="Shadow Theater",
+    description="Multiple intelligence agencies operate in the same theater, sometimes cooperating, sometimes competing. A proxy war generates conflicting narratives and shifting alliances.",
+    category="intelligence",
+    tags=["intelligence", "proxy-war", "espionage", "multi-agency"],
     organizations=[
         {
-            "name": "Pinnacle Software",
-            "industry": "Enterprise Software",
-            "description": "Process-heavy, traditional enterprise software company (acquirer)",
+            "name": "Station Blacksite",
+            "industry": "Intelligence - Western",
+            "description": "CIA-led intelligence station in contested region",
             "locations": [
-                {"name": "Pinnacle Tower", "city": "Dallas", "country": "USA", "timezone": "US/Central", "type": "headquarters"},
+                {"name": "Station Alpha", "city": "Beirut", "country": "Lebanon", "timezone": "Asia/Beirut", "type": "headquarters"},
+                {"name": "Station Bravo", "city": "Istanbul", "country": "Turkey", "timezone": "Europe/Istanbul", "type": "branch"},
             ],
             "teams": [
                 {
-                    "name": "Engineering", "location_index": 0, "focus": "legacy ERP platform maintenance",
+                    "name": "HUMINT Operations", "location_index": 0, "focus": "human intelligence collection and agent handling",
                     "agents": [
-                        {"name": "Bob Harrison", "role": "manager", "persona_template": "process_guardian",
-                         "expertise": ["Java", "enterprise architecture", "waterfall"],
-                         "background": "20 years at Pinnacle, resistant to change"},
-                        {"name": "Karen Mitchell", "role": "engineer", "persona_template": "data_skeptic",
-                         "expertise": ["Oracle DB", "performance tuning"]},
-                        {"name": "Tom Bradley", "role": "engineer", "persona_template": "quiet_engineer",
-                         "expertise": ["Java", "Spring Boot"]},
+                        {"name": "Case Officer Sarah Mitchell", "role": "operator", "persona_template": "field_operator",
+                         "expertise": ["agent recruitment", "denied area operations"],
+                         "background": "15 years in the field, trusts no one fully"},
+                        {"name": "Analyst David Park", "role": "analyst", "persona_template": "intelligence_analyst",
+                         "expertise": ["network mapping", "pattern of life analysis"]},
+                        {"name": "Tech Officer Nina Volkov", "role": "engineer", "persona_template": "cyber_warfare_specialist",
+                         "expertise": ["covert communications", "surveillance tech"]},
                     ],
                 },
                 {
-                    "name": "HR & Integration", "location_index": 0, "focus": "merger integration and culture",
+                    "name": "Influence Cell", "location_index": 1, "focus": "covert influence and information operations",
                     "agents": [
-                        {"name": "Patricia Gomez", "role": "hr", "persona_template": "empathetic_manager",
-                         "expertise": ["change management", "org design"]},
+                        {"name": "Officer James Callahan", "role": "advisor", "persona_template": "psyops_specialist",
+                         "expertise": ["covert action", "media manipulation"]},
                     ],
                 },
             ],
         },
         {
-            "name": "Agilify",
-            "industry": "Enterprise Software",
-            "description": "Modern, agile SaaS startup being acquired",
+            "name": "Allied Directorate",
+            "industry": "Intelligence - Regional",
+            "description": "Regional allied intelligence service with local knowledge",
             "locations": [
-                {"name": "Agilify Loft", "city": "Portland", "country": "USA", "timezone": "US/Pacific", "type": "headquarters"},
+                {"name": "Directorate HQ", "city": "Amman", "country": "Jordan", "timezone": "Asia/Amman", "type": "headquarters"},
             ],
             "teams": [
                 {
-                    "name": "Engineering", "location_index": 0, "focus": "modern cloud-native platform",
+                    "name": "Regional Analysis", "location_index": 0, "focus": "regional threat assessment and liaison",
                     "agents": [
-                        {"name": "Sky Nakamura", "role": "manager", "persona_template": "creative_rebel",
-                         "expertise": ["microservices", "DevOps", "agile"],
-                         "background": "Co-founder of Agilify, worried about culture post-merger"},
-                        {"name": "Ash Patel", "role": "engineer", "persona_template": "ambitious_newcomer",
-                         "expertise": ["Go", "Kubernetes", "CI/CD"]},
-                        {"name": "Rio Santos", "role": "designer", "persona_template": "social_butterfly",
-                         "expertise": ["product design", "user research"]},
+                        {"name": "Dir. Tariq Al-Fayed", "role": "commander", "persona_template": "commanding_officer",
+                         "expertise": ["regional security", "counterterrorism"],
+                         "background": "Jordanian intelligence veteran, pragmatic and well-connected"},
+                        {"name": "Capt. Layla Hassan", "role": "analyst", "persona_template": "intelligence_analyst",
+                         "expertise": ["open-source intelligence", "social media analysis"]},
+                        {"name": "Envoy Omar Mansour", "role": "diplomat", "persona_template": "diplomatic_envoy",
+                         "expertise": ["back-channel negotiations", "tribal liaison"]},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "War Lens Media",
+            "industry": "Media",
+            "description": "Independent investigative journalism collective",
+            "locations": [
+                {"name": "WL Bureau", "city": "Istanbul", "country": "Turkey", "timezone": "Europe/Istanbul", "type": "headquarters"},
+            ],
+            "teams": [
+                {
+                    "name": "Investigations", "location_index": 0, "focus": "investigating covert operations and civilian impact",
+                    "agents": [
+                        {"name": "Yara Nazari", "role": "correspondent", "persona_template": "war_correspondent",
+                         "expertise": ["investigative journalism", "source protection"]},
+                    ],
+                },
+            ],
+        },
+    ],
+))
+
+# --- Scenario 5: Evacuation Under Fire ---
+_register(ScenarioConfig(
+    name="Evacuation Under Fire",
+    description="An embassy evacuation turns into a running battle. Spec ops, diplomats, medics, and logistics race against time as the situation deteriorates.",
+    category="crisis",
+    tags=["evacuation", "embassy", "spec-ops", "time-pressure"],
+    organizations=[
+        {
+            "name": "Task Force Extraction",
+            "industry": "Military - Special Operations",
+            "description": "Joint special operations task force executing the evacuation",
+            "locations": [
+                {"name": "USS Resolute (offshore)", "city": "Offshore", "country": "International Waters", "timezone": "UTC", "type": "headquarters"},
+                {"name": "Rally Point Alpha", "city": "Khartoum", "country": "Sudan", "timezone": "Africa/Khartoum", "type": "branch"},
+            ],
+            "teams": [
+                {
+                    "name": "Assault Element", "location_index": 1, "focus": "direct action and personnel recovery",
+                    "agents": [
+                        {"name": "Maj. Cole Barrett", "role": "commander", "persona_template": "spec_ops_commander",
+                         "expertise": ["hostage rescue", "urban warfare"],
+                         "background": "Delta Force veteran, ice cold under fire"},
+                        {"name": "SSgt. Kim Soo-jin", "role": "operator", "persona_template": "field_operator",
+                         "expertise": ["breaching", "close quarters battle"]},
+                        {"name": "Doc Rivera", "role": "medic", "persona_template": "combat_medic",
+                         "expertise": ["tactical medicine", "surgical resuscitation"],
+                         "background": "PJ turned combat medic, has saved lives under fire more times than he can count"},
+                    ],
+                },
+                {
+                    "name": "Command & Control", "location_index": 0, "focus": "overall mission coordination and ISR",
+                    "agents": [
+                        {"name": "Capt. Nadia Osman", "role": "commander", "persona_template": "commanding_officer",
+                         "expertise": ["C2 systems", "air-ground coordination"]},
+                        {"name": "Lt. Jake Reiner", "role": "pilot", "persona_template": "drone_operator",
+                         "expertise": ["Predator/Reaper", "real-time ISR feed"],
+                         "background": "Provides eyes in the sky for the ground team"},
+                        {"name": "WO2 Grace Okonkwo", "role": "analyst", "persona_template": "logistics_officer",
+                         "expertise": ["airlift coordination", "fuel and ammo logistics"]},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "US Embassy Khartoum",
+            "industry": "Diplomacy",
+            "description": "Embassy staff awaiting evacuation",
+            "locations": [
+                {"name": "Embassy Compound", "city": "Khartoum", "country": "Sudan", "timezone": "Africa/Khartoum", "type": "headquarters"},
+            ],
+            "teams": [
+                {
+                    "name": "Embassy Staff", "location_index": 0, "focus": "civilian protection and classified material destruction",
+                    "agents": [
+                        {"name": "Amb. Richard Holt", "role": "diplomat", "persona_template": "diplomatic_envoy",
+                         "expertise": ["crisis diplomacy", "host nation negotiation"],
+                         "background": "Career FSO, refuses to leave until all staff are accounted for"},
+                        {"name": "RSO Maria Gutierrez", "role": "operator", "persona_template": "field_operator",
+                         "expertise": ["diplomatic security", "emergency planning"],
+                         "background": "Regional Security Officer, has drilled this scenario a hundred times"},
+                        {"name": "Advisor Khalid Ibrahim", "role": "advisor", "persona_template": "political_advisor",
+                         "expertise": ["Sudanese politics", "militia factions"]},
                     ],
                 },
             ],

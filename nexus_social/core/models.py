@@ -27,6 +27,15 @@ class AgentRole(Enum):
     HR = "hr"
     RESEARCHER = "researcher"
     INTERN = "intern"
+    COMMANDER = "commander"
+    OPERATOR = "operator"
+    MEDIC = "medic"
+    PILOT = "pilot"
+    DIPLOMAT = "diplomat"
+    STRATEGIST = "strategist"
+    CORRESPONDENT = "correspondent"
+    AID_WORKER = "aid_worker"
+    ADVISOR = "advisor"
 
 
 class Sentiment(Enum):
