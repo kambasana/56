@@ -22,8 +22,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Body, HTTPEx
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from nexus_social.core.counterfactual import CounterfactualEngine
 from nexus_social.core.memory import MemorySystem
 from nexus_social.core.narrative import NarrativeEngine
+from nexus_social.core.observer import ObserverAgent
 from nexus_social.documents.intelligence import DocumentIntelligence
 from nexus_social.oasis_engine.analysis import SocialAnalyzer
 from nexus_social.oasis_engine.bridge import OASISBridge
@@ -146,6 +148,31 @@ def create_app(
     template_dir = os.path.join(os.path.dirname(__file__), "templates")
     if os.path.isdir(static_dir):
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    # ── Health & System ──────────────────────────────────────────────
+
+    @app.get("/api/health")
+    async def health():
+        return {
+            "status": "ok",
+            "version": "0.2.0",
+            "tick": _runner().tick_count,
+            "agents": len(_runner().bridge._profile_map),
+            "patterns": len(_runner().get_all_patterns()),
+            "storage": _storage() is not None,
+        }
+
+    @app.post("/api/reset")
+    async def reset():
+        """Reset simulation state (tick counter, logs, observer, counterfactual)."""
+        runner = _runner()
+        runner.tick_count = 0
+        runner.tick_log.clear()
+        runner.observer = ObserverAgent(window_size=10)
+        runner.counterfactual = CounterfactualEngine()
+        runner._last_post_count = 0
+        runner._last_comment_count = 0
+        return {"reset": True, "tick": 0}
 
     # ── Pages ───────────────────────────────────────────────────────
 

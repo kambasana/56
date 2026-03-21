@@ -39,6 +39,9 @@ from nexus_social.visualization.server import create_app
 def _mock_runner():
     """Build a SimulationRunner with mocked internals."""
     runner = MagicMock(spec=SimulationRunner)
+    runner.tick_count = 2
+    runner._last_post_count = 0
+    runner._last_comment_count = 0
     runner.tick_log = [
         {"tick": 1, "active_agents": 5, "new_posts": 3, "timestamp": "2026-01-01T00:00:00"},
         {"tick": 2, "active_agents": 8, "new_posts": 6, "timestamp": "2026-01-01T01:00:00"},
@@ -159,6 +162,24 @@ class TestIndexPage:
         res = client.get("/")
         assert res.status_code == 200
         assert "NexusSocial" in res.text
+
+
+class TestHealth:
+    def test_health_endpoint(self, client):
+        res = client.get("/api/health")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "ok"
+        assert data["version"] == "0.2.0"
+        assert "tick" in data
+        assert "agents" in data
+
+    def test_reset_endpoint(self, client):
+        res = client.post("/api/reset")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["reset"] is True
+        assert data["tick"] == 0
 
 
 class TestFeedEndpoints:
