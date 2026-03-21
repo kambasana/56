@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusSocial - Multi-Agent Social Platform</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>NexusSocial</h1>
+        <p class="subtitle">Multi-Agent Multi-Org Social Platform</p>
+        <div class="controls">
+            <button id="btn-simulate-1" onclick="simulate(1)">Simulate 1 Tick</button>
+            <button id="btn-simulate-5" onclick="simulate(5)">Simulate 5 Ticks</button>
+            <button id="btn-simulate-10" onclick="simulate(10)">Simulate 10 Ticks</button>
+            <span id="tick-count" class="badge">Tick: 0</span>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="feed">Feed</button>
+        <button class="tab" data-tab="network">Network Graph</button>
+        <button class="tab" data-tab="analytics">Analytics</button>
+        <button class="tab" data-tab="documents">Documents</button>
+        <button class="tab" data-tab="agents">Agents</button>
+        <button class="tab" data-tab="events">Event Log</button>
+    </nav>
+
+    <main>
+        <!-- Feed Tab -->
+        <section id="tab-feed" class="tab-content active">
+            <div id="feed-container">
+                <p class="empty-state">Click "Simulate" to generate social interactions...</p>
+            </div>
+        </section>
+
+        <!-- Network Graph Tab -->
+        <section id="tab-network" class="tab-content">
+            <div class="graph-controls">
+                <label>Color by: </label>
+                <select id="graph-color-by" onchange="renderNetwork()">
+                    <option value="org">Organization</option>
+                    <option value="team">Team</option>
+                    <option value="role">Role</option>
+                    <option value="location">Location</option>
+                </select>
+            </div>
+            <canvas id="network-canvas" width="1200" height="700"></canvas>
+            <div id="network-tooltip" class="tooltip"></div>
+        </section>
+
+        <!-- Analytics Tab -->
+        <section id="tab-analytics" class="tab-content">
+            <div class="analytics-grid">
+                <div class="stat-card" id="stat-posts">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Total Posts</div>
+                </div>
+                <div class="stat-card" id="stat-comments">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Comments</div>
+                </div>
+                <div class="stat-card" id="stat-reactions">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Reactions</div>
+                </div>
+                <div class="stat-card" id="stat-dms">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Direct Messages</div>
+                </div>
+                <div class="stat-card" id="stat-docs">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat-card" id="stat-cross-org">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Cross-Org Interactions</div>
+                </div>
+            </div>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <h3>Activity by Organization</h3>
+                    <div id="chart-org-activity"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>Activity by Location</h3>
+                    <div id="chart-location-activity"></div>
+                </div>
+                <div class="chart-container">
+                    <h3>Sentiment Distribution</h3>
+                    <div id="chart-sentiment"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documents Tab -->
+        <section id="tab-documents" class="tab-content">
+            <div class="doc-panels">
+                <div class="doc-panel">
+                    <h3>Trending Topics</h3>
+                    <div id="trending-topics"></div>
+                </div>
+                <div class="doc-panel">
+                    <h3>Document Timeline</h3>
+                    <div id="doc-timeline"></div>
+                </div>
+                <div class="doc-panel">
+                    <h3>Org Document Stats</h3>
+                    <div id="org-doc-stats"></div>
+                </div>
+            </div>
+            <div class="doc-panel full-width">
+                <h3>Knowledge Graph</h3>
+                <canvas id="knowledge-canvas" width="1200" height="500"></canvas>
+            </div>
+        </section>
+
+        <!-- Agents Tab -->
+        <section id="tab-agents" class="tab-content">
+            <div id="agents-grid"></div>
+        </section>
+
+        <!-- Events Tab -->
+        <section id="tab-events" class="tab-content">
+            <div id="events-log"></div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
