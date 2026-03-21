@@ -1,27 +1,29 @@
-"""Web server for the NexusSocial visualization dashboard.
+"""FastAPI server for the NexusSocial platform.
 
-Powered by OASIS + SurrealDB + igraph + behavior engine + observer agent.
-All analysis endpoints are async, querying SurrealDB for graph-native results.
+Fully async — no sync wrappers. Native WebSocket support for real-time
+simulation streaming. Auto-generated OpenAPI docs at /docs.
+
+WebSocket streams:
+- /ws/simulation — live tick updates as simulation runs
+- /ws/observer — real-time emergent pattern alerts
+- /ws/agent/{agent_id} — watch a specific agent's activity
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
-from typing import TYPE_CHECKING
+from contextlib import asynccontextmanager
+from typing import Any
 
-from flask import Flask, jsonify, render_template, request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Body, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from nexus_social.core.memory import MemorySystem
 from nexus_social.core.narrative import NarrativeEngine
-from nexus_social.core.scenarios import (
-    SCENARIOS,
-    ScenarioBuilder,
-    ScenarioConfig,
-    list_persona_templates,
-    list_scenarios,
-)
 from nexus_social.documents.intelligence import DocumentIntelligence
 from nexus_social.oasis_engine.analysis import SocialAnalyzer
 from nexus_social.oasis_engine.bridge import OASISBridge
@@ -31,18 +33,93 @@ from nexus_social.storage.surrealdb import SurrealStorage
 
 logger = logging.getLogger(__name__)
 
-# Global state for hot-swapping scenarios
-_state: dict = {}
+
+class ConnectionManager:
+    """Manages WebSocket connections for real-time streaming."""
+
+    def __init__(self):
+        self.simulation_clients: list[WebSocket] = []
+        self.observer_clients: list[WebSocket] = []
+        self.agent_clients: dict[str, list[WebSocket]] = {}  # agent_id -> [ws]
+
+    async def connect_simulation(self, ws: WebSocket):
+        await ws.accept()
+        self.simulation_clients.append(ws)
+
+    async def connect_observer(self, ws: WebSocket):
+        await ws.accept()
+        self.observer_clients.append(ws)
+
+    async def connect_agent(self, ws: WebSocket, agent_id: str):
+        await ws.accept()
+        if agent_id not in self.agent_clients:
+            self.agent_clients[agent_id] = []
+        self.agent_clients[agent_id].append(ws)
+
+    def disconnect_simulation(self, ws: WebSocket):
+        self.simulation_clients = [c for c in self.simulation_clients if c != ws]
+
+    def disconnect_observer(self, ws: WebSocket):
+        self.observer_clients = [c for c in self.observer_clients if c != ws]
+
+    def disconnect_agent(self, ws: WebSocket, agent_id: str):
+        if agent_id in self.agent_clients:
+            self.agent_clients[agent_id] = [
+                c for c in self.agent_clients[agent_id] if c != ws
+            ]
+
+    async def broadcast_tick(self, tick_data: dict):
+        """Broadcast tick summary to all simulation watchers."""
+        dead = []
+        for ws in self.simulation_clients:
+            try:
+                await ws.send_json(tick_data)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.disconnect_simulation(ws)
+
+    async def broadcast_patterns(self, patterns: list[dict]):
+        """Broadcast emergent patterns to observer watchers."""
+        if not patterns:
+            return
+        dead = []
+        for ws in self.observer_clients:
+            try:
+                await ws.send_json({"patterns": patterns})
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.disconnect_observer(ws)
+
+    async def broadcast_agent_activity(self, agent_id: str, activity: dict):
+        """Broadcast activity for a specific agent."""
+        clients = self.agent_clients.get(agent_id, [])
+        dead = []
+        for ws in clients:
+            try:
+                await ws.send_json(activity)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.disconnect_agent(ws, agent_id)
 
 
-def _run_async(coro):
-    """Run an async coroutine from synchronous Flask context."""
-    loop = _state.get("loop")
-    if loop and loop.is_running():
-        future = asyncio.run_coroutine_threadsafe(coro, loop)
-        return future.result(timeout=120)
-    else:
-        return asyncio.run(coro)
+# Global state
+_state: dict[str, Any] = {}
+_ws = ConnectionManager()
+
+
+def _runner() -> SimulationRunner:
+    return _state["runner"]
+
+
+def _analyzer() -> SocialAnalyzer:
+    return _state["analyzer"]
+
+
+def _storage() -> SurrealStorage | None:
+    return _state.get("storage")
 
 
 def create_app(
@@ -50,245 +127,210 @@ def create_app(
     analyzer: SocialAnalyzer,
     doc_intel: DocumentIntelligence,
     storage: SurrealStorage | None = None,
-    loop: asyncio.AbstractEventLoop | None = None,
-) -> Flask:
-    """Create and configure the Flask application."""
-
-    template_dir = os.path.join(os.path.dirname(__file__), "templates")
-    static_dir = os.path.join(os.path.dirname(__file__), "static")
-    app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+) -> FastAPI:
+    """Create the FastAPI application."""
 
     _state["runner"] = runner
     _state["analyzer"] = analyzer
     _state["doc_intel"] = doc_intel
     _state["storage"] = storage
-    _state["loop"] = loop
 
-    def _runner() -> SimulationRunner:
-        return _state["runner"]
+    app = FastAPI(
+        title="NexusSocial",
+        description="Multi-agent social simulation platform",
+        version="0.2.0",
+    )
 
-    def _analyzer() -> SocialAnalyzer:
-        return _state["analyzer"]
+    # Static files
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    template_dir = os.path.join(os.path.dirname(__file__), "templates")
+    if os.path.isdir(static_dir):
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-    def _doc_intel() -> DocumentIntelligence:
-        return _state["doc_intel"]
+    # ── Pages ───────────────────────────────────────────────────────
 
-    def _storage() -> SurrealStorage | None:
-        return _state.get("storage")
+    @app.get("/", response_class=HTMLResponse)
+    async def index():
+        index_path = os.path.join(template_dir, "index.html")
+        if os.path.exists(index_path):
+            with open(index_path) as f:
+                return HTMLResponse(f.read())
+        return HTMLResponse("<h1>NexusSocial</h1><p>API docs at <a href='/docs'>/docs</a></p>")
 
-    @app.route("/")
-    def index():
-        return render_template("index.html")
+    # ── Social Feed & Simulation ────────────────────────────────────
 
-    # === Social Feed & Simulation ===
+    @app.get("/api/feed")
+    async def feed(limit: int = 50):
+        return await _analyzer().get_feed(limit=limit)
 
-    @app.route("/api/feed")
-    def feed():
-        limit = request.args.get("limit", 50, type=int)
-        return jsonify(_run_async(_analyzer().get_feed(limit=limit)))
+    @app.get("/api/analytics")
+    async def analytics():
+        return await _analyzer().get_analytics()
 
-    @app.route("/api/analytics")
-    def analytics():
-        return jsonify(_run_async(_analyzer().get_analytics()))
+    @app.get("/api/network")
+    async def network():
+        return await _analyzer().get_network_graph()
 
-    @app.route("/api/network")
-    def network():
-        return jsonify(_run_async(_analyzer().get_network_graph()))
-
-    @app.route("/api/events")
-    def events():
-        """Return tick log as events."""
-        limit = request.args.get("limit", 100, type=int)
+    @app.get("/api/events")
+    async def events(limit: int = 100):
         log = _runner().tick_log[-limit:]
-        return jsonify(list(reversed(log)))
+        return list(reversed(log))
 
-    @app.route("/api/agents")
-    def agents():
-        return jsonify(_run_async(_analyzer().get_agent_details()))
+    @app.get("/api/agents")
+    async def agents():
+        return await _analyzer().get_agent_details()
 
-    @app.route("/api/simulate", methods=["POST"])
-    def simulate():
-        ticks = request.json.get("ticks", 1) if request.json else 1
+    @app.post("/api/simulate")
+    async def simulate(ticks: int = Body(1, embed=True)):
         ticks = min(ticks, 20)
 
-        results = _run_async(_runner().run(ticks))
+        async def tick_callback(summary):
+            # Stream each tick to WebSocket clients
+            await _ws.broadcast_tick(summary)
+            # Stream patterns
+            patterns = summary.get("emergent_patterns", [])
+            await _ws.broadcast_patterns(patterns)
+            # Stream per-agent decisions
+            for decision in summary.get("decisions", []):
+                await _ws.broadcast_agent_activity(
+                    decision["agent"], decision
+                )
 
-        return jsonify({
+        results = await _runner().run(ticks, callback=tick_callback)
+
+        return {
             "ticks_run": ticks,
             "tick_results": results,
-            "analytics": _run_async(_analyzer().get_analytics()),
-        })
-
-    # === Analysis ===
-
-    @app.route("/api/analysis/geo")
-    def geo_breakdown():
-        return jsonify(_run_async(_analyzer().get_geo_breakdown()))
-
-    @app.route("/api/analysis/factions")
-    def faction_analysis():
-        return jsonify(_run_async(_analyzer().get_faction_analysis()))
-
-    @app.route("/api/analysis/narrative")
-    def narrative_state():
-        return jsonify(_runner().narrative.to_dict())
-
-    @app.route("/api/analysis/memory")
-    def memory_state():
-        return jsonify(_runner().memory.to_dict())
-
-    # === Observer Agent (emergent pattern detection) ===
-
-    @app.route("/api/observer/summary")
-    def observer_summary():
-        """Get the observer agent's current analysis."""
-        return jsonify(_runner().get_observer_summary())
-
-    @app.route("/api/observer/patterns")
-    def observer_patterns():
-        """Get all detected emergent patterns."""
-        return jsonify(_runner().get_all_patterns())
-
-    # === Graph Analytics (igraph) ===
-
-    @app.route("/api/graph/influence")
-    def influence_rankings():
-        """Agent influence rankings via PageRank."""
-        return jsonify(_run_async(_runner().get_influence_rankings()))
-
-    @app.route("/api/graph/communities")
-    def communities():
-        """Detected communities via Louvain/Leiden."""
-        method = request.args.get("method", "louvain")
-        return jsonify(_run_async(_analyzer().get_communities(method=method)))
-
-    @app.route("/api/graph/bridges")
-    def bridge_agents():
-        """Bridge agents connecting different communities."""
-        return jsonify(_run_async(_analyzer().get_bridge_agents()))
-
-    @app.route("/api/graph/stress-clusters")
-    def stress_clusters():
-        """Clusters of high-stress agents."""
-        return jsonify(_run_async(_analyzer().get_stress_clusters()))
-
-    @app.route("/api/graph/influence-spread", methods=["POST"])
-    def influence_spread():
-        """Simulate influence spread from a seed agent."""
-        data = request.json or {}
-        agent_id = data.get("agent_id", "")
-        threshold = data.get("threshold", 0.3)
-        if not agent_id:
-            return jsonify({"error": "agent_id required"}), 400
-        return jsonify(_run_async(
-            _analyzer().get_influence_spread(agent_id, threshold=threshold)
-        ))
-
-    # === Narrative Spread (SurrealDB graph queries) ===
-
-    @app.route("/api/analysis/narrative-spread")
-    def narrative_spread():
-        """Track how a keyword/narrative spreads through the network."""
-        keyword = request.args.get("keyword", "")
-        if not keyword:
-            return jsonify({"error": "keyword parameter required"}), 400
-        return jsonify(_run_async(_analyzer().get_narrative_spread(keyword)))
-
-    @app.route("/api/analysis/cross-org")
-    def cross_org_interactions():
-        """All interactions between agents of different orgs."""
-        return jsonify(_run_async(_analyzer().get_cross_org_interactions()))
-
-    # === Counterfactual Injection ===
-
-    @app.route("/api/inject", methods=["POST"])
-    def inject():
-        """Inject a counterfactual into the simulation.
-
-        Body: {
-            "type": "news_break" | "crisis_event" | "leak" | "agent_defection" | "custom",
-            "description": "What happens",
-            "tick": optional int (default: next tick),
-            ... type-specific params
+            "analytics": await _analyzer().get_analytics(),
         }
-        """
-        data = request.json
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
 
-        injection_type = data.pop("type", "custom")
-        description = data.pop("description", "")
-        if not description:
-            return jsonify({"error": "description required"}), 400
+    # ── Analysis ────────────────────────────────────────────────────
 
-        result = _run_async(_runner().inject(injection_type, description, **data))
-        return jsonify(result)
+    @app.get("/api/analysis/geo")
+    async def geo_breakdown():
+        return await _analyzer().get_geo_breakdown()
 
-    @app.route("/api/inject/history")
-    def injection_history():
-        """Get all applied counterfactual injections."""
-        return jsonify(_runner().counterfactual.get_history())
+    @app.get("/api/analysis/factions")
+    async def faction_analysis():
+        return await _analyzer().get_faction_analysis()
 
-    # === Document Mode (GraphRAG) ===
+    @app.get("/api/analysis/narrative")
+    async def narrative_state():
+        return _runner().narrative.to_dict()
 
-    @app.route("/api/documents/ingest", methods=["POST"])
-    def ingest_document():
-        """Ingest a document into the knowledge graph.
+    @app.get("/api/analysis/memory")
+    async def memory_state():
+        return _runner().memory.to_dict()
 
-        Body: {
-            "text": "document content",
-            "doc_id": "optional id",
-            "use_llm": false  (true for LLM-based extraction)
-        }
-        """
-        data = request.json
-        if not data or not data.get("text"):
-            return jsonify({"error": "text field required"}), 400
+    @app.get("/api/analysis/narrative-spread")
+    async def narrative_spread(keyword: str = Query(...)):
+        return await _analyzer().get_narrative_spread(keyword)
 
-        result = _run_async(_runner().ingest_document(
-            text=data["text"],
-            doc_id=data.get("doc_id", "uploaded"),
-            use_llm=data.get("use_llm", False),
-        ))
-        return jsonify(result)
+    @app.get("/api/analysis/cross-org")
+    async def cross_org_interactions():
+        return await _analyzer().get_cross_org_interactions()
 
-    @app.route("/api/documents/knowledge-graph")
-    def doc_knowledge_graph():
-        """Get the current knowledge graph."""
+    # ── Observer Agent ──────────────────────────────────────────────
+
+    @app.get("/api/observer/summary")
+    async def observer_summary():
+        return _runner().get_observer_summary()
+
+    @app.get("/api/observer/patterns")
+    async def observer_patterns():
+        return _runner().get_all_patterns()
+
+    # ── Graph Analytics (igraph) ────────────────────────────────────
+
+    @app.get("/api/graph/influence")
+    async def influence_rankings():
+        return await _runner().get_influence_rankings()
+
+    @app.get("/api/graph/communities")
+    async def communities(method: str = "louvain"):
+        return await _analyzer().get_communities(method=method)
+
+    @app.get("/api/graph/bridges")
+    async def bridge_agents():
+        return await _analyzer().get_bridge_agents()
+
+    @app.get("/api/graph/stress-clusters")
+    async def stress_clusters():
+        return await _analyzer().get_stress_clusters()
+
+    @app.post("/api/graph/influence-spread")
+    async def influence_spread(agent_id: str = Body(...), threshold: float = Body(0.3)):
+        return await _analyzer().get_influence_spread(agent_id, threshold=threshold)
+
+    # ── Counterfactual Injection ────────────────────────────────────
+
+    @app.post("/api/inject")
+    async def inject(
+        type: str = Body("custom"),
+        description: str = Body(...),
+        tick: int | None = Body(None),
+        target_orgs: list[str] = Body(default=[]),
+        target_agents: list[str] = Body(default=[]),
+    ):
+        kwargs = {}
+        if target_orgs:
+            kwargs["target_orgs"] = target_orgs
+        if target_agents:
+            kwargs["target_agents"] = target_agents
+        result = await _runner().inject(type, description, tick=tick, **kwargs)
+        return result
+
+    @app.get("/api/inject/history")
+    async def injection_history():
+        return _runner().counterfactual.get_history()
+
+    # ── Document Mode (GraphRAG) ────────────────────────────────────
+
+    @app.post("/api/documents/ingest")
+    async def ingest_document(
+        text: str = Body(...),
+        doc_id: str = Body("uploaded"),
+        use_llm: bool = Body(False),
+    ):
+        return await _runner().ingest_document(
+            text=text, doc_id=doc_id, use_llm=use_llm,
+        )
+
+    @app.get("/api/documents/knowledge-graph")
+    async def doc_knowledge_graph():
         if _runner().graphrag:
-            return jsonify(_runner().graphrag.knowledge_graph.to_dict())
-        return jsonify(_doc_intel().get_knowledge_graph())
+            return _runner().graphrag.knowledge_graph.to_dict()
+        return _state["doc_intel"].get_knowledge_graph()
 
-    @app.route("/api/documents/timeline")
-    def doc_timeline():
-        return jsonify(_doc_intel().get_document_timeline())
+    @app.get("/api/documents/timeline")
+    async def doc_timeline():
+        return _state["doc_intel"].get_document_timeline()
 
-    @app.route("/api/documents/topics")
-    def doc_topics():
-        return jsonify(_doc_intel().get_trending_topics())
+    @app.get("/api/documents/topics")
+    async def doc_topics():
+        return _state["doc_intel"].get_trending_topics()
 
-    @app.route("/api/documents/org-stats")
-    def doc_org_stats():
-        return jsonify(_doc_intel().get_org_document_stats())
+    @app.get("/api/documents/org-stats")
+    async def doc_org_stats():
+        return _state["doc_intel"].get_org_document_stats()
 
-    # === Scenario Builder API ===
+    # ── Scenario Builder ────────────────────────────────────────────
 
-    @app.route("/api/scenarios")
-    def get_scenarios():
-        return jsonify(list_scenarios())
+    @app.get("/api/scenarios")
+    async def get_scenarios():
+        from nexus_social.core.scenarios import list_scenarios
+        return list_scenarios()
 
-    @app.route("/api/scenarios/<name>")
-    def get_scenario(name):
+    @app.get("/api/scenarios/{name}")
+    async def get_scenario(name: str):
+        from nexus_social.core.scenarios import SCENARIOS
         if name not in SCENARIOS:
-            return jsonify({"error": f"Scenario '{name}' not found"}), 404
-        return jsonify(SCENARIOS[name].to_dict())
+            raise HTTPException(404, f"Scenario '{name}' not found")
+        return SCENARIOS[name].to_dict()
 
-    @app.route("/api/scenarios/load", methods=["POST"])
-    def load_scenario():
-        """Load a pre-made or custom scenario — resets the simulation."""
-        data = request.json
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
+    @app.post("/api/scenarios/load")
+    async def load_scenario(data: dict = Body(...)):
+        from nexus_social.core.scenarios import SCENARIOS, ScenarioBuilder, ScenarioConfig, NARRATIVE_ARCS
 
         scenario_name = data.get("name")
         if scenario_name and scenario_name in SCENARIOS:
@@ -297,19 +339,16 @@ def create_app(
             config = ScenarioConfig.from_dict(data)
 
         builder = ScenarioBuilder()
-        orgs, agents = builder.build(config)
+        orgs, agents_list = builder.build(config)
 
-        from nexus_social.core.scenarios import NARRATIVE_ARCS
         arc = NARRATIVE_ARCS.get(config.name)
-
-        # Create new SurrealDB storage for this scenario
         db_name = config.name.lower().replace(" ", "_").replace("-", "_")
-        new_storage = SurrealStorage(url="mem://", database=db_name)
-        _run_async(new_storage.connect())
 
+        # Create fresh SurrealDB
+        new_storage = SurrealStorage(url="mem://", database=db_name)
+        await new_storage.connect()
         new_graph = GraphAnalytics(new_storage)
 
-        # Build new runner with full stack
         bridge = OASISBridge(
             db_path=f"./data/{db_name}.db",
             storage=new_storage,
@@ -318,24 +357,21 @@ def create_app(
         memory = MemorySystem()
         new_runner = SimulationRunner(
             bridge, narrative, memory,
-            storage=new_storage,
-            graph=new_graph,
+            storage=new_storage, graph=new_graph,
         )
         new_analyzer = SocialAnalyzer(new_storage, new_graph)
 
-        # Initialize
-        _run_async(new_runner.initialize(agents))
+        await new_runner.initialize(agents_list)
 
-        # Update global state
         _state["runner"] = new_runner
         _state["analyzer"] = new_analyzer
         _state["storage"] = new_storage
         _state["doc_intel"] = DocumentIntelligence()
 
-        return jsonify({
+        return {
             "loaded": config.name,
             "organizations": len(orgs),
-            "agents": len(agents),
+            "agents": len(agents_list),
             "teams": sum(len(o.teams) for o in orgs),
             "has_narrative": arc is not None,
             "orgs": [
@@ -347,15 +383,15 @@ def create_app(
                 }
                 for o in orgs
             ],
-        })
+        }
 
-    @app.route("/api/persona-templates")
-    def get_persona_templates():
-        return jsonify(list_persona_templates())
+    @app.get("/api/persona-templates")
+    async def get_persona_templates():
+        from nexus_social.core.scenarios import list_persona_templates
+        return list_persona_templates()
 
-    @app.route("/api/scenario/export")
-    def export_scenario():
-        """Export current scenario config as JSON."""
+    @app.get("/api/scenario/export")
+    async def export_scenario():
         bridge = _runner().bridge
         orgs_data = []
         seen_orgs: dict[str, dict] = {}
@@ -369,49 +405,96 @@ def create_app(
                     "description": org.description,
                     "locations": [
                         {
-                            "name": loc.name,
-                            "city": loc.city,
-                            "country": loc.country,
-                            "timezone": loc.timezone,
+                            "name": loc.name, "city": loc.city,
+                            "country": loc.country, "timezone": loc.timezone,
                             "type": loc.location_type.value,
                         }
                         for loc in org.locations
                     ],
                     "teams": {},
                 }
-
             team = agent.team
             org_data = seen_orgs[org.id]
             if team.id not in org_data["teams"]:
                 loc_idx = next(
-                    (i for i, loc in enumerate(org.locations) if loc.id == team.location.id),
-                    0,
+                    (i for i, loc in enumerate(org.locations) if loc.id == team.location.id), 0
                 )
                 org_data["teams"][team.id] = {
-                    "name": team.name,
-                    "location_index": loc_idx,
-                    "focus": team.focus,
-                    "agents": [],
+                    "name": team.name, "location_index": loc_idx,
+                    "focus": team.focus, "agents": [],
                 }
-
             persona = bridge.get_persona(agent_id)
             agent_data = {"name": agent.name, "role": agent.role.value}
             if persona:
                 agent_data.update(persona.to_dict())
                 agent_data["name"] = agent.name
-
             org_data["teams"][team.id]["agents"].append(agent_data)
 
         for org_data in seen_orgs.values():
             org_data["teams"] = list(org_data["teams"].values())
             orgs_data.append(org_data)
 
-        config = {
+        return {
             "name": "Exported Scenario",
             "description": "Exported from running simulation",
             "category": "custom",
             "organizations": orgs_data,
         }
-        return jsonify(config)
+
+    # ── WebSocket Streams ───────────────────────────────────────────
+
+    @app.websocket("/ws/simulation")
+    async def ws_simulation(websocket: WebSocket):
+        """Stream live tick updates as simulation runs."""
+        await _ws.connect_simulation(websocket)
+        try:
+            while True:
+                # Keep alive — client can also send commands
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+                elif data.startswith("run:"):
+                    # Client can trigger ticks: "run:5"
+                    try:
+                        ticks = min(int(data.split(":")[1]), 20)
+                    except (ValueError, IndexError):
+                        ticks = 1
+
+                    async def ws_callback(summary):
+                        await _ws.broadcast_tick(summary)
+                        patterns = summary.get("emergent_patterns", [])
+                        await _ws.broadcast_patterns(patterns)
+
+                    await _runner().run(ticks, callback=ws_callback)
+        except WebSocketDisconnect:
+            _ws.disconnect_simulation(websocket)
+
+    @app.websocket("/ws/observer")
+    async def ws_observer(websocket: WebSocket):
+        """Stream real-time emergent pattern alerts."""
+        await _ws.connect_observer(websocket)
+        try:
+            # Send existing patterns on connect
+            existing = _runner().get_all_patterns()
+            if existing:
+                await websocket.send_json({"patterns": existing[-10:]})
+            while True:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+        except WebSocketDisconnect:
+            _ws.disconnect_observer(websocket)
+
+    @app.websocket("/ws/agent/{agent_id}")
+    async def ws_agent(websocket: WebSocket, agent_id: str):
+        """Watch a specific agent's activity in real-time."""
+        await _ws.connect_agent(websocket, agent_id)
+        try:
+            while True:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+        except WebSocketDisconnect:
+            _ws.disconnect_agent(websocket, agent_id)
 
     return app
