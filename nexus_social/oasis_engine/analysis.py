@@ -97,7 +97,7 @@ class SocialAnalyzer:
                 # Get like count
                 try:
                     likes = conn.execute(
-                        "SELECT COUNT(*) as cnt FROM like_post WHERE post_id = ?",
+                        "SELECT COUNT(*) as cnt FROM \"like\" WHERE post_id = ?",
                         (post_dict.get("post_id", post_dict.get("id")),)
                     ).fetchone()
                     post_dict["likes"] = likes["cnt"] if likes else 0
