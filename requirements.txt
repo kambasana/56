@@ -1,4 +1,4 @@
-camel-ai[all]>=0.2.78
+camel-ai>=0.2.78
 camel-oasis>=0.2.5
 fastapi>=0.100.0
 uvicorn[standard]>=0.20.0
