@@ -1,7 +1,7 @@
 """Web server for the NexusSocial visualization dashboard.
 
-Now powered by OASIS for social simulation, with our narrative/memory/analysis
-layer on top.
+Powered by OASIS + SurrealDB + igraph + behavior engine + observer agent.
+All analysis endpoints are async, querying SurrealDB for graph-native results.
 """
 
 from __future__ import annotations
@@ -26,6 +26,8 @@ from nexus_social.documents.intelligence import DocumentIntelligence
 from nexus_social.oasis_engine.analysis import SocialAnalyzer
 from nexus_social.oasis_engine.bridge import OASISBridge
 from nexus_social.oasis_engine.runner import SimulationRunner
+from nexus_social.storage.graph import GraphAnalytics
+from nexus_social.storage.surrealdb import SurrealStorage
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ def create_app(
     runner: SimulationRunner,
     analyzer: SocialAnalyzer,
     doc_intel: DocumentIntelligence,
+    storage: SurrealStorage | None = None,
     loop: asyncio.AbstractEventLoop | None = None,
 ) -> Flask:
     """Create and configure the Flask application."""
@@ -58,6 +61,7 @@ def create_app(
     _state["runner"] = runner
     _state["analyzer"] = analyzer
     _state["doc_intel"] = doc_intel
+    _state["storage"] = storage
     _state["loop"] = loop
 
     def _runner() -> SimulationRunner:
@@ -69,6 +73,9 @@ def create_app(
     def _doc_intel() -> DocumentIntelligence:
         return _state["doc_intel"]
 
+    def _storage() -> SurrealStorage | None:
+        return _state.get("storage")
+
     @app.route("/")
     def index():
         return render_template("index.html")
@@ -78,15 +85,15 @@ def create_app(
     @app.route("/api/feed")
     def feed():
         limit = request.args.get("limit", 50, type=int)
-        return jsonify(_analyzer().get_feed(limit=limit))
+        return jsonify(_run_async(_analyzer().get_feed(limit=limit)))
 
     @app.route("/api/analytics")
     def analytics():
-        return jsonify(_analyzer().get_analytics())
+        return jsonify(_run_async(_analyzer().get_analytics()))
 
     @app.route("/api/network")
     def network():
-        return jsonify(_analyzer().get_network_graph())
+        return jsonify(_run_async(_analyzer().get_network_graph()))
 
     @app.route("/api/events")
     def events():
@@ -97,7 +104,7 @@ def create_app(
 
     @app.route("/api/agents")
     def agents():
-        return jsonify(_analyzer().get_agent_details())
+        return jsonify(_run_async(_analyzer().get_agent_details()))
 
     @app.route("/api/simulate", methods=["POST"])
     def simulate():
@@ -109,32 +116,148 @@ def create_app(
         return jsonify({
             "ticks_run": ticks,
             "tick_results": results,
-            "analytics": _analyzer().get_analytics(),
+            "analytics": _run_async(_analyzer().get_analytics()),
         })
 
     # === Analysis ===
 
     @app.route("/api/analysis/geo")
     def geo_breakdown():
-        """Geographic activity breakdown."""
-        return jsonify(_analyzer().get_geo_breakdown())
+        return jsonify(_run_async(_analyzer().get_geo_breakdown()))
 
     @app.route("/api/analysis/factions")
     def faction_analysis():
-        """Inter-faction dynamics analysis."""
-        return jsonify(_analyzer().get_faction_analysis())
+        return jsonify(_run_async(_analyzer().get_faction_analysis()))
 
     @app.route("/api/analysis/narrative")
     def narrative_state():
-        """Current narrative arc state."""
         return jsonify(_runner().narrative.to_dict())
 
     @app.route("/api/analysis/memory")
     def memory_state():
-        """Agent memory and relationship data."""
         return jsonify(_runner().memory.to_dict())
 
-    # === Documents ===
+    # === Observer Agent (emergent pattern detection) ===
+
+    @app.route("/api/observer/summary")
+    def observer_summary():
+        """Get the observer agent's current analysis."""
+        return jsonify(_runner().get_observer_summary())
+
+    @app.route("/api/observer/patterns")
+    def observer_patterns():
+        """Get all detected emergent patterns."""
+        return jsonify(_runner().get_all_patterns())
+
+    # === Graph Analytics (igraph) ===
+
+    @app.route("/api/graph/influence")
+    def influence_rankings():
+        """Agent influence rankings via PageRank."""
+        return jsonify(_run_async(_runner().get_influence_rankings()))
+
+    @app.route("/api/graph/communities")
+    def communities():
+        """Detected communities via Louvain/Leiden."""
+        method = request.args.get("method", "louvain")
+        return jsonify(_run_async(_analyzer().get_communities(method=method)))
+
+    @app.route("/api/graph/bridges")
+    def bridge_agents():
+        """Bridge agents connecting different communities."""
+        return jsonify(_run_async(_analyzer().get_bridge_agents()))
+
+    @app.route("/api/graph/stress-clusters")
+    def stress_clusters():
+        """Clusters of high-stress agents."""
+        return jsonify(_run_async(_analyzer().get_stress_clusters()))
+
+    @app.route("/api/graph/influence-spread", methods=["POST"])
+    def influence_spread():
+        """Simulate influence spread from a seed agent."""
+        data = request.json or {}
+        agent_id = data.get("agent_id", "")
+        threshold = data.get("threshold", 0.3)
+        if not agent_id:
+            return jsonify({"error": "agent_id required"}), 400
+        return jsonify(_run_async(
+            _analyzer().get_influence_spread(agent_id, threshold=threshold)
+        ))
+
+    # === Narrative Spread (SurrealDB graph queries) ===
+
+    @app.route("/api/analysis/narrative-spread")
+    def narrative_spread():
+        """Track how a keyword/narrative spreads through the network."""
+        keyword = request.args.get("keyword", "")
+        if not keyword:
+            return jsonify({"error": "keyword parameter required"}), 400
+        return jsonify(_run_async(_analyzer().get_narrative_spread(keyword)))
+
+    @app.route("/api/analysis/cross-org")
+    def cross_org_interactions():
+        """All interactions between agents of different orgs."""
+        return jsonify(_run_async(_analyzer().get_cross_org_interactions()))
+
+    # === Counterfactual Injection ===
+
+    @app.route("/api/inject", methods=["POST"])
+    def inject():
+        """Inject a counterfactual into the simulation.
+
+        Body: {
+            "type": "news_break" | "crisis_event" | "leak" | "agent_defection" | "custom",
+            "description": "What happens",
+            "tick": optional int (default: next tick),
+            ... type-specific params
+        }
+        """
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        injection_type = data.pop("type", "custom")
+        description = data.pop("description", "")
+        if not description:
+            return jsonify({"error": "description required"}), 400
+
+        result = _run_async(_runner().inject(injection_type, description, **data))
+        return jsonify(result)
+
+    @app.route("/api/inject/history")
+    def injection_history():
+        """Get all applied counterfactual injections."""
+        return jsonify(_runner().counterfactual.get_history())
+
+    # === Document Mode (GraphRAG) ===
+
+    @app.route("/api/documents/ingest", methods=["POST"])
+    def ingest_document():
+        """Ingest a document into the knowledge graph.
+
+        Body: {
+            "text": "document content",
+            "doc_id": "optional id",
+            "use_llm": false  (true for LLM-based extraction)
+        }
+        """
+        data = request.json
+        if not data or not data.get("text"):
+            return jsonify({"error": "text field required"}), 400
+
+        result = _run_async(_runner().ingest_document(
+            text=data["text"],
+            doc_id=data.get("doc_id", "uploaded"),
+            use_llm=data.get("use_llm", False),
+        ))
+        return jsonify(result)
+
+    @app.route("/api/documents/knowledge-graph")
+    def doc_knowledge_graph():
+        """Get the current knowledge graph."""
+        if _runner().graphrag:
+            return jsonify(_runner().graphrag.knowledge_graph.to_dict())
+        return jsonify(_doc_intel().get_knowledge_graph())
 
     @app.route("/api/documents/timeline")
     def doc_timeline():
@@ -144,10 +267,6 @@ def create_app(
     def doc_topics():
         return jsonify(_doc_intel().get_trending_topics())
 
-    @app.route("/api/documents/knowledge-graph")
-    def doc_knowledge_graph():
-        return jsonify(_doc_intel().get_knowledge_graph())
-
     @app.route("/api/documents/org-stats")
     def doc_org_stats():
         return jsonify(_doc_intel().get_org_document_stats())
@@ -156,19 +275,17 @@ def create_app(
 
     @app.route("/api/scenarios")
     def get_scenarios():
-        """List all pre-made scenarios."""
         return jsonify(list_scenarios())
 
     @app.route("/api/scenarios/<name>")
     def get_scenario(name):
-        """Get full config for a specific scenario."""
         if name not in SCENARIOS:
             return jsonify({"error": f"Scenario '{name}' not found"}), 404
         return jsonify(SCENARIOS[name].to_dict())
 
     @app.route("/api/scenarios/load", methods=["POST"])
     def load_scenario():
-        """Load a pre-made or custom scenario - resets the simulation."""
+        """Load a pre-made or custom scenario — resets the simulation."""
         data = request.json
         if not data:
             return jsonify({"error": "No data provided"}), 400
@@ -182,22 +299,37 @@ def create_app(
         builder = ScenarioBuilder()
         orgs, agents = builder.build(config)
 
-        # Get narrative arc if available
         from nexus_social.core.scenarios import NARRATIVE_ARCS
         arc = NARRATIVE_ARCS.get(config.name)
 
-        # Build new runner
-        bridge = OASISBridge(db_path=f"./data/{config.name.lower().replace(' ', '_')}.db")
+        # Create new SurrealDB storage for this scenario
+        db_name = config.name.lower().replace(" ", "_").replace("-", "_")
+        new_storage = SurrealStorage(url="mem://", database=db_name)
+        _run_async(new_storage.connect())
+
+        new_graph = GraphAnalytics(new_storage)
+
+        # Build new runner with full stack
+        bridge = OASISBridge(
+            db_path=f"./data/{db_name}.db",
+            storage=new_storage,
+        )
         narrative = NarrativeEngine(arc)
         memory = MemorySystem()
-        new_runner = SimulationRunner(bridge, narrative, memory)
-        new_analyzer = SocialAnalyzer(bridge, memory)
+        new_runner = SimulationRunner(
+            bridge, narrative, memory,
+            storage=new_storage,
+            graph=new_graph,
+        )
+        new_analyzer = SocialAnalyzer(new_storage, new_graph)
 
-        # Initialize asynchronously
+        # Initialize
         _run_async(new_runner.initialize(agents))
 
+        # Update global state
         _state["runner"] = new_runner
         _state["analyzer"] = new_analyzer
+        _state["storage"] = new_storage
         _state["doc_intel"] = DocumentIntelligence()
 
         return jsonify({
@@ -219,7 +351,6 @@ def create_app(
 
     @app.route("/api/persona-templates")
     def get_persona_templates():
-        """List all available persona templates."""
         return jsonify(list_persona_templates())
 
     @app.route("/api/scenario/export")

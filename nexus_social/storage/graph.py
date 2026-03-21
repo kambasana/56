@@ -44,7 +44,10 @@ class GraphAnalytics:
         # Add vertices with attributes
         id_map = {}
         for i, node in enumerate(nodes):
-            node_id = str(node.get("id", ""))
+            if not isinstance(node, dict):
+                continue
+            raw_id = node.get("id", "")
+            node_id = str(raw_id)
             # Strip SurrealDB record prefix if present
             if ":" in node_id:
                 node_id = node_id.split(":", 1)[1]
@@ -265,7 +268,9 @@ class GraphAnalytics:
                     edge = g.es[e_idx]
                     source = edge.source
                     if source in influenced and "trust" in edge.attributes():
-                        incoming_trust += edge["trust"]
+                        trust_val = edge["trust"]
+                        if trust_val is not None:
+                            incoming_trust += trust_val
 
                 if incoming_trust >= threshold:
                     newly.add(v_idx)

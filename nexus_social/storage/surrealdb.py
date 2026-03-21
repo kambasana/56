@@ -54,106 +54,60 @@ class SurrealStorage:
             raise RuntimeError("Not connected. Call connect() first.")
         return self._db
 
+    @staticmethod
+    def _rows(result: Any) -> list[dict]:
+        """Normalize query/select result to a list of dicts."""
+        if isinstance(result, list):
+            return result
+        if result is None:
+            return []
+        return [result]
+
+    @staticmethod
+    def _one(result: Any) -> dict | None:
+        """Extract a single row from query/select result."""
+        if isinstance(result, list):
+            return result[0] if result else None
+        return result
+
     # ── Schema ──────────────────────────────────────────────────────
 
     async def _init_schema(self):
         """Define tables and fields. SurrealDB is schemaless by default,
         but we define structure for clarity and indexing."""
         await self.db.query("""
-            -- Agent node
-            DEFINE TABLE agent SCHEMAFULL;
-            DEFINE FIELD name ON agent TYPE string;
-            DEFINE FIELD role ON agent TYPE string;
-            DEFINE FIELD org ON agent TYPE string;
-            DEFINE FIELD team ON agent TYPE string;
-            DEFINE FIELD location ON agent TYPE string;
-            DEFINE FIELD country ON agent TYPE string;
-            DEFINE FIELD industry ON agent TYPE string;
-            DEFINE FIELD stress ON agent TYPE float DEFAULT 0.0;
-            DEFINE FIELD morale ON agent TYPE float DEFAULT 0.5;
-            DEFINE FIELD activity_level ON agent TYPE float DEFAULT 0.7;
-            DEFINE FIELD personality ON agent TYPE array DEFAULT [];
-            DEFINE FIELD expertise ON agent TYPE array DEFAULT [];
-            DEFINE FIELD persona ON agent TYPE object FLEXIBLE;
-            DEFINE FIELD oasis_id ON agent TYPE option<int>;
-            DEFINE FIELD created_at ON agent TYPE datetime DEFAULT time::now();
+            -- Agent node (SCHEMALESS for flexibility)
+            DEFINE TABLE agent SCHEMALESS;
             DEFINE INDEX idx_agent_org ON agent FIELDS org;
-            DEFINE INDEX idx_agent_oasis ON agent FIELDS oasis_id UNIQUE;
 
             -- Post node
-            DEFINE TABLE post SCHEMAFULL;
-            DEFINE FIELD content ON post TYPE string;
-            DEFINE FIELD author ON post TYPE record<agent>;
-            DEFINE FIELD sentiment ON post TYPE string DEFAULT 'neutral';
-            DEFINE FIELD hashtags ON post TYPE array DEFAULT [];
-            DEFINE FIELD reach ON post TYPE int DEFAULT 0;
-            DEFINE FIELD created_at ON post TYPE datetime DEFAULT time::now();
-            DEFINE FIELD metadata ON post TYPE object FLEXIBLE;
+            DEFINE TABLE post SCHEMALESS;
             DEFINE INDEX idx_post_author ON post FIELDS author;
             DEFINE INDEX idx_post_time ON post FIELDS created_at;
 
             -- Comment node
-            DEFINE TABLE comment SCHEMAFULL;
-            DEFINE FIELD content ON comment TYPE string;
-            DEFINE FIELD author ON comment TYPE record<agent>;
-            DEFINE FIELD post ON comment TYPE record<post>;
-            DEFINE FIELD sentiment ON comment TYPE string DEFAULT 'neutral';
-            DEFINE FIELD created_at ON comment TYPE datetime DEFAULT time::now();
+            DEFINE TABLE comment SCHEMALESS;
             DEFINE INDEX idx_comment_post ON comment FIELDS post;
 
             -- Graph edges: agent relationships
-            DEFINE TABLE follows SCHEMAFULL TYPE RELATION IN agent OUT agent;
-            DEFINE FIELD created_at ON follows TYPE datetime DEFAULT time::now();
-
-            DEFINE TABLE trusts SCHEMAFULL TYPE RELATION IN agent OUT agent;
-            DEFINE FIELD trust ON trusts TYPE float DEFAULT 0.5;
-            DEFINE FIELD respect ON trusts TYPE float DEFAULT 0.5;
-            DEFINE FIELD warmth ON trusts TYPE float DEFAULT 0.4;
-            DEFINE FIELD tension ON trusts TYPE float DEFAULT 0.0;
-            DEFINE FIELD tags ON trusts TYPE array DEFAULT [];
-            DEFINE FIELD opinion ON trusts TYPE string DEFAULT '';
-            DEFINE FIELD interaction_count ON trusts TYPE int DEFAULT 0;
-            DEFINE FIELD last_interaction_tick ON trusts TYPE int DEFAULT 0;
+            DEFINE TABLE follows TYPE RELATION IN agent OUT agent;
+            DEFINE TABLE trusts TYPE RELATION IN agent OUT agent;
 
             -- Graph edges: agent <-> content interactions
-            DEFINE TABLE liked SCHEMAFULL TYPE RELATION IN agent OUT post;
-            DEFINE FIELD created_at ON liked TYPE datetime DEFAULT time::now();
-
-            DEFINE TABLE disliked SCHEMAFULL TYPE RELATION IN agent OUT post;
-            DEFINE FIELD created_at ON disliked TYPE datetime DEFAULT time::now();
-
-            DEFINE TABLE reposted SCHEMAFULL TYPE RELATION IN agent OUT post;
-            DEFINE FIELD created_at ON reposted TYPE datetime DEFAULT time::now();
+            DEFINE TABLE liked TYPE RELATION IN agent OUT post;
+            DEFINE TABLE disliked TYPE RELATION IN agent OUT post;
+            DEFINE TABLE reposted TYPE RELATION IN agent OUT post;
 
             -- Memories
-            DEFINE TABLE memory SCHEMAFULL;
-            DEFINE FIELD agent ON memory TYPE record<agent>;
-            DEFINE FIELD tick ON memory TYPE int;
-            DEFINE FIELD event_type ON memory TYPE string;
-            DEFINE FIELD summary ON memory TYPE string;
-            DEFINE FIELD about_agent ON memory TYPE option<record<agent>>;
-            DEFINE FIELD emotional_impact ON memory TYPE float DEFAULT 0.0;
-            DEFINE FIELD salience ON memory TYPE float DEFAULT 0.5;
-            DEFINE FIELD created_at ON memory TYPE datetime DEFAULT time::now();
+            DEFINE TABLE memory SCHEMALESS;
             DEFINE INDEX idx_memory_agent ON memory FIELDS agent;
             DEFINE INDEX idx_memory_salience ON memory FIELDS salience;
 
             -- Simulation events (narrative layer)
-            DEFINE TABLE sim_event SCHEMAFULL;
-            DEFINE FIELD event_type ON sim_event TYPE string;
-            DEFINE FIELD description ON sim_event TYPE string;
-            DEFINE FIELD tick ON sim_event TYPE int;
-            DEFINE FIELD participants ON sim_event TYPE array DEFAULT [];
-            DEFINE FIELD metadata ON sim_event TYPE object FLEXIBLE;
-            DEFINE FIELD created_at ON sim_event TYPE datetime DEFAULT time::now();
+            DEFINE TABLE sim_event SCHEMALESS;
 
             -- Action trace (audit log)
-            DEFINE TABLE trace SCHEMAFULL;
-            DEFINE FIELD agent ON trace TYPE record<agent>;
-            DEFINE FIELD action ON trace TYPE string;
-            DEFINE FIELD tick ON trace TYPE int;
-            DEFINE FIELD info ON trace TYPE object FLEXIBLE;
-            DEFINE FIELD created_at ON trace TYPE datetime DEFAULT time::now();
+            DEFINE TABLE trace SCHEMALESS;
             DEFINE INDEX idx_trace_agent ON trace FIELDS agent;
             DEFINE INDEX idx_trace_tick ON trace FIELDS tick;
         """)
@@ -168,6 +122,9 @@ class SurrealStorage:
     async def get_agent(self, agent_id: str) -> dict | None:
         """Get an agent by ID."""
         result = await self.db.select(f"agent:{agent_id}")
+        # select returns a list
+        if isinstance(result, list):
+            return self._one(result)
         return result if result else None
 
     async def update_agent(self, agent_id: str, data: dict[str, Any]) -> dict:
@@ -178,7 +135,7 @@ class SurrealStorage:
     async def get_all_agents(self) -> list[dict]:
         """Get all agents."""
         result = await self.db.select("agent")
-        return result if result else []
+        return result if isinstance(result, list) else []
 
     # ── Posts ────────────────────────────────────────────────────────
 
@@ -197,6 +154,8 @@ class SurrealStorage:
 
     async def get_post(self, post_id: str) -> dict | None:
         result = await self.db.select(f"post:{post_id}")
+        if isinstance(result, list):
+            return self._one(result)
         return result if result else None
 
     async def get_feed(self, limit: int = 50) -> list[dict]:
@@ -221,7 +180,7 @@ class SurrealStorage:
             ORDER BY created_at DESC
             LIMIT $limit
         """, {"limit": limit})
-        return result[0] if result else []
+        return result if isinstance(result, list) else []
 
     # ── Comments ────────────────────────────────────────────────────
 
@@ -243,37 +202,32 @@ class SurrealStorage:
     async def follow(self, follower_id: str, followee_id: str):
         """Create a follow edge."""
         await self.db.query(
-            "RELATE $from->follows->$to",
-            {"from": f"agent:{follower_id}", "to": f"agent:{followee_id}"}
+            f"RELATE agent:{follower_id}->follows->agent:{followee_id}"
         )
         await self._trace(follower_id, "follow", {"followee_id": followee_id})
 
     async def unfollow(self, follower_id: str, followee_id: str):
         """Remove a follow edge."""
         await self.db.query(
-            "DELETE follows WHERE in = $from AND out = $to",
-            {"from": f"agent:{follower_id}", "to": f"agent:{followee_id}"}
+            f"DELETE follows WHERE in = agent:{follower_id} AND out = agent:{followee_id}"
         )
 
     async def like_post(self, agent_id: str, post_id: str):
         """Create a like edge."""
         await self.db.query(
-            "RELATE $from->liked->$to",
-            {"from": f"agent:{agent_id}", "to": f"post:{post_id}"}
+            f"RELATE agent:{agent_id}->liked->post:{post_id}"
         )
         await self._trace(agent_id, "like_post", {"post_id": post_id})
 
     async def dislike_post(self, agent_id: str, post_id: str):
         await self.db.query(
-            "RELATE $from->disliked->$to",
-            {"from": f"agent:{agent_id}", "to": f"post:{post_id}"}
+            f"RELATE agent:{agent_id}->disliked->post:{post_id}"
         )
         await self._trace(agent_id, "dislike_post", {"post_id": post_id})
 
     async def repost(self, agent_id: str, post_id: str):
         await self.db.query(
-            "RELATE $from->reposted->$to",
-            {"from": f"agent:{agent_id}", "to": f"post:{post_id}"}
+            f"RELATE agent:{agent_id}->reposted->post:{post_id}"
         )
         await self._trace(agent_id, "repost", {"post_id": post_id})
 
@@ -282,61 +236,46 @@ class SurrealStorage:
     async def update_relationship(self, from_id: str, to_id: str,
                                   data: dict[str, Any]):
         """Create or update a trust/relationship edge between agents."""
-        await self.db.query("""
-            LET $existing = (SELECT * FROM trusts
-                             WHERE in = $from AND out = $to LIMIT 1);
-            IF array::len($existing) > 0 THEN
-                UPDATE trusts SET
-                    trust = $trust,
-                    respect = $respect,
-                    warmth = $warmth,
-                    tension = $tension,
-                    tags = $tags,
-                    opinion = $opinion,
-                    interaction_count = $count,
-                    last_interaction_tick = $tick
-                WHERE in = $from AND out = $to
-            ELSE
-                RELATE $from->trusts->$to SET
-                    trust = $trust,
-                    respect = $respect,
-                    warmth = $warmth,
-                    tension = $tension,
-                    tags = $tags,
-                    opinion = $opinion,
-                    interaction_count = $count,
-                    last_interaction_tick = $tick
-            END
-        """, {
-            "from": f"agent:{from_id}",
-            "to": f"agent:{to_id}",
-            "trust": data.get("trust", 0.5),
-            "respect": data.get("respect", 0.5),
-            "warmth": data.get("warmth", 0.4),
-            "tension": data.get("tension", 0.0),
-            "tags": data.get("tags", []),
-            "opinion": data.get("opinion", ""),
-            "count": data.get("interaction_count", 0),
-            "tick": data.get("last_interaction_tick", 0),
-        })
+        trust = data.get("trust", 0.5)
+        respect = data.get("respect", 0.5)
+        warmth = data.get("warmth", 0.4)
+        tension = data.get("tension", 0.0)
+        tags = data.get("tags", [])
+        opinion = data.get("opinion", "")
+        count = data.get("interaction_count", 0)
+        tick = data.get("last_interaction_tick", 0)
+
+        # Delete existing and recreate (simpler than upsert with RELATE)
+        await self.db.query(
+            f"DELETE trusts WHERE in = agent:{from_id} AND out = agent:{to_id}"
+        )
+        await self.db.query(
+            f"RELATE agent:{from_id}->trusts->agent:{to_id} SET "
+            f"trust = $trust, respect = $respect, warmth = $warmth, "
+            f"tension = $tension, tags = $tags, opinion = $opinion, "
+            f"interaction_count = $count, last_interaction_tick = $tick",
+            {
+                "trust": trust, "respect": respect, "warmth": warmth,
+                "tension": tension, "tags": tags, "opinion": opinion,
+                "count": count, "tick": tick,
+            }
+        )
 
     async def get_relationship(self, from_id: str, to_id: str) -> dict | None:
         """Get the trust edge between two agents."""
         result = await self.db.query(
-            "SELECT * FROM trusts WHERE in = $from AND out = $to LIMIT 1",
-            {"from": f"agent:{from_id}", "to": f"agent:{to_id}"}
+            f"SELECT * FROM trusts WHERE in = agent:{from_id} AND out = agent:{to_id} LIMIT 1"
         )
-        rows = result[0] if result else []
+        rows = self._rows(result)
         return rows[0] if rows else None
 
     async def get_agent_relationships(self, agent_id: str) -> list[dict]:
         """Get all relationships for an agent."""
         result = await self.db.query(
-            "SELECT *, out.name AS target_name, out.org AS target_org "
-            "FROM trusts WHERE in = $agent",
-            {"agent": f"agent:{agent_id}"}
+            f"SELECT *, out.name AS target_name, out.org AS target_org "
+            f"FROM trusts WHERE in = agent:{agent_id}"
         )
-        return result[0] if result else []
+        return self._rows(result)
 
     # ── Graph queries: the good stuff ────────────────────────────────
 
@@ -348,7 +287,7 @@ class SurrealStorage:
                    trust, respect, warmth
             FROM agent:$id->trusts.{1..$depth}
         """, {"id": agent_id, "depth": max_depth})
-        return result[0] if result else []
+        return self._rows(result)
 
     async def get_narrative_spread(self, keyword: str) -> list[dict]:
         """Track how a narrative keyword spreads through the network.
@@ -367,7 +306,7 @@ class SurrealStorage:
                OR content CONTAINS $keyword
             ORDER BY amplifier_reach DESC
         """, {"keyword": keyword})
-        return result[0] if result else []
+        return self._rows(result)
 
     async def get_cross_org_interactions(self) -> list[dict]:
         """Find all interactions between agents of different orgs."""
@@ -382,7 +321,7 @@ class SurrealStorage:
             WHERE comment.author.org != post.author.org
             ORDER BY comment.created_at DESC
         """)
-        return result[0] if result else []
+        return self._rows(result)
 
     async def get_community_activity(self, org: str) -> dict:
         """Get activity summary for an organization."""
@@ -401,30 +340,24 @@ class SurrealStorage:
                 avg_morale: math::mean($agents.morale)
             }
         """, {"org": org})
-        return result[0] if result else {}
+        return self._one(result) or {}
 
     async def get_network_graph(self) -> dict:
         """Build the full social graph for visualization."""
-        nodes = await self.db.query("""
-            SELECT id, name, role, org, team, location, country,
-                   stress, morale
-            FROM agent
-        """)
-        edges = await self.db.query("""
-            SELECT in.id AS source, out.id AS target,
-                   trust, respect, warmth, tension,
-                   interaction_count AS weight,
-                   tags
-            FROM trusts
-        """)
-        follow_edges = await self.db.query("""
-            SELECT in.id AS source, out.id AS target,
-                   'follows' AS type
-            FROM follows
-        """)
+        nodes = self._rows(await self.db.query(
+            "SELECT id, name, role, org, team, location, country, stress, morale FROM agent"
+        ))
+        edges = self._rows(await self.db.query(
+            "SELECT in.id AS source, out.id AS target, "
+            "trust, respect, warmth, tension, interaction_count AS weight, tags "
+            "FROM trusts"
+        ))
+        follow_edges = self._rows(await self.db.query(
+            "SELECT in.id AS source, out.id AS target, 'follows' AS type FROM follows"
+        ))
         return {
-            "nodes": nodes[0] if nodes else [],
-            "edges": (edges[0] if edges else []) + (follow_edges[0] if follow_edges else []),
+            "nodes": nodes,
+            "edges": edges + follow_edges,
         }
 
     # ── Memories ────────────────────────────────────────────────────
@@ -454,7 +387,7 @@ class SurrealStorage:
             ORDER BY salience DESC, created_at DESC
             LIMIT $limit
         """, {"agent": f"agent:{agent_id}", "limit": limit})
-        return result[0] if result else []
+        return self._rows(result)
 
     # ── Trace / Audit ───────────────────────────────────────────────
 
@@ -482,45 +415,35 @@ class SurrealStorage:
                 "ORDER BY created_at DESC LIMIT $limit",
                 {"limit": limit}
             )
-        return result[0] if result else []
+        return self._rows(result)
 
     # ── Analytics helpers ───────────────────────────────────────────
 
     async def get_analytics(self) -> dict:
-        """Platform-wide analytics."""
-        result = await self.db.query("""
-            LET $posts = (SELECT count() AS cnt FROM post GROUP ALL);
-            LET $comments = (SELECT count() AS cnt FROM comment GROUP ALL);
-            LET $follows = (SELECT count() AS cnt FROM follows GROUP ALL);
+        """Platform-wide analytics using simple queries."""
+        posts = self._rows(await self.db.query(
+            "SELECT count() AS cnt FROM post GROUP ALL"
+        ))
+        comments = self._rows(await self.db.query(
+            "SELECT count() AS cnt FROM comment GROUP ALL"
+        ))
+        follows = self._rows(await self.db.query(
+            "SELECT count() AS cnt FROM follows GROUP ALL"
+        ))
+        org_activity = self._rows(await self.db.query(
+            "SELECT author.org AS org, count() AS cnt FROM post GROUP BY author.org"
+        ))
+        sentiment = self._rows(await self.db.query(
+            "SELECT sentiment, count() AS cnt FROM post GROUP BY sentiment"
+        ))
 
-            LET $org_activity = (SELECT author.org AS org, count() AS cnt
-                                 FROM post GROUP BY author.org);
-
-            LET $geo_activity = (SELECT
-                                     author.location AS location,
-                                     author.country AS country,
-                                     count() AS cnt
-                                 FROM post
-                                 GROUP BY author.location, author.country);
-
-            LET $sentiment = (SELECT sentiment, count() AS cnt
-                              FROM post GROUP BY sentiment);
-
-            LET $cross_org = (SELECT count() AS cnt FROM comment
-                              WHERE author.org != post.author.org
-                              GROUP ALL);
-
-            RETURN {
-                total_posts: $posts[0].cnt OR 0,
-                total_comments: $comments[0].cnt OR 0,
-                total_follows: $follows[0].cnt OR 0,
-                cross_org_interactions: $cross_org[0].cnt OR 0,
-                org_activity: $org_activity,
-                geo_activity: $geo_activity,
-                sentiment_distribution: $sentiment
-            }
-        """)
-        return result[0] if result else {}
+        return {
+            "total_posts": posts[0]["cnt"] if posts else 0,
+            "total_comments": comments[0]["cnt"] if comments else 0,
+            "total_follows": follows[0]["cnt"] if follows else 0,
+            "org_activity": org_activity,
+            "sentiment_distribution": sentiment,
+        }
 
     async def get_faction_analysis(self) -> list[dict]:
         """Inter-faction dynamics using graph traversal."""
@@ -540,4 +463,4 @@ class SurrealStorage:
             FROM agent
             GROUP BY org
         """)
-        return result[0] if result else []
+        return self._rows(result)
