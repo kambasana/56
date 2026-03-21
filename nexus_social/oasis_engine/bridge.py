@@ -3,12 +3,17 @@
 Converts our rich persona definitions into OASIS SocialAgent instances,
 seeds the OASIS environment, and provides the interface between our
 narrative/memory systems and OASIS's action engine.
+
+After each OASIS step, syncs new activity to SurrealDB so concurrent
+users can query results in real-time.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import sqlite3
+import uuid
 from typing import Any
 
 from camel.models import ModelFactory
@@ -26,6 +31,7 @@ from oasis import (
 
 from nexus_social.core.models import AgentProfile, Organization
 from nexus_social.core.personas import Persona
+from nexus_social.storage.surrealdb import SurrealStorage
 
 logger = logging.getLogger(__name__)
 
@@ -122,9 +128,11 @@ class OASISBridge:
     def __init__(self, model_platform: str = "openai",
                  model_type: str = "gpt-4o-mini",
                  platform_type: str = "twitter",
-                 db_path: str = "./data/nexus_simulation.db"):
+                 db_path: str = "./data/nexus_simulation.db",
+                 storage: SurrealStorage | None = None):
         self.db_path = os.path.abspath(db_path)
         self.platform_type = platform_type
+        self.storage = storage
         self.agent_graph: AgentGraph | None = None
         self.env = None
         self._agent_map: dict[str, int] = {}  # our agent_id -> oasis agent_id
@@ -134,6 +142,7 @@ class OASISBridge:
         self._prompt_template = _build_agent_prompt_template()
         self._next_oasis_id = 0
         self._initialized = False
+        self._last_synced_trace_count = 0  # track what we've already synced
 
         # Create the model
         platform_map = {
@@ -148,8 +157,11 @@ class OASISBridge:
             model_type=type_map.get(model_type, ModelType.GPT_4O_MINI),
         )
 
-    def seed_agents(self, agents: list[AgentProfile]) -> AgentGraph:
-        """Convert our AgentProfiles (with personas) into an OASIS AgentGraph."""
+    async def seed_agents(self, agents: list[AgentProfile]) -> AgentGraph:
+        """Convert our AgentProfiles (with personas) into an OASIS AgentGraph.
+
+        Also creates corresponding agent nodes in SurrealDB if storage is configured.
+        """
         import oasis
 
         self.agent_graph = AgentGraph()
@@ -157,7 +169,6 @@ class OASISBridge:
         for agent in agents:
             persona = getattr(agent, "_persona", None)
             if not persona:
-                # Create a basic persona if none attached
                 persona = Persona(name=agent.name)
 
             oasis_id = self._next_oasis_id
@@ -192,6 +203,25 @@ class OASISBridge:
             self._reverse_map[oasis_id] = agent.id
             self._profile_map[agent.id] = agent
             self._persona_map[agent.id] = persona
+
+            # Write agent to SurrealDB
+            if self.storage:
+                await self.storage.create_agent(agent.id, {
+                    "name": agent.name,
+                    "role": agent.role.value,
+                    "org": agent.org.name,
+                    "team": agent.team.name,
+                    "location": agent.location.city,
+                    "country": agent.location.country,
+                    "industry": agent.org.industry,
+                    "stress": persona.stress_level,
+                    "morale": persona.morale,
+                    "activity_level": agent.activity_level,
+                    "personality": persona.traits,
+                    "expertise": persona.expertise,
+                    "persona": persona.to_dict() if hasattr(persona, "to_dict") else {},
+                    "oasis_id": oasis_id,
+                })
 
         logger.info(f"Seeded {len(agents)} agents into OASIS AgentGraph")
         return self.agent_graph
@@ -229,7 +259,10 @@ class OASISBridge:
         logger.info(f"OASIS environment initialized ({self.platform_type})")
 
     async def step_all_llm(self, active_agent_ids: list[str] | None = None):
-        """Run one step where specified agents (or all) take LLM-decided actions."""
+        """Run one step where specified agents (or all) take LLM-decided actions.
+
+        After the OASIS step completes, syncs new activity to SurrealDB.
+        """
         if not self._initialized:
             raise RuntimeError("Must call initialize() first")
 
@@ -248,6 +281,10 @@ class OASISBridge:
 
         await self.env.step(actions)
 
+        # Sync new OASIS activity to SurrealDB
+        if self.storage:
+            await self._sync_oasis_to_surreal()
+
     async def inject_post(self, agent_id: str, content: str):
         """Manually inject a post from a specific agent (for narrative events)."""
         if not self._initialized:
@@ -264,6 +301,9 @@ class OASISBridge:
             )
         }
         await self.env.step(action)
+
+        if self.storage:
+            await self._sync_oasis_to_surreal()
 
     async def inject_comment(self, agent_id: str, post_id: str, content: str):
         """Manually inject a comment from a specific agent."""
@@ -282,8 +322,11 @@ class OASISBridge:
         }
         await self.env.step(action)
 
-    def update_agent_situation(self, agent_id: str, situation: str,
-                               stress_level: float, morale: float):
+        if self.storage:
+            await self._sync_oasis_to_surreal()
+
+    async def update_agent_situation(self, agent_id: str, situation: str,
+                                     stress_level: float, morale: float):
         """Update an agent's situational context (called by narrative engine)."""
         oasis_id = self._agent_map.get(agent_id)
         if oasis_id is None:
@@ -294,6 +337,13 @@ class OASISBridge:
             agent.user_info.profile["situation"] = situation
             agent.user_info.profile["stress_level"] = str(int(stress_level * 10))
             agent.user_info.profile["morale"] = str(int(morale * 10))
+
+        # Sync stress/morale to SurrealDB
+        if self.storage:
+            await self.storage.update_agent(agent_id, {
+                "stress": stress_level,
+                "morale": morale,
+            })
 
     async def close(self):
         """Shut down the OASIS environment."""
@@ -318,3 +368,93 @@ class OASISBridge:
 
     def get_persona(self, agent_id: str) -> Persona | None:
         return self._persona_map.get(agent_id)
+
+    # ── OASIS -> SurrealDB sync ─────────────────────────────────────
+
+    async def _sync_oasis_to_surreal(self):
+        """Read new activity from OASIS SQLite and write to SurrealDB.
+
+        Reads the OASIS trace table for new actions since last sync,
+        then creates corresponding records in SurrealDB.
+        """
+        if not self.storage:
+            return
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+
+            # Get new trace entries since last sync
+            traces = conn.execute(
+                "SELECT * FROM trace ORDER BY rowid LIMIT -1 OFFSET ?",
+                (self._last_synced_trace_count,)
+            ).fetchall()
+
+            for trace in traces:
+                oasis_user_id = trace["user_id"]
+                action = trace["action"]
+                our_id = self.get_our_agent_id(int(oasis_user_id)) if oasis_user_id is not None else None
+
+                if not our_id:
+                    continue
+
+                if action == "create_post":
+                    # Find the post in OASIS DB
+                    post = conn.execute(
+                        "SELECT * FROM post WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+                        (oasis_user_id,)
+                    ).fetchone()
+                    if post:
+                        post_id = str(post["post_id"])
+                        await self.storage.create_post(
+                            post_id=f"oasis_{post_id}",
+                            author_id=our_id,
+                            content=post["content"] or "",
+                        )
+
+                elif action == "create_comment":
+                    comment = conn.execute(
+                        "SELECT * FROM comment WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+                        (oasis_user_id,)
+                    ).fetchone()
+                    if comment:
+                        comment_id = str(comment["comment_id"])
+                        post_id = str(comment["post_id"])
+                        await self.storage.create_comment(
+                            comment_id=f"oasis_{comment_id}",
+                            author_id=our_id,
+                            post_id=f"oasis_{post_id}",
+                            content=comment["content"] or "",
+                        )
+
+                elif action == "like_post":
+                    info = trace["info"] or ""
+                    # OASIS stores post_id in the info field
+                    if info:
+                        await self.storage.like_post(our_id, f"oasis_{info}")
+
+                elif action == "dislike_post":
+                    info = trace["info"] or ""
+                    if info:
+                        await self.storage.dislike_post(our_id, f"oasis_{info}")
+
+                elif action == "follow":
+                    info = trace["info"] or ""
+                    if info:
+                        target_our_id = self.get_our_agent_id(int(info))
+                        if target_our_id:
+                            await self.storage.follow(our_id, target_our_id)
+
+                elif action == "repost":
+                    info = trace["info"] or ""
+                    if info:
+                        await self.storage.repost(our_id, f"oasis_{info}")
+
+            self._last_synced_trace_count += len(traces)
+            conn.close()
+
+            if traces:
+                logger.debug(f"Synced {len(traces)} OASIS actions to SurrealDB")
+
+        except Exception as e:
+            logger.error(f"Error syncing OASIS to SurrealDB: {e}")
