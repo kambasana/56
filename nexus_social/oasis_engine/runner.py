@@ -399,46 +399,54 @@ class SimulationRunner:
         if active_ids:
             await self.bridge.step_all_llm(active_ids)
 
-    async def _scan_new_activity(self) -> dict:
-        """Scan for new activity and record in memory system.
+    @staticmethod
+    def _extract_id(record_ref) -> str:
+        """Extract clean agent ID from SurrealDB record reference."""
+        s = str(record_ref)
+        if ":" in s:
+            return s.split(":", 1)[1]
+        return s
 
-        Uses SurrealDB if available, falls back to OASIS SQLite.
+    async def _scan_new_activity(self) -> dict:
+        """Scan for new activity, record in memory, and build relationships.
+
+        When Bob comments on Alice's post, this:
+        1. Records in both agents' memory
+        2. Updates their relationship (warmth, interaction count)
+        3. The relationship change affects future behavior decisions
+
+        This is the compounding loop that makes simulations realistic.
         """
         stats = {"new_posts": 0, "new_comments": 0, "posts": [], "comments": []}
 
         if self.storage:
             try:
-                # Query SurrealDB for recent activity
-                result = await self.storage.db.query("""
-                    LET $posts = (SELECT count() AS cnt FROM post GROUP ALL);
-                    LET $comments = (SELECT count() AS cnt FROM comment GROUP ALL);
-                    RETURN {
-                        post_count: $posts[0].cnt OR 0,
-                        comment_count: $comments[0].cnt OR 0
-                    }
-                """)
-                counts = result[0] if result else {}
-                current_posts = counts.get("post_count", 0)
-                current_comments = counts.get("comment_count", 0)
+                # Count posts and comments
+                post_rows = self.storage._rows(await self.storage.db.query(
+                    "SELECT count() AS cnt FROM post GROUP ALL"
+                ))
+                comment_rows = self.storage._rows(await self.storage.db.query(
+                    "SELECT count() AS cnt FROM comment GROUP ALL"
+                ))
+                current_posts = post_rows[0]["cnt"] if post_rows else 0
+                current_comments = comment_rows[0]["cnt"] if comment_rows else 0
 
                 stats["new_posts"] = max(0, current_posts - self._last_post_count)
                 stats["new_comments"] = max(0, current_comments - self._last_comment_count)
                 self._last_post_count = current_posts
                 self._last_comment_count = current_comments
 
-                # Get the actual new posts for memory recording
+                # --- Process new posts ---
                 if stats["new_posts"] > 0:
                     new_posts = await self.storage.get_feed(limit=stats["new_posts"])
                     stats["posts"] = new_posts
 
-                    # Record in memory system
                     for post in new_posts:
-                        author_id = str(post.get("author", ""))
-                        if ":" in author_id:
-                            author_id = author_id.split(":", 1)[1]
+                        author_id = self._extract_id(post.get("author", ""))
                         content = post.get("content", "")[:100]
+                        author_name = post.get("author_name", "someone")
 
-                        # The author remembers posting
+                        # Author remembers posting
                         mem = self.memory.get(author_id)
                         if mem:
                             mem.remember(
@@ -447,13 +455,17 @@ class SimulationRunner:
                                 salience=0.4,
                             )
 
-                        # Other agents who see it remember it (based on follows)
+                        # Others see it (not everyone — simulates feed algorithm)
                         for agent_id in self.bridge._persona_map:
                             if agent_id == author_id:
                                 continue
                             other_mem = self.memory.get(agent_id)
-                            if other_mem and random.random() < 0.3:  # not everyone sees everything
-                                author_name = post.get("author_name", "someone")
+                            if not other_mem:
+                                continue
+                            # Followers see it 60% of the time, others 15%
+                            is_follower = author_id in other_mem.relationships
+                            see_chance = 0.6 if is_follower else 0.15
+                            if random.random() < see_chance:
                                 other_mem.remember(
                                     self.tick_count, "saw_post",
                                     f"Saw {author_name} post: {content}",
@@ -461,10 +473,66 @@ class SimulationRunner:
                                     salience=0.3,
                                 )
 
+                # --- Process new comments (build relationships) ---
+                if stats["new_comments"] > 0:
+                    new_comments = self.storage._rows(await self.storage.db.query(
+                        "SELECT *, author AS commenter, post.author AS poster, "
+                        "author.name AS commenter_name, post.author.name AS poster_name "
+                        "FROM comment ORDER BY created_at DESC LIMIT $limit",
+                        {"limit": stats["new_comments"]}
+                    ))
+                    stats["comments"] = new_comments
+
+                    for comment in new_comments:
+                        commenter_id = self._extract_id(comment.get("commenter", ""))
+                        poster_id = self._extract_id(comment.get("poster", ""))
+                        commenter_name = comment.get("commenter_name", "someone")
+                        poster_name = comment.get("poster_name", "someone")
+                        content = comment.get("content", "")[:80]
+
+                        if not commenter_id or not poster_id or commenter_id == poster_id:
+                            continue
+
+                        # Commenter remembers commenting
+                        c_mem = self.memory.get(commenter_id)
+                        if c_mem:
+                            c_mem.remember(
+                                self.tick_count, "commented",
+                                f"Commented on {poster_name}'s post: {content}",
+                                about_agent=poster_id,
+                                salience=0.4,
+                            )
+
+                        # Poster remembers being commented on
+                        p_mem = self.memory.get(poster_id)
+                        if p_mem:
+                            p_mem.remember(
+                                self.tick_count, "received_comment",
+                                f"{commenter_name} commented on my post: {content}",
+                                about_agent=commenter_id,
+                                emotional_impact=0.1,
+                                salience=0.5,
+                            )
+
+                        # Update relationship: commenting builds warmth and interaction
+                        self.memory.record_interaction(
+                            self.tick_count, commenter_id, poster_id,
+                            poster_name, "comment",
+                            f"Commented on {poster_name}'s post",
+                            warmth_delta=0.05, respect_delta=0.02,
+                        )
+                        # Poster also gets a relationship update with commenter
+                        self.memory.record_interaction(
+                            self.tick_count, poster_id, commenter_id,
+                            commenter_name, "received_comment",
+                            f"{commenter_name} engaged with my post",
+                            warmth_delta=0.03, respect_delta=0.01,
+                        )
+
             except Exception as e:
                 logger.error(f"Error scanning SurrealDB activity: {e}")
         else:
-            # Fallback: query OASIS SQLite directly
+            # Fallback: OASIS SQLite
             try:
                 import sqlite3
                 conn = sqlite3.connect(self.bridge.db_path)
