@@ -1,14 +1,24 @@
-// NexusSocial - Frontend Application
+// NexusSocial — Operational Interface
 
+// ── Utilities ─────────────────────────────────────────────────
+function esc(str) {
+    if (str == null) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+}
+
+// Muted operational palette — not decorative
 const PALETTE = [
-    '#58a6ff', '#7ee787', '#bc8cff', '#f78166', '#f0883e',
-    '#e3b341', '#f778ba', '#56d364', '#79c0ff', '#d2a8ff',
+    '#0ea5e9', '#14b8a6', '#a78bfa', '#f97316', '#eab308',
+    '#22c55e', '#ec4899', '#06b6d4', '#8b5cf6', '#84cc16',
 ];
 
 let ORG_COLORS = {};
 let orgColorIdx = 0;
 
 function getOrgColor(org) {
+    if (!org) return '#4f5566';
     if (!ORG_COLORS[org]) {
         ORG_COLORS[org] = PALETTE[orgColorIdx % PALETTE.length];
         orgColorIdx++;
@@ -17,14 +27,17 @@ function getOrgColor(org) {
 }
 
 const ROLE_COLORS = {
-    'executive': '#f0883e', 'manager': '#e3b341', 'engineer': '#58a6ff',
-    'designer': '#bc8cff', 'analyst': '#7ee787', 'marketing': '#f778ba',
-    'sales': '#f0883e', 'hr': '#56d364', 'researcher': '#79c0ff', 'intern': '#8b949e',
+    'executive': '#f97316', 'manager': '#eab308', 'engineer': '#0ea5e9',
+    'designer': '#a78bfa', 'analyst': '#14b8a6', 'marketing': '#ec4899',
+    'sales': '#f97316', 'hr': '#22c55e', 'researcher': '#06b6d4',
+    'intern': '#7d8494', 'commander': '#ef4444', 'strategist': '#8b5cf6',
+    'diplomat': '#14b8a6', 'medic': '#22c55e', 'pilot': '#0ea5e9',
+    'correspondent': '#eab308',
 };
 
 const SENTIMENT_COLORS = {
-    'very_positive': '#2ea043', 'positive': '#56d364', 'neutral': '#8b949e',
-    'negative': '#da3633', 'very_negative': '#f85149',
+    'very_positive': '#22c55e', 'positive': '#14b8a6', 'neutral': '#7d8494',
+    'negative': '#ef4444', 'very_negative': '#dc2626',
 };
 
 const REACTION_EMOJIS = {
@@ -68,7 +81,7 @@ async function simulate(ticks) {
             body: JSON.stringify({ticks}),
         });
         const data = await res.json();
-        document.getElementById('tick-count').textContent = `Tick: ${data.analytics.ticks}`;
+        document.getElementById('tick-count').textContent = `Tick ${data.analytics.ticks}`;
         loadFeed();
         const activeTab = document.querySelector('.tab.active').dataset.tab;
         if (activeTab === 'analytics') loadAnalytics();
@@ -136,7 +149,7 @@ async function loadPreMadeScenario(name) {
         orgColorIdx = 0;
         data.orgs.forEach(o => getOrgColor(o.name));
 
-        document.getElementById('tick-count').textContent = 'Tick: 0';
+        document.getElementById('tick-count').textContent = 'Tick 0';
         hideLoading();
         showToast(`Loaded "${name}": ${data.organizations} orgs, ${data.agents} agents, ${data.teams} teams. Switch to Feed tab and click Simulate!`);
 
@@ -341,7 +354,7 @@ async function loadCustomScenario() {
         orgColorIdx = 0;
         data.orgs.forEach(o => getOrgColor(o.name));
 
-        document.getElementById('tick-count').textContent = 'Tick: 0';
+        document.getElementById('tick-count').textContent = 'Tick 0';
         hideLoading();
         showToast(`Custom scenario loaded: ${data.organizations} orgs, ${data.agents} agents. Switch to Feed and click Simulate!`);
         document.querySelector('[data-tab="feed"]').click();
@@ -370,11 +383,12 @@ function showToast(msg, isError) {
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'toast-notification';
-        toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:10000;padding:14px 28px;border-radius:8px;font-size:14px;max-width:600px;text-align:center;transition:opacity 0.3s;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+        toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:10000;padding:10px 24px;border-radius:4px;font-size:12px;font-family:var(--mono);max-width:600px;text-align:center;transition:opacity 0.3s;letter-spacing:0.3px;text-transform:uppercase;border:1px solid;';
         document.body.appendChild(toast);
     }
-    toast.style.background = isError ? '#da3633' : '#238636';
-    toast.style.color = '#fff';
+    toast.style.background = isError ? '#991b1b' : '#15803d';
+    toast.style.borderColor = isError ? '#ef4444' : '#22c55e';
+    toast.style.color = '#e8eaf0';
     toast.textContent = msg;
     toast.style.opacity = '1';
     toast.style.display = 'block';
@@ -412,8 +426,8 @@ async function loadFeed() {
 
     container.innerHTML = posts.map(post => {
         const orgColor = getOrgColor(post.author_org);
-        const initials = post.author.split(' ').map(n => n[0]).join('');
-        const sentColor = SENTIMENT_COLORS[post.sentiment] || '#8b949e';
+        const initials = (post.author || '?').split(' ').map(n => n[0]).join('');
+        const sentColor = SENTIMENT_COLORS[post.sentiment] || '#7d8494';
 
         const reactions = Object.entries(post.reactions).map(([emoji, users]) =>
             `<span class="post-stat">${REACTION_EMOJIS[emoji] || emoji} ${users.length}</span>`
@@ -422,7 +436,7 @@ async function loadFeed() {
         const comments = post.comments.slice(0, 3).map(c => `
             <div class="comment-card">
                 <span class="comment-author" style="color: ${getOrgColor(c.author_org)}">${c.author}</span>
-                <span class="comment-content">${c.content}</span>
+                <span class="comment-content">${esc(c.content)}</span>
             </div>
         `).join('');
 
@@ -454,7 +468,7 @@ async function loadFeed() {
                         </div>
                     </div>
                 </div>
-                <div class="post-content">${post.content}</div>
+                <div class="post-content">${esc(post.content)}</div>
                 ${docAttachment}
                 <div class="post-tags">${tags}</div>
                 <div class="post-footer">
@@ -519,8 +533,8 @@ async function renderNetwork() {
 
     ctx.clearRect(0, 0, W, H);
     if (!networkData.nodes.length) {
-        ctx.fillStyle = '#484f58'; ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('Run simulation to see the network graph', W / 2, H / 2);
+        ctx.fillStyle = '#4f5566'; ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('RUN SIMULATION TO GENERATE NETWORK', W / 2, H / 2);
         return;
     }
 
@@ -551,9 +565,9 @@ async function renderNetwork() {
         const src = positions[edge.source], tgt = positions[edge.target];
         if (!src || !tgt) return;
         ctx.beginPath(); ctx.moveTo(src.x, src.y); ctx.lineTo(tgt.x, tgt.y);
-        const alpha = Math.min(0.6, 0.1 + edge.weight * 0.05);
-        ctx.strokeStyle = `rgba(88, 166, 255, ${alpha})`;
-        ctx.lineWidth = Math.min(4, 0.5 + edge.weight * 0.3);
+        const alpha = Math.min(0.5, 0.08 + edge.weight * 0.04);
+        ctx.strokeStyle = `rgba(14, 165, 233, ${alpha})`;
+        ctx.lineWidth = Math.min(3, 0.5 + edge.weight * 0.25);
         ctx.stroke();
     });
 
@@ -569,20 +583,20 @@ async function renderNetwork() {
     networkData.nodes.forEach(node => {
         const pos = positions[node.id];
         if (!pos) return;
-        ctx.beginPath(); ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, 6, 0, 2 * Math.PI);
         ctx.fillStyle = getNodeColor(node); ctx.fill();
-        ctx.strokeStyle = '#0f1117'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = '#c9d1d9'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(node.name.split(' ')[0], pos.x, pos.y + 20);
+        ctx.strokeStyle = '#08090c'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#b4b9c4'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(node.name.split(' ')[0], pos.x, pos.y + 16);
     });
 
     const legendItems = [...new Set(networkData.nodes.map(n => n[colorBy] || n.org))];
-    ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+    ctx.font = '10px JetBrains Mono, monospace'; ctx.textAlign = 'left';
     legendItems.forEach((item, i) => {
         const sampleNode = networkData.nodes.find(n => (n[colorBy] || n.org) === item);
-        ctx.fillStyle = sampleNode ? getNodeColor(sampleNode) : '#8b949e';
-        ctx.fillRect(10, 20 + i * 20, 12, 12);
-        ctx.fillStyle = '#c9d1d9'; ctx.fillText(item, 28, 30 + i * 20);
+        ctx.fillStyle = sampleNode ? getNodeColor(sampleNode) : '#7d8494';
+        ctx.fillRect(10, 16 + i * 18, 10, 10);
+        ctx.fillStyle = '#b4b9c4'; ctx.fillText(item, 26, 24 + i * 18);
     });
 }
 
@@ -635,8 +649,8 @@ async function renderKnowledgeGraph() {
     ctx.clearRect(0, 0, W, H);
 
     if (!data.nodes.length) {
-        ctx.fillStyle = '#484f58'; ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('Documents will appear here as they are created', W / 2, H / 2);
+        ctx.fillStyle = '#4f5566'; ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('DOCUMENTS WILL POPULATE THE KNOWLEDGE GRAPH', W / 2, H / 2);
         return;
     }
 
@@ -661,21 +675,21 @@ async function renderKnowledgeGraph() {
         const s = positions[edge.source], t = positions[edge.target];
         if (!s || !t) return;
         ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y);
-        const colors = {authored: '#58a6ff', related: '#bc8cff', topic_link: '#7ee787'};
-        ctx.strokeStyle = (colors[edge.type] || '#30363d') + '66';
+        const colors = {authored: '#0ea5e9', related: '#a78bfa', topic_link: '#14b8a6'};
+        ctx.strokeStyle = (colors[edge.type] || '#2a2f3a') + '66';
         ctx.lineWidth = edge.type === 'authored' ? 2 : 1;
         ctx.stroke();
     });
 
     const TYPE_STYLES = {
-        document: {color: '#58a6ff', radius: 7}, agent: {color: '#7ee787', radius: 6}, topic: {color: '#bc8cff', radius: 9},
+        document: {color: '#0ea5e9', radius: 6}, agent: {color: '#14b8a6', radius: 5}, topic: {color: '#a78bfa', radius: 7},
     };
     data.nodes.forEach(node => {
         const pos = positions[node.id]; if (!pos) return;
         const style = TYPE_STYLES[node.type] || TYPE_STYLES.document;
         ctx.fillStyle = style.color;
         ctx.beginPath(); ctx.arc(pos.x, pos.y, style.radius, 0, 2 * Math.PI); ctx.fill();
-        ctx.fillStyle = '#c9d1d9'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#b4b9c4'; ctx.font = '9px Inter, sans-serif'; ctx.textAlign = 'center';
         const label = node.label.length > 20 ? node.label.slice(0, 18) + '..' : node.label;
         ctx.fillText(label, pos.x, pos.y + style.radius + 10);
     });
@@ -690,10 +704,12 @@ async function loadAgents() {
         const orgColor = getOrgColor(a.org);
         const p = a.persona;
         const personaInfo = p ? `
-            <div style="font-size:11px;color:#8b949e;margin-top:6px;border-top:1px solid #21262d;padding-top:6px">
-                <span class="mbti-badge" style="background:#1f2937;color:#f0883e;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700">${p.mbti}</span>
-                ${p.communication_style} &middot; ${p.emotional_tendency} &middot; ${p.social_media_behavior.replace(/_/g,' ')}
-                ${p.worldview ? `<div style="color:#7ee787;font-style:italic;margin-top:4px">"${p.worldview}"</div>` : ''}
+            <div class="agent-persona-info">
+                <span class="persona-template-card"><span class="mbti-badge">${esc(p.mbti)}</span></span>
+                <span class="tag">${esc(p.communication_style)}</span>
+                <span class="tag">${esc(p.emotional_tendency)}</span>
+                <span class="tag">${esc((p.social_media_behavior || '').replace(/_/g,' '))}</span>
+                ${p.worldview ? `<div class="persona-template-card"><span class="persona-worldview">"${esc(p.worldview)}"</span></div>` : ''}
             </div>
         ` : '';
 
@@ -837,12 +853,12 @@ function connectWebSocket() {
         try {
             const data = JSON.parse(event.data);
             if (data.tick !== undefined) {
-                document.getElementById('tick-count').textContent = `Tick: ${data.tick}`;
+                document.getElementById('tick-count').textContent = `Tick ${data.tick}`;
                 addWsMessage(`Tick ${data.tick}: ${data.active_agents || 0} active, ${data.new_posts || 0} posts`);
             }
             if (data.patterns) {
                 data.patterns.forEach(p => {
-                    addWsMessage(`Pattern: ${p.type} — ${p.description}`, '#bc8cff');
+                    addWsMessage(`Pattern: ${p.type} — ${p.description}`, '#a78bfa');
                 });
             }
         } catch (e) {
@@ -857,7 +873,7 @@ function connectWebSocket() {
     };
 
     ws.onerror = () => {
-        addWsMessage('WebSocket error', '#f85149');
+        addWsMessage('WebSocket error', '#ef4444');
     };
 }
 
@@ -866,7 +882,7 @@ function addWsMessage(text, color) {
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
     div.className = 'ws-msg';
-    div.innerHTML = `<span class="ws-time">${time}</span><span style="color:${color || '#c9d1d9'}">${text}</span>`;
+    div.innerHTML = `<span class="ws-time">${time}</span><span style="color:${color || '#b4b9c4'}">${esc(text)}</span>`;
     container.prepend(div);
     // Keep max 100 messages
     while (container.children.length > 100) container.removeChild(container.lastChild);
