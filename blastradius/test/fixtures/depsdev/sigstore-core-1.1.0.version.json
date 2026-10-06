@@ -1,0 +1,70 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/systems/npm/packages/%40sigstore%2Fcore/versions/1.1.0"
+  },
+  "status": 200,
+  "response": {
+    "versionKey": {
+      "system": "NPM",
+      "name": "@sigstore/core",
+      "version": "1.1.0"
+    },
+    "publishedAt": "2024-03-14T17:20:00Z",
+    "isDefault": false,
+    "licenses": [
+      "Apache-2.0"
+    ],
+    "advisoryKeys": [],
+    "links": [
+      {
+        "label": "HOMEPAGE",
+        "url": "https://github.com/sigstore/sigstore-js/tree/main/packages/core#readme"
+      },
+      {
+        "label": "ORIGIN",
+        "url": "https://registry.npmjs.org/@sigstore%2Fcore/1.1.0"
+      },
+      {
+        "label": "SOURCE_REPO",
+        "url": "git+https://github.com/sigstore/sigstore-js.git"
+      }
+    ],
+    "slsaProvenances": [
+      {
+        "sourceRepository": "https://github.com/sigstore/sigstore-js",
+        "commit": "0000000000000000000000000000000000000004",
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@sigstore%2fcore@1.1.0",
+        "verified": true
+      }
+    ],
+    "attestations": [
+      {
+        "type": "https://slsa.dev/provenance/v1",
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@sigstore%2fcore@1.1.0",
+        "verified": true,
+        "sourceRepository": "https://github.com/sigstore/sigstore-js",
+        "commit": "0000000000000000000000000000000000000004"
+      }
+    ],
+    "registries": [
+      "https://registry.npmjs.org/"
+    ],
+    "relatedProjects": [
+      {
+        "projectKey": {
+          "id": "github.com/sigstore/sigstore-js"
+        },
+        "relationProvenance": "UNVERIFIED_METADATA",
+        "relationType": "SOURCE_REPO"
+      },
+      {
+        "projectKey": {
+          "id": "github.com/sigstore/sigstore-js"
+        },
+        "relationProvenance": "SLSA_ATTESTATION",
+        "relationType": "SOURCE_REPO"
+      }
+    ]
+  }
+}

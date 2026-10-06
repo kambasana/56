@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-GB
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "review/.*"
+  path_filters:
+    - "!blastradius/test/fixtures/**"
+    - "!**/package-lock.json"
+  path_instructions:
+    - path: "blastradius/src/**"
+      instructions: |
+        This CLI scans untrusted repositories. Flag anything that could execute scanned code or
+        lifecycle scripts, shell or argument injection, path traversal or symlink escape, unbounded
+        input sizes, SSRF via URLs from scanned metadata, and unescaped output in the HTML report.
+        Scoring changes must keep reasons and evidence attached to every finding.
+    - path: "blastradius/kb/incidents/**"
+      instructions: |
+        Every identifier, URL and date must be verifiable from a cited public source. Records must
+        not name or characterise individual people; refer to accounts generically.
+    - path: ".github/workflows/**"
+      instructions: |
+        Third-party actions must be pinned to a full commit SHA, permissions kept minimal, and
+        untrusted event fields never interpolated into run scripts.
+chat:
+  auto_reply: true

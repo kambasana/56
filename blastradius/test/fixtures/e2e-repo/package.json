@@ -1,0 +1,9 @@
+{
+  "name": "e2e-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "event-stream": "^3.3.6",
+    "ms": "^2.1.1"
+  }
+}

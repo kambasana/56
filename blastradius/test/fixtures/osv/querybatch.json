@@ -1,0 +1,29 @@
+{
+  "_note": "Hand-authored from the documented OSV API shape (POST /v1/querybatch returns ids + modified only). Query order = components sorted by purl.",
+  "request": {
+    "url": "https://api.osv.dev/v1/querybatch",
+    "method": "POST",
+    "body": {
+      "queries": [
+        { "package": { "name": "@sigstore/core", "ecosystem": "npm" }, "version": "1.1.0" },
+        { "package": { "name": "event-stream", "ecosystem": "npm" }, "version": "3.3.6" },
+        { "package": { "name": "flatmap-stream", "ecosystem": "npm" }, "version": "0.1.1" },
+        { "package": { "name": "ua-parser-js", "ecosystem": "npm" }, "version": "0.7.29" }
+      ]
+    }
+  },
+  "status": 200,
+  "response": {
+    "results": [
+      {},
+      { "vulns": [{ "id": "GHSA-mh6f-8j2x-4483", "modified": "2023-11-08T03:57:44.646612Z" }] },
+      {
+        "vulns": [
+          { "id": "GHSA-9x64-5r7x-2q53", "modified": "2023-11-08T03:57:44.646612Z" },
+          { "id": "GHSA-mh6f-8j2x-4483", "modified": "2023-11-08T03:57:44.646612Z" }
+        ]
+      },
+      { "vulns": [{ "id": "GHSA-pjwm-rvh2-c87w", "modified": "2024-02-05T21:12:30.417143Z" }] }
+    ]
+  }
+}

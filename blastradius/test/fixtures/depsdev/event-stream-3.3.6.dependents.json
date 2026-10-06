@@ -1,0 +1,12 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3alpha/systems/npm/packages/event-stream/versions/3.3.6:dependents"
+  },
+  "status": 200,
+  "response": {
+    "dependentCount": 1590,
+    "directDependentCount": 120,
+    "indirectDependentCount": 1470
+  }
+}

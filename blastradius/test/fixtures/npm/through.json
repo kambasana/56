@@ -1,0 +1,595 @@
+{
+  "note": "Recorded from the live registry on 2026-10-06 and trimmed to the last 25 versions and the fields the npm enricher reads. Email addresses were removed (data minimisation).",
+  "request": {
+    "url": "https://registry.npmjs.org/through"
+  },
+  "response": {
+    "_id": "through",
+    "name": "through",
+    "description": "simplified stream construction",
+    "dist-tags": {
+      "latest": "2.3.8"
+    },
+    "maintainers": [
+      {
+        "name": "nopersonsmodules"
+      }
+    ],
+    "repository": {
+      "url": "git+https://github.com/dominictarr/through.git",
+      "type": "git"
+    },
+    "time": {
+      "created": "2012-07-04T14:09:43.543Z",
+      "modified": "2024-12-13T19:06:24.059Z",
+      "0.1.0": "2012-07-22T18:12:52.947Z",
+      "0.1.1": "2012-07-22T19:24:58.408Z",
+      "0.1.2": "2012-07-22T20:56:34.166Z",
+      "0.1.3": "2012-08-07T01:43:12.512Z",
+      "0.1.4": "2012-08-07T15:49:31.336Z",
+      "1.0.0": "2012-08-31T09:38:50.600Z",
+      "1.1.0": "2012-09-15T11:48:53.613Z",
+      "1.1.1": "2012-10-11T13:49:59.968Z",
+      "1.1.2": "2012-11-20T17:56:39.995Z",
+      "2.0.0": "2012-11-26T05:30:11.797Z",
+      "2.1.0": "2012-11-28T06:56:46.753Z",
+      "2.2.0": "2013-02-11T08:24:48.695Z",
+      "2.2.1": "2013-03-03T02:09:41.237Z",
+      "2.2.2": "2013-03-12T05:18:11.703Z",
+      "2.2.4": "2013-03-13T07:45:07.144Z",
+      "2.2.5": "2013-03-13T08:39:33.743Z",
+      "2.2.6": "2013-03-13T08:44:43.459Z",
+      "2.2.7": "2013-03-15T05:52:05.447Z",
+      "2.3.1": "2013-04-13T10:57:25.016Z",
+      "2.3.2": "2013-04-24T15:28:51.858Z",
+      "2.3.3": "2013-04-24T22:56:02.409Z",
+      "2.3.4": "2013-04-29T08:35:05.575Z",
+      "2.3.6": "2014-09-16T07:00:00.673Z",
+      "2.3.7": "2015-04-06T05:00:51.802Z",
+      "2.3.8": "2015-07-03T13:38:39.650Z"
+    },
+    "versions": {
+      "0.1.0": {
+        "name": "through",
+        "version": "0.1.0",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-0.1.0.tgz",
+          "integrity": "sha512-BAW3o/SKQHGnOWTCEP907/RNeeDNFhxUt2QitI6ejH6xLJ+ryLneV/d05iG53Cp6fhQHJii801+SAFQwZNLcOQ=="
+        }
+      },
+      "0.1.1": {
+        "name": "through",
+        "version": "0.1.1",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-0.1.1.tgz",
+          "integrity": "sha512-aXZ7M4a1qqdoVXg3FP37PEN/XDOT0WnaSa8cQ2voMyTeSitN/cLIqV3ejTnbAdyGK2mFENhMmYkAbD0efF4Mxg=="
+        }
+      },
+      "0.1.2": {
+        "name": "through",
+        "version": "0.1.2",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-0.1.2.tgz",
+          "integrity": "sha512-L4dXEZwF2IWpS/7U2JAB34D7Nc4jz7KQeWOEBJQlORJVBzyWxuVGhSz0AfGUHWi9+S8Yz0fvlZAWYqFWCC3eEA=="
+        }
+      },
+      "0.1.3": {
+        "name": "through",
+        "version": "0.1.3",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-0.1.3.tgz",
+          "integrity": "sha512-5y96OwhWHl6rqG7WQF+kkDsjqcRZUJD9ZFj4xr6Pwd/Jtv/RQ7+jb8yKnPQrpzn7rpvvgS8HagcgzKqwLmYu9Q=="
+        }
+      },
+      "0.1.4": {
+        "name": "through",
+        "version": "0.1.4",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-0.1.4.tgz",
+          "integrity": "sha512-a5fKJqmlhfG2dbuF54Sgr5mNEaEwz3yaCQ8qCU7FwtW1NQuGryBxksb6e0s+7j4OP7Azdt9N0lU9h9bY9DHPhg=="
+        }
+      },
+      "1.0.0": {
+        "name": "through",
+        "version": "1.0.0",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-1.0.0.tgz",
+          "integrity": "sha512-THTHNXgQWnF6vNFFLUfliYFOyo0nhYFB53p+nSzCp4J33XMkKm2PFJkLBOJD4cyXJN1DXanrNDUmlUWDSoPsEw=="
+        }
+      },
+      "1.1.0": {
+        "name": "through",
+        "version": "1.1.0",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-1.1.0.tgz",
+          "integrity": "sha512-jNmyp+DnIxBurP6CKQP1HJLXfBjgPgNP/chzBRVyM8zypszjurp/NZxdS/e1L6zWNWwDNiHzBBx4EZE7kyPOMg=="
+        }
+      },
+      "1.1.1": {
+        "name": "through",
+        "version": "1.1.1",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-1.1.1.tgz",
+          "integrity": "sha512-nblx9wNRu8c9e6FriS1marJlJdkVrYJAp+FNIkg4qm0llTGyokfMFfFonl7fS431hAFJ5gKpzEUWVJFzpDEDgg=="
+        }
+      },
+      "1.1.2": {
+        "name": "through",
+        "version": "1.1.2",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-1.1.2.tgz",
+          "integrity": "sha512-YG7jdC/XCqsooOdR2LJpeuQ5WnuYnHohUMJq4xMN09rbr81rli6JfZbGa07dWJg24qb8h6mGC+0G74eak9hrnw=="
+        }
+      },
+      "2.0.0": {
+        "name": "through",
+        "version": "2.0.0",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.0.0.tgz",
+          "integrity": "sha512-sP7hWEMiZ4fU0hiObEScNnN42WUffLdzucY5qcRouo3ZUf4gouAqjLz54UZBqIJmGdkEK5H6OCKZ0Aw7WBCZlw=="
+        }
+      },
+      "2.1.0": {
+        "name": "through",
+        "version": "2.1.0",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.1.0.tgz",
+          "integrity": "sha512-uvPczOKXZtx4V1j1upuVsJAaUs2sOwCT6CVDT/xsse/AvenhMxgmK1LxILJUm2WoSZYi8RhOb10P9zvwjZOipQ=="
+        }
+      },
+      "2.2.0": {
+        "name": "through",
+        "version": "2.2.0",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.0.tgz",
+          "integrity": "sha512-ATrzcAPOo16ECxJ/3us95Du/fhhsiq6bmyjU5PY6AIQmzV4OdHAy2jy5gHVPL3jI14FgmvwX8OfFIetEj2iZzQ=="
+        }
+      },
+      "2.2.1": {
+        "name": "through",
+        "version": "2.2.1",
+        "scripts": {
+          "test": "asynct test/*.js"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.1.tgz",
+          "integrity": "sha512-FZw/87DAyWyIogPPZ+ugt7IHcs+6IH/O8C/GAsRjtcP8jHPulZk7Ia+LwAETKJJDoqz0dGwnwV1z9++Qh/sv0w=="
+        }
+      },
+      "2.2.2": {
+        "name": "through",
+        "version": "2.2.2",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.2.tgz",
+          "integrity": "sha512-Iu1/V4h3Rn00PznTTkBh6wxHEEQ8UDD13mIRC98dP2XwhRJ/Gt6EJibWIzvBaCyLD2Oep+pRQ36ke3A+u0oJ6w=="
+        }
+      },
+      "2.2.4": {
+        "name": "through",
+        "version": "2.2.4",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.4.tgz",
+          "integrity": "sha512-5lg4A49XbhWAvK13tndVBcVm5AcPTMi5ea2nBDKFOgbLL/n7DTRqHsSwtrzkAgl4GccFYMO0bTAknudcx1BsZw=="
+        }
+      },
+      "2.2.5": {
+        "name": "through",
+        "version": "2.2.5",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.5.tgz",
+          "integrity": "sha512-Ss5rIjd/HUSzX3hq5LWzQVOrN1M17mHdcZrb0Zoaydb2zd7mmOSD/hN0E+lpuKEmk/d6OeILJf/F8Il16I5oow=="
+        }
+      },
+      "2.2.6": {
+        "name": "through",
+        "version": "2.2.6",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.6.tgz",
+          "integrity": "sha512-dZMULlJvJyJeQfI7BwWTX2fpGWRD3cdCvvN6CO9nL9ihxOyLkG6WfbrSTfsO2iQrB8SijM+gIoHRkEXvAu/9Ow=="
+        }
+      },
+      "2.2.7": {
+        "name": "through",
+        "version": "2.2.7",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.2.7.tgz",
+          "integrity": "sha512-JIR0m0ybkmTcR8URann+HbwKmodP+OE8UCbsifQDYMLD5J3em1Cdn3MYPpbEd5elGDwmP98T+WbqP/tvzA5Mjg=="
+        }
+      },
+      "2.3.1": {
+        "name": "through",
+        "version": "2.3.1",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.1.tgz",
+          "integrity": "sha512-4m/vY0IcBrqTEaef70z7l9fv9RLE4qWf8B89InvrIZczHWfAHBd5nUTmHsuD6vhzXu02IfYrZ4uGeAbpd/ByGQ=="
+        }
+      },
+      "2.3.2": {
+        "name": "through",
+        "version": "2.3.2",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.2.tgz",
+          "integrity": "sha512-4haMWFQj3DDPHvktFIP2+D3/nB08amf3NXAP89d6xAwmPJu/ULD0cDk2vSju6xCraRvPoAohOiQ3lmm3E38bBQ=="
+        }
+      },
+      "2.3.3": {
+        "name": "through",
+        "version": "2.3.3",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.3.tgz",
+          "integrity": "sha512-FP6iSKliZDm8XQHuZzWTpBVnawf1uRbpKwgDGjKIrIF58zVG2I167JHsJa5m2wgeqMuYVKPhe7XvbUY+IN/h6A=="
+        }
+      },
+      "2.3.4": {
+        "name": "through",
+        "version": "2.3.4",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.4.tgz",
+          "integrity": "sha512-DwbmSAcABsMazNkLOJJSLRC3gfh4cPxUxJCn9npmvbcI6undhgoJ2ShvEOgZrW8BH62Gyr9jKboGbfFcmY5VsQ=="
+        }
+      },
+      "2.3.6": {
+        "name": "through",
+        "version": "2.3.6",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.6.tgz",
+          "integrity": "sha512-E8QCeJDd4xmHkGNnpBVZVgJxtziZg7T1dehN+QAD4pYy/D39FtmFu31qBtNc1aCwY2Y5++ZaGAd7Yf+NG/q1jw=="
+        }
+      },
+      "2.3.7": {
+        "name": "through",
+        "version": "2.3.7",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.7.tgz",
+          "integrity": "sha512-Eg7loeaVnqrhCgRxiHeVXmW3oudg6MzhE95kpFhnyjBoR4255u/5Y+zRvlingMSSUMHXr0hL8kRr7dwBizi2ZA=="
+        }
+      },
+      "2.3.8": {
+        "name": "through",
+        "version": "2.3.8",
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/dominictarr/through.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/through/-/through-2.3.8.tgz",
+          "integrity": "sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg=="
+        }
+      }
+    }
+  }
+}

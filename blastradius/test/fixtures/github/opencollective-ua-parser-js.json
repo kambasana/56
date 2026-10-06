@@ -1,0 +1,73 @@
+{
+  "note": "Shape follows the Open Collective GraphQL v2 account/members query (https://graphql-docs-v2.opencollective.com/). api.opencollective.com is not reachable from the recording environment; backer slugs are fictional placeholders. No request.body, so this envelope answers any slug — tests register per-slug fixtures with fixtureKey() when they need to.",
+  "request": {
+    "url": "https://api.opencollective.com/graphql/v2",
+    "method": "POST"
+  },
+  "response": {
+    "data": {
+      "account": {
+        "slug": "ua-parser-js",
+        "name": "UAParser.js",
+        "type": "COLLECTIVE",
+        "host": {
+          "slug": "opensource",
+          "name": "Open Source Collective"
+        },
+        "members": {
+          "totalCount": 4,
+          "nodes": [
+            {
+              "role": "BACKER",
+              "account": {
+                "slug": "example-person",
+                "name": "Example Person",
+                "type": "INDIVIDUAL"
+              },
+              "totalDonations": {
+                "valueInCents": 50000,
+                "currency": "USD"
+              }
+            },
+            {
+              "role": "SPONSOR",
+              "account": {
+                "slug": "example-hosting-co",
+                "name": "Example Hosting Co",
+                "type": "ORGANIZATION"
+              },
+              "totalDonations": {
+                "valueInCents": 120000,
+                "currency": "USD"
+              }
+            },
+            {
+              "role": "BACKER",
+              "account": {
+                "slug": "example-tools-inc",
+                "name": "Example Tools Inc",
+                "type": "ORGANIZATION"
+              },
+              "totalDonations": {
+                "valueInCents": 30000,
+                "currency": "USD"
+              }
+            },
+            {
+              "role": "BACKER",
+              "account": {
+                "slug": "example-hosting-co",
+                "name": "Example Hosting Co",
+                "type": "ORGANIZATION"
+              },
+              "totalDonations": {
+                "valueInCents": 1000,
+                "currency": "USD"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
