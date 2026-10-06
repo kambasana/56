@@ -277,6 +277,8 @@ export function DataTable<T>({
   };
 
   const onRowKey = (e: KeyboardEvent<HTMLTableRowElement>, row: Row<T>, index: number) => {
+    // Keys typed in a control inside a cell (button, link, input) keep their own behaviour.
+    if (e.target !== e.currentTarget) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       activate(row);

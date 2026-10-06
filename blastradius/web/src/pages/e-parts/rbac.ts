@@ -36,6 +36,18 @@ export function changes(roles: readonly Role[], d: Draft): { id: string; name: s
   return out;
 }
 
+/**
+ * The draft after the roles were reloaded: roles with a pending (unsaved) edit against the roles
+ * the draft was based on keep that edit; every other role takes the reloaded permissions. Roles
+ * that no longer exist are dropped.
+ */
+export function rebase(prev: readonly Role[], next: readonly Role[], d: Draft): Draft {
+  const pending = new Set(changes(prev, d).map((c) => c.id));
+  const out: Draft = {};
+  for (const r of next) out[r.id] = pending.has(r.id) && d[r.id] ? d[r.id]! : [...r.permissions];
+  return out;
+}
+
 function snapshot(v: unknown): Record<string, unknown> | null {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }

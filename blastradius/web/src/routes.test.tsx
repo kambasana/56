@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { lazy } from 'react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from './auth';
 import { ProjectProvider } from './project';
-import { AppRoutes } from './routes';
+import { AppRoutes, PAGES, RouteErrorBoundary, isChunkLoadError } from './routes';
 import { safeNext } from './pages/Login';
 import { meFor } from './test/fixtures';
 import type { MeResponse } from '@server/api-types';
@@ -85,5 +87,66 @@ describe('routes', () => {
     expect(safeNext('https://evil.example')).toBe('/');
     expect(safeNext('/\\evil.example')).toBe('/');
     expect(safeNext(null)).toBe('/');
+  });
+
+  it('shows ErrorState inside the shell when a page throws, retries, and resets on navigation', async () => {
+    const original = PAGES['/integrations']!;
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let fail = true;
+    function Broken() {
+      if (fail) throw new Error('Page exploded');
+      return <h1>Recovered page</h1>;
+    }
+    PAGES['/integrations'] = lazy(async () => ({ default: Broken }));
+    try {
+      const { unmount } = renderAt('/integrations', meFor('org_admin'));
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('Could not load this page');
+      expect(alert).toHaveTextContent('Page exploded');
+      // The shell is still mounted and usable.
+      const nav = screen.getByRole('navigation', { name: 'Main' });
+      expect(nav).toBeInTheDocument();
+      fail = false;
+      await userEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+      expect(await screen.findByRole('heading', { name: 'Recovered page' })).toBeInTheDocument();
+      unmount();
+      // Navigating away from a failed page clears the error.
+      fail = true;
+      renderAt('/integrations', meFor('org_admin'));
+      await screen.findByRole('alert');
+      await userEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Reports' }));
+      expect(await screen.findByRole('heading', { name: 'Reports', level: 1 })).toBeInTheDocument();
+      expect(screen.queryByText('Could not load this page')).toBeNull();
+    } finally {
+      PAGES['/integrations'] = original;
+      quiet.mockRestore();
+    }
+  });
+
+  it('clears a caught page error when the location key changes (same route, new params)', () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    function Page({ id }: { id: string }) {
+      if (id === 'f1') throw new Error('f1 broke');
+      return <p>finding {id}</p>;
+    }
+    const { rerender } = render(
+      <RouteErrorBoundary resetKey="k1">
+        <Page id="f1" />
+      </RouteErrorBoundary>,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('f1 broke');
+    rerender(
+      <RouteErrorBoundary resetKey="k2">
+        <Page id="f2" />
+      </RouteErrorBoundary>,
+    );
+    expect(screen.getByText('finding f2')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    quiet.mockRestore();
+  });
+
+  it('recognises a failed lazy chunk', () => {
+    expect(isChunkLoadError(new TypeError('Failed to fetch dynamically imported module: /assets/Findings-abc.js'))).toBe(true);
+    expect(isChunkLoadError(new Error('Page exploded'))).toBe(false);
   });
 });

@@ -53,7 +53,6 @@ test('accept-invite page is public and rejects an unknown token', async ({ page 
   await expect(page.getByRole('heading', { name: 'Accept your invite' })).toBeVisible();
   await page.getByLabel('Password').fill('a-brand-new-password');
   await expect(page.getByRole('button', { name: 'Accept invite' })).toBeEnabled();
-  await page.waitForTimeout(250);
   await shot(page, 'accept-invite');
   await page.getByRole('button', { name: 'Accept invite' }).click();
   await expect(page.getByRole('alert')).toContainText('invalid, expired or already used');
@@ -116,8 +115,8 @@ test.describe('admin screens', () => {
     // The graph tab loads Cytoscape on demand and draws the finding-scoped graph.
     await page.getByRole('tab', { name: 'Graph' }).click();
     const graph = page.getByRole('img', { name: 'Graph scoped to this finding' });
-    await expect(graph.locator('canvas').first()).toBeAttached();
-    await page.waitForTimeout(300);
+    await expect(graph).toHaveAttribute('data-graph-ready', 'true');
+    await expect(graph).not.toHaveAttribute('data-node-count', '0');
     await shot(page, 'finding-graph');
   });
 
@@ -153,6 +152,8 @@ test.describe('admin screens', () => {
     const canvas = page.getByRole('img', { name: /graph/i }).first();
     await expect(canvas).toBeVisible();
     await expect(canvas.locator('canvas').first()).toBeAttached();
+    await expect(canvas).toHaveAttribute('data-graph-ready', 'true');
+    await expect(canvas).toHaveAttribute('data-node-count', String(body.nodes.length));
     await shot(page, 'investigate');
   });
 
@@ -263,8 +264,9 @@ test.describe('admin screens', () => {
     await expect(page.getByText('flatmap-stream', { exact: true }).first()).toBeVisible();
     await shot(page, 'dark-findings');
     await page.goto(`/projects/${project}/investigate?node=${encodeURIComponent('pkg:npm/event-stream@3.3.6')}`);
-    await expect(page.getByRole('img', { name: /graph/i }).first().locator('canvas').first()).toBeAttached();
-    await page.waitForTimeout(500);
+    const darkGraph = page.getByRole('img', { name: /graph/i }).first();
+    await expect(darkGraph).toHaveAttribute('data-graph-ready', 'true');
+    await expect(darkGraph).not.toHaveAttribute('data-node-count', '0');
     await shot(page, 'dark-investigate');
     // Back to light so later tests in this browser context start from the default.
     await page.getByTestId('nav-user').click();

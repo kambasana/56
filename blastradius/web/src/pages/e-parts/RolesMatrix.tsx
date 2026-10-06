@@ -4,7 +4,7 @@
  * drafted locally and saved with PATCH /api/roles/:id; every save, reset, create and delete is
  * written to the audit log by the server, and the parent reloads the audit entries afterwards.
  */
-import { Fragment, useEffect, useId, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { LockIcon, PlusIcon } from 'lucide-react';
 import type { ListRolesResponse, Permission, Role } from '@server/api-types';
@@ -16,13 +16,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { changes, draftFrom, toggle, type Draft } from './rbac';
+import { changes, draftFrom, rebase, toggle, type Draft } from './rbac';
 import { ConfirmButton, ErrorAlert, LabeledSelect, SectionCard, errorText } from './ui';
 
 export function RolesMatrix({ data, editable, onChanged }: { data: ListRolesResponse; editable: boolean; onChanged: () => void }) {
   const roles = data.items;
   const [draft, setDraft] = useState<Draft>(() => draftFrom(roles));
-  useEffect(() => setDraft(draftFrom(roles)), [roles]);
+  // A reload keeps edits that are still unsaved (e.g. after a partly failed save).
+  const baseRef = useRef(roles);
+  useEffect(() => {
+    const prev = baseRef.current;
+    baseRef.current = roles;
+    if (prev !== roles) setDraft((d) => rebase(prev, roles, d));
+  }, [roles]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pending = useMemo(() => changes(roles, draft), [roles, draft]);
@@ -41,10 +47,36 @@ export function RolesMatrix({ data, editable, onChanged }: { data: ListRolesResp
     }
   };
 
-  const save = () =>
-    run(async () => {
-      for (const c of pending) await api.updateRole(c.id, { permissions: c.permissions });
-    }, `Saved ${pending.length} role${pending.length === 1 ? '' : 's'}. The change is in the audit log.`);
+  // Roles are saved one at a time. On a failure the drafts of the failed role and of every role
+  // not yet saved are kept, so nothing is silently lost; the saved ones are applied on reload.
+  const save = async () => {
+    const todo = pending;
+    setBusy(true);
+    setError(null);
+    const saved: string[] = [];
+    let failed: { name: string; error: string } | null = null;
+    for (const c of todo) {
+      try {
+        await api.updateRole(c.id, { permissions: c.permissions });
+        saved.push(c.name);
+      } catch (e) {
+        failed = { name: c.name, error: errorText(e) };
+        break;
+      }
+    }
+    const plural = (n: number) => `${n} role${n === 1 ? '' : 's'}`;
+    if (!failed) {
+      toast.success(`Saved ${plural(saved.length)}. The change is in the audit log.`);
+    } else {
+      const unsaved = todo.slice(saved.length).map((c) => c.name);
+      if (saved.length > 0) toast.success(`Saved ${saved.join(', ')}. The change is in the audit log.`);
+      setError(
+        `${saved.length > 0 ? `Saved ${saved.join(', ')}. ` : ''}Not saved: ${unsaved.join(', ')} (${failed.name}: ${failed.error}). Your unsaved edits are kept; save again to retry.`,
+      );
+    }
+    setBusy(false);
+    onChanged();
+  };
 
   const kindOf = (r: Role) => {
     if (r.builtIn) return 'Built-in template';
@@ -84,7 +116,11 @@ export function RolesMatrix({ data, editable, onChanged }: { data: ListRolesResp
                           title={`Reset ${r.name} to its template?`}
                           description={`${r.name} gets the permissions of its built-in template again. Your edits to this role are lost. The reset is written to the audit log.`}
                           confirmLabel="Reset role"
-                          onConfirm={() => void run(() => api.resetRole(r.id), `Reset ${r.name} to its template.`)}
+                          onConfirm={() => {
+                            // The reset replaces this role's permissions, drafted edits included.
+                            setDraft((d) => ({ ...d, [r.id]: [...r.permissions] }));
+                            void run(() => api.resetRole(r.id), `Reset ${r.name} to its template.`);
+                          }}
                         >
                           Reset
                         </ConfirmButton>

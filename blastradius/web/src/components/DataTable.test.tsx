@@ -171,6 +171,39 @@ describe('<DataTable>', () => {
     await waitFor(() => expect(screen.getByText('event-stream').closest('tr')).toHaveFocus());
   });
 
+  it('leaves Enter, Space and arrow keys to controls inside a cell', async () => {
+    const user = userEvent.setup();
+    const onRowClick = vi.fn();
+    const onButton = vi.fn();
+    const withButton: ColumnDef<Row, any>[] = [
+      ...columns,
+      { id: 'act', header: 'Action', cell: ({ row }) => <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onButton(row.original.id);
+          }}
+        >Act {row.original.name}</button> },
+    ];
+    render(<DataTable label="Findings" data={rows} columns={withButton} getRowId={(r) => r.id} onRowClick={onRowClick} />);
+    const button = screen.getByRole('button', { name: 'Act left-pad' });
+    button.focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    expect(onButton).toHaveBeenCalledTimes(2);
+    expect(onButton).toHaveBeenCalledWith('a');
+    expect(onRowClick).not.toHaveBeenCalled();
+    await user.keyboard('{ArrowDown}');
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    expect(button).toHaveFocus();
+    // The row itself still handles keys.
+    const row = button.closest('tr')!;
+    row.focus();
+    await user.keyboard('{Enter}');
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    expect(onButton).toHaveBeenCalledTimes(2);
+  });
+
   it('makes only one row a Tab stop (roving tabindex)', async () => {
     const user = userEvent.setup();
     render(<DataTable label="Findings" data={rows} columns={columns} getRowId={(r) => r.id} onRowClick={() => {}} />);

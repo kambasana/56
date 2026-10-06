@@ -4,7 +4,7 @@
  * with the page permission it needs. Pages are lazy-loaded (Cytoscape stays out of the
  * main bundle).
  */
-import { lazy, Suspense, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react';
+import { Component, lazy, Suspense, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { WEB_ROUTES, type PagePermission } from '@server/permissions';
 import { useAuth } from './auth';
@@ -63,6 +63,54 @@ export function RequirePage({ page, path, children }: { page: PagePermission; pa
   return <>{children}</>;
 }
 
+/** A lazy page chunk that failed to download (e.g. after a deploy replaced the hashed files). */
+export function isChunkLoadError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  return (
+    e.name === 'ChunkLoadError' ||
+    /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed|Unable to preload CSS/i.test(e.message)
+  );
+}
+
+interface RouteErrorBoundaryProps {
+  /** Changes on navigation; a new value clears a caught error. */
+  resetKey: string;
+  children: ReactNode;
+}
+
+/**
+ * Catches a page that throws while rendering, so the app shell (navigation) stays usable.
+ * Retry re-renders the page; a failed lazy chunk is cached by React.lazy, so retry reloads.
+ */
+export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, { error: unknown; key: string }> {
+  state: { error: unknown; key: string } = { error: null, key: this.props.resetKey };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error: error ?? new Error('This page failed to render.') };
+  }
+
+  static getDerivedStateFromProps(props: RouteErrorBoundaryProps, state: { error: unknown; key: string }) {
+    // Navigating away from a failed page shows the next page.
+    if (props.resetKey !== state.key) return { error: null, key: props.resetKey };
+    return null;
+  }
+
+  retry = () => {
+    if (isChunkLoadError(this.state.error)) window.location.reload();
+    else this.setState({ error: null });
+  };
+
+  render() {
+    if (this.state.error) return <ErrorState error={this.state.error} onRetry={this.retry} />;
+    return this.props.children;
+  }
+}
+
+function PageBoundary({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  return <RouteErrorBoundary resetKey={location.key}>{children}</RouteErrorBoundary>;
+}
+
 function NotFound() {
   return <EmptyState title="Page not found" description="This address does not match any page." />;
 }
@@ -89,9 +137,11 @@ export function AppRoutes() {
               path={r.path}
               element={
                 <RequirePage page={r.page} path={r.path}>
-                  <Suspense fallback={<LoadingState />}>
-                    <Page />
-                  </Suspense>
+                  <PageBoundary>
+                    <Suspense fallback={<LoadingState />}>
+                      <Page />
+                    </Suspense>
+                  </PageBoundary>
                 </RequirePage>
               }
             />

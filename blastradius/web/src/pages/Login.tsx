@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '@/auth';
 import { CircleAlert } from 'lucide-react';
@@ -25,11 +25,15 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // In-flight guard: a second Enter before React re-renders still sees the ref.
+  const inFlight = useRef(false);
 
   if (status === 'authenticated') return <Navigate to={next} replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (busy || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -38,6 +42,7 @@ export default function Login() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed.');
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };

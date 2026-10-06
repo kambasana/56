@@ -146,6 +146,46 @@ describe('<Settings>', () => {
     expect(await within(recent).findByText('Updated role Developer: +review')).toBeInTheDocument();
   });
 
+  it('keeps unsaved edits when saving roles partly fails and says which roles saved', async () => {
+    // The server keeps what was saved, so the reload reflects the AppSec save only.
+    let saved = rolesBody();
+    const { calls } = settingsApi({
+      'GET /api/roles': () => saved,
+      'PATCH /api/roles/appsec': (c) => {
+        const body = c.body as { permissions: Permission[] };
+        saved = { ...saved, items: saved.items.map((r) => (r.id === 'appsec' ? { ...r, permissions: body.permissions } : r)) };
+        return saved.items.find((r) => r.id === 'appsec');
+      },
+      'PATCH /api/roles/developer': () => new Reply(500, { error: { code: 'internal', message: 'Database is busy' } }),
+    });
+    renderPage(<Settings />, { path: '/settings', at: rolesAt, me: meFor('org_admin') });
+    const matrix = await screen.findByRole('table', { name: 'Permissions by role' });
+    const appsec = within(matrix).getByRole('checkbox', { name: 'AppSec: Settings' });
+    const dev = within(matrix).getByRole('checkbox', { name: 'Developer: Review changes and findings' });
+    const auditor = within(matrix).getByRole('checkbox', { name: 'Auditor: Review changes and findings' });
+    expect(appsec).not.toBeChecked();
+    expect(dev).not.toBeChecked();
+    expect(auditor).not.toBeChecked();
+    await userEvent.click(appsec);
+    await userEvent.click(dev);
+    await userEvent.click(auditor);
+    expect(screen.getByText('3 unsaved')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Save roles' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Saved AppSec.');
+    expect(alert).toHaveTextContent('Not saved: Developer, Auditor');
+    expect(alert).toHaveTextContent('Database is busy');
+    expect(await screen.findByText(/Saved AppSec\. The change is in the audit log/)).toBeInTheDocument();
+    // Saving stops at the failure: Auditor was never sent.
+    expect(calls.filter((c) => c.method === 'PATCH').map((c) => c.path)).toEqual(['/api/roles/appsec', '/api/roles/developer']);
+    // After the roles reload, the failed and remaining drafts are still there; the saved one is applied.
+    await waitFor(() => expect(calls.filter((c) => c.method === 'GET' && c.path === '/api/roles')).toHaveLength(2));
+    await waitFor(() => expect(screen.getByText('2 unsaved')).toBeInTheDocument());
+    expect(within(matrix).getByRole('checkbox', { name: 'AppSec: Settings' })).toBeChecked();
+    expect(within(matrix).getByRole('checkbox', { name: 'Developer: Review changes and findings' })).toBeChecked();
+    expect(within(matrix).getByRole('checkbox', { name: 'Auditor: Review changes and findings' })).toBeChecked();
+  });
+
   it('creates a role from a template', async () => {
     const { calls } = settingsApi();
     renderPage(<Settings />, { path: '/settings', at: rolesAt, me: meFor('org_admin') });
