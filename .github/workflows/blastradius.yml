@@ -1,0 +1,82 @@
+name: blastradius
+
+on:
+  pull_request:
+    paths:
+      - 'blastradius/**'
+      - '.github/workflows/blastradius.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'blastradius/**'
+      - '.github/workflows/blastradius.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blastradius-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: blastradius
+
+jobs:
+  test:
+    name: typecheck, test, build (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: blastradius/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Validate incident knowledge base
+        run: node dist/cli.js kb validate
+      - name: Offline end-to-end scan
+        run: node dist/cli.js scan test/fixtures/e2e-repo --offline --fixtures test/fixtures --no-cache --as-of 2018-11-27 --out "$RUNNER_TEMP/br-offline"
+
+  live-smoke:
+    name: live APIs smoke test
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Live APIs can be slow or rate-limited; this job reports drift between real responses
+    # and the recorded fixtures without blocking merges.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: blastradius/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Scan the e2e fixture against live OSV, deps.dev, npm and GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BLASTRADIUS_CACHE_DIR: ${{ runner.temp }}/br-cache
+        run: node dist/cli.js scan test/fixtures/e2e-repo --no-cache --out "$RUNNER_TEMP/br-live"
+      - name: Check live results still flag event-stream and flatmap-stream
+        run: |
+          node -e '
+            const r = require(process.argv[1]);
+            const crit = r.findings.filter(f => f.level === "critical").map(f => f.purl);
+            console.log("critical:", crit);
+            for (const name of ["event-stream", "flatmap-stream"]) {
+              if (!crit.some(p => p.includes("/" + name + "@"))) { console.error("missing critical:", name); process.exit(1); }
+            }
+          ' "$RUNNER_TEMP/br-live/blastradius.json"
