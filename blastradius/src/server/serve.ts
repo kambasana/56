@@ -64,6 +64,8 @@ export interface CreateServerOptions {
   webDir?: string | null;
   concurrency?: number;
   secureCookies?: ServerConfig['secureCookies'];
+  /** Trusted reverse proxy addresses (X-Forwarded-For / -Proto are honoured only from these). */
+  trustProxy?: string[];
   /** Engine overrides (tests). */
   scanOptions?: Partial<ScanOptions>;
   gitRunner?: GitRunner;
@@ -91,6 +93,7 @@ export function createServer(opts: CreateServerOptions = {}) {
     webDir: opts.webDir === undefined ? (existsSync(DEFAULT_WEB_DIR) ? DEFAULT_WEB_DIR : null) : opts.webDir,
     version: packageVersion(),
     ...(opts.secureCookies ? { secureCookies: opts.secureCookies } : {}),
+    ...(opts.trustProxy && opts.trustProxy.length > 0 ? { trustProxy: [...opts.trustProxy] } : {}),
   };
   const jobs = new ScanJobs({
     store,
@@ -171,8 +174,21 @@ export function serveScanDates(opts: Pick<ServeOptions, 'asOf' | 'devSeed'>): { 
 }
 
 /** Start listening. Resolves once the port is bound; returns a close() that stops everything. */
+/** Loopback bind addresses: 127.0.0.0/8, ::1 (and its IPv4-mapped form), localhost. */
+export function isLoopbackBindHost(host: string): boolean {
+  const h = host.trim().replace(/^\[|\]$/g, '').toLowerCase().replace(/^::ffff:(?=\d)/, '');
+  if (h === 'localhost' || h === '::1' || h === '0:0:0:0:0:0:0:1') return true;
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+  return m !== null && m[1] === '127' && m.slice(2).every((o) => Number(o) <= 255);
+}
+
 export async function serve(opts: ServeOptions = {}): Promise<{ url: string; close: () => Promise<void> }> {
   const devMode = opts.devMode === true || opts.devSeed === true;
+  const host = opts.host ?? '127.0.0.1';
+  // Dev mode seeds users with a known password and a password-less role switcher: loopback only.
+  if (devMode && !isLoopbackBindHost(host)) {
+    throw new Error(`dev mode (--dev / --dev-seed) only binds to a loopback address (127.0.0.1, ::1, localhost); refusing --host ${host}`);
+  }
   // Dev seed scans replay the 2018 fixtures: rescans of fixture-repo projects must use the same
   // reference date (today's date makes unchanged packages look newly abandoned), while other
   // projects scan with the real current date.
@@ -195,7 +211,6 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
     if (seed.scanId) log(`dev mode: queued fixture scan ${seed.scanId} for ${DEV_PROJECT_NAME}`);
   }
   if (!deps.config.webDir) log('web/dist not found: serving the API only (build the web app with `npm --prefix web run build`)');
-  const host = opts.host ?? '127.0.0.1';
   const port = opts.port ?? 8000;
   const server = await new Promise<ReturnType<typeof nodeServe>>((resolve, reject) => {
     const s = nodeServe({ fetch: app.fetch, port, hostname: host }, () => resolve(s));

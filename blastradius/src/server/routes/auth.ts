@@ -1,4 +1,5 @@
 /** /api/health, /api/auth/*, /api/dev/switch-user, /api/me */
+import { createHash } from 'node:crypto';
 import type { Hono } from 'hono';
 import { deleteCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
@@ -49,13 +50,14 @@ function isLoopbackHost(host: string): boolean {
   return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h.endsWith('.localhost');
 }
 
-/** Secure flag: https, or any non-loopback host (it is then expected to sit behind TLS). */
+/** Secure flag: https (directly, or X-Forwarded-Proto from a trusted proxy), or any non-loopback host (it is then expected to sit behind TLS). */
 export function cookieSecure(c: Ctx): boolean {
   const mode = deps(c).config.secureCookies ?? 'auto';
   if (mode === 'always') return true;
   if (mode === 'never') return false;
   const url = new URL(c.req.url);
-  if (url.protocol === 'https:' || c.req.header('x-forwarded-proto') === 'https') return true;
+  if (url.protocol === 'https:') return true;
+  if (fromTrustedProxy(c) && c.req.header('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase() === 'https') return true;
   return !isLoopbackHost(c.req.header('host') ?? url.host);
 }
 
@@ -69,14 +71,51 @@ export function setSessionCookie(c: Ctx, token: string): void {
   });
 }
 
+/** Lower-case, unbracketed, and IPv4-mapped IPv6 ("::ffff:1.2.3.4") reduced to plain IPv4. */
+export function normalizeAddress(address: string): string {
+  const a = address.trim().replace(/^\[|\]$/g, '').toLowerCase();
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(a);
+  return mapped ? mapped[1]! : a;
+}
+
+function socketAddress(c: Ctx): string | null {
+  const env = c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined;
+  const raw = env?.incoming?.socket?.remoteAddress;
+  return raw ? normalizeAddress(raw) : null;
+}
+
+function trustedProxies(c: Ctx): Set<string> {
+  return new Set((deps(c).config.trustProxy ?? []).map(normalizeAddress));
+}
+
+/** True when the socket peer is a configured trusted proxy (ServerConfig.trustProxy). */
+function fromTrustedProxy(c: Ctx): boolean {
+  const peer = socketAddress(c);
+  return peer !== null && trustedProxies(c).has(peer);
+}
+
 /**
- * Socket peer address for per-client limits. X-Forwarded-For is not trusted (it is client
- * controlled); behind a proxy every client shares the proxy's address, which only makes the
- * limit stricter. app.request() in tests has no socket and falls back to "local".
+ * Client address for per-client limits. By default the socket peer: X-Forwarded-For is client
+ * controlled and ignored. Only when the peer is a configured trusted proxy (--trust-proxy) is
+ * X-Forwarded-For read, taking the right-most hop that is not itself a trusted proxy.
+ * app.request() in tests has no socket and falls back to "local".
  */
 export function clientAddress(c: Ctx): string {
-  const env = c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined;
-  return env?.incoming?.socket?.remoteAddress ?? 'local';
+  const peer = socketAddress(c);
+  if (peer === null) return 'local';
+  const trusted = trustedProxies(c);
+  if (!trusted.has(peer)) return peer;
+  const hops = (c.req.header('x-forwarded-for') ?? '')
+    .split(',')
+    .map(normalizeAddress)
+    .filter(Boolean);
+  for (let i = hops.length - 1; i >= 0; i--) if (!trusted.has(hops[i]!)) return hops[i]!;
+  return peer;
+}
+
+/** Per-account sign-in limiter key: sha256(client address NUL normalised email). */
+export function accountLimitKey(ip: string, email: string): string {
+  return createHash('sha256').update(`${ip}\u0000${normalizeEmail(email)}`).digest('hex');
 }
 
 export function registerAuthRoutes(app: Hono<AppEnv>): void {
@@ -85,13 +124,13 @@ export function registerAuthRoutes(app: Hono<AppEnv>): void {
   app.post('/api/auth/login', async (c) => {
     const { store, config, loginLimiter, loginIpLimiter, loginGate } = deps(c);
     const body = await parseBody(c, LoginBody);
-    const key = normalizeEmail(body.email);
     const ip = clientAddress(c);
+    const key = accountLimitKey(ip, body.email);
     // Count the attempt before the (slow) password check, so a burst of parallel requests
-    // cannot all slip past the limit while scrypt runs.
-    const emailOk = loginLimiter.hit(key);
-    const ipOk = loginIpLimiter.hit(ip);
-    if (!emailOk || !ipOk) throw new ApiHttpError('rate_limited', 'Too many sign-in attempts. Try again later.');
+    // cannot all slip past the limit while scrypt runs. A blocked address is refused before
+    // the per-account counter is touched.
+    if (!loginIpLimiter.hit(ip)) throw new ApiHttpError('rate_limited', 'Too many sign-in attempts. Try again later.');
+    if (!loginLimiter.hit(key)) throw new ApiHttpError('rate_limited', 'Too many sign-in attempts. Try again later.');
     const release = await loginGate.acquire();
     if (!release) throw new ApiHttpError('rate_limited', 'Too many sign-in attempts. Try again later.');
     let user: Awaited<ReturnType<typeof verifyLogin>>;
@@ -121,7 +160,8 @@ export function registerAuthRoutes(app: Hono<AppEnv>): void {
     const pending = findPendingInvite(store, body.token);
     if (!pending) throw badRequest(INVALID_INVITE, ['token']);
     // An existing account proves consent with its password: count it like a sign-in attempt.
-    if (!loginLimiter.hit(pending.email)) throw new ApiHttpError('rate_limited', 'Too many attempts. Try again later.');
+    const key = accountLimitKey(ip, pending.email);
+    if (!loginLimiter.hit(key)) throw new ApiHttpError('rate_limited', 'Too many attempts. Try again later.');
     const release = await loginGate.acquire();
     if (!release) throw new ApiHttpError('rate_limited', 'Too many attempts. Try again later.');
     let account: InviteAccount | null = null;
@@ -141,7 +181,7 @@ export function registerAuthRoutes(app: Hono<AppEnv>): void {
     // Re-checked and consumed atomically: a token works once, even under parallel requests.
     const accepted = acceptInvite(store, body.token, account);
     if (!accepted) throw badRequest(INVALID_INVITE, ['token']);
-    loginLimiter.reset(pending.email);
+    loginLimiter.reset(key);
     loginIpLimiter.release(ip);
     const user = accepted.user;
     const orgId = resolveOrgId(store, user.id, accepted.orgId);

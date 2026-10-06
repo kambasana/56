@@ -33,8 +33,13 @@ export interface ServerConfig {
   /** Built SPA directory (web/dist); null disables static serving. */
   webDir: string | null;
   version: string;
-  /** Cookie Secure flag: "auto" = when https or the host is not loopback. */
+  /** Cookie Secure flag: "auto" = when https (or X-Forwarded-Proto: https from a trusted proxy) or the host is not loopback. */
   secureCookies?: 'auto' | 'always' | 'never';
+  /**
+   * Socket addresses of trusted reverse proxies (default none). Only requests whose peer is in
+   * this list have X-Forwarded-For / X-Forwarded-Proto honoured.
+   */
+  trustProxy?: string[];
 }
 
 export interface ServerDeps {
@@ -42,7 +47,7 @@ export interface ServerDeps {
   jobs: ScanJobs;
   config: ServerConfig;
   log: (m: string) => void;
-  /** Sign-in attempts per email (counted before the password is checked). */
+  /** Sign-in attempts per client address + email (counted before the password is checked). */
   loginLimiter: RateLimiter;
   /** Sign-in attempts per client address (bounds password spraying across emails). */
   loginIpLimiter: RateLimiter;

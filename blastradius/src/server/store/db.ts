@@ -106,8 +106,14 @@ export function tx<T>(s: Store, fn: () => T): T {
     s.db.exec(`RELEASE ${name}`);
     return out;
   } catch (e) {
-    s.db.exec(`ROLLBACK TO ${name}`);
-    s.db.exec(`RELEASE ${name}`);
+    // A failing rollback must never mask the original error. RELEASE only after a successful
+    // ROLLBACK TO, so a half-rolled-back savepoint is never committed.
+    try {
+      s.db.exec(`ROLLBACK TO ${name}`);
+      s.db.exec(`RELEASE ${name}`);
+    } catch {
+      // ignored: the original error is rethrown below
+    }
     throw e;
   }
 }

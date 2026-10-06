@@ -132,9 +132,15 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--allow-local-root <dir>', 'root under which local paths may be scanned (repeatable; default: $BLASTRADIUS_SCAN_ROOT or the cwd)', collect, [])
     .option('--web <dir>', 'built web app directory (default: web/dist next to the package)')
     .option('--concurrency <n>', 'scans run at once (1-4)', parseConcurrency, 2)
+    .option(
+      '--trust-proxy <ips>',
+      'comma-separated reverse proxy addresses whose X-Forwarded-For / X-Forwarded-Proto are honoured (default: $BLASTRADIUS_TRUST_PROXY, else none)',
+      parseAddressList,
+    )
     .action(async (o: ServeCliOptions) => {
       const { serve } = await import('./server/serve.js');
-      const offline = o.offline || o.fixtures !== undefined;
+      const offline = o.offline || o.fixtures !== undefined || process.env.BLASTRADIUS_OFFLINE === '1';
+      const trustProxy = o.trustProxy ?? parseAddressList(process.env.BLASTRADIUS_TRUST_PROXY ?? '');
       await serve({
         port: o.port,
         host: o.host,
@@ -147,6 +153,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         ...(o.allowLocalRoot.length > 0 ? { localRoots: o.allowLocalRoot.map((d) => resolvePath(d)) } : {}),
         ...(o.web !== undefined ? { webDir: resolvePath(o.web) } : {}),
         concurrency: o.concurrency,
+        ...(trustProxy.length > 0 ? { trustProxy } : {}),
         log: (m) => err(`${m}\n`),
       });
     });
@@ -166,6 +173,15 @@ interface ServeCliOptions {
   allowLocalRoot: string[];
   web?: string;
   concurrency: number;
+  trustProxy?: string[];
+}
+
+/** Comma-separated address list (--trust-proxy, $BLASTRADIUS_TRUST_PROXY). */
+export function parseAddressList(value: string): string[] {
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function parsePort(value: string): number {

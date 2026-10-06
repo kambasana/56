@@ -39,6 +39,16 @@ describe('migrations', () => {
     expect(db.prepare(`SELECT name FROM sqlite_master WHERE name = 'ok1'`).get()).toBeUndefined();
     db.close();
   });
+
+  it('rethrows the original error when the rollback itself fails', () => {
+    const db = new DatabaseSync(':memory:');
+    migrate(db);
+    // The migration ends the transaction itself, so the runner's ROLLBACK fails too.
+    const bad = [...MIGRATIONS, { version: SCHEMA_VERSION + 1, name: 'bad', sql: 'ROLLBACK; SELECT * FROM no_such_table;' }];
+    expect(() => migrate(db, bad)).toThrow(/no_such_table/);
+    expect(currentVersion(db)).toBe(SCHEMA_VERSION);
+    db.close();
+  });
 });
 
 describe('store helpers', () => {
@@ -63,6 +73,24 @@ describe('store helpers', () => {
       throw new Error('outer');
     })).toThrow('outer');
     expect(get<{ n: number }>(s, 'SELECT count(*) AS n FROM t')?.n).toBe(2);
+    closeStore(s);
+  });
+
+  it('tx rethrows the original error when ROLLBACK TO fails', () => {
+    const s = openStore();
+    s.db.exec('CREATE TABLE t (x INTEGER)');
+    expect(() =>
+      tx(s, () => {
+        run(s, 'INSERT INTO t VALUES (?)', 1);
+        // Ends the transaction (and the savepoint), so the helper's ROLLBACK TO / RELEASE fail.
+        s.db.exec('ROLLBACK');
+        throw new Error('original failure');
+      }),
+    ).toThrow('original failure');
+    expect(get<{ n: number }>(s, 'SELECT count(*) AS n FROM t')?.n).toBe(0);
+    // The connection is usable afterwards.
+    tx(s, () => run(s, 'INSERT INTO t VALUES (?)', 2));
+    expect(get<{ n: number }>(s, 'SELECT count(*) AS n FROM t')?.n).toBe(1);
     closeStore(s);
   });
 

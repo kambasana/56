@@ -224,7 +224,12 @@ export function migrate(db: DatabaseSync, migrations: readonly Migration[] = MIG
       db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(m.version, m.name, new Date().toISOString());
       db.exec('COMMIT');
     } catch (e) {
-      db.exec('ROLLBACK');
+      // A failing rollback must never mask the original error.
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // ignored: rethrow the original below
+      }
       throw e;
     }
     applied.push(m.version);

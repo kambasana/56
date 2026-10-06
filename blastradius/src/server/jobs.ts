@@ -7,6 +7,7 @@ import { realpathSync } from 'node:fs';
 import { isPathInside } from '../core/paths.js';
 import { scan, type ScanOptions } from '../pipeline.js';
 import type { GitRunner } from '../ingest/git.js';
+import { ApiHttpError } from './errors.js';
 import { checkTarget, cloneTarget } from './targets.js';
 import { completeScan, failScan, getScanById, listQueuedScans, markScanRunning, type Store } from './store/index.js';
 
@@ -202,7 +203,8 @@ export function safeScanMessage(err: unknown): string {
     if (/Remote branch .* not found/i.test(raw)) return 'Git clone failed: ref not found';
     return 'Git clone failed';
   }
-  if (/^(Local path|Git |Invalid|Target|Credentials|Query|A port)/.test(raw)) return raw.slice(0, 200);
+  // Request-validation errors (targets.ts) are written for users; anything else is redacted below.
+  if (err instanceof ApiHttpError) return raw.slice(0, 200);
   const cleaned = raw
     .replace(/https?:\/\/\S+/g, '<url>')
     .replace(/(^|[\s'"(=])(\/|[A-Za-z]:\\)[^\s'"),]*/g, '$1<path>')

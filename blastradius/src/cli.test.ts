@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { buildProgram, parseAsOf, parseFormats } from './cli.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { buildProgram, parseAddressList, parseAsOf, parseFormats } from './cli.js';
 import { defaultCacheDir } from './core/paths.js';
 import { failsThreshold, formatSummary, countByLevel } from './summary.js';
 import type { Finding, ScanResult } from './core/types.js';
@@ -10,8 +10,44 @@ function capture() {
   return { out, err, io: { stdout: (s: string) => void out.push(s), stderr: (s: string) => void err.push(s) } };
 }
 
+const serveMock = vi.hoisted(() => vi.fn(async (_opts: Record<string, unknown>) => ({ url: 'http://127.0.0.1:0', close: async () => {} })));
+vi.mock('./server/serve.js', () => ({ serve: serveMock }));
+
 afterEach(() => {
   process.exitCode = undefined;
+  vi.unstubAllEnvs();
+  serveMock.mockClear();
+});
+
+describe('serve command options', () => {
+  async function serveWith(args: string[]): Promise<Record<string, unknown>> {
+    await buildProgram(capture().io).exitOverride().parseAsync(['node', 'blastradius', 'serve', ...args]);
+    expect(serveMock).toHaveBeenCalledTimes(1);
+    return serveMock.mock.calls[0]![0];
+  }
+
+  it('treats BLASTRADIUS_OFFLINE=1 as --offline, like scan', async () => {
+    vi.stubEnv('BLASTRADIUS_OFFLINE', '1');
+    expect(await serveWith([])).toMatchObject({ offline: true });
+  });
+
+  it('is online without the env var, --offline or --fixtures', async () => {
+    vi.stubEnv('BLASTRADIUS_OFFLINE', '');
+    expect(await serveWith([])).toMatchObject({ offline: false });
+    serveMock.mockClear();
+    expect(await serveWith(['--fixtures', 'test/fixtures'])).toMatchObject({ offline: true });
+  });
+
+  it('reads trusted proxies from --trust-proxy, else BLASTRADIUS_TRUST_PROXY, default none', async () => {
+    vi.stubEnv('BLASTRADIUS_TRUST_PROXY', '');
+    expect(await serveWith([])).not.toHaveProperty('trustProxy');
+    serveMock.mockClear();
+    vi.stubEnv('BLASTRADIUS_TRUST_PROXY', '10.0.0.1, 10.0.0.2');
+    expect(await serveWith([])).toMatchObject({ trustProxy: ['10.0.0.1', '10.0.0.2'] });
+    serveMock.mockClear();
+    expect(await serveWith(['--trust-proxy', '192.0.2.1'])).toMatchObject({ trustProxy: ['192.0.2.1'] });
+    expect(parseAddressList(' a, ,b ')).toEqual(['a', 'b']);
+  });
 });
 
 describe('cli options', () => {

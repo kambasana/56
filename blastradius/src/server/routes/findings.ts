@@ -14,7 +14,7 @@ import type {
   UpdateFindingStatusResponse,
 } from '../api-types.js';
 import { FINDING_STATUSES } from '../api-types.js';
-import { deps, hasProjectPerm, requireOrg, requireProjectPerm, visibleProjects, type AppEnv, type Ctx } from '../context.js';
+import { deps, requireOrg, requireProjectPerm, visibleProjects, type AppEnv, type Ctx } from '../context.js';
 import { badRequest, notFound } from '../errors.js';
 import { findingGraph, investigateNode, investigateSearch, nodeGraph, type ScanFindingSet } from '../graph.js';
 import { idParam, pageQuery, parseBody, queryInt, queryString } from '../request.js';
@@ -186,11 +186,13 @@ export function registerFindingRoutes(app: Hono<AppEnv>): void {
 
   app.get('/api/investigate/node', (c) => {
     const projectId = queryString(c, 'project', 100);
-    const { orgId, session, project } = requireProjectPerm(c, projectId, 'investigate');
+    const { orgId, project } = requireProjectPerm(c, projectId, 'investigate');
     const id = nodeParam(c, 'id');
     const { store } = deps(c);
     // Appearances across every project the caller may investigate (the requested one first).
-    const others = listProjects(store, orgId).filter((p) => p.id !== project.id && hasProjectPerm(c, orgId, session.user.id, p.id, 'investigate'));
+    const { projectIds } = visibleProjects(c, 'investigate');
+    const allowed = projectIds === null ? null : new Set(projectIds);
+    const others = listProjects(store, orgId).filter((p) => p.id !== project.id && (allowed === null || allowed.has(p.id)));
     const sets: ScanFindingSet[] = [];
     for (const p of [project, ...others].slice(0, 100)) {
       const set = latestSet(c, orgId, p);

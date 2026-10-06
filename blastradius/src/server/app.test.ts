@@ -22,6 +22,7 @@ import type {
   Scan,
 } from './api-types.js';
 import { createServer, E2E_REPO_DIR, FIXTURE_AS_OF, FIXTURES_DIR, seedDevData } from './serve.js';
+import { resolveStatic } from './static.js';
 import { createOrg, createProject, createUser, enqueueScan, seedDev, type Store } from './store/index.js';
 
 function offlineHttp(): HttpClient {
@@ -461,6 +462,28 @@ describe('path traversal and target safety', () => {
     expect(await dir.text()).not.toContain('app-abc.js');
     expect((await srv.app.request('/api/nope')).status).toBe(404);
     expect((await srv.app.request('/', { method: 'POST' })).status).toBe(405);
+  });
+
+  it('streams GET bodies and answers HEAD with the same headers and no body', async () => {
+    const js = 'console.log(1)';
+    const get = await srv.app.request('/assets/app-abc.js');
+    expect(get.status).toBe(200);
+    expect(get.body).toBeInstanceOf(ReadableStream);
+    expect(get.headers.get('content-length')).toBe(String(Buffer.byteLength(js)));
+    expect(await get.text()).toBe(js);
+    const head = await srv.app.request('/assets/app-abc.js', { method: 'HEAD' });
+    expect(head.status).toBe(200);
+    for (const h of ['content-type', 'content-length', 'cache-control']) expect(head.headers.get(h)).toBe(get.headers.get(h));
+    expect(await head.text()).toBe('');
+    const headIndex = await srv.app.request('/projects/x', { method: 'HEAD' });
+    expect(headIndex.headers.get('content-type')).toMatch(/^text\/html/);
+    expect(headIndex.headers.get('cache-control')).toBe('no-cache');
+    expect(headIndex.headers.get('content-security-policy')).toMatch(/default-src 'self'/);
+    expect(Number(headIndex.headers.get('content-length'))).toBeGreaterThan(0);
+    // Resolution only stats the file: the body is opened (streamed) by GET alone.
+    const resolved = await resolveStatic(webDir, '/assets/app-abc.js');
+    expect(resolved).toMatchObject({ status: 200, size: Buffer.byteLength(js) });
+    expect(resolved).not.toHaveProperty('body');
   });
 });
 

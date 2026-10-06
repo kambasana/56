@@ -12,7 +12,7 @@ import { registerFindingRoutes } from './routes/findings.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerReportRoutes } from './routes/reports.js';
 import { registerSettingsRoutes } from './routes/settings.js';
-import { resolveStatic, SPA_CSP } from './static.js';
+import { resolveStatic, SPA_CSP, staticBody } from './static.js';
 import { getSession, setSessionOrg } from './store/index.js';
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -80,10 +80,12 @@ export function createApp(deps: ServerDeps): Hono<AppEnv> {
     const res = await resolveStatic(webDir, new URL(c.req.url).pathname);
     if (res.status !== 200) return c.text(res.status === 400 ? 'Bad request' : 'Not found', res.status);
     c.header('Content-Type', res.type);
+    c.header('Content-Length', String(res.size));
     c.header('Cache-Control', res.cache);
     if (res.type.startsWith('text/html')) c.header('Content-Security-Policy', SPA_CSP);
+    // HEAD: the same headers, without opening the file. GET streams it.
     if (c.req.method === 'HEAD') return c.body(null);
-    return c.body(new Uint8Array(res.body));
+    return c.body(staticBody(res.file));
   });
 
   app.all('*', (c) => c.text('Method not allowed', 405));

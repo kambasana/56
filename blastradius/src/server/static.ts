@@ -3,7 +3,9 @@
  * (after realpath), never as a directory listing. Unknown paths without a file extension
  * fall back to index.html so client-side routes work; unknown asset paths are 404.
  */
-import { readFile, realpath, stat } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { realpath, stat } from 'node:fs/promises';
+import { Readable } from 'node:stream';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isPathInside } from '../core/paths.js';
@@ -34,7 +36,13 @@ const TYPES: Record<string, string> = {
 export const SPA_CSP =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'";
 
-export type StaticResult = { status: 200; body: Buffer; type: string; cache: string } | { status: 400 | 404 };
+/** A resolved file: `file` is its real path inside the web dir, `size` its byte length (from stat). */
+export type StaticResult = { status: 200; file: string; size: number; type: string; cache: string } | { status: 400 | 404 };
+
+/** Stream a resolved file's bytes (GET); HEAD needs only the StaticResult headers. */
+export function staticBody(file: string): ReadableStream<Uint8Array> {
+  return Readable.toWeb(createReadStream(file)) as unknown as ReadableStream<Uint8Array>;
+}
 
 /**
  * Resolve a URL pathname to a file response. Rejects encoded traversal, NUL bytes, backslashes
@@ -81,15 +89,16 @@ async function safeFile(root: string, candidate: string): Promise<StaticResult |
     return null;
   }
   if (!isPathInside(real, root)) return null;
+  let size: number;
   try {
     const st = await stat(real);
     if (!st.isFile()) return null;
+    size = st.size;
   } catch {
     return null;
   }
   const ext = path.extname(real).toLowerCase();
   const type = TYPES[ext] ?? 'application/octet-stream';
-  const body = await readFile(real);
   const hashed = path.relative(root, real).split(path.sep)[0] === 'assets';
-  return { status: 200, body, type, cache: ext === '.html' ? 'no-cache' : hashed ? 'public, max-age=31536000, immutable' : 'public, max-age=3600' };
+  return { status: 200, file: real, size, type, cache: ext === '.html' ? 'no-cache' : hashed ? 'public, max-age=31536000, immutable' : 'public, max-age=3600' };
 }

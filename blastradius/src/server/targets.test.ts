@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { csrfProblem } from './app.js';
+import { badRequest } from './errors.js';
 import { safeScanMessage } from './jobs.js';
 import { checkGitRef, checkGitTarget, serverCloneArgs } from './targets.js';
 import { unversionedPurl } from './graph.js';
@@ -36,6 +37,17 @@ describe('safe scan messages', () => {
     expect(m).not.toContain('/home/me');
     expect(m).not.toContain('token=abc');
     expect(m.startsWith('Scan failed:')).toBe(true);
+  });
+
+  it('passes only ApiHttpError messages through; look-alike plain errors are redacted', () => {
+    expect(safeScanMessage(badRequest('Local path must be an existing directory under the allowed scan root', ['target']))).toBe(
+      'Local path must be an existing directory under the allowed scan root',
+    );
+    expect(safeScanMessage(badRequest(`Invalid ${'x'.repeat(300)}`))).toHaveLength(200);
+    const leaked = safeScanMessage(new Error("Local path /home/me/secret/repo is not readable: EACCES, open '/home/me/secret/x'"));
+    expect(leaked).not.toContain('/home/me');
+    expect(leaked.startsWith('Scan failed:')).toBe(true);
+    expect(safeScanMessage(new Error('Invalid package.json at /srv/checkouts/abc/package.json'))).not.toContain('/srv/checkouts');
   });
 });
 

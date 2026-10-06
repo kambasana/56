@@ -6,12 +6,14 @@
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { HttpClient } from '../core/http.js';
-import type { ListAuditResponse, ListFindingsResponse, MeResponse, Org, Scan } from './api-types.js';
+import type { FindingDetail, InvestigateNodeResponse, ListAuditResponse, ListFindingsResponse, MeResponse, Org, Scan } from './api-types.js';
 import { ConcurrencyGate } from './ratelimit.js';
 import { MAX_BODY_BYTES } from './request.js';
-import { createServer, DEV_FIXTURE_REPLAY, E2E_REPO_DIR, FIXTURE_AS_OF, FIXTURES_DIR, seedDevData, serveScanDates } from './serve.js';
+import type { Ctx, ServerConfig } from './context.js';
+import { accountLimitKey, clientAddress, cookieSecure } from './routes/auth.js';
+import { createServer, DEV_FIXTURE_REPLAY, E2E_REPO_DIR, FIXTURE_AS_OF, FIXTURES_DIR, isLoopbackBindHost, seedDevData, serve, serveScanDates } from './serve.js';
 import { createBinding, createRole, createUser, getScanResult, openStore, seedDev, type Store } from './store/index.js';
 
 type App = ReturnType<typeof createServer>;
@@ -131,6 +133,112 @@ describe('login rate limiting', () => {
   });
 });
 
+/** A request as if from socket peer `peer` (app.request() has no socket otherwise). */
+async function callFrom(app: App, peer: string, path: string, body: unknown, headers: Record<string, string> = {}): Promise<Response> {
+  return app.app.request(
+    path,
+    { method: 'POST', headers: { ...XRW, 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) },
+    { incoming: { socket: { remoteAddress: peer } } },
+  );
+}
+
+describe('per-account limit keyed by client address + email', () => {
+  it('refuses a blocked address with 429 before touching the per-account limiter', async () => {
+    const app = createServer({ devMode: true, webDir: null, log: () => {}, loginIpRateLimit: 2 });
+    const hit = vi.spyOn(app.deps.loginLimiter, 'hit');
+    const attempt = () => callFrom(app, '203.0.113.9', '/api/auth/login', { email: 'a@x', password: 'x' }).then((r) => r.status);
+    expect([await attempt(), await attempt()]).toEqual([401, 401]);
+    expect(hit).toHaveBeenCalledTimes(2);
+    expect(hit).toHaveBeenLastCalledWith(accountLimitKey('203.0.113.9', 'a@x'));
+    expect(await attempt()).toBe(429);
+    expect(hit).toHaveBeenCalledTimes(2);
+    // Same for accept-invite: the address check comes first.
+    expect((await callFrom(app, '203.0.113.9', '/api/auth/accept-invite', { token: 'nope', password: 'x' })).status).toBe(429);
+    expect(hit).toHaveBeenCalledTimes(2);
+  });
+
+  it('one address exhausting an account does not lock it for another address; success resets the key', async () => {
+    const app = createServer({ devMode: true, webDir: null, log: () => {}, loginIpRateLimit: 1000 });
+    await seedDev(app.store, { devMode: true, password: PASSWORD });
+    const attempt = (peer: string, password: string) => callFrom(app, peer, '/api/auth/login', { email: 'Admin@Local', password }).then((r) => r.status);
+    for (let i = 0; i < 10; i++) expect(await attempt('198.51.100.1', 'wrong')).toBe(401);
+    expect(await attempt('198.51.100.1', PASSWORD)).toBe(429);
+    expect(await attempt('198.51.100.2', PASSWORD)).toBe(200);
+    // 9 failures + a success from one address: the composite key is reset, 10 more failures are 401s.
+    for (let i = 0; i < 9; i++) expect(await attempt('198.51.100.3', 'wrong')).toBe(401);
+    expect(await attempt('198.51.100.3', PASSWORD)).toBe(200);
+    for (let i = 0; i < 10; i++) expect(await attempt('198.51.100.3', 'wrong')).toBe(401);
+    expect(accountLimitKey('198.51.100.3', ' Admin@Local ')).toBe(accountLimitKey('198.51.100.3', 'admin@local'));
+    expect(accountLimitKey('198.51.100.3', 'admin@local')).not.toBe(accountLimitKey('198.51.100.4', 'admin@local'));
+  });
+});
+
+describe('trusted proxies', () => {
+  function ctx(peer: string | null, headers: Record<string, string>, config: Partial<ServerConfig> = {}): Ctx {
+    return {
+      env: peer ? { incoming: { socket: { remoteAddress: peer } } } : undefined,
+      req: { url: 'http://localhost:8000/api/auth/login', header: (n: string) => headers[n.toLowerCase()] },
+      get: (k: string) => (k === 'deps' ? { config } : undefined),
+    } as unknown as Ctx;
+  }
+
+  it('uses the socket address unless the peer is a trusted proxy', () => {
+    expect(clientAddress(ctx(null, {}))).toBe('local');
+    expect(clientAddress(ctx('::ffff:192.0.2.7', {}))).toBe('192.0.2.7');
+    expect(clientAddress(ctx('192.0.2.7', { 'x-forwarded-for': '1.2.3.4' }))).toBe('192.0.2.7');
+    expect(clientAddress(ctx('192.0.2.7', { 'x-forwarded-for': '1.2.3.4' }, { trustProxy: ['10.0.0.1'] }))).toBe('192.0.2.7');
+  });
+
+  it('takes the right-most X-Forwarded-For hop that is not a trusted proxy', () => {
+    const trustProxy = ['10.0.0.1', '10.0.0.2'];
+    expect(clientAddress(ctx('10.0.0.1', { 'x-forwarded-for': '6.6.6.6, 1.2.3.4, 10.0.0.2' }, { trustProxy }))).toBe('1.2.3.4');
+    expect(clientAddress(ctx('::ffff:10.0.0.1', { 'x-forwarded-for': '::ffff:1.2.3.4' }, { trustProxy }))).toBe('1.2.3.4');
+    expect(clientAddress(ctx('10.0.0.1', {}, { trustProxy }))).toBe('10.0.0.1');
+    expect(clientAddress(ctx('10.0.0.1', { 'x-forwarded-for': '10.0.0.2' }, { trustProxy }))).toBe('10.0.0.1');
+    expect(clientAddress(ctx('10.0.0.1', { 'x-forwarded-for': '1.2.3.4' }, { trustProxy: ['::ffff:10.0.0.1'] }))).toBe('1.2.3.4');
+  });
+
+  it('honours X-Forwarded-Proto for the Secure cookie only from a trusted proxy', () => {
+    const https = { 'x-forwarded-proto': 'https', host: 'localhost:8000' };
+    expect(cookieSecure(ctx('127.0.0.1', https))).toBe(false);
+    expect(cookieSecure(ctx('127.0.0.1', https, { trustProxy: ['127.0.0.1'] }))).toBe(true);
+    expect(cookieSecure(ctx('127.0.0.1', { host: 'localhost:8000' }, { trustProxy: ['127.0.0.1'] }))).toBe(false);
+    expect(cookieSecure(ctx('127.0.0.1', { host: 'br.example.com' }))).toBe(true);
+    expect(cookieSecure(ctx('127.0.0.1', https, { secureCookies: 'never', trustProxy: ['127.0.0.1'] }))).toBe(false);
+    expect(cookieSecure(ctx('127.0.0.1', { host: 'localhost' }, { secureCookies: 'always' }))).toBe(true);
+  });
+
+  it('gives each forwarded client its own address budget behind a trusted proxy', async () => {
+    const app = createServer({ devMode: true, webDir: null, log: () => {}, loginIpRateLimit: 2, trustProxy: ['10.0.0.1'] });
+    const attempt = (xff: string, peer = '10.0.0.1') =>
+      callFrom(app, peer, '/api/auth/login', { email: `u${Math.random()}@x`, password: 'x' }, { 'X-Forwarded-For': xff }).then((r) => r.status);
+    expect([await attempt('1.1.1.1'), await attempt('1.1.1.1'), await attempt('1.1.1.1')]).toEqual([401, 401, 429]);
+    expect(await attempt('2.2.2.2')).toBe(401);
+    // An untrusted peer cannot pick its address with the header.
+    expect([await attempt('3.3.3.3', '192.0.2.50'), await attempt('4.4.4.4', '192.0.2.50'), await attempt('5.5.5.5', '192.0.2.50')]).toEqual([401, 401, 429]);
+  });
+});
+
+describe('dev mode binds to loopback only', () => {
+  it('classifies loopback hosts', () => {
+    for (const h of ['127.0.0.1', '127.1.2.3', '::1', '[::1]', 'localhost', 'LOCALHOST', '::ffff:127.0.0.1']) expect(isLoopbackBindHost(h), h).toBe(true);
+    for (const h of ['0.0.0.0', '::', '10.0.0.1', '128.0.0.1', '127.0.0.256', 'example.com', 'localhost.example.com']) expect(isLoopbackBindHost(h), h).toBe(false);
+  });
+
+  it('refuses to start dev mode on a non-loopback host, and still serves dev mode on loopback', async () => {
+    const log = () => {};
+    await expect(serve({ devMode: true, host: '0.0.0.0', port: 0, webDir: null, log })).rejects.toThrow(/dev mode.*loopback.*0\.0\.0\.0/);
+    await expect(serve({ devSeed: true, host: '192.0.2.1', port: 0, webDir: null, log })).rejects.toThrow(/loopback/);
+    const ok = await serve({ devMode: true, host: '127.0.0.1', port: 0, webDir: null, log });
+    await ok.close();
+  });
+
+  it('does not restrict the host outside dev mode', async () => {
+    const s = await serve({ host: '0.0.0.0', port: 0, webDir: null, log: () => {} });
+    await s.close();
+  });
+});
+
 describe('dev users outside dev mode', () => {
   it('refuses the seeded dev password once the server runs without --dev', async () => {
     const store: Store = openStore({ path: ':memory:' });
@@ -241,6 +349,34 @@ describe('server-side checks with the seeded fixture scan', () => {
     expect((await call(srv, 'POST', '/api/session/org', { token: tokens.rev, body: { orgId: org.id } })).status).toBe(404);
     const audit = (await (await call(srv, 'GET', '/api/audit', { token })).json()) as ListAuditResponse;
     expect(audit.items.some((a) => a.action === 'session.switch_org' && a.target === orgId)).toBe(true);
+  });
+
+  it('investigate/node lists appearances only in projects the caller may investigate', async () => {
+    const created = await call(srv, 'POST', '/api/projects', { token: tokens.admin, body: { name: 'second-app', tier: 'Small', target: E2E_REPO_DIR } });
+    expect(created.status).toBe(201);
+    const secondId = ((await created.json()) as { id: string }).id;
+    const queued = await call(srv, 'POST', `/api/projects/${secondId}/scans`, { token: tokens.admin, body: {} });
+    expect(queued.status).toBe(202);
+    await srv.jobs.waitFor(((await queued.json()) as Scan).id);
+
+    const list = (await (await call(srv, 'GET', `/api/findings?project=${projectId}`, { token: tokens.admin })).json()) as ListFindingsResponse;
+    const detail = (await (await call(srv, 'GET', `/api/findings/${list.items[0]!.id}`, { token: tokens.admin })).json()) as FindingDetail;
+    const incident = detail.entityChain.find((l) => l.relation === 'incident')!.entityId;
+    const node = async (token: string, project: string) =>
+      call(srv, 'GET', `/api/investigate/node?project=${project}&id=${encodeURIComponent(incident)}`, { token });
+
+    const all = (await (await node(tokens.admin!, projectId)).json()) as InvestigateNodeResponse;
+    expect(new Set(all.appearances.map((a) => a.projectId))).toEqual(new Set([projectId, secondId]));
+
+    const scoped = createUser(srv.store, { email: 'scoped-investigator@corp', name: 'Scoped', password: PASSWORD });
+    createBinding(srv.store, orgId, { roleId: 'developer', subject: { kind: 'user', userId: scoped.id }, scope: { kind: 'project', projectId } }, adminId);
+    const token = await login(srv, 'scoped-investigator@corp');
+    const mine = await node(token, projectId);
+    expect(mine.status).toBe(200);
+    const mineBody = (await mine.json()) as InvestigateNodeResponse;
+    expect(mineBody.appearances.length).toBeGreaterThan(0);
+    expect(mineBody.appearances.every((a) => a.projectId === projectId)).toBe(true);
+    expect((await node(token, secondId)).status).toBe(403);
   });
 
   it('audits dev user switches, logins and logouts', async () => {

@@ -246,6 +246,8 @@ export function investigateNode(nodeId: string, sets: readonly ScanFindingSet[])
   let kind: InvestigateNodeResponse['kind'] = isPurl ? 'component' : 'entity';
   let known = false;
   for (const set of sets) {
+    // Inventory membership is per set: checked once, so sets without findings still count.
+    if (isPurl && !known && set.inventory?.components.some((c) => c.purl === nodeId || unversionedPurl(c.purl) === nodeId)) known = true;
     for (const f of set.findings) {
       const unv = unversionedPurl(f.purl);
       const findingId = set.findingIds.get(f.purl);
@@ -259,7 +261,6 @@ export function investigateNode(nodeId: string, sets: readonly ScanFindingSet[])
           via ??= `entity chain (${l.relation})`;
         }
       }
-      if (isPurl && set.inventory?.components.some((c) => c.purl === nodeId || unversionedPurl(c.purl) === nodeId)) known = true;
       if (via && findingId) {
         appearances.push({
           projectId: set.projectId,
