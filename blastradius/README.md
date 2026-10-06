@@ -177,14 +177,14 @@ Layout:
 
 ## What Phase 2+ adds
 
-**Not done from Phase 0:** CI for this tool (no workflow runs typecheck/test/build yet) and the Postgres schema. The MVP stores nothing in a database; both are deferred.
+**Not done from Phase 0:** the Postgres schema. The MVP stores nothing in a database; it is deferred. (CI runs in `.github/workflows/blastradius.yml`: typecheck, tests, build, KB validation and an offline end-to-end scan, plus a non-blocking live-API smoke test.)
 
 Some Phase 2 pieces are already here: npm snapshots, entity resolution with a review state, the YAML KB and its validator, funding sources, and the outbound workflow score. Still to come:
 
 - **Phase 2 (who's behind it):**
   - GitHub contributors and org membership;
   - a review-queue UI;
-  - more seed incidents with sourced, reviewed entity refs (14 project-level records ship today; Codecov 2021 is still missing);
+  - more seed incidents with sourced, reviewed entity refs (15 project-level records ship today);
   - maintainer → org → funder → incident chains shown in the report for real scans.
 - **Phase 3 (breadth):**
   - PyPI, Maven, Go and crates; yarn and pnpm lockfiles;

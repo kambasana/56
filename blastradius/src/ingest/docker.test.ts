@@ -41,6 +41,17 @@ describe('parseDockerfile', () => {
     expect(r.warnings[0]).toMatch(/unresolved build arg/);
   });
 
+  it('marks the root image of the final stage as runtime when the final stage builds FROM an earlier stage', () => {
+    const r = parseDockerfile('FROM node:20 AS base\nFROM golang:1.22 AS tools\nFROM base AS deps\nFROM deps AS final\nCOPY --from=tools /x /x\n');
+    expect(r.images.map((i) => [i.image.purl, i.scope])).toEqual([
+      ['pkg:docker/library/node@20', 'runtime'],
+      ['pkg:docker/library/golang@1.22', 'build'],
+    ]);
+    // Final stage FROM scratch: no external runtime image.
+    const s = parseDockerfile('FROM node:20 AS b\nFROM scratch\nCOPY --from=b /x /x\n');
+    expect(s.images.map((i) => i.scope)).toEqual(['build']);
+  });
+
   it('builds an image asset', () => {
     const r = dockerfileInventory(parseDockerfile('FROM node:20\n'), 'svc/Dockerfile', { environment: 'prod', criticality: 3 });
     expect(r.asset).toEqual({ id: 'image:svc/Dockerfile', kind: 'image', name: 'svc/Dockerfile', environment: 'prod', criticality: 3, sourceFile: 'svc/Dockerfile' });

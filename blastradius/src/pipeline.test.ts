@@ -1,3 +1,5 @@
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { makeFact, type Fact, type Incident } from './core/types.js';
@@ -69,6 +71,64 @@ describe('scan', () => {
     const target = path.resolve('test/fixtures/ingest/lock-v1');
     const out = await scan({ target, offline: true, now: NOW, enrichers: () => [], cacheDir: path.join(target, '.blastradius-cache') });
     expect(out.result.warnings?.some((w) => w.includes('is inside the scan target') && w.includes('disk cache disabled'))).toBe(true);
+  });
+
+  // Regression: a scanned repo can commit out/<report> (or out/ itself) as a symlink to any file.
+  describe('report writing never follows symlinks', () => {
+    const setup = () => {
+      const root = mkdtempSync(path.join(os.tmpdir(), 'br-pipe-out-'));
+      const target = path.join(root, 'repo');
+      cpSync('test/fixtures/ingest/lock-v1', target, { recursive: true });
+      const victim = path.join(root, 'victim.txt');
+      writeFileSync(victim, 'precious');
+      return { root, target, victim };
+    };
+    const run = (target: string, outDir: string) => scan({ target, offline: true, now: NOW, enrichers: () => [], cacheDir: false, outDir, formats: ['json'] });
+
+    it('refuses a symlinked destination file', async () => {
+      const { root, target, victim } = setup();
+      try {
+        mkdirSync(path.join(target, 'out'));
+        symlinkSync(victim, path.join(target, 'out', 'blastradius.json'));
+        await expect(run(target, path.join(target, 'out'))).rejects.toThrow(/symbolic link/);
+        expect(readFileSync(victim, 'utf8')).toBe('precious');
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    it('refuses a symlinked out dir, or one reached through a symlinked directory in the target', async () => {
+      const { root, target, victim } = setup();
+      try {
+        const elsewhere = path.join(root, 'elsewhere');
+        mkdirSync(elsewhere);
+        symlinkSync(elsewhere, path.join(target, 'out'));
+        await expect(run(target, path.join(target, 'out'))).rejects.toThrow(/symbolic link/);
+        await expect(run(target, path.join(target, 'out', 'nested'))).rejects.toThrow(/symbolic link/);
+        expect(existsSync(path.join(elsewhere, 'blastradius.json'))).toBe(false);
+        expect(existsSync(path.join(elsewhere, 'nested'))).toBe(false);
+        expect(readFileSync(victim, 'utf8')).toBe('precious');
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    it('replaces an existing regular report file and leaves no temp files', async () => {
+      const { root, target } = setup();
+      try {
+        const out = path.join(target, 'out');
+        mkdirSync(out);
+        writeFileSync(path.join(out, 'blastradius.json'), 'old');
+        const res = await run(target, out);
+        expect(res.files).toEqual([path.join(out, 'blastradius.json')]);
+        expect(lstatSync(res.files[0]!).isFile()).toBe(true);
+        expect(JSON.parse(readFileSync(res.files[0]!, 'utf8'))).toHaveProperty('findings');
+        expect(readFileSync(res.files[0]!, 'utf8')).not.toBe('old');
+        expect(readdirSync(out)).toEqual(['blastradius.json']);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
   });
 
   it('validates the bundled KB', async () => {

@@ -9,7 +9,7 @@
  *   stale), and otherwise throws OfflineMissError naming the missing key.
  * - Retries 429/5xx with exponential backoff.
  *
- * Responses are untrusted data: size-capped and parsed with JSON.parse only.
+ * Responses are untrusted data: size-capped while streaming and parsed with JSON.parse only.
  */
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
@@ -24,6 +24,8 @@ export interface TransportRequest {
   headers: Record<string, string>;
   body?: string;
   timeoutMs: number;
+  /** Max response body size in bytes; transports must stop reading (and throw ResponseTooLargeError) beyond it. */
+  maxBytes?: number;
 }
 
 export interface TransportResponse {
@@ -88,6 +90,14 @@ export class HttpError extends Error {
   }
 }
 
+/** Response body exceeded the client's maxBytes. Not retried. */
+export class ResponseTooLargeError extends HttpError {
+  constructor(url: string, status: number, readonly limit: number) {
+    super(url, status, `Response too large from ${url}`);
+    this.name = 'ResponseTooLargeError';
+  }
+}
+
 export class OfflineMissError extends Error {
   constructor(
     readonly url: string,
@@ -145,8 +155,36 @@ const defaultTransport: Transport = async (req) => {
   };
   if (req.body !== undefined) init.body = req.body;
   const res = await fetch(req.url, init);
-  return { status: res.status, body: await res.text() };
+  return { status: res.status, body: await readBodyLimited(res, req.url, req.maxBytes) };
 };
+
+/**
+ * Read a fetch Response body as UTF-8, counting bytes while streaming. Once `maxBytes` is
+ * exceeded (or a larger Content-Length is announced) the stream is cancelled and
+ * ResponseTooLargeError is thrown, so an oversized response is never buffered whole.
+ */
+export async function readBodyLimited(res: Response, url: string, maxBytes = Number.POSITIVE_INFINITY): Promise<string> {
+  const declared = Number(res.headers.get('content-length') ?? Number.NaN);
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    await res.body?.cancel().catch(() => {});
+    throw new ResponseTooLargeError(url, res.status, maxBytes);
+  }
+  if (!res.body) return '';
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => {});
+      throw new ResponseTooLargeError(url, res.status, maxBytes);
+    }
+    chunks.push(value);
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks, total));
+}
 
 export class HttpClient {
   readonly offline: boolean;
@@ -240,11 +278,12 @@ export class HttpClient {
     if (body !== undefined && typeof opts.body !== 'string' && !hasHeader(headers, 'content-type')) {
       headers['content-type'] = 'application/json';
     }
-    const req: TransportRequest = { url, method, headers, timeoutMs: opts.timeoutMs ?? 30_000 };
+    const req: TransportRequest = { url, method, headers, timeoutMs: opts.timeoutMs ?? 30_000, maxBytes: this.maxBytes };
     if (body !== undefined) req.body = body;
 
     const res = await this.sendWithRetry(parsed.host, req);
-    if (res.body.length > this.maxBytes) throw new HttpError(url, res.status, `Response too large from ${url}`);
+    // Backstop for transports that ignore req.maxBytes: measure bytes, not UTF-16 code units.
+    if (Buffer.byteLength(res.body, 'utf8') > this.maxBytes) throw new ResponseTooLargeError(url, res.status, this.maxBytes);
     if (ttl > 0 && ((res.status >= 200 && res.status < 300) || res.status === 404)) {
       await this.writeCache({ key, storedAt: this.now(), status: res.status, body: res.body });
     }
@@ -261,6 +300,7 @@ export class HttpClient {
       try {
         res = await this.transport(req);
       } catch (e) {
+        if (e instanceof ResponseTooLargeError) throw e; // retrying would download it again
         err = e;
       }
       const retryable = err !== undefined || (res !== undefined && (res.status === 429 || res.status >= 500));

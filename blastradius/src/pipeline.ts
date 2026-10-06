@@ -7,8 +7,9 @@
  * Nothing here executes code from the scanned target. All network I/O goes through one
  * HttpClient per scan, which honours offline mode and recorded fixtures.
  */
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HttpClient } from './core/http.js';
 import { defaultCacheDir, isPathInside } from './core/paths.js';
@@ -183,11 +184,14 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   // 6. Reports.
   const files: string[] = [];
   if (opts.outDir !== undefined) {
+    // The default out dir ("out" in the cwd) is often inside the scanned checkout, which may
+    // commit symlinks there: never write through one.
+    const scanRoot = looksLikeGitUrl(opts.target) ? undefined : opts.target;
+    await assertNoSymlinkedOutDir(opts.outDir, scanRoot);
     await mkdir(opts.outDir, { recursive: true });
+    await assertNoSymlinkedOutDir(opts.outDir, scanRoot);
     for (const format of opts.formats ?? OUTPUT_FORMATS) {
-      const file = join(opts.outDir, REPORT_FILENAMES[format]);
-      await writeFile(file, renderReport(result, format, { assets: inventory.assets }));
-      files.push(file);
+      files.push(await writeReportFile(opts.outDir, REPORT_FILENAMES[format], renderReport(result, format, { assets: inventory.assets })));
     }
   }
   return { result, inventory, facts, incidents, workflows: ingested.workflows, entities, files };
@@ -196,6 +200,51 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
 /** Back-compat wrapper returning only the ScanResult. */
 export async function runScan(opts: ScanOptions): Promise<ScanResult> {
   return (await scan(opts)).result;
+}
+
+async function lstatOrUndefined(p: string) {
+  try {
+    return await lstat(p);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw e;
+  }
+}
+
+/**
+ * Refuse an output directory that is a symlink, or that reaches the filesystem through a
+ * symlinked directory inside the scan target (whose contents the scanned repo controls).
+ */
+async function assertNoSymlinkedOutDir(outDir: string, scanRoot: string | undefined): Promise<void> {
+  const abs = resolve(outDir);
+  const check = [abs];
+  if (scanRoot !== undefined && isPathInside(abs, scanRoot)) {
+    const root = resolve(scanRoot);
+    for (let d = dirname(abs); d !== root && isPathInside(d, root); d = dirname(d)) check.push(d);
+  }
+  for (const p of check) {
+    if ((await lstatOrUndefined(p))?.isSymbolicLink()) throw new Error(`refusing to write reports: ${p} is a symbolic link`);
+  }
+}
+
+/**
+ * Write one report without following a symlink at the destination: refuse an existing symlink or
+ * non-regular file, write a fresh temp file (O_EXCL) and rename it over the destination (rename
+ * replaces a directory entry, it never writes through a link created in the meantime).
+ */
+async function writeReportFile(dir: string, name: string, data: string): Promise<string> {
+  const file = join(dir, name);
+  const st = await lstatOrUndefined(file);
+  if (st && !st.isFile()) throw new Error(`refusing to write report: ${file} is ${st.isSymbolicLink() ? 'a symbolic link' : 'not a regular file'}`);
+  const tmp = join(dir, `.${name}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`);
+  await writeFile(tmp, data, { flag: 'wx', mode: 0o644 });
+  try {
+    await rename(tmp, file);
+  } catch (e) {
+    await rm(tmp, { force: true });
+    throw e;
+  }
+  return file;
 }
 
 function dedupe(list: readonly string[]): string[] {

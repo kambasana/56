@@ -145,6 +145,10 @@ export function parseDockerfile(text: string, relPath = 'Dockerfile'): ParsedDoc
   const warnings: string[] = [];
   const globalArgs = new Map<string, string>();
   const stages = new Set<string>();
+  /** Stage name → index into `froms` of the external image at the root of that stage (undefined: scratch/unresolved). */
+  const stageRoot = new Map<string, number | undefined>();
+  /** Root external image of the stage currently being parsed (the last one is the final, runtime stage). */
+  let currentRoot: number | undefined;
   const froms: { image: ImageRef; line: number; stage?: string; index: number }[] = [];
   const copyFroms: { image: ImageRef; line: number }[] = [];
   let seenFrom = false;
@@ -169,17 +173,26 @@ export function parseDockerfile(text: string, relPath = 'Dockerfile'): ParsedDoc
       const rawImage = toks[0];
       const stage = toks.length >= 3 && toks[1]!.toUpperCase() === 'AS' ? toks[2]!.toLowerCase() : undefined;
       if (!rawImage) continue;
+      currentRoot = undefined;
       const resolved = substitute(rawImage, globalArgs);
       if (resolved === null) {
         warnings.push(`${relPath}:${line}: FROM uses an unresolved build arg (${cap(rawImage, 100)}); skipped`);
-      } else if (resolved.toLowerCase() === 'scratch' || stages.has(resolved.toLowerCase())) {
-        // internal stage or empty base
+      } else if (stages.has(resolved.toLowerCase())) {
+        // internal stage: inherits that stage's root image
+        currentRoot = stageRoot.get(resolved.toLowerCase());
+      } else if (resolved.toLowerCase() === 'scratch') {
+        // empty base
       } else {
         const img = parseImageRef(resolved);
-        if (img) froms.push({ image: img, line, ...(stage ? { stage } : {}), index: stageIndex });
-        else warnings.push(`${relPath}:${line}: unrecognised image reference "${cap(resolved, 100)}"`);
+        if (img) {
+          currentRoot = froms.length;
+          froms.push({ image: img, line, ...(stage ? { stage } : {}), index: stageIndex });
+        } else warnings.push(`${relPath}:${line}: unrecognised image reference "${cap(resolved, 100)}"`);
       }
-      if (stage) stages.add(stage);
+      if (stage) {
+        stages.add(stage);
+        stageRoot.set(stage, currentRoot);
+      }
       continue;
     }
     if (instr === 'COPY' || instr === 'ADD') {
@@ -194,9 +207,11 @@ export function parseDockerfile(text: string, relPath = 'Dockerfile'): ParsedDoc
   }
 
   const images: DockerfileImage[] = [];
-  for (const f of froms) {
-    images.push({ image: f.image, line: f.line, scope: f.index === stageIndex ? 'runtime' : 'build', ...(f.stage ? { stage: f.stage } : {}) });
-  }
+  // The runtime image is the external image at the root of the final stage, even when the final
+  // stage is built FROM an earlier named stage; every other image is build-only.
+  froms.forEach((f, i) => {
+    images.push({ image: f.image, line: f.line, scope: i === currentRoot ? 'runtime' : 'build', ...(f.stage ? { stage: f.stage } : {}) });
+  });
   for (const c of copyFroms) images.push({ image: c.image, line: c.line, scope: 'build' });
   return { images, warnings };
 }

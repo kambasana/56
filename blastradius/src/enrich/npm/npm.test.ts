@@ -13,6 +13,7 @@ import {
   fundingFromManifestField,
   packumentFacts,
   packumentUrl,
+  parseMaintainers,
   parseRepoUrl,
   scriptFlags,
   versionHistory,
@@ -125,6 +126,17 @@ describe('install script analysis (static only)', () => {
     expect(v.commands.install).toBe('node-gyp rebuild');
     expect(v.flags).toEqual(expect.arrayContaining(['implicit_gyp', 'long_command', 'runs_package_file']));
     expect(v.commands).not.toHaveProperty('prepare');
+  });
+
+  it('adds the implicit node-gyp install hook only when there is neither install nor preinstall (npm rule)', () => {
+    const pre = analyzeInstallScripts({ preinstall: 'node check.js' }, { gypfile: true });
+    expect(pre.hooks).toEqual(['preinstall']);
+    expect(pre.commands).not.toHaveProperty('install');
+    expect(pre.flags ?? []).not.toContain('implicit_gyp');
+    const own = analyzeInstallScripts({ install: 'make' }, { gypfile: true });
+    expect(own.commands.install).toBe('make');
+    expect(own.flags ?? []).not.toContain('implicit_gyp');
+    expect(analyzeInstallScripts({ postinstall: 'x' }, { gypfile: true }).flags).toContain('implicit_gyp');
   });
 
   it('reports no install script for test-only scripts and garbage input', () => {
@@ -443,9 +455,37 @@ describe('snapshots', () => {
     expect(await new NpmSnapshotStore(dir).list('event-stream')).toEqual([]);
   });
 
+  it('neither reads nor records snapshots in historical runs, even with an explicit store', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'br-snap-'));
+    const store = new NpmSnapshotStore(dir);
+    await store.record({ name: 'event-stream', takenAt: '2018-08-01T00:00:00.000Z', maintainers: ['dominictarr'], distTags: { latest: '3.3.4' }, versionCount: 9 });
+    const { ctx } = context('2018-11-25T00:00:00Z');
+    const facts = await createNpmEnricher({ snapshots: store }).enrich(inventory(comp('event-stream', '3.3.6')), { ...ctx, historical: true });
+    expect(facts.filter(isFactOf('maintainer_change')).filter((f) => f.subject === 'pkg:npm/event-stream')).toEqual([]);
+    expect((await store.list('event-stream')).map((s) => s.takenAt)).toEqual(['2018-08-01T00:00:00.000Z']);
+  });
+
   it('encodes scoped names into safe file names', () => {
     const store = new NpmSnapshotStore('/tmp/x');
     expect(store.pathFor('@babel/core')).toBe('/tmp/x/npm/%40babel%2Fcore.json');
     expect(() => store.pathFor('../../etc')).toThrow();
+  });
+});
+
+describe('parseMaintainers (legacy person strings)', () => {
+  it('extracts name and email in linear time from adversarial input', () => {
+    expect(parseMaintainers(['carol <c@example.org> (https://c.example)', ' dave ', 'erin (https://e.example)'], true)).toEqual([
+      { name: 'carol', email: 'c@example.org' },
+      { name: 'dave' },
+      { name: 'erin' },
+    ]);
+    expect(parseMaintainers(['a <b> trailing', 'x <unterminated', '   '])).toEqual([]);
+    // The previous regex took ~24 s on the first string (cubic backtracking over the spaces).
+    const evil = ['a' + ' '.repeat(500) + '<b> c', 'b' + ' '.repeat(590) + '\u0000<', 'z' + ' '.repeat(5000) + 'q'];
+    const t0 = performance.now();
+    const out = parseMaintainers(evil);
+    expect(performance.now() - t0).toBeLessThan(100);
+    // 600-char cap: the third string is truncated to "z" + spaces before parsing, so it is a valid name.
+    expect(out?.map((m) => m.name)).toEqual(['z']);
   });
 });

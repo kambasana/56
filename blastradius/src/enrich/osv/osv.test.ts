@@ -174,6 +174,18 @@ describe('OSV enricher request handling (fake transport)', () => {
     expect(warnings[0]).toMatch(/returned 0 result/);
   });
 
+  it('normalises NaN/0 concurrency, maxPages and batchSize instead of disabling fetching', async () => {
+    for (const opts of [{ concurrency: Number.NaN, maxPages: Number.NaN, batchSize: Number.NaN }, { concurrency: 0, maxPages: 0, batchSize: 0 }]) {
+      const { http, requests } = fakeOsv((req) =>
+        req.url.endsWith('/querybatch') ? { results: [{ vulns: [{ id: 'GHSA-aaaa-aaaa-aaaa' }] }] } : { id: 'GHSA-aaaa-aaaa-aaaa', summary: 'x' },
+      );
+      const facts = await createOsvEnricher(opts).enrich(inventory([comp('a', '1.0.0')]), ctxWith(http));
+      expect(requests.filter((r) => r.url.endsWith('/querybatch'))).toHaveLength(1);
+      expect(requests.some((r) => r.url.includes('/vulns/GHSA-aaaa-aaaa-aaaa'))).toBe(true);
+      expect(facts.filter(isFactOf('vuln')).map((f) => f.value.id)).toEqual(['GHSA-aaaa-aaaa-aaaa']);
+    }
+  });
+
   it('skips non-exact versions (git/file specs)', async () => {
     const { http, requests } = fakeOsv(() => ({ results: [] }));
     const inv = inventory([{ purl: 'pkg:npm/x@file:..', ecosystem: 'npm', name: 'x', version: 'file:..' }]);

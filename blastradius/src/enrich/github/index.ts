@@ -45,7 +45,7 @@ const SEGMENT_RE = /^[A-Za-z0-9_.-]{1,100}$/;
 const LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 
 export interface GithubEnricherOptions {
-  /** API token; defaults to process.env.GITHUB_TOKEN. Sent only to the GitHub API host. */
+  /** API token; defaults to process.env.GITHUB_TOKEN only when apiBase is the default GitHub API. Sent only to apiBase. */
   token?: string;
   apiBase?: string;
   rawBase?: string;
@@ -82,7 +82,9 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
   return {
     name: SOURCE,
     async enrich(inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
-      const token = opts.token ?? process.env.GITHUB_TOKEN;
+      // GITHUB_TOKEN from the environment is only ever sent to the real GitHub API; a custom
+      // apiBase needs an explicit opts.token.
+      const token = opts.token ?? (apiBase === GITHUB_API ? process.env.GITHUB_TOKEN : undefined);
       const targets = opts.resolveTargets
         ? await opts.resolveTargets(inv, ctx)
         : await resolveRepoTargets(inv, ctx, opts.repoFacts?.());
@@ -136,18 +138,17 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           }
         }
 
+        let funding: { value: FundingValue; url: string } | undefined;
         if (opts.fundingYml !== false) {
-          const funding = await fetchFundingYml(canonicalOwner, canonicalRepo);
+          funding = await fetchFundingYml(canonicalOwner, canonicalRepo);
           if (funding) for (const s of subjects) facts.push(makeFact('funding', s, funding.value, meta([funding.url])));
         }
 
         if (opts.openCollective !== false) {
           const slugs = new Set<string>();
           for (const t of group) for (const sl of t.openCollectiveSlugs ?? []) slugs.add(sl.toLowerCase());
-          for (const f of facts) {
-            if (f.kind !== 'funding' || f.value.via !== 'FUNDING.yml' || !subjects.includes(f.subject)) continue;
-            for (const src of f.value.sources) if (src.platform === 'open_collective' && src.handle) slugs.add(src.handle.toLowerCase());
-          }
+          // Only this repo's FUNDING.yml (not the facts array shared with concurrent repo lookups).
+          for (const src of funding?.value.sources ?? []) if (src.platform === 'open_collective' && src.handle) slugs.add(src.handle.toLowerCase());
           for (const slug of [...slugs].sort().slice(0, 5)) {
             const value = await fetchOpenCollective(slug);
             if (value) for (const s of subjects) facts.push(makeFact('funding', s, value, meta([`https://opencollective.com/${value.collective}`])));

@@ -115,7 +115,8 @@ export function createDepsDevEnricher(opts: DepsDevEnricherOptions = {}): Enrich
         }
         if (!v || typeof v !== 'object') return out;
 
-        out.push(makeFact('provenance', c.purl, provenanceOf(v), meta([page, provenanceOf(v).url])));
+        const provenance = provenanceOf(v);
+        out.push(makeFact('provenance', c.purl, provenance, meta([page, provenance.url])));
 
         const repo = repoOf(v);
         if (repo) {

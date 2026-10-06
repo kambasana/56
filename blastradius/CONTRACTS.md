@@ -32,7 +32,7 @@ General rules for all modules:
 | `src/report` | JSON / SARIF / HTML renderers of `ScanResult` |
 | `test/fixtures` | recorded API responses, one subdirectory per module |
 | `test/backtest` | historical incident replays |
-| `src/pipeline.ts`, `src/cli.ts` | integration (placeholder `runScan` / `validateKb` throw "not implemented") |
+| `src/pipeline.ts`, `src/cli.ts` | integration: `scan()` runs the whole pipeline; `validateKb()`; the CLI |
 
 ---
 
@@ -139,7 +139,7 @@ FACT_KINDS                             // readonly array of all kinds
 | `publisher` | versioned | `{ name: string; email?: string; version: string; publishedAt?: string; trustedPublisher?: boolean }` | npm |
 | `publisher_change` | versioned | `{ version: string; previousVersion: string; previousPublisher: string; newPublisher: string; changedAt: string; firstTimePublisher: boolean /*true when newPublisher had not published this package before `version`*/ }` | npm |
 | `maintainer_change` | unversioned (or versioned when tied to a release) | `{ added: string[]; removed: string[]; changedAt: string; version?: string; daysBeforeRelease?: number }` | npm, snapshots |
-| `install_script` | versioned | `{ hasInstallScript: boolean; hooks: ('preinstall'\|'install'\|'postinstall'\|'prepare')[]; commands: Partial<Record<hook, string /*≤500 chars, never executed*/>>; flags?: string[] }` | npm |
+| `install_script` | versioned | `{ hasInstallScript: boolean; hooks: ('preinstall'\|'install'\|'postinstall'\|'prepare')[]; commands: Partial<Record<hook, string /*≤500 chars, never executed*/>>; flags?: string[]; newHooks?: hook[] /* hooks the previous release lacked */; previousVersion?: string /* release newHooks was compared against */ }` | npm |
 | `repo` | unversioned | `{ url: string /*https://github.com/o/r*/; host: 'github'\|'gitlab'\|'bitbucket'\|'other'; owner?: string; name?: string; directory?: string; via: string /*'npm.repository'\|'depsdev.links'\|'provenance'*/ }` | npm, depsdev |
 | `repo_owner` | unversioned | `{ repo: string; owner: string; ownerType: 'User'\|'Organization'; url: string }` | github |
 | `repo_transfer` | unversioned | `{ repo: string; fromOwner: string; toOwner: string; detectedAt: string; transferredAt?: string }` (`detectedAt` = when observed; decay only from `transferredAt`) | github, snapshots |
@@ -301,6 +301,8 @@ interface EnrichContext {
   http: HttpClient;
   now: Date;                       // fixed per scan; use for all age calculations
   offline: boolean;
+  historical?: boolean;            // replay (--as-of in the past): don't report present-day state as observed at `now`;
+                                   // npm snapshots are neither read nor recorded
   warn?: (message: string) => void;
 }
 interface Enricher {
@@ -319,10 +321,29 @@ failures (including `OfflineMissError`) into `ctx.warn` rather than throwing.
 ```ts
 // src/pipeline.ts
 type OutputFormat = 'json' | 'sarif' | 'html';
-interface ScanOptions { target: string; format: OutputFormat; outDir: string; offline: boolean; fixturesDir?: string; now?: Date }
-runScan(opts: ScanOptions): Promise<ScanResult>               // placeholder: throws 'not implemented'
-validateKb(dir: string): Promise<{ ok: boolean; files: number; errors: { file: string; message: string }[] }>  // placeholder
+OUTPUT_FORMATS: readonly OutputFormat[]                      // ['json', 'sarif', 'html']
+interface ScanOptions {
+  target: string;                  // local path or git URL
+  formats?: OutputFormat[];        // reports to write (default: all three)
+  outDir?: string;                 // unset → no files written (the result is still returned)
+  offline: boolean;
+  fixturesDir?: string;
+  cacheDir?: string | false;       // default <user cache dir>/http; disabled when inside the scan target
+  now?: Date;                      // reference time; a past `now` sets EnrichContext.historical
+  kbDir?: string; reviewFile?: string; syft?: boolean;
+  enrichers?: (getFacts: () => readonly Fact[]) => Enricher[]; http?: HttpClient;   // test injection
+  log?: (message: string) => void;
+}
+interface ScanOutput { result: ScanResult; inventory: Inventory; facts: Fact[]; incidents: Incident[];
+  workflows: WorkflowInfo[]; entities: EntityGraphData; files: string[] /* report paths written */ }
+scan(opts: ScanOptions): Promise<ScanOutput>
+runScan(opts: ScanOptions): Promise<ScanResult>               // back-compat wrapper: (await scan(opts)).result
+validateKb(dir?: string): Promise<{ ok: boolean; files: number; errors: { file: string; message: string }[] }>
 ```
+
+Reports are written as `blastradius.json`, `blastradius.sarif`, `blastradius.html` in `outDir`. The scan refuses to
+write through a symlink: a symlinked `outDir`, a symlinked directory between the scan target and `outDir`, or a
+symlinked/non-regular report file is an error; reports are written to a temp file and renamed into place.
 
 CLI: `blastradius scan <target> [--format json|sarif|html] [--out dir] [--offline] [--fixtures dir]`
 (`--fixtures` implies offline) and `blastradius kb validate [dir]` (default `kb/incidents`).

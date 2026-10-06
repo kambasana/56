@@ -61,6 +61,32 @@ function parseTime(v: unknown): number | undefined {
   return Number.isFinite(ms) ? ms : undefined;
 }
 
+/**
+ * Legacy person string `"name <email> (url)"` (email and url optional, in that order). Linear-time
+ * scan (no backtracking regex over untrusted registry data). Anything else after the name yields {}.
+ */
+function parsePersonString(s: string): { name?: string; email?: string } {
+  let i = 0;
+  while (i < s.length && s[i] !== '<' && s[i] !== '(') i++;
+  const name = s.slice(0, i).trim();
+  if (!name) return {};
+  let email: string | undefined;
+  if (s[i] === '<') {
+    const end = s.indexOf('>', i + 1);
+    if (end < 0) return {};
+    email = s.slice(i + 1, end);
+    i = end + 1;
+    while (i < s.length && /\s/.test(s[i]!)) i++;
+  }
+  if (s[i] === '(') {
+    const end = s.indexOf(')', i + 1);
+    if (end < 0) return {};
+    i = end + 1;
+  }
+  if (s.slice(i).trim() !== '') return {};
+  return email ? { name, email } : { name };
+}
+
 /** Maintainer list from a manifest/packument field (`[{name,email}]` or legacy `"name <email>"` strings). */
 export function parseMaintainers(field: unknown, includeEmails = false): Maintainer[] | undefined {
   if (!Array.isArray(field)) return undefined;
@@ -69,9 +95,7 @@ export function parseMaintainers(field: unknown, includeEmails = false): Maintai
     let name: string | undefined;
     let email: string | undefined;
     if (typeof m === 'string') {
-      const match = /^\s*([^<(]+?)\s*(?:<([^>]*)>)?\s*(?:\([^)]*\))?\s*$/.exec(m.slice(0, 600));
-      name = match?.[1];
-      email = match?.[2];
+      ({ name, email } = parsePersonString(m.slice(0, 600)));
     } else if (isObject(m)) {
       name = str(m.name, HANDLE_MAX);
       email = str(m.email, 254);

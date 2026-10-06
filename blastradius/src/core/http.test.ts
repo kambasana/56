@@ -3,7 +3,9 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fixtureKey, HttpClient, HttpError, OfflineMissError, type Transport } from './http.js';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { fixtureKey, HttpClient, HttpError, OfflineMissError, readBodyLimited, ResponseTooLargeError, type Transport } from './http.js';
 
 let dir: string;
 beforeEach(async () => {
@@ -181,6 +183,70 @@ describe('HttpClient cache hardening', () => {
       process.chdir(prev.cwd);
       if (prev.env === undefined) delete process.env.BLASTRADIUS_CACHE_DIR;
       else process.env.BLASTRADIUS_CACHE_DIR = prev.env;
+    }
+  });
+});
+
+describe('response size limit', () => {
+  it('stops reading a streamed body once maxBytes is exceeded and cancels the stream', async () => {
+    let pulls = 0;
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(ctrl) {
+        pulls++;
+        ctrl.enqueue(new Uint8Array(100));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    await expect(readBodyLimited(new Response(stream), 'https://x.test/big', 250)).rejects.toBeInstanceOf(ResponseTooLargeError);
+    expect(cancelled).toBe(true);
+    expect(pulls).toBeLessThan(10);
+  });
+
+  it('rejects an announced Content-Length over the limit without reading, and measures bytes not chars', async () => {
+    const res = new Response('x'.repeat(10), { headers: { 'content-length': '999999' } });
+    await expect(readBodyLimited(res, 'https://x.test/a', 100)).rejects.toThrow(/too large/);
+    // 4 chars, 12 bytes of UTF-8.
+    await expect(readBodyLimited(new Response('€€€€'), 'https://x.test/b', 10)).rejects.toBeInstanceOf(ResponseTooLargeError);
+    expect(await readBodyLimited(new Response('\uFEFF€€€€'), 'https://x.test/c', 15)).toBe('€€€€');
+  });
+
+  it('passes maxBytes to the transport, checks bytes as a backstop and does not retry', async () => {
+    const transport = vi.fn<Transport>(async () => ({ status: 200, body: '"' + '€'.repeat(20) + '"' }));
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, maxBytes: 30, sleep: noSleep });
+    await expect(c.fetchJson('https://x.test/eur')).rejects.toBeInstanceOf(ResponseTooLargeError);
+    expect(transport.mock.calls[0]![0].maxBytes).toBe(30);
+
+    const throwing = vi.fn<Transport>(async (req) => {
+      throw new ResponseTooLargeError(req.url, 200, req.maxBytes!);
+    });
+    const c2 = new HttpClient({ transport: throwing, cacheDir: false, offline: false, minIntervalMs: 0, maxBytes: 30, sleep: noSleep });
+    await expect(c2.fetchJson('https://x.test/big')).rejects.toBeInstanceOf(ResponseTooLargeError);
+    expect(throwing).toHaveBeenCalledTimes(1);
+  });
+
+  it('default transport aborts an endless response from a real server', async () => {
+    let closed!: () => void;
+    const closedP = new Promise<void>((r) => (closed = r));
+    const server = createServer((_req, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      const timer = setInterval(() => res.write('x'.repeat(4096)), 1);
+      res.on('close', () => {
+        clearInterval(timer);
+        closed();
+      });
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    try {
+      const { port } = server.address() as AddressInfo;
+      const c = new HttpClient({ cacheDir: false, offline: false, minIntervalMs: 0, maxBytes: 64 * 1024, maxRetries: 0 });
+      await expect(c.fetchText(`http://127.0.0.1:${port}/stream`)).rejects.toBeInstanceOf(ResponseTooLargeError);
+      await closedP;
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((r) => server.close(() => r()));
     }
   });
 });

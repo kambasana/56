@@ -10,7 +10,8 @@
  * Snapshots: when enabled, a summary of each packument is stored under
  * `<user cache dir>/snapshots/npm/` (see core/paths.ts) and compared with the previous snapshot
  * to emit a snapshot-based `maintainer_change`. By default snapshots are only
- * used online, so offline/backtest runs never mix fixture data with real history.
+ * used online, so offline/backtest runs never mix fixture data with real history; historical
+ * runs (ctx.historical) never read or record snapshots, even with an explicitly supplied store.
  */
 import { OfflineMissError } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
@@ -53,7 +54,8 @@ export interface NpmEnricherOptions {
   includeEmails?: boolean;
   /**
    * Snapshot store. 'auto' (default) = enabled only when ctx.offline is false;
-   * true = always; false = never; or pass a store instance (always used).
+   * true = always; false = never; or pass a store instance. Whatever the setting, snapshots are
+   * neither read nor recorded when ctx.historical is true (backtests / --as-of replays).
    */
   snapshots?: 'auto' | boolean | NpmSnapshotStore;
   /** Snapshot directory for 'auto' / true (default <user cache dir>/snapshots). */
@@ -133,7 +135,13 @@ function hasVersion(p: Packument, version: string): boolean {
   return typeof p.versions === 'object' && p.versions !== null && Object.hasOwn(p.versions, version);
 }
 
+/**
+ * Historical replays (ctx.historical, e.g. --as-of) never use snapshots, even with an explicitly
+ * supplied store: today's registry state must not be recorded as history dated in the past, and
+ * a snapshot taken later must not produce a maintainer_change for an earlier reference time.
+ */
 function resolveStore(opts: NpmEnricherOptions, ctx: EnrichContext): NpmSnapshotStore | undefined {
+  if (ctx.historical) return undefined;
   const s = opts.snapshots ?? 'auto';
   if (s instanceof NpmSnapshotStore) return s;
   if (s === false || (s === 'auto' && ctx.offline)) return undefined;

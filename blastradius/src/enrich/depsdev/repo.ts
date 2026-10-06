@@ -40,6 +40,8 @@ export function normalizeRepoUrl(input: unknown): NormalizedRepo | undefined {
   const hostname = u.hostname.toLowerCase().replace(/^www\./, '');
   const host = HOSTS[hostname];
   if (!host) {
+    // host 'other' URLs are display/evidence only: no enricher ever fetches them (depsdev scorecard
+    // and the github enricher act only on known hosts), so internal/IP-literal hosts are not an SSRF vector.
     if (u.protocol !== 'https:' && u.protocol !== 'http:') return undefined;
     if (!hostname.includes('.')) return undefined;
     return { url: `https://${hostname}${u.pathname.replace(/\.git$/, '').replace(/\/+$/, '')}`, host: 'other' };

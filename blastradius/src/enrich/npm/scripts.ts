@@ -59,7 +59,9 @@ export function scriptFlags(command: string): InstallScriptFlag[] {
 
 /**
  * Build an install_script value from a manifest's `scripts` field.
- * `gypfile` (binding.gyp present) implies an implicit `node-gyp rebuild` install hook.
+ * `gypfile` (binding.gyp present) implies an implicit `node-gyp rebuild` install hook, which npm
+ * adds only when the package defines neither an `install` nor a `preinstall` script
+ * (@npmcli/package-json normalize, `gypfile` step).
  */
 export function analyzeInstallScripts(scripts: unknown, opts: { gypfile?: boolean; registryFlag?: boolean } = {}): NpmInstallScriptValue {
   const hooks: InstallHook[] = [];
@@ -75,7 +77,7 @@ export function analyzeInstallScripts(scripts: unknown, opts: { gypfile?: boolea
     lengths[hook] = cmd.length;
     for (const f of scriptFlags(cmd)) flags.add(f);
   }
-  if (opts.gypfile && !hooks.includes('install')) {
+  if (opts.gypfile && !hooks.includes('install') && !hooks.includes('preinstall')) {
     hooks.push('install');
     commands.install = 'node-gyp rebuild';
     lengths.install = 'node-gyp rebuild'.length;

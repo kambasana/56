@@ -192,3 +192,16 @@ describe('syft adapter', () => {
     expect(res.warnings.some((w) => /syft not found/.test(w))).toBe(true);
   });
 });
+
+describe('walkTarget: workflow detection', () => {
+  it('only treats root-level .github/workflows/*.yml|yaml as workflows (case-insensitive)', async () => {
+    const { walkTarget } = await import('./fs.js');
+    const root = tmp();
+    for (const rel of ['.github/workflows/ci.yml', '.GitHub/Workflows/Release.YAML', 'packages/a/.github/workflows/nested.yml', 'vendor/x/.github/workflows/y.yaml', '.github/workflows/sub/deep.yml']) {
+      mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      writeFileSync(path.join(root, rel), 'on: push\n');
+    }
+    const found = await walkTarget(root);
+    expect(found.workflows.sort()).toEqual(['.GitHub/Workflows/Release.YAML', '.github/workflows/ci.yml']);
+  });
+});

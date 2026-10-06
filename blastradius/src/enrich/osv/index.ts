@@ -45,13 +45,20 @@ export interface OsvEnricherOptions {
 }
 
 const SOURCE = 'osv';
+
+/** A finite integer >= 1 (capped at `max`), or `fallback` for undefined/NaN/non-finite input. */
+function positiveInt(v: number | undefined, fallback: number, max = Number.MAX_SAFE_INTEGER): number {
+  const n = v === undefined || !Number.isFinite(v) ? fallback : Math.floor(v);
+  return Math.max(1, Math.min(n, max));
+}
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 
 export function createOsvEnricher(opts: OsvEnricherOptions = {}): Enricher {
   const baseUrl = (opts.baseUrl ?? OSV_API).replace(/\/+$/, '');
-  const batchSize = Math.max(1, Math.min(opts.batchSize ?? OSV_BATCH_LIMIT, OSV_BATCH_LIMIT));
-  const concurrency = opts.concurrency ?? 8;
-  const maxPages = opts.maxPages ?? 5;
+  // Normalise numeric options so NaN/0/negative values cannot disable fetching or paging.
+  const batchSize = positiveInt(opts.batchSize, OSV_BATCH_LIMIT, OSV_BATCH_LIMIT);
+  const concurrency = positiveInt(opts.concurrency, 8);
+  const maxPages = positiveInt(opts.maxPages, 5);
 
   return {
     name: SOURCE,

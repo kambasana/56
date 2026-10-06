@@ -285,4 +285,65 @@ describe('createGithubEnricher (online transport)', () => {
     expect(others.length).toBe(4); // FUNDING.yml candidates
     expect(others.every((r) => r.headers.authorization === undefined)).toBe(true);
   });
+  it('uses GITHUB_TOKEN from the environment only for the default API base', async () => {
+    const seen: TransportRequest[] = [];
+    const http = new HttpClient({
+      offline: false,
+      cacheDir: false,
+      minIntervalMs: 0,
+      transport: async (req) => {
+        seen.push(req);
+        return { status: 404, body: 'Not Found' };
+      },
+    });
+    const { ctx } = context(http, false);
+    const target = async () => [{ subject: 'pkg:npm/r', owner: 'o', repo: 'r', declaredUrl: 'https://github.com/o/r' }];
+    const prev = process.env.GITHUB_TOKEN;
+    process.env.GITHUB_TOKEN = 'env-token';
+    try {
+      await createGithubEnricher({ apiBase: 'https://ghe.example.internal/api/v3', fundingYml: false, openCollective: false, resolveTargets: target }).enrich(inv(), ctx);
+      await createGithubEnricher({ apiBase: 'https://ghe.example.internal/api/v3', token: 'explicit', fundingYml: false, openCollective: false, resolveTargets: target }).enrich(inv(), ctx);
+      await createGithubEnricher({ fundingYml: false, openCollective: false, resolveTargets: target }).enrich(inv(), ctx);
+    } finally {
+      if (prev === undefined) delete process.env.GITHUB_TOKEN;
+      else process.env.GITHUB_TOKEN = prev;
+    }
+    expect(seen.map((r) => [new URL(r.url).host, r.headers.authorization])).toEqual([
+      ['ghe.example.internal', undefined],
+      ['ghe.example.internal', 'Bearer explicit'],
+      ['api.github.com', 'Bearer env-token'],
+    ]);
+  });
+
+  it("queries Open Collective only for the slugs in that repo's own FUNDING.yml", async () => {
+    const oc: string[] = [];
+    const http = new HttpClient({
+      offline: false,
+      cacheDir: false,
+      minIntervalMs: 0,
+      transport: async (req) => {
+        if (req.url === 'https://raw.githubusercontent.com/a/a/HEAD/.github/FUNDING.yml') return { status: 200, body: 'open_collective: col-a\n' };
+        if (req.url.startsWith('https://api.github.com/')) {
+          const [, , owner, name] = new URL(req.url).pathname.split('/');
+          return { status: 200, body: JSON.stringify({ name, html_url: `https://github.com/${owner}/${name}`, owner: { login: owner, type: 'User' } }) };
+        }
+        if (req.method === 'POST') {
+          oc.push(JSON.parse(req.body!).variables.slug);
+          return { status: 404, body: '{}' };
+        }
+        return { status: 404, body: 'Not Found' };
+      },
+    });
+    const { ctx } = context(http, false);
+    // Same subject declared by two repos: b/b has no FUNDING.yml and must not inherit a/a's collective.
+    await createGithubEnricher({
+      token: '',
+      concurrency: 1,
+      resolveTargets: async () => [
+        { subject: 'pkg:npm/s', owner: 'a', repo: 'a', declaredUrl: 'https://github.com/a/a' },
+        { subject: 'pkg:npm/s', owner: 'b', repo: 'b', declaredUrl: 'https://github.com/b/b' },
+      ],
+    }).enrich(inv(), ctx);
+    expect(oc).toEqual(['col-a']);
+  });
 });

@@ -135,7 +135,8 @@ function classify(out: FoundFiles, rel: string, base: string, atRoot: boolean): 
   if (base === 'package.json') out.packageJsons.push(rel);
   else if (base === 'package-lock.json' || base === 'npm-shrinkwrap.json') out.lockfiles.push(rel);
   else if (base === 'yarn.lock' || base === 'pnpm-lock.yaml') out.unsupportedLockfiles.push(rel);
-  else if (/(^|\/)\.github\/workflows\/[^/]+\.ya?ml$/i.test(rel)) out.workflows.push(rel);
+  // GitHub only runs workflows from the repository root's .github/workflows (not subdirectories).
+  else if (/^\.github\/workflows\/[^/]+\.ya?ml$/i.test(rel)) out.workflows.push(rel);
   else if (isDockerfileName(base)) out.dockerfiles.push(rel);
   else if (atRoot && (base === '.blastradius.yml' || base === '.blastradius.yaml')) out.config = rel;
 }

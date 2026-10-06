@@ -2,6 +2,7 @@
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError, Option } from 'commander';
+import { defaultCacheDir } from './core/paths.js';
 import type { RiskLevel } from './core/types.js';
 import { DEFAULT_KB_DIR, OUTPUT_FORMATS, scan, validateKb, type OutputFormat, type ScanOptions } from './pipeline.js';
 import { failsThreshold, formatSummary } from './summary.js';
@@ -71,7 +72,10 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--out <dir>', 'output directory for report files', 'out')
     .option('--offline', 'no network: answer from fixtures/cache only', false)
     .option('--fixtures <dir>', 'directory of recorded API responses (implies --offline)')
-    .option('--no-cache', 'disable the on-disk HTTP cache (.blastradius-cache)')
+    .option(
+      '--no-cache',
+      `disable the on-disk HTTP cache (per-user cache dir ${defaultCacheDir()}: $BLASTRADIUS_CACHE_DIR, else $XDG_CACHE_HOME/blastradius, else ~/.cache/blastradius)`,
+    )
     .option('--as-of <date>', 'reference time for decay and registry history (backtests), ISO date', parseAsOf)
     .option('--kb <dir>', 'incident knowledge base directory', DEFAULT_KB_DIR)
     .option('--review <file>', 'entity-link review decisions (JSON)')

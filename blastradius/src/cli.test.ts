@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildProgram, parseAsOf, parseFormats } from './cli.js';
+import { defaultCacheDir } from './core/paths.js';
 import { failsThreshold, formatSummary, countByLevel } from './summary.js';
 import type { Finding, ScanResult } from './core/types.js';
 
@@ -35,6 +36,13 @@ describe('cli options', () => {
       p.commands.forEach((c) => c.exitOverride().configureOutput({ writeErr: () => {} }));
       await expect(p.parseAsync(['node', 'blastradius', ...args])).rejects.toThrow();
     }
+  });
+
+  it('describes the per-user cache dir in the --no-cache help', () => {
+    const scanCmd = buildProgram(capture().io).commands.find((c) => c.name() === 'scan')!;
+    const help = scanCmd.options.find((o) => o.long === '--no-cache')!.description;
+    expect(help).toContain(defaultCacheDir());
+    expect(help).not.toContain('.blastradius-cache');
   });
 
   it('validates the bundled incident KB', async () => {
