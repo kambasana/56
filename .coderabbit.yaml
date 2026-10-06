@@ -8,9 +8,13 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    # Review-only slices of large PRs target review/* branches.
+    base_branches: ["review/.*"]
   path_filters:
     - "!blastradius/test/fixtures/**"
     - "!**/package-lock.json"
+    # Upstream shadcn/ui components, copied verbatim (see web/README.md).
+    - "!blastradius/web/src/components/ui/**"
   path_instructions:
     - path: "blastradius/src/**"
       instructions: |
