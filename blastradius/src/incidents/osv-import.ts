@@ -9,6 +9,7 @@
  * Imported incidents keep the OSV id (e.g. "MAL-2024-1234") as their `id`; they are never written
  * to the YAML KB and are not subject to the INC-YYYY-NNNN id rule.
  */
+import { COMPROMISED_RELEASE_TYPES } from '../scoring/weights.js';
 import {
   isFactOf,
   makeFact,
@@ -127,16 +128,7 @@ export function incidentsForPurl(
 }
 
 /** Incident types where the affected versions shipped code the maintainers did not intend users to run. */
-export const CODE_INCIDENT_TYPES: readonly IncidentType[] = [
-  'malware_publish',
-  'account_takeover',
-  'maintainer_sabotage',
-  'maintainer_infiltration',
-  'malicious_handover',
-  'ci_compromise',
-  'typosquat',
-  'domain_or_name_takeover',
-];
+export const CODE_INCIDENT_TYPES: readonly IncidentType[] = COMPROMISED_RELEASE_TYPES;
 
 export interface MalwareFactsOptions {
   fetchedAt: string | Date;

@@ -35,7 +35,7 @@ export function findingReach(f: Finding): FindingReach {
     directAssets: f.blastRadius.assets.filter((a) => a.paths.some((p) => p.length === 2)).length,
     paths: all.length,
   };
-  if (all.length > 0) reach.shortestPath = Math.min(...all.map((p) => p.length - 1));
+  if (all.length > 0) reach.shortestPath = all.reduce((m, p) => Math.min(m, p.length - 1), Infinity);
   return reach;
 }
 

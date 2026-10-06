@@ -13,9 +13,10 @@
  * `accept` marks a link reviewed (so scoring may use it); `reject` removes it. Decisions about
  * links that are not present are ignored (reported as `unmatched`).
  */
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { z } from 'zod';
 import type { EntityLink } from '../core/types.js';
+import { REVIEW_CONFIDENCE_THRESHOLD } from '../scoring/weights.js';
 import { linkKey } from './resolve.js';
 
 const decisionSchema = z
@@ -53,16 +54,18 @@ export function parseReviewState(value: unknown): ReviewState {
   return res.data;
 }
 
+const MAX_REVIEW_STATE_BYTES = 10_000_000;
+
 /** Load a review-state JSON file. A missing file yields an empty state. */
 export async function loadReviewState(file: string): Promise<ReviewState> {
   let text: string;
   try {
+    if ((await stat(file)).size > MAX_REVIEW_STATE_BYTES) throw new Error('review state file too large');
     text = await readFile(file, 'utf8');
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return { version: 1, decisions: [] };
     throw e;
   }
-  if (text.length > 10_000_000) throw new Error('review state file too large');
   return parseReviewState(JSON.parse(text));
 }
 
@@ -100,9 +103,9 @@ export function applyReviewState(links: readonly EntityLink[], state: ReviewStat
   return { links: out, accepted, rejected, unmatched };
 }
 
-/** Probabilistic links under 0.8 confidence: excluded from scoring until a reviewer accepts them. */
+/** Probabilistic links under REVIEW_CONFIDENCE_THRESHOLD (0.8): excluded from scoring until a reviewer accepts them. */
 export function needsReview(l: EntityLink): boolean {
-  return l.method === 'probabilistic' && l.confidence < 0.8 && !l.reviewed;
+  return l.method === 'probabilistic' && l.confidence < REVIEW_CONFIDENCE_THRESHOLD && !l.reviewed;
 }
 
 /** Whether scoring may use this link. */

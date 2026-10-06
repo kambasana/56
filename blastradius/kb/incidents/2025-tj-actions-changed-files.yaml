@@ -15,11 +15,9 @@ affected:
     # cite the abbreviated 0e58ed8. The commit is no longer fetchable from the repository
     # (git: "not our ref", checked 2026-10-06).
     versions: ["0e58ed8671d6b60d0890c21b07f8835ace038e67"]
-entities:
-  # The organisation's repository was the compromised party; the role states that fact only.
-  - ref: org:github/tj-actions
-    role: owner_of_compromised_repository
-    confidence: 1
+# The organisation was the victim of the compromise, so no entity is attributed: listing it would
+# pass inherited risk to its other, unaffected actions.
+entities: []
 # Tags v1 through v45.0.7 pointed at the commit on 2025-03-14 and 2025-03-15; fixed in v46.0.1.
 # CISA added CVE-2025-30066 to the KEV catalog on 2025-03-18.
 evidence:

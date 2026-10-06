@@ -114,7 +114,7 @@ const entitySchema = z
       .string()
       .min(1)
       .max(100)
-      .regex(/^[a-z0-9_]+$/, 'must be a factual snake_case role, e.g. "owner_of_compromised_repository"'),
+      .regex(/^[a-z0-9_]+$/, 'must be a factual snake_case role, e.g. "published_affected_versions"'),
     confidence: z.number().min(0).max(1),
   })
   .strict();

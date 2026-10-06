@@ -30,8 +30,24 @@ affected:
   - { purl: pkg:npm/chalk-template, versions: ["1.1.1"] }
   - { purl: pkg:npm/backslash, versions: ["0.2.1"] }
 entities: []
+# One GitHub advisory per package (chalk, debug, ansi-styles, supports-color, then the order of `affected`).
 evidence:
   - https://github.com/advisories/GHSA-2v46-p5h4-248w
   - https://github.com/advisories/GHSA-4x49-vf9v-38px
   - https://github.com/advisories/GHSA-p5rr-crjh-x7gr
   - https://github.com/advisories/GHSA-pj3j-3w3f-j752
+  - https://github.com/advisories/GHSA-vfjc-p7x3-q864
+  - https://github.com/advisories/GHSA-jvhh-2m83-6w29
+  - https://github.com/advisories/GHSA-2rv4-jp6r-xgq7
+  - https://github.com/advisories/GHSA-pxx3-g568-hxr4
+  - https://github.com/advisories/GHSA-5fvm-p68v-5wmh
+  - https://github.com/advisories/GHSA-frh7-2f84-v9mw
+  - https://github.com/advisories/GHSA-9xjj-cmqc-578p
+  - https://github.com/advisories/GHSA-6jp5-hh4c-8c5h
+  - https://github.com/advisories/GHSA-9g9j-rggx-7fmg
+  - https://github.com/advisories/GHSA-286p-vc9p-p5qv
+  - https://github.com/advisories/GHSA-qrmh-qg46-72pp
+  - https://github.com/advisories/GHSA-jff9-gjh4-j359
+  - https://github.com/advisories/GHSA-hggr-35mp-qcxg
+  - https://github.com/advisories/GHSA-3jjr-pvq7-4jq5
+  - https://github.com/advisories/GHSA-53mq-f4w3-f7qv

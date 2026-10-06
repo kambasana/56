@@ -29,11 +29,7 @@ export {
 } from './osv-import.js';
 
 import type { IncidentStatus } from '../core/types.js';
+import { STATUS_WEIGHT } from '../scoring/weights.js';
 
 /** Scoring weight per status (CONTRACTS §5): confirmed 1.0, alleged 0.4, disputed/retracted 0. */
-export const STATUS_WEIGHTS: Readonly<Record<IncidentStatus, number>> = {
-  confirmed: 1,
-  alleged: 0.4,
-  disputed: 0,
-  retracted: 0,
-};
+export const STATUS_WEIGHTS: Readonly<Record<IncidentStatus, number>> = STATUS_WEIGHT;
