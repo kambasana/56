@@ -3,7 +3,7 @@ id: INC-2024-0002
 title: polyfill.io CDN domain changed ownership and served altered JavaScript to some visitors
 type: domain_or_name_takeover
 status: confirmed
-# TODO(kb-review): confirm date of first public report (late June 2024).
+# First public report: Sansec, 2024-06-25 (also the date of pdoc 14.5.1 / CVE-2024-38526).
 date: 2024-06-25
 severity: high
 affected:
@@ -11,5 +11,7 @@ affected:
     versions: ["*"]
 entities: []
 evidence:
-  # TODO(kb-review): verify URL; CVE-2024-38526 (pdoc's use of polyfill.io) is a candidate secondary source.
   - https://sansec.io/research/polyfill-supply-chain-attack
+  - https://blog.cloudflare.com/automatically-replacing-polyfill-io-links-with-cloudflares-mirror-for-a-safer-internet/
+  # Secondary: pdoc --math linked polyfill.io (CVE-2024-38526, fixed in pdoc 14.5.1).
+  - https://github.com/mitmproxy/pdoc/security/advisories/GHSA-5vgj-ggm4-fg62

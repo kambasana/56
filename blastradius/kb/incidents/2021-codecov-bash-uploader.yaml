@@ -1,0 +1,24 @@
+# Codecov Bash Uploader (2021): the hosted uploader script was altered without authorisation,
+# using a credential extracted from a Docker image layer, and sent CI environment variables
+# and git remote information to an external address. Altered periodically from 2021-01-31;
+# found 2021-04-01; disclosed by Codecov 2021-04-15 (CISA alert 2021-04-22). No CVE was found.
+id: INC-2021-0004
+title: Codecov Bash Uploader script altered to send CI environment variables to an external server
+type: ci_compromise
+status: confirmed
+date: 2021-04-15
+severity: high
+affected:
+  # There is no npm component. The script was served unversioned from Codecov's hosting, so no
+  # exact version or digest can be listed; "*" is scored as a decaying incident_affected reason.
+  - purl: pkg:generic/codecov-bash-uploader
+    versions: ["*"]
+# The company was the compromised party; no individual is named.
+entities:
+  - ref: org:github/codecov
+    role: owner_of_compromised_distribution
+    confidence: 1
+evidence:
+  - https://about.codecov.io/security-update/
+  - https://www.cisa.gov/news-events/alerts/2021/04/22/codecov-releases-security-update
+  - https://www.cisa.gov/news-events/alerts/2021/04/30/codecov-releases-new-detections-supply-chain-compromise

@@ -16,4 +16,7 @@ affected:
 entities: []
 evidence:
   - https://github.com/dominictarr/event-stream/issues/116
-  # TODO(kb-review): add the GitHub advisory id for flatmap-stream once verified.
+  # Per the npm bulk advisory API: GHSA-9x64-5r7x-2q53 (flatmap-stream =0.1.1, CWE-506) and
+  # GHSA-mh6f-8j2x-4483 (event-stream =3.3.6 and flatmap-stream, CWE-506).
+  - https://github.com/advisories/GHSA-9x64-5r7x-2q53
+  - https://github.com/advisories/GHSA-mh6f-8j2x-4483

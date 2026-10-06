@@ -1,7 +1,9 @@
 # eslint-config-prettier (2025): four versions published from a phished maintainer token with an
 # install-time payload (GHSA-r568-chxc-crfm, CWE-506). GHSA-f29h-pxvx-f335 also covers
 # eslint-plugin-prettier, synckit, @pkgr/core and napi-postinstall.
-# TODO(kb-review): add the exact versions of those four packages from GHSA-f29h-pxvx-f335.
+# Exact versions of those four packages per the npm bulk advisory API for GHSA-f29h-pxvx-f335
+# (eslint-plugin-prettier >=4.2.2 <=4.2.3, i.e. 4.2.2 and 4.2.3 in the registry; all others "=");
+# every listed version is now unpublished. All were published 2025-07-18.
 # Publish time from the registry (2025-07-18T16:09Z).
 id: INC-2025-0003
 title: eslint-config-prettier 8.10.1, 9.1.1, 10.1.6 and 10.1.7 published with an install-time payload
@@ -12,6 +14,14 @@ severity: critical
 affected:
   - purl: pkg:npm/eslint-config-prettier
     versions: ["8.10.1", "9.1.1", "10.1.6", "10.1.7"]
+  - purl: pkg:npm/eslint-plugin-prettier
+    versions: ["4.2.2", "4.2.3"]
+  - purl: pkg:npm/synckit
+    versions: ["0.11.9"]
+  - purl: pkg:npm/%40pkgr/core
+    versions: ["0.2.8"]
+  - purl: pkg:npm/napi-postinstall
+    versions: ["0.3.1"]
 entities: []
 evidence:
   - https://github.com/advisories/GHSA-r568-chxc-crfm

@@ -3,7 +3,7 @@ id: INC-2022-0002
 title: node-ipc 10.1.1 and 10.1.2 included code that overwrote files on hosts selected by IP geolocation
 type: maintainer_sabotage
 status: confirmed
-# TODO(kb-review): confirm disclosure date (CVE published mid-March 2022).
+# First public reports 2022-03-15 (Snyk); GHSA-97m3-w2cp-4xx6 / CVE-2022-23812 published 2022-03-16.
 date: 2022-03-15
 severity: critical
 affected:
@@ -15,3 +15,4 @@ entities: []
 evidence:
   - https://github.com/advisories/GHSA-97m3-w2cp-4xx6
   - https://nvd.nist.gov/vuln/detail/CVE-2022-23812
+  - https://snyk.io/blog/peacenotwar-malicious-npm-node-ipc-package-vulnerability/
