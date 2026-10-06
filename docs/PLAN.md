@@ -402,3 +402,20 @@ AI **assists**. It never decides.
 2. GitHub Models, Azure, Cloudflare, Ollama Cloud, xAI and Anthropic adapters, with a contract-test suite every adapter must pass.
 3. The ACP client, tested first with Claude Code's adapter and Gemini CLI, then other agents.
 4. Fix-PR drafting, KB drafting and suggested entity links, all behind human review.
+
+---
+
+## 12. Product decisions (agreed 2026-10-06)
+
+- **Investigate and report, don't fix.** Blastradius finds, explains and reports. Fixes happen in other tools: findings and reports go out through GitHub (App, Actions, code scanning, issues, release assets), signed webhooks and the REST API. More connectors (Jira, Slack, Linear, ServiceNow, Splunk) come later.
+- **Org → Project.** An organization holds projects; each project picks a **size tier** (Small, Standard, Large, Ecosystem) that sets scan cadence, dependency depth, retention, graph rendering and entity hops. Every tier setting can be overridden.
+- **Table-first UI.** Main screens: Org home, Changes, Findings (with a side panel), Exposure matrix, Investigate, Reports, Integrations, Settings. Graphs are opened scoped to one finding or entity, never estate-wide by default.
+- **RBAC, configured by the customer.** A role is a set of page and action permissions, assigned to people or SSO groups at org or project scope; multiple roles combine as a union. Built-in roles are editable templates and new roles can be made from any template. Org admin keeps every permission. All role changes go to the audit log. Default templates:
+  - **Org admin:** everything.
+  - **AppSec:** every page except Settings.
+  - **Developer:** every page except Settings.
+  - **Auditor:** Reports.
+  - Others (e.g. **Leadership**) are created by the customer from a template; nothing is pre-decided for them.
+  - Action permissions (review, send to destinations, build/sign reports, accept risk, review entity links, manage projects/integrations/members) are set by the customer per role.
+
+Design canvas (private until shared): https://claude.ai/artifact/PsPxGRSGVwFkz4q4vhJGWR
