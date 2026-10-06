@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { defaultCacheDir } from './core/paths.js';
@@ -117,7 +118,70 @@ export function buildProgram(io: ProgramIo = {}): Command {
       if (!res.ok) process.exitCode = 1;
     });
 
+  program
+    .command('serve')
+    .description('Start the web app and API (binds to 127.0.0.1 by default). Scans never execute repository code.')
+    .option('--port <port>', 'port to listen on', parsePort, 8000)
+    .option('--host <host>', 'interface to bind (use 0.0.0.0 only behind TLS)', '127.0.0.1')
+    .option('--db <path>', 'SQLite database file (default: in memory, lost on exit)')
+    .option('--dev', 'dev mode: seeded users and the role switcher', false)
+    .option('--dev-seed', 'dev mode plus a demo project scanned offline from test/fixtures (implies --dev)', false)
+    .option('--offline', 'no network for scans: answer from fixtures/cache only', false)
+    .option('--fixtures <dir>', 'directory of recorded API responses for offline scans (implies --offline)')
+    .option('--as-of <date>', 'reference time for every scan (offline demos), ISO date', parseAsOf)
+    .option('--allow-local-root <dir>', 'root under which local paths may be scanned (repeatable; default: $BLASTRADIUS_SCAN_ROOT or the cwd)', collect, [])
+    .option('--web <dir>', 'built web app directory (default: web/dist next to the package)')
+    .option('--concurrency <n>', 'scans run at once (1-4)', parseConcurrency, 2)
+    .action(async (o: ServeCliOptions) => {
+      const { serve } = await import('./server/serve.js');
+      const offline = o.offline || o.fixtures !== undefined;
+      await serve({
+        port: o.port,
+        host: o.host,
+        ...(o.db !== undefined ? { dbPath: o.db } : {}),
+        devMode: o.dev || o.devSeed,
+        devSeed: o.devSeed,
+        offline,
+        ...(o.fixtures !== undefined ? { fixturesDir: resolvePath(o.fixtures) } : {}),
+        ...(o.asOf ? { asOf: o.asOf } : {}),
+        ...(o.allowLocalRoot.length > 0 ? { localRoots: o.allowLocalRoot.map((d) => resolvePath(d)) } : {}),
+        ...(o.web !== undefined ? { webDir: resolvePath(o.web) } : {}),
+        concurrency: o.concurrency,
+        log: (m) => err(`${m}\n`),
+      });
+    });
+
   return program;
+}
+
+interface ServeCliOptions {
+  port: number;
+  host: string;
+  db?: string;
+  dev: boolean;
+  devSeed: boolean;
+  offline: boolean;
+  fixtures?: string;
+  asOf?: Date;
+  allowLocalRoot: string[];
+  web?: string;
+  concurrency: number;
+}
+
+function parsePort(value: string): number {
+  const n = Number(value);
+  if (!/^\d{1,5}$/.test(value) || n < 0 || n > 65535) throw new InvalidArgumentError('expected a port number 0-65535');
+  return n;
+}
+
+function parseConcurrency(value: string): number {
+  const n = Number(value);
+  if (!/^\d$/.test(value) || n < 1 || n > 4) throw new InvalidArgumentError('expected 1-4');
+  return n;
+}
+
+function collect(value: string, previous: string[]): string[] {
+  return [...previous, value];
 }
 
 function isMain(): boolean {
