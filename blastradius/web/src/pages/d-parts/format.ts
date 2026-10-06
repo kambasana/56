@@ -64,15 +64,7 @@ export function purlLabel(purl: string): string {
   }
 }
 
-/** Only http(s) URLs become links; anything else (javascript:, data:, relative) is shown as text. */
-export function safeHref(url: string): string | null {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
-  } catch {
-    return null;
-  }
-}
+export { safeHref } from '@/lib/safe-href';
 
 /** "2026-10-06" from an ISO time, or an em dash. */
 export function fmtDate(iso: string | null | undefined): string {

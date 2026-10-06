@@ -1,5 +1,10 @@
+/** Empty, loading, error and 403 states on top of the shadcn/ui Empty component. */
 import type { ReactNode } from 'react';
-import { cn } from '@/lib/cn';
+import { CircleAlert, ShieldX } from 'lucide-react';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export interface EmptyStateProps {
   title: ReactNode;
@@ -13,17 +18,28 @@ export interface EmptyStateProps {
 
 export function EmptyState({ title, description, action, icon, className, role = 'status' }: EmptyStateProps) {
   return (
-    <div role={role} className={cn('flex flex-col items-center justify-center gap-2 px-6 py-12 text-center', className)}>
-      {icon && <div className="text-muted-foreground [&_svg]:size-6">{icon}</div>}
-      <p className="m-0 text-sm font-semibold">{title}</p>
-      {description && <p className="m-0 max-w-md text-[13px] leading-[18px] text-muted-foreground">{description}</p>}
-      {action && <div className="pt-2">{action}</div>}
-    </div>
+    <Empty role={role} className={cn('gap-4 p-6 md:p-10', className)}>
+      <EmptyHeader>
+        {icon && <EmptyMedia variant="icon">{icon}</EmptyMedia>}
+        <EmptyTitle className="text-base">{title}</EmptyTitle>
+        {description && <EmptyDescription>{description}</EmptyDescription>}
+      </EmptyHeader>
+      {action && <EmptyContent>{action}</EmptyContent>}
+    </Empty>
   );
 }
 
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
-  return <EmptyState title={<span className="font-normal text-muted-foreground">{label}</span>} />;
+  return (
+    <EmptyState
+      title={
+        <span className="inline-flex items-center gap-2 text-sm font-normal text-muted-foreground">
+          <Spinner role="presentation" aria-label={undefined} aria-hidden="true" />
+          {label}
+        </span>
+      }
+    />
+  );
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
@@ -31,13 +47,14 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   return (
     <EmptyState
       role="alert"
+      icon={<CircleAlert className="text-destructive" />}
       title="Could not load this page"
       description={message}
       action={
         onRetry ? (
-          <button type="button" onClick={onRetry} className="h-8 cursor-pointer rounded-md border px-3 text-[13px] hover:bg-accent">
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         ) : undefined
       }
     />
@@ -48,6 +65,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 export function ForbiddenState({ page }: { page?: string }) {
   return (
     <EmptyState
+      icon={<ShieldX />}
       title="You don't have access to this page"
       description={`Your roles do not include the ${page ? `"${page}" ` : ''}page permission. An org admin can change roles in Settings.`}
     />

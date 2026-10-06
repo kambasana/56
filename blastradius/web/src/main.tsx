@@ -4,6 +4,7 @@ import App from './App';
 import { applyTheme } from './lib/theme';
 import './index.css';
 
+// Set the theme class before the first paint (ThemeProvider keeps it in sync afterwards).
 applyTheme();
 
 const root = document.getElementById('root');

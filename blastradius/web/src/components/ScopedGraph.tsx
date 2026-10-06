@@ -7,9 +7,10 @@
  * renders them as canvas text: untrusted values are never parsed as HTML.
  */
 import cytoscape, { type Core, type ElementDefinition } from 'cytoscape';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GraphResponse, GraphNodeKind, RiskLevel } from '@server/api-types';
 import { cn } from '@/lib/cn';
+import { toRgb } from '@/lib/css-color';
 
 export interface ScopedGraphProps {
   graph: GraphResponse;
@@ -21,13 +22,26 @@ export interface ScopedGraphProps {
   label?: string;
 }
 
-function cssVar(name: string, fallback: string): string {
+/** A theme token as an opaque rgb(): Cytoscape cannot parse the theme's oklch() values. */
+function cssVar(name: string, fallback: string, base = '#fff'): string {
   if (typeof window === 'undefined') return fallback;
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v || fallback;
+  return toRgb(v || fallback, base);
 }
 
-const LEVEL_VAR: Record<RiskLevel, string> = { critical: '--destructive', high: '--warning', medium: '--foreground', low: '--muted-foreground' };
+const LEVEL_VAR: Record<RiskLevel, string> = { critical: '--level-critical', high: '--level-high', medium: '--level-medium', low: '--level-low' };
+
+/** Bumps when <html>'s class changes (light/dark), so the canvas re-reads the theme. */
+function useThemeVersion(): number {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (typeof MutationObserver === 'undefined') return;
+    const mo = new MutationObserver(() => setV((n) => n + 1));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => mo.disconnect();
+  }, []);
+  return v;
+}
 const KIND_SHAPE: Record<GraphNodeKind, string> = { asset: 'round-rectangle', component: 'ellipse', entity: 'diamond', incident: 'triangle', group: 'barrel' };
 
 export function toElements(graph: GraphResponse): ElementDefinition[] {
@@ -54,13 +68,14 @@ export function ScopedGraph({ graph, onNodeClick, layout = 'breadthfirst', class
   const cyRef = useRef<Core | null>(null);
   const clickRef = useRef(onNodeClick);
   clickRef.current = onNodeClick;
+  const themeVersion = useThemeVersion();
 
   useEffect(() => {
     if (!ref.current) return;
-    const fg = cssVar('--foreground', '#171717');
-    const muted = cssVar('--muted-foreground', '#737373');
-    const border = cssVar('--border', '#e5e5e5');
     const bg = cssVar('--background', '#ffffff');
+    const fg = cssVar('--foreground', '#171717', bg);
+    const muted = cssVar('--muted-foreground', '#737373', bg);
+    const border = cssVar('--border', '#e5e5e5', bg);
     const cy = cytoscape({
       container: ref.current,
       elements: toElements(graph),
@@ -88,7 +103,7 @@ export function ScopedGraph({ graph, onNodeClick, layout = 'breadthfirst', class
         })),
         ...(Object.keys(LEVEL_VAR) as RiskLevel[]).map((lv) => ({
           selector: `node[level = "${lv}"]`,
-          style: { 'border-color': cssVar(LEVEL_VAR[lv], fg), 'border-width': lv === 'critical' || lv === 'high' ? 2.5 : 1.5 },
+          style: { 'border-color': cssVar(LEVEL_VAR[lv], fg, bg), 'border-width': lv === 'critical' || lv === 'high' ? 2.5 : 1.5 },
         })),
         { selector: 'node[centre = 1]', style: { width: 26, height: 26, 'font-weight': 'bold' } },
         { selector: 'node:selected', style: { 'overlay-opacity': 0.08, 'overlay-color': fg } },
@@ -111,7 +126,7 @@ export function ScopedGraph({ graph, onNodeClick, layout = 'breadthfirst', class
       cy.destroy();
       cyRef.current = null;
     };
-  }, [graph, layout]);
+  }, [graph, layout, themeVersion]);
 
   return (
     <div className="flex flex-col gap-1">

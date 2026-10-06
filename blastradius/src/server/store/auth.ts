@@ -76,6 +76,8 @@ export interface CreateUserInput {
   name: string;
   /** Plain password; hashed before storage. Omit for SSO-only / passwordless users. */
   password?: string;
+  /** Already-hashed password (from hashPassword); takes precedence over `password`. */
+  passwordHash?: string;
   /** Seeded dev user (eligible for the dev role switcher). */
   dev?: boolean;
 }
@@ -90,7 +92,7 @@ export function createUser(s: Store, input: CreateUserInput): User {
   const name = input.name.trim();
   if (!name || name.length > 200) throw new StoreError('bad_request', 'Invalid name', ['name']);
   const id = newId('usr');
-  const hash = input.password !== undefined ? hashPasswordSync(input.password) : null;
+  const hash = input.passwordHash ?? (input.password !== undefined ? hashPasswordSync(input.password) : null);
   try {
     run(
       s,

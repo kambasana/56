@@ -298,6 +298,8 @@ export interface Scan extends ScanRef {
   summary: ScanSummary | null;
   /** Engine schema version of the stored ScanResult. */
   schemaVersion: '1' | null;
+  /** Last state change: the latest of createdAt, startedAt and finishedAt. Always sent by the server. */
+  updatedAt?: IsoTime;
 }
 
 /** POST /api/projects/:id/scans -> 202 */
@@ -309,8 +311,22 @@ export interface CreateScanRequest {
 }
 export type CreateScanResponse = Scan;
 
-/** GET /api/projects/:id/scans */
-export type ListScansResponse = Page<Scan>;
+/**
+ * GET /api/projects/:id/scans?limit=&cursor=&updatedSince=
+ *
+ * Without `updatedSince`: every scan, newest first, paged. With `updatedSince` (ISO time):
+ * only scans whose `updatedAt` is at or after it (new, started or finished since), still newest
+ * first and paged with `cursor`. To poll without dropping already-loaded pages, pass the
+ * previous response's `serverTime` as `updatedSince` and merge the rows by id (a row changed
+ * exactly at `serverTime` can come back twice).
+ */
+export interface ListScansQuery extends PageQuery {
+  updatedSince?: IsoTime;
+}
+export type ListScansResponse = Page<Scan> & {
+  /** Server clock when the list was read: the next poll's `updatedSince`. */
+  serverTime: IsoTime;
+};
 
 /** GET /api/scans/:id */
 export type GetScanResponse = Scan;
@@ -671,10 +687,55 @@ export interface CreateBindingRequest {
 }
 export type CreateBindingResponse = RoleBinding;
 
+export type Member = User & { bindings: RoleBinding[] };
+
 /** GET /api/members : users in the org with their bindings */
 export interface ListMembersResponse {
-  items: (User & { bindings: RoleBinding[] })[];
+  items: Member[];
 }
+
+/**
+ * POST /api/members (manage_members): add a user to the working org by email with one or more
+ * initial role bindings. Each binding follows the POST /api/bindings rules (only roles whose
+ * permissions the caller holds; only an Org admin grants Org admin).
+ */
+export interface InviteMemberRequest {
+  email: string;
+  name: string;
+  /** 1–20 bindings for the invited user. */
+  bindings: { roleId: Id; scope: BindingScope }[];
+}
+
+/**
+ * POST /api/members -> 201. Secrets appear in this response only, once; never in logs or audit.
+ *
+ * Outside dev mode the answer is always a pending `invite`, worded the same whether or not the
+ * email already has an account: nothing is granted until the invitee accepts, and an existing
+ * account must confirm with its own password. Inviting the same email again replaces its earlier
+ * unaccepted invites (that is how an expired invite is re-sent). 409 only when the email is
+ * already a member of this org.
+ */
+export interface InviteMemberResponse {
+  /** Dev mode, email without an account: the member, created and bound straight away. */
+  member?: Member;
+  /** Dev mode, with `member`: a generated password to hand over. Shown once. */
+  oneTimePassword?: string;
+  /** Every other case: a single-use invite for POST /api/auth/accept-invite (web: /accept-invite#token=...). */
+  invite?: { token: string; expiresAt: IsoTime; email: string; name: string };
+}
+
+/**
+ * POST /api/auth/accept-invite (public): join the invite's org, then sign in. With no account for
+ * the invited email, `password` (12+ characters) becomes the new account's password; with an
+ * existing account it must be that account's current password. Failures answer 400 with one
+ * generic message; attempts count against the sign-in rate limits.
+ */
+export interface AcceptInviteRequest {
+  token: string;
+  password: string;
+}
+/** Sets the session cookie, like login. */
+export type AcceptInviteResponse = MeResponse;
 
 export interface AuditEntry {
   id: Id;

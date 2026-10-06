@@ -10,7 +10,7 @@ import { fakeApi, renderPage, scan } from './kit';
 afterEach(() => setFetcher((...a) => fetch(...a)));
 
 const at = (me = meFor('org_admin')) => ({ path: '/projects/p1/scans', pattern: '/projects/:id/scans', me });
-const page = (items: ScanT[]) => ({ items, total: items.length, nextCursor: null });
+const page = (items: ScanT[], serverTime = '2018-11-27T10:05:00.000Z') => ({ items, total: items.length, nextCursor: null, serverTime });
 
 describe('<Scans>', () => {
   it('lists scans with status and summary', async () => {
@@ -40,7 +40,12 @@ describe('<Scans>', () => {
     ]);
     renderPage(<Scans />, at());
     await user.click(await screen.findByRole('button', { name: 'Run scan' }));
+    const confirm = await screen.findByRole('alertdialog', { name: 'Run a scan of payments-platform?' });
+    expect(api.calls.some((c) => c.method === 'POST')).toBe(false);
+    await user.click(within(confirm).getByRole('button', { name: 'Run scan' }));
     expect(await screen.findByText('Queued')).toBeInTheDocument();
+    expect(await screen.findByText('Scan queued')).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     const post = api.calls.find((c) => c.method === 'POST')!;
     expect(post.headers['X-Requested-With']).toBe('blastradius');
     expect(screen.getByRole('button', { name: 'Scan in progress' })).toBeDisabled();
@@ -54,6 +59,7 @@ describe('<Scans>', () => {
     ]);
     renderPage(<Scans />, at());
     await user.click(await screen.findByRole('button', { name: 'Run scan' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Run scan' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('A scan is already running');
   });
 
@@ -97,6 +103,59 @@ describe('<Scans>', () => {
     renderPage(<Scans />, at());
     expect(await screen.findByText('Running')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('Succeeded')).toBeInTheDocument(), { timeout: 4000 });
+  });
+
+  it('polls with updatedSince and keeps older pages that were loaded', async () => {
+    const user = userEvent.setup();
+    let polls = 0;
+    const api = fakeApi([
+      [
+        'GET',
+        /^\/api\/projects\/p1\/scans$/,
+        (url) => {
+          if (url.searchParams.get('updatedSince')) {
+            polls += 1;
+            // The running scan finished; nothing else changed.
+            return { items: [scan('s3')], total: 1, nextCursor: null, serverTime: `2018-11-27T10:1${polls}:00.000Z` };
+          }
+          return url.searchParams.get('cursor') === 'c1'
+            ? { items: [scan('s1', { status: 'failed', summary: null, error: 'Old failure', finishedAt: null })], total: 2, nextCursor: null, serverTime: 'x' }
+            : { items: [scan('s3', { status: 'running', summary: null, finishedAt: null }), scan('s2')], total: 3, nextCursor: 'c1', serverTime: '2018-11-27T10:10:00.000Z' };
+        },
+      ],
+    ]);
+    renderPage(<Scans />, at());
+    expect(await screen.findByText('Running')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Load older scans' }));
+    expect(await screen.findByText('Old failure')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Running')).toBeNull(), { timeout: 4000 });
+    // The older page is still there, and the poll only asked for what changed.
+    expect(screen.getByText('Old failure')).toBeInTheDocument();
+    expect(screen.getByTestId('datatable-count')).toHaveTextContent('Showing 3 of 3');
+    const poll = api.calls.find((c) => c.url.searchParams.get('updatedSince'))!;
+    expect(poll.url.searchParams.get('updatedSince')).toBe('2018-11-27T10:10:00.000Z');
+    expect(poll.url.searchParams.get('cursor')).toBeNull();
+  });
+
+  it('cancels the run-scan confirmation without starting a scan', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi([['GET', /^\/api\/projects\/p1\/scans$/, () => page([scan('s1')])]]);
+    renderPage(<Scans />, at());
+    await user.click(await screen.findByRole('button', { name: 'Run scan' }));
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(api.calls.some((c) => c.method === 'POST')).toBe(false);
+  });
+
+  it('opens New project as a dialog', async () => {
+    const user = userEvent.setup();
+    fakeApi([['GET', /^\/api\/projects\/p1\/scans$/, () => page([])]]);
+    renderPage(<Scans />, at());
+    await user.click(await screen.findByRole('button', { name: 'New project' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New project' });
+    expect(within(dialog).getByRole('button', { name: 'Create project' })).toBeDisabled();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('loads older scans past the first page', async () => {

@@ -27,7 +27,7 @@ describe('<Changes>', () => {
     expect(await screen.findByText('flatmap-stream@1.0.0')).toBeInTheDocument();
     expect(bodyRows()).toHaveLength(4);
     expect(screen.getByText('2018-11-20 10:01 UTC → 2018-11-27 10:01 UTC')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Risk down\s*0/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Risk down\s*0/ })).toBeInTheDocument();
   });
 
   it('filters by change type via the URL', async () => {
@@ -36,9 +36,10 @@ describe('<Changes>', () => {
     renderPage(<Changes />, at('?type=resolved'));
     await screen.findByText('left-pad@1.0.0');
     expect(bodyRows()).toHaveLength(1);
-    await user.click(screen.getByRole('button', { name: /^All/ }));
+    await user.click(screen.getByRole('tab', { name: /^All/ }));
     expect(bodyRows()).toHaveLength(4);
-    await user.click(screen.getByRole('button', { name: /^New reason/ }));
+    await user.click(screen.getByRole('tab', { name: /^New reason/ }));
+    expect(screen.getByRole('tab', { name: /^New reason/ })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('where')).toHaveTextContent('type=new_reason');
     expect(bodyRows()).toHaveLength(1);
   });

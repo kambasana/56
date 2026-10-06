@@ -1,9 +1,11 @@
 export { AppShell } from './AppShell';
-export { Badge, RiskBadge, RISK_LEVELS, levelLabel, type BadgeVariant } from './Badge';
-export { Button, ButtonAnchor, ButtonLink, buttonClass, type ButtonSize, type ButtonVariant } from './Button';
-export { DataTable, type ColumnDef, type DataTableProps } from './DataTable';
+export { Badge, RiskBadge, RISK_LEVELS, badgeVariants, levelBadgeVariants, levelLabel, type BadgeProps, type BadgeVariant } from './Badge';
+export { Button, ButtonAnchor, ButtonLink, buttonClass, buttonVariants, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button';
+export { DataTable, facetFilter, riskLevelFacet, type ColumnDef, type DataTableProps, type FacetConfig, type FacetOption } from './DataTable';
 export { EmptyState, ErrorState, ForbiddenState, LoadingState } from './EmptyState';
-export { Nav } from './Nav';
+export { Nav, BrandMark } from './Nav';
 export { PageHeader, type Crumb } from './PageHeader';
 export { SidePanel } from './SidePanel';
 export { StatTile, type StatTone } from './StatTile';
+export { ThemeProvider, useTheme } from './theme-provider';
+export { Toaster } from './ui/sonner';

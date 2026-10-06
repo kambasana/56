@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type {
   CreateBindingResponse,
   CreateRoleResponse,
+  InviteMemberResponse,
   ListAuditResponse,
   ListBindingsResponse,
   ListMembersResponse,
@@ -18,10 +19,27 @@ import type {
 } from '../api-types.js';
 import { ACTION_PERMISSIONS, ALL_PERMISSIONS, ORG_ADMIN_ROLE_ID, PAGE_PERMISSIONS, PERMISSION_LABELS, ROLE_TEMPLATES, isBuiltinRoleId, normalizePermissions, type Permission } from '../permissions.js';
 import { deps, requireOrgPerm, type AppEnv } from '../context.js';
+import type { Role } from '../api-types.js';
 import type { UserAccess } from '../store/index.js';
 import { badRequest, forbidden, notFound } from '../errors.js';
 import { idParam, pageQuery, parseBody, queryString } from '../request.js';
-import { createBinding, createRole, deleteBinding, deleteRole, getBinding, getProject, getRole, listAudit, listBindings, listMembers, listRoles, resetRole, updateRole } from '../store/index.js';
+import {
+  createBinding,
+  createRole,
+  deleteBinding,
+  deleteRole,
+  getBinding,
+  getProject,
+  getRole,
+  inviteMember,
+  isOrgMember,
+  listAudit,
+  listBindings,
+  listMembers,
+  listRoles,
+  resetRole,
+  updateRole,
+} from '../store/index.js';
 
 const Perms = z.array(z.string().max(64)).max(64);
 
@@ -46,6 +64,15 @@ const Scope = z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('or
 
 const CreateBindingBody = z.strictObject({ roleId: z.string().min(1).max(100), subject: Subject, scope: Scope });
 
+const InviteMemberBody = z.strictObject({
+  email: z.string().min(3).max(254),
+  name: z.string().min(1).max(200),
+  bindings: z
+    .array(z.strictObject({ roleId: z.string().min(1).max(100), scope: Scope }))
+    .min(1)
+    .max(20),
+});
+
 function checkedPermissions(input: string[] | undefined): Permission[] | undefined {
   if (input === undefined) return undefined;
   const { permissions, invalid } = normalizePermissions(input);
@@ -66,6 +93,11 @@ function assertCanGrant(a: UserAccess, roleId: string | null, permissions: reado
   if (roleId === ORG_ADMIN_ROLE_ID) throw forbidden('Only an Org admin can grant or change Org admin');
   const missing = permissions.filter((p) => !a.permissions.includes(p));
   if (missing.length > 0) throw forbidden(`You cannot grant permissions you do not hold: ${missing.join(', ')}`);
+}
+
+/** The permissions a binding to `role` hands out (Org admin is always everything). */
+function grantedBy(role: Role): readonly Permission[] {
+  return role.id === ORG_ADMIN_ROLE_ID ? ALL_PERMISSIONS : role.permissions;
 }
 
 export function registerSettingsRoutes(app: Hono<AppEnv>): void {
@@ -143,9 +175,15 @@ export function registerSettingsRoutes(app: Hono<AppEnv>): void {
   app.post('/api/bindings', async (c) => {
     const { orgId, session, access } = requireOrgPerm(c, 'manage_members');
     const body = await parseBody(c, CreateBindingBody);
-    const role = getRole(deps(c).store, orgId, body.roleId);
-    if (role) assertCanGrant(access, role.id, role.id === ORG_ADMIN_ROLE_ID ? ALL_PERMISSIONS : role.permissions);
-    return c.json<CreateBindingResponse>(createBinding(deps(c).store, orgId, body, session.user.id), 201);
+    const { store } = deps(c);
+    const role = getRole(store, orgId, body.roleId);
+    if (role) assertCanGrant(access, role.id, grantedBy(role));
+    // Only members of this org can be bound; others come in through POST /api/members. The same
+    // answer for unknown users and non-members, so this cannot probe accounts in other orgs.
+    if (body.subject.kind === 'user' && !isOrgMember(store, orgId, body.subject.userId)) {
+      throw badRequest('Unknown user: invite them to the organisation first', ['subject.userId']);
+    }
+    return c.json<CreateBindingResponse>(createBinding(store, orgId, body, session.user.id), 201);
   });
 
   app.delete('/api/bindings/:id', (c) => {
@@ -162,6 +200,27 @@ export function registerSettingsRoutes(app: Hono<AppEnv>): void {
   app.get('/api/members', (c) => {
     const { orgId } = requireOrgPerm(c, 'settings');
     return c.json<ListMembersResponse>(listMembers(deps(c).store, orgId));
+  });
+
+  app.post('/api/members', async (c) => {
+    const { orgId, session, access } = requireOrgPerm(c, 'manage_members');
+    const body = await parseBody(c, InviteMemberBody);
+    const { store, config } = deps(c);
+    body.bindings.forEach((b, i) => {
+      const role = getRole(store, orgId, b.roleId);
+      if (!role) throw badRequest('Unknown role', [`bindings.${i}.roleId`]);
+      assertCanGrant(access, role.id, grantedBy(role));
+    });
+    const out = inviteMember(store, orgId, { email: body.email, name: body.name, bindings: body.bindings, devMode: config.devMode }, session.user.id);
+    // The one-time password or invite token is in this response only: never log it.
+    return c.json<InviteMemberResponse>(
+      {
+        ...(out.member ? { member: out.member } : {}),
+        ...(out.oneTimePassword !== undefined ? { oneTimePassword: out.oneTimePassword } : {}),
+        ...(out.invite ? { invite: { token: out.invite.token, expiresAt: out.invite.expiresAt, email: out.invite.email, name: out.invite.name } } : {}),
+      },
+      201,
+    );
   });
 
   app.get('/api/audit', (c) => {

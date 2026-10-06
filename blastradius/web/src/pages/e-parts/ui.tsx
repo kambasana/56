@@ -1,182 +1,198 @@
 /**
- * Small UI pieces shared by the Track E screens (Exposure, Investigate, Reports, Integrations,
- * Settings): cards, keyboard-accessible tabs, a segmented control, a select and an inline alert.
- * Everything renders untrusted values as React text only.
+ * Shared pieces for the Track E screens (Exposure, Investigate, Reports, Integrations, Settings),
+ * composed only from the shadcn/ui components in @/components/ui. Untrusted values are
+ * rendered as React text only.
  */
-import { useId, useRef, type KeyboardEvent, type ReactNode, type SelectHTMLAttributes } from 'react';
-import { cn } from '@/lib/cn';
+import { useId, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
+import { CheckIcon, CircleAlert, CircleCheck, CopyIcon, XIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
-export function Card({ title, description, action, children, className, bodyClassName, labelledBy }: {
+/**
+ * A titled shadcn Card used as a page section. It is a labelled region (h2 title), with an
+ * optional action area (CardAction) and an edge-to-edge body for tables.
+ */
+export function SectionCard({ title, description, action, children, className, contentClassName }: {
   title?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
   children?: ReactNode;
   className?: string;
-  bodyClassName?: string;
-  labelledBy?: string;
+  contentClassName?: string;
 }) {
   const id = useId();
-  const headingId = labelledBy ?? `${id}-h`;
   return (
-    <section aria-labelledby={title ? headingId : undefined} className={cn('overflow-hidden rounded-lg border bg-card text-card-foreground', className)}>
+    <Card role={title ? 'region' : undefined} aria-labelledby={title ? id : undefined} className={cn('gap-0 overflow-hidden py-0', className)}>
       {(title || action) && (
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-2 border-b px-4 py-3">
-          <div className="flex min-w-0 grow flex-col gap-0.5">
-            {title && (
-              <h2 id={headingId} className="m-0 text-sm font-semibold leading-5">
+        <CardHeader className="gap-1 border-b px-4 py-3 [.border-b]:pb-3">
+          {title && (
+            <CardTitle>
+              <h2 id={id} className="flex items-center gap-2 text-sm leading-5 font-semibold">
                 {title}
               </h2>
-            )}
-            {description && <p className="m-0 text-[13px] leading-[18px] text-muted-foreground">{description}</p>}
-          </div>
-          {action && <div className="flex flex-wrap items-center gap-1.5">{action}</div>}
-        </div>
+            </CardTitle>
+          )}
+          {description && <CardDescription className="text-[13px] leading-[18px]">{description}</CardDescription>}
+          {action && <CardAction className="flex flex-wrap items-center gap-1.5">{action}</CardAction>}
+        </CardHeader>
       )}
-      <div className={bodyClassName}>{children}</div>
-    </section>
+      <CardContent className={cn('px-0', contentClassName)}>{children}</CardContent>
+    </Card>
   );
 }
 
-export interface TabItem<K extends string> {
-  id: K;
+export interface Option {
+  value: string;
   label: ReactNode;
-  disabled?: boolean;
 }
 
 /**
- * WAI-ARIA tabs: arrow keys, Home and End move between tabs (automatic activation). The
- * caller renders the panel; pass `panelId(id)` as the panel's id and `tabId(id)` as its
- * aria-labelledby.
+ * Labelled shadcn Select (Radix). Radix forbids an empty item value, so callers use a
+ * sentinel such as "all" for "no filter".
  */
-export function Tabs<K extends string>({ items, value, onChange, label, idBase, variant = 'line', className }: {
-  items: TabItem<K>[];
-  value: K;
-  onChange: (id: K) => void;
+export function LabeledSelect({ label, value, onValueChange, options, hideLabel, placeholder, disabled, className, size = 'sm' }: {
   label: string;
-  idBase: string;
-  variant?: 'line' | 'pill';
+  value: string;
+  onValueChange: (v: string) => void;
+  options: Option[];
+  hideLabel?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
   className?: string;
+  size?: 'sm' | 'default';
 }) {
-  const refs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const enabled = items.filter((i) => !i.disabled);
-  const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
-    const idx = enabled.findIndex((i) => i.id === value);
-    let next: TabItem<K> | undefined;
-    if (e.key === 'ArrowRight') next = enabled[(idx + 1) % enabled.length];
-    else if (e.key === 'ArrowLeft') next = enabled[(idx - 1 + enabled.length) % enabled.length];
-    else if (e.key === 'Home') next = enabled[0];
-    else if (e.key === 'End') next = enabled[enabled.length - 1];
-    if (!next) return;
-    e.preventDefault();
-    onChange(next.id);
-    refs.current[next.id]?.focus();
-  };
-  return (
-    <div
-      role="tablist"
-      aria-label={label}
-      className={cn(
-        'flex flex-wrap items-center',
-        variant === 'line' ? 'gap-4' : 'w-fit gap-0.5 rounded-lg bg-muted p-[3px]',
-        className,
-      )}
-    >
-      {items.map((t) => {
-        const on = t.id === value;
-        return (
-          <button
-            key={t.id}
-            ref={(el) => {
-              refs.current[t.id] = el;
-            }}
-            type="button"
-            role="tab"
-            id={tabId(idBase, t.id)}
-            aria-selected={on}
-            aria-controls={panelId(idBase, t.id)}
-            tabIndex={on ? 0 : -1}
-            disabled={t.disabled}
-            onClick={() => onChange(t.id)}
-            onKeyDown={onKey}
-            className={cn(
-              'cursor-pointer whitespace-nowrap border-0 bg-transparent font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-default disabled:opacity-50',
-              variant === 'line'
-                ? cn('-mb-px border-b-2 px-0.5 py-2 text-[13px]', on ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')
-                : cn('h-7 rounded-md px-2.5 text-[13px]', on ? 'bg-background text-foreground shadow-[var(--shadow-xs)]' : 'text-muted-foreground hover:text-foreground'),
-            )}
-          >
-            {t.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-export const tabId = (base: string, id: string) => `${base}-tab-${id}`;
-export const panelId = (base: string, id: string) => `${base}-panel-${id}`;
-
-export function TabPanel({ idBase, id, children, className }: { idBase: string; id: string; children: ReactNode; className?: string }) {
-  return (
-    <div role="tabpanel" id={panelId(idBase, id)} aria-labelledby={tabId(idBase, id)} className={className}>
-      {children}
-    </div>
-  );
-}
-
-export function Select({ label, className, children, hideLabel, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { label: string; hideLabel?: boolean }) {
   const id = useId();
   return (
     <span className="inline-flex items-center gap-1.5">
-      <label htmlFor={id} className={cn('text-[13px] text-muted-foreground', hideLabel && 'sr-only')}>
+      <Label htmlFor={id} className={cn('text-[13px] font-normal text-muted-foreground', hideLabel && 'sr-only')}>
         {label}
-      </label>
-      <select
-        id={id}
-        className={cn(
-          'h-8 rounded-md border border-input bg-background px-2 text-[13px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-          className,
-        )}
-        {...rest}
-      >
-        {children}
-      </select>
+      </Label>
+      <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
+        <SelectTrigger id={id} size={size} className={cn('min-w-[120px] text-[13px]', className)}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </span>
   );
 }
 
-export function InlineAlert({ children, tone = 'error', onDismiss }: { children: ReactNode; tone?: 'error' | 'info' | 'success'; onDismiss?: () => void }) {
+/** Inline error (destructive Alert). Success messages go to toasts instead. */
+export function ErrorAlert({ title, children, onDismiss, className }: { title?: ReactNode; children: ReactNode; onDismiss?: () => void; className?: string }) {
   return (
-    <div
-      role={tone === 'error' ? 'alert' : 'status'}
-      className={cn(
-        'flex items-start gap-2 rounded-md border px-3 py-2 text-[13px] leading-[18px]',
-        tone === 'error' && 'border-destructive/40 text-destructive',
-        tone === 'success' && 'border-success/40 text-success',
-        tone === 'info' && 'text-muted-foreground',
-      )}
-    >
-      <span className="grow">{children}</span>
+    <Alert variant="destructive" className={cn('py-2', onDismiss && 'pr-10', className)}>
+      <CircleAlert />
+      {title && <AlertTitle>{title}</AlertTitle>}
+      <AlertDescription>{children}</AlertDescription>
       {onDismiss && (
-        <button type="button" onClick={onDismiss} aria-label="Dismiss" className="cursor-pointer border-0 bg-transparent p-0 text-inherit">
-          ×
-        </button>
+        <Button type="button" variant="ghost" size="icon-xs" onClick={onDismiss} aria-label="Dismiss" className="absolute top-2 right-2">
+          <XIcon />
+        </Button>
       )}
-    </div>
+    </Alert>
   );
 }
 
-/** "coming soon" marker for features that are not implemented in 4a. */
+/** Neutral note (default Alert). */
+export function NoteAlert({ title, children, className }: { title?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <Alert role="note" className={cn('py-2', className)}>
+      <CircleCheck />
+      {title && <AlertTitle>{title}</AlertTitle>}
+      <AlertDescription>{children}</AlertDescription>
+    </Alert>
+  );
+}
+
+/** "Coming soon" marker for features that are not implemented in 4a. */
 export function ComingSoon({ className }: { className?: string }) {
   return (
-    <span className={cn('inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs font-medium leading-4 text-muted-foreground', className)}>
+    <Badge variant="outline" className={cn('text-muted-foreground', className)}>
       Coming soon
-    </span>
+    </Badge>
   );
 }
 
-export const inputClass =
-  'h-8 rounded-md border border-input bg-background px-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/50';
+/** Copy a value to the clipboard, with a toast and a check-mark for feedback. */
+export function CopyButton({ value, label }: { value: string; label: string }) {
+  const [done, setDone] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setDone(true);
+      toast.success('Copied to the clipboard');
+      setTimeout(() => setDone(false), 1500);
+    } catch {
+      toast.error('Could not copy. Select the text and copy it by hand.');
+    }
+  };
+  return (
+    <Button type="button" variant="outline" size="icon-sm" onClick={copy} aria-label={label}>
+      {done ? <CheckIcon /> : <CopyIcon />}
+    </Button>
+  );
+}
+
+/**
+ * A button that asks for confirmation in a shadcn AlertDialog before running a destructive
+ * action. Focus starts on Cancel (Radix default for AlertDialog).
+ */
+export function ConfirmButton({ children, title, description, confirmLabel, onConfirm, disabled, ariaLabel, variant = 'ghost', destructive = true }: {
+  children: ReactNode;
+  title: ReactNode;
+  description: ReactNode;
+  confirmLabel: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+  ariaLabel?: string;
+  variant?: 'ghost' | 'outline';
+  destructive?: boolean;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button type="button" size="xs" variant={variant} disabled={disabled} aria-label={ariaLabel}>
+          {children}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant={destructive ? 'destructive' : 'default'} onClick={onConfirm}>
+            {confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 /** Error message from an unknown thrown value. */
 export function errorText(e: unknown): string {
@@ -188,12 +204,4 @@ export function shortHash(h: string, head = 8, tail = 4): string {
   return h.length <= head + tail + 1 ? h : `${h.slice(0, head)}…${h.slice(-tail)}`;
 }
 
-/** Only http(s) URLs become links; anything else is shown as text. */
-export function safeHref(url: string): string | null {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null;
-  } catch {
-    return null;
-  }
-}
+export { safeHref } from '@/lib/safe-href';

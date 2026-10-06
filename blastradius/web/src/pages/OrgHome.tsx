@@ -8,17 +8,19 @@ import type { ExposureMatrixResponse, OrgHomeResponse, Permission, ProjectRow } 
 import { api } from '@/api';
 import { useAuth } from '@/auth';
 import { useProject } from '@/project';
-import { Badge, RiskBadge } from '@/components/Badge';
+import { RiskBadge } from '@/components/Badge';
+import { Badge } from '@/components/ui/badge';
+import { FileText, FolderPlus } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
-import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
+import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { StatTile } from '@/components/StatTile';
 import { useApi } from '@/lib/useApi';
 import { fmtNum, fmtTime } from '@/lib/cn';
 import { CreateProjectDialog } from './d-parts/CreateProjectDialog';
 import { emptyCounts, LEVELS } from './d-parts/format';
-import { LevelCounts, ScanStatusBadge } from './d-parts/ui';
+import { LevelCounts, PageSkeleton, ScanStatusBadge, SectionCard } from './d-parts/ui';
 
 /** First project page the user may open, in nav order. */
 const PROJECT_PAGES: { perm: Permission; path: string }[] = [
@@ -88,7 +90,7 @@ const COLUMNS: ColumnDef<ProjectRow, any>[] = [
       return (
         <span className="flex flex-wrap items-center gap-1.5">
           <ScanStatusBadge status={s.status} />
-          <span className="font-mono text-xs text-muted-foreground">{fmtTime(s.finishedAt ?? s.createdAt)}</span>
+          <span className="font-mono text-xs whitespace-nowrap text-muted-foreground">{fmtTime(s.finishedAt ?? s.createdAt)}</span>
         </span>
       );
     },
@@ -129,28 +131,22 @@ function SharedRisky() {
   const { data, error, loading, reload } = useApi((s) => api.exposure({ minLevel: 'high', limit: 100 }, s), []);
   const items = useMemo(() => (data ? sharedComponents(data) : []), [data]);
   return (
-    <section aria-labelledby="shared-title" className="flex flex-col rounded-lg border">
-      <div className="border-b px-4 py-3">
-        <h2 id="shared-title" className="m-0 text-[13px] font-semibold">
-          Shared risky components
-        </h2>
-        <p className="m-0 text-xs text-muted-foreground">Critical and high components, most widely shared across projects first</p>
-      </div>
-      {loading && !data && <LoadingState />}
+    <SectionCard id="shared" title="Shared risky components" description="Critical and high components, most widely shared across projects first" flush>
+      {loading && !data && <PageSkeleton label="Loading shared components…" rows={4} />}
       {error && <ErrorState error={error} onRetry={reload} />}
       {data && items.length === 0 && <EmptyState title="Nothing critical or high" description="No project's latest scan has a critical or high finding." />}
       {items.length > 0 && (
-        <ul className="m-0 flex list-none flex-col p-0" aria-label="Shared risky components">
+        <ul className="flex flex-col divide-y" aria-label="Shared risky components">
           {items.map((c) => (
-            <li key={c.purl} className="flex flex-wrap items-center gap-2 border-b px-4 py-2 text-[13px] last:border-b-0">
+            <li key={c.purl} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
               <RiskBadge level={c.level} score={c.score} />
               <span className="min-w-0 truncate font-mono font-medium">
                 {c.name}@{c.version}
               </span>
               <span className="grow" />
-              <span className="text-xs text-muted-foreground" title={c.projects.join(', ')}>
+              <Badge variant="secondary" title={c.projects.join(', ')}>
                 {c.projects.length} project{c.projects.length === 1 ? '' : 's'}
-              </span>
+              </Badge>
               {can('investigate', c.projectId) ? (
                 <ButtonLink size="xs" variant="ghost" to={`/projects/${encodeURIComponent(c.projectId)}/investigate?node=${encodeURIComponent(c.purl)}`}>
                   Investigate
@@ -164,8 +160,8 @@ function SharedRisky() {
           ))}
         </ul>
       )}
-      {data?.truncated && <p className="m-0 border-t px-4 py-2 text-xs text-muted-foreground">Limited to the top {data.columns.length} components.</p>}
-    </section>
+      {data?.truncated && <p className="border-t px-4 py-2 text-xs text-muted-foreground">Limited to the top {data.columns.length} components.</p>}
+    </SectionCard>
   );
 }
 
@@ -209,31 +205,33 @@ export default function OrgHome() {
   const t = data?.totals;
   const meta = t ? `${fmtNum(t.projects)} projects · ${fmtNum(t.assets)} assets · ${fmtNum(t.components)} components` : undefined;
 
+  const openCreate = () => setCreating(true);
+
   let body;
-  if (loading && !data) body = <LoadingState label="Loading organization…" />;
+  if (loading && !data) body = <PageSkeleton label="Loading organization…" tiles={5} rows={6} />;
   else if (error && !data) body = <ErrorState error={error} onRetry={reload} />;
   else if (data && t)
     body = (
-      <div className="flex flex-col gap-4 px-5 py-4">
-        <div className="flex flex-wrap gap-3">
-          <StatTile label="Projects" value={fmtNum(t.projects)} />
-          <StatTile label="Critical" value={fmtNum(t.counts.critical)} tone={t.counts.critical ? 'critical' : 'muted'} />
-          <StatTile label="High" value={fmtNum(t.counts.high)} tone={t.counts.high ? 'high' : 'muted'} />
-          <StatTile label="Medium · low" value={`${fmtNum(t.counts.medium)} · ${fmtNum(t.counts.low)}`} tone="muted" />
+      <div className="flex flex-col gap-4 p-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          <StatTile label="Projects" value={fmtNum(t.projects)} hint={`${fmtNum(t.assets)} assets`} />
+          <StatTile label="Critical" value={fmtNum(t.counts.critical)} tone={t.counts.critical ? 'critical' : 'muted'} hint="Latest scans" />
+          <StatTile label="High" value={fmtNum(t.counts.high)} tone={t.counts.high ? 'high' : 'muted'} hint="Latest scans" />
+          <StatTile label="Medium · low" value={`${fmtNum(t.counts.medium)} · ${fmtNum(t.counts.low)}`} tone="muted" hint="Latest scans" />
           <StatTile label="To review" value={fmtNum(t.toReview)} hint="New findings in the latest scans" />
         </div>
-        <section aria-labelledby="projects-title" id="projects" className="flex flex-col rounded-lg border">
-          <div className="border-b px-4 py-3">
-            <h2 id="projects-title" className="m-0 text-[13px] font-semibold">
-              Projects
-            </h2>
-            <p className="m-0 text-xs text-muted-foreground">Each project has its own targets, size tier and scans</p>
-          </div>
+        <SectionCard
+          id="projects"
+          title="Projects"
+          description="Each project has its own targets, size tier and scans"
+          flush
+        >
           {data.projects.length === 0 ? (
             <EmptyState
+              icon={<FolderPlus />}
               title="No projects yet"
               description="Create a project and point it at a repository to run the first scan."
-              action={canCreate ? <Button onClick={() => setCreating(true)}>New project</Button> : undefined}
+              action={canCreate ? <Button onClick={openCreate}>New project</Button> : undefined}
             />
           ) : (
             <DataTable<ProjectRow>
@@ -249,21 +247,16 @@ export default function OrgHome() {
               }}
             />
           )}
-        </section>
-        <div className="grid gap-4 lg:grid-cols-2">
+        </SectionCard>
+        <div className="grid items-start gap-4 lg:grid-cols-2">
           {can('exposure') && <SharedRisky />}
-          <section aria-labelledby="recent-title" className="flex flex-col rounded-lg border">
-            <div className="border-b px-4 py-3">
-              <h2 id="recent-title" className="m-0 text-[13px] font-semibold">
-                Recent scans
-              </h2>
-            </div>
+          <SectionCard id="recent" title="Recent scans" description="Latest scan of each project" flush>
             {data.recentScans.length === 0 ? (
               <EmptyState title="No scans yet" />
             ) : (
-              <ul className="m-0 flex list-none flex-col p-0" aria-label="Recent scans">
+              <ul className="flex flex-col divide-y" aria-label="Recent scans">
                 {data.recentScans.slice(0, 10).map((s) => (
-                  <li key={s.id} className="flex flex-wrap items-center gap-2 border-b px-4 py-2 text-[13px] last:border-b-0">
+                  <li key={s.id} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
                     <ScanStatusBadge status={s.status} />
                     <span className="font-medium">{names.get(s.projectId) ?? s.projectId}</span>
                     <span className="grow" />
@@ -277,7 +270,7 @@ export default function OrgHome() {
                 ))}
               </ul>
             )}
-          </section>
+          </SectionCard>
         </div>
       </div>
     );
@@ -290,15 +283,26 @@ export default function OrgHome() {
         meta={meta}
         actions={
           <>
-            {can('reports') && <ButtonLink to="/reports">Reports</ButtonLink>}
-            {canCreate && <Button onClick={() => setCreating(true)}>New project</Button>}
+            {can('reports') && (
+              <ButtonLink to="/reports" variant="ghost">
+                <FileText aria-hidden="true" />
+                Reports
+              </ButtonLink>
+            )}
+            {canCreate && (
+              <Button onClick={openCreate}>
+                <FolderPlus aria-hidden="true" />
+                New project
+              </Button>
+            )}
           </>
         }
       />
       {body}
-      {creating && (
+      {canCreate && (
         <CreateProjectDialog
-          onClose={() => setCreating(false)}
+          open={creating}
+          onOpenChange={setCreating}
           onCreated={(p) => {
             setCreating(false);
             reloadProjects();

@@ -2,11 +2,27 @@
 import type { Hono } from 'hono';
 import { deleteCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
-import type { DevSwitchUserResponse, HealthResponse, LoginResponse, MeResponse, OkResponse } from '../api-types.js';
+import type { AcceptInviteResponse, DevSwitchUserResponse, HealthResponse, LoginResponse, MeResponse, OkResponse } from '../api-types.js';
 import { buildMe, deps, requireSession, resolveOrgId, type AppEnv, type Ctx } from '../context.js';
-import { ApiHttpError, notFound } from '../errors.js';
+import { ApiHttpError, badRequest, notFound } from '../errors.js';
 import { parseBody } from '../request.js';
-import { createSession, deleteSession, getUser, isDevUser, normalizeEmail, SESSION_TTL_SECONDS, setSessionOrg, setSessionUser, verifyLogin, writeAudit } from '../store/index.js';
+import {
+  acceptInvite,
+  createSession,
+  deleteSession,
+  findPendingInvite,
+  getUser,
+  getUserByEmail,
+  hashPassword,
+  type InviteAccount,
+  isDevUser,
+  normalizeEmail,
+  SESSION_TTL_SECONDS,
+  setSessionOrg,
+  setSessionUser,
+  verifyLogin,
+  writeAudit,
+} from '../store/index.js';
 
 export const SESSION_COOKIE = 'br_session';
 
@@ -16,6 +32,17 @@ const LoginBody = z.strictObject({
 });
 
 const SwitchBody = z.strictObject({ userId: z.string().min(1).max(100) });
+
+const AcceptInviteBody = z.strictObject({
+  token: z.string().min(1).max(200),
+  // The 12-character minimum applies to new accounts; an existing account confirms its current password.
+  password: z.string().min(1).max(1024),
+});
+
+const NEW_PASSWORD_MIN = 12;
+const INVALID_INVITE = 'This invite is invalid, expired or already used';
+const INVITE_REJECTED =
+  'This invite is invalid, expired or already used, or the password does not match the existing account for this email';
 
 function isLoopbackHost(host: string): boolean {
   const h = host.replace(/:\d+$/, '').replace(/^\[|\]$/g, '').toLowerCase();
@@ -83,6 +110,45 @@ export function registerAuthRoutes(app: Hono<AppEnv>): void {
     writeAudit(store, { orgId, actor: user.id, action: 'session.login', target: user.id });
     setSessionCookie(c, token);
     return c.json<LoginResponse>(buildMe(c, { token, user, orgId }));
+  });
+
+  app.post('/api/auth/accept-invite', async (c) => {
+    const { store, config, loginLimiter, loginIpLimiter, loginGate } = deps(c);
+    const body = await parseBody(c, AcceptInviteBody);
+    const ip = clientAddress(c);
+    if (!loginIpLimiter.hit(ip)) throw new ApiHttpError('rate_limited', 'Too many attempts. Try again later.');
+    // Cheap check first, so unknown tokens never cost a password hash.
+    const pending = findPendingInvite(store, body.token);
+    if (!pending) throw badRequest(INVALID_INVITE, ['token']);
+    // An existing account proves consent with its password: count it like a sign-in attempt.
+    if (!loginLimiter.hit(pending.email)) throw new ApiHttpError('rate_limited', 'Too many attempts. Try again later.');
+    const release = await loginGate.acquire();
+    if (!release) throw new ApiHttpError('rate_limited', 'Too many attempts. Try again later.');
+    let account: InviteAccount | null = null;
+    try {
+      const existing = await verifyLogin(store, pending.email, body.password);
+      if (existing) {
+        // Seeded dev users have a publicly known password: never outside dev mode.
+        if (config.devMode || !isDevUser(store, existing.id)) account = { kind: 'existing', userId: existing.id };
+      } else if (!getUserByEmail(store, pending.email)) {
+        if (body.password.length < NEW_PASSWORD_MIN) throw badRequest(`Password must be at least ${NEW_PASSWORD_MIN} characters`, ['password']);
+        account = { kind: 'new', passwordHash: await hashPassword(body.password) };
+      }
+    } finally {
+      release();
+    }
+    if (!account) throw badRequest(INVITE_REJECTED, ['password']);
+    // Re-checked and consumed atomically: a token works once, even under parallel requests.
+    const accepted = acceptInvite(store, body.token, account);
+    if (!accepted) throw badRequest(INVALID_INVITE, ['token']);
+    loginLimiter.reset(pending.email);
+    loginIpLimiter.release(ip);
+    const user = accepted.user;
+    const orgId = resolveOrgId(store, user.id, accepted.orgId);
+    const { token } = createSession(store, user.id, { orgId });
+    writeAudit(store, { orgId, actor: user.id, action: 'session.login', target: user.id, detail: { via: 'invite' } });
+    setSessionCookie(c, token);
+    return c.json<AcceptInviteResponse>(buildMe(c, { token, user, orgId }));
   });
 
   app.post('/api/auth/logout', (c) => {

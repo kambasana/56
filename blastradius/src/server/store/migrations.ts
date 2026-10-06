@@ -175,6 +175,29 @@ CREATE TABLE audit_log (
 CREATE INDEX audit_org ON audit_log(org_id, seq);
 `,
   },
+  {
+    version: 2,
+    name: 'member invites',
+    sql: `
+-- Pending member invites (POST /api/members outside dev mode). Only the token's SHA-256 is
+-- stored. Nothing is granted until the invitee accepts: the bindings wait here as JSON.
+CREATE TABLE invite (
+  id           TEXT PRIMARY KEY,
+  org_id       TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  email        TEXT NOT NULL,
+  name         TEXT NOT NULL,
+  bindings     TEXT NOT NULL,
+  token_hash   TEXT NOT NULL UNIQUE,
+  created_at   TEXT NOT NULL,
+  created_by   TEXT NOT NULL,
+  expires_at   TEXT NOT NULL,
+  accepted_at  TEXT,
+  accepted_by  TEXT,
+  revoked_at   TEXT
+);
+CREATE INDEX invite_org_email ON invite(org_id, email);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

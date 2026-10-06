@@ -170,7 +170,8 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
   app.get('/api/projects/:id/scans', (c) => {
     const id = idParam(c, 'id');
     const { orgId } = requireProjectPerm(c, id, 'scans');
-    return c.json<ListScansResponse>(listScans(deps(c).store, orgId, id, pageQuery(c)));
+    const updatedSince = queryString(c, 'updatedSince', 40);
+    return c.json<ListScansResponse>(listScans(deps(c).store, orgId, id, { ...pageQuery(c), ...(updatedSince !== undefined ? { updatedSince } : {}) }));
   });
 
   app.post('/api/projects/:id/scans', async (c) => {
@@ -181,7 +182,9 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
     const ref = body.ref !== undefined ? checkGitRef(body.ref) : undefined;
     // Re-check the stored target against today's rules before queueing.
     const target = checkTarget(project.target, config.localRoots);
-    const offline = config.offline || body.offline === true;
+    // Fixture-repo projects under --dev-seed always replay recorded responses (see jobs.ts).
+    const replay = target.kind === 'local' && jobs.replayFor(target.path) !== undefined;
+    const offline = config.offline || body.offline === true || replay;
     if (target.kind === 'git' && offline) throw badRequest('Offline scans need a local target', ['offline']);
     if (target.kind === 'local' && ref !== undefined) throw badRequest('ref applies to git targets only', ['ref']);
     if (!scanLimiter.hit(session.user.id)) throw new ApiHttpError('rate_limited', 'Too many scans requested. Try again later.');

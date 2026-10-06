@@ -3,13 +3,16 @@
  * concurrency, dev users outside dev mode, "grant only what you hold", accept_risk reversal,
  * org switching, audit of session changes, and the dev-seed reference date.
  */
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HttpClient } from '../core/http.js';
-import type { ListAuditResponse, ListFindingsResponse, MeResponse, Org } from './api-types.js';
+import type { ListAuditResponse, ListFindingsResponse, MeResponse, Org, Scan } from './api-types.js';
 import { ConcurrencyGate } from './ratelimit.js';
 import { MAX_BODY_BYTES } from './request.js';
-import { createServer, E2E_REPO_DIR, FIXTURE_AS_OF, FIXTURES_DIR, seedDevData, serveAsOf } from './serve.js';
-import { createBinding, createRole, createUser, openStore, seedDev, type Store } from './store/index.js';
+import { createServer, DEV_FIXTURE_REPLAY, E2E_REPO_DIR, FIXTURE_AS_OF, FIXTURES_DIR, seedDevData, serveScanDates } from './serve.js';
+import { createBinding, createRole, createUser, getScanResult, openStore, seedDev, type Store } from './store/index.js';
 
 type App = ReturnType<typeof createServer>;
 const XRW = { 'X-Requested-With': 'blastradius' };
@@ -147,6 +150,7 @@ describe('server-side checks with the seeded fixture scan', () => {
   let srv: App;
   let orgId: string;
   let projectId: string;
+  let adminId: string;
   const tokens: Record<string, string> = {};
 
   beforeAll(async () => {
@@ -168,6 +172,7 @@ describe('server-side checks with the seeded fixture scan', () => {
     const me = (await (await call(srv, 'GET', '/api/me', { token: tokens.admin })).json()) as MeResponse;
     orgId = me.org!.id;
     const admin = me.user.id;
+    adminId = admin;
 
     const mm = createRole(srv.store, orgId, { name: 'Member manager', permissions: ['settings', 'manage_members', 'reports'] }, admin);
     const mgr = createUser(srv.store, { email: 'mgr@corp', name: 'Mgr', password: PASSWORD });
@@ -184,6 +189,9 @@ describe('server-side checks with the seeded fixture scan', () => {
 
   it('manage_members cannot grant Org admin or permissions the actor lacks', async () => {
     const target = createUser(srv.store, { email: 'target@corp', name: 'T', password: PASSWORD });
+    // A member already (bindings are only for members), via a role mgr may hand out.
+    const readers = createRole(srv.store, orgId, { name: 'Report readers', permissions: ['reports'] }, adminId);
+    createBinding(srv.store, orgId, { roleId: readers.id, subject: { kind: 'user', userId: target.id }, scope: { kind: 'org' } }, adminId);
     const bind = (roleId: string) =>
       call(srv, 'POST', '/api/bindings', { token: tokens.mgr, body: { roleId, subject: { kind: 'user', userId: target.id }, scope: { kind: 'org' } } });
     expect((await bind('org_admin')).status).toBe(403);
@@ -193,6 +201,12 @@ describe('server-side checks with the seeded fixture scan', () => {
     expect((await call(srv, 'POST', '/api/roles', { token: tokens.mgr, body: { name: 'From admin', template: 'org_admin' } })).status).toBe(403);
     expect((await call(srv, 'PATCH', '/api/roles/auditor', { token: tokens.mgr, body: { permissions: ['reports', 'findings'] } })).status).toBe(403);
     expect((await call(srv, 'POST', '/api/roles', { token: tokens.mgr, body: { name: 'Readers', permissions: ['reports'] } })).status).toBe(201);
+    // The same rules hold when inviting: no Org admin, nothing beyond what mgr holds.
+    const invite = (email: string, roleId: string) =>
+      call(srv, 'POST', '/api/members', { token: tokens.mgr, body: { email, name: 'New', bindings: [{ roleId, scope: { kind: 'org' } }] } });
+    expect((await invite('esc1@corp', 'org_admin')).status).toBe(403);
+    expect((await invite('esc2@corp', 'appsec')).status).toBe(403);
+    expect((await invite('ok@corp', 'auditor')).status).toBe(201);
     // Removing an Org admin binding needs Org admin too.
     const bindings = (await (await call(srv, 'GET', '/api/bindings', { token: tokens.mgr })).json()) as { items: { id: string; roleId: string }[] };
     const adminBinding = bindings.items.find((b) => b.roleId === 'org_admin')!;
@@ -244,10 +258,50 @@ describe('server-side checks with the seeded fixture scan', () => {
 });
 
 describe('dev seed reference date', () => {
-  it('rescans under --dev-seed use the fixture date unless --as-of is given', () => {
-    expect(serveAsOf({ devSeed: true })).toEqual(FIXTURE_AS_OF);
+  it('--dev-seed replays the fixture date for fixture repos only; --as-of applies to every scan', () => {
+    expect(serveScanDates({ devSeed: true })).toEqual({ fixtureReplay: DEV_FIXTURE_REPLAY });
+    expect(DEV_FIXTURE_REPLAY.asOf).toEqual(FIXTURE_AS_OF);
     const d = new Date('2020-01-01T00:00:00Z');
-    expect(serveAsOf({ devSeed: true, asOf: d })).toEqual(d);
-    expect(serveAsOf({})).toBeUndefined();
+    expect(serveScanDates({ devSeed: true, asOf: d })).toEqual({ asOf: d, fixtureReplay: DEV_FIXTURE_REPLAY });
+    expect(serveScanDates({})).toEqual({});
   });
+
+  it('a fixture-repo rescan uses the fixture date and runs offline; another project scans as of now', async () => {
+    const other = mkdtempSync(join(tmpdir(), 'br-replay-'));
+    try {
+      cpSync(E2E_REPO_DIR, join(other, 'app'), { recursive: true });
+      const srv = createServer({
+        devMode: true,
+        localRoots: [E2E_REPO_DIR, other],
+        ...serveScanDates({ devSeed: true }),
+        webDir: null,
+        scanOptions: { http: offlineHttp(), cacheDir: false },
+        log: () => {},
+        loginIpRateLimit: 1000,
+      });
+      const seed = await seedDevData(srv.deps);
+      await srv.jobs.waitFor(seed.scanId!);
+      const token = await login(srv, 'admin@local');
+      const created = await call(srv, 'POST', '/api/projects', { token, body: { name: 'live-app', tier: 'Small', target: join(other, 'app') } });
+      expect(created.status).toBe(201);
+      const liveId = ((await created.json()) as { id: string }).id;
+      const before = Date.now();
+      const rescan = async (projectId: string) => {
+        const res = await call(srv, 'POST', `/api/projects/${projectId}/scans`, { token, body: {} });
+        expect(res.status).toBe(202);
+        const scan = (await res.json()) as Scan;
+        await srv.jobs.waitFor(scan.id);
+        return { scan, result: getScanResult(srv.store, seed.orgId, scan.id)!.result };
+      };
+      const fixture = await rescan(seed.projectId);
+      expect(fixture.scan.offline).toBe(true);
+      expect(fixture.result.generatedAt).toBe(FIXTURE_AS_OF.toISOString());
+      const live = await rescan(liveId);
+      expect(live.scan.offline).toBe(false);
+      expect(Date.parse(live.result.generatedAt)).toBeGreaterThanOrEqual(before - 1000);
+      srv.jobs.stop();
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

@@ -5,7 +5,7 @@ import type { ExposureMatrixResponse } from '@server/api-types';
 import Exposure from '../Exposure';
 import { meFor } from '@/test/fixtures';
 import { cellText, shade, sortRows, toCsv } from './exposure';
-import { Reply, fakeApi, renderPage } from './testkit';
+import { Reply, choose, fakeApi, renderPage } from './testkit';
 
 function matrix(rows = 3, cols = 3): ExposureMatrixResponse {
   const envs = ['dev', 'prod', 'ci'] as const;
@@ -106,11 +106,26 @@ describe('<Exposure>', () => {
     const { calls } = fakeApi({ 'GET /api/exposure': () => matrix() });
     renderPage(<Exposure />, { path, at, me: meFor('org_admin') });
     await screen.findByRole('grid');
-    await userEvent.click(screen.getByRole('tab', { name: 'All projects' }));
+    const rows = screen.getByRole('radiogroup', { name: 'Rows' });
+    await userEvent.click(within(rows).getByRole('radio', { name: 'All projects' }));
     await waitFor(() => expect(calls.at(-1)!.url.searchParams.has('project')).toBe(false));
-    await userEvent.selectOptions(screen.getByLabelText('Risk ≥'), 'critical');
+    await choose('Risk ≥', 'Critical');
     await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('minLevel')).toBe('critical'));
     expect(screen.getByTestId('where')).toHaveTextContent('scope=org');
+  });
+
+  it('sorts rows with the toggle group and shows a tooltip on a reached cell', async () => {
+    fakeApi({ 'GET /api/exposure': () => matrix() });
+    renderPage(<Exposure />, { path, at, me: meFor('org_admin') });
+    const grid = await screen.findByRole('grid');
+    const sort = screen.getByRole('radiogroup', { name: 'Sort rows' });
+    expect(within(sort).getByRole('radio', { name: 'Blast score' })).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(within(sort).getByRole('radio', { name: 'Name' }));
+    expect(within(grid).getAllByRole('rowheader')[0]).toHaveTextContent('asset-0');
+    // Header cells are sticky.
+    expect(within(grid).getAllByRole('columnheader')[1]!.className).toContain('sticky');
+    await userEvent.hover(screen.getByRole('button', { name: 'asset-2 × comp-1: exposure 0.50, 2 paths' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('asset-2 × comp-1@1.0.0');
   });
 
   it('hides finding and investigate links without those permissions', async () => {

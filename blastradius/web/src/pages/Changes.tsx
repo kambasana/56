@@ -9,17 +9,21 @@ import { CHANGE_TYPES } from '@server/api-types';
 import { api } from '@/api';
 import { useAuth } from '@/auth';
 import { useProject } from '@/project';
-import { Badge, RiskBadge } from '@/components/Badge';
+import { RiskBadge } from '@/components/Badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowRight, FileSearch, GitCompareArrows, Info, Network } from 'lucide-react';
 import { ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
-import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
+import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
 import { SidePanel } from '@/components/SidePanel';
 import { useApi } from '@/lib/useApi';
-import { cn, fmtNum, fmtTime } from '@/lib/cn';
+import { fmtNum, fmtTime } from '@/lib/cn';
 import { CHANGE_LABELS, factorLabel, LEVEL_RANK, purlLabel } from './d-parts/format';
 import { findingHref } from './d-parts/FindingPanel';
-import { Section } from './d-parts/ui';
+import { ClampedText, DetailList, Section } from './d-parts/ui';
 
 const TYPE_TONE: Record<ChangeType, string> = {
   new_finding: 'border-destructive/40 text-destructive',
@@ -37,7 +41,7 @@ function RiskEffect({ row }: { row: ChangeRow }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       {row.from ? <RiskBadge level={row.from.level} score={row.from.score} /> : <span className="text-muted-foreground">—</span>}
-      <span aria-hidden="true" className="text-muted-foreground">→</span>
+      <ArrowRight aria-hidden="true" className="size-3.5 text-muted-foreground" />
       <span className="sr-only">to</span>
       {row.to ? <RiskBadge level={row.to.level} score={row.to.score} /> : <span className="text-muted-foreground">gone</span>}
     </span>
@@ -69,11 +73,13 @@ const COLUMNS: ColumnDef<ChangeRow, any>[] = [
     header: 'What happened',
     accessorFn: (r) => `${r.detail} ${r.addedFactors.map(factorLabel).join(' ')}`,
     cell: (c) => (
-      <span className="line-clamp-2 max-w-[420px] text-muted-foreground" title={c.row.original.detail}>
+      <ClampedText lines={2} className="text-muted-foreground" full={<span className="break-words">{c.row.original.detail}</span>}>
         {c.row.original.detail}
-      </span>
+      </ClampedText>
     ),
     enableSorting: false,
+    size: 420,
+    meta: { className: 'min-w-[280px]' },
   },
   {
     id: 'reach',
@@ -84,7 +90,7 @@ const COLUMNS: ColumnDef<ChangeRow, any>[] = [
       return (
         <span>
           {fmtNum(r.assets)}
-          {r.prodAssets > 0 && <span className="text-destructive"> · {fmtNum(r.prodAssets)}p</span>}
+          {r.prodAssets > 0 && <span className="text-level-critical"> · {fmtNum(r.prodAssets)}p</span>}
         </span>
       );
     },
@@ -111,12 +117,14 @@ function ChangePanel({ row, projectId, onClose }: { row: ChangeRow; projectId: s
       actions={
         <>
           {row.findingId && can('findings', projectId) && (
-            <ButtonLink size="xs" to={findingHref(projectId, row.findingId)}>
+            <ButtonLink to={findingHref(projectId, row.findingId)}>
+              <FileSearch aria-hidden="true" />
               Open finding
             </ButtonLink>
           )}
           {can('investigate', projectId) && (
-            <ButtonLink size="xs" to={`/projects/${encodeURIComponent(projectId)}/investigate?node=${encodeURIComponent(row.purl)}`}>
+            <ButtonLink to={`/projects/${encodeURIComponent(projectId)}/investigate?node=${encodeURIComponent(row.purl)}`}>
+              <Network aria-hidden="true" />
               Investigate
             </ButtonLink>
           )}
@@ -125,7 +133,7 @@ function ChangePanel({ row, projectId, onClose }: { row: ChangeRow; projectId: s
     >
       <div className="flex flex-col divide-y">
         <Section title="What happened">
-          <p className="m-0">{row.detail}</p>
+          <p className="break-words">{row.detail}</p>
         </Section>
         <Section title="Risk effect">
           <RiskEffect row={row} />
@@ -141,13 +149,14 @@ function ChangePanel({ row, projectId, onClose }: { row: ChangeRow; projectId: s
             </div>
           </Section>
         )}
-        <Section title="Reach">
-          <p className="m-0">
-            {fmtNum(row.reach.assets)} asset{row.reach.assets === 1 ? '' : 's'}, {fmtNum(row.reach.prodAssets)} in production
-          </p>
-        </Section>
-        <Section title="Package">
-          <p className="m-0 break-all font-mono text-xs">{purlLabel(row.purl)}</p>
+        <Section title="Details">
+          <DetailList
+            items={[
+              ['Reach', `${fmtNum(row.reach.assets)} asset${row.reach.assets === 1 ? '' : 's'}, ${fmtNum(row.reach.prodAssets)} in production`],
+              ['Package', <span className="break-all font-mono text-xs">{purlLabel(row.purl)}</span>],
+              ['Purl', <span className="break-all font-mono text-xs text-muted-foreground">{row.purl}</span>],
+            ]}
+          />
         </Section>
       </div>
     </SidePanel>
@@ -182,12 +191,27 @@ export default function Changes() {
       : `first scan ${fmtTime(data.toScan.finishedAt ?? data.toScan.createdAt)}`
     : undefined;
 
+  const typeTabs = data ? (
+    <Tabs value={type ?? 'all'} onValueChange={(v) => setType(isChangeType(v) ? v : null)}>
+      <TabsList aria-label="Change type" className="h-8">
+        {[null, ...CHANGE_TYPES].map((t) => (
+          <TabsTrigger key={t ?? 'all'} value={t ?? 'all'} className="gap-1.5 px-2 text-xs">
+            {t ? CHANGE_LABELS[t] : 'All'}
+            <span className="font-mono tabular-nums text-muted-foreground">{fmtNum(t ? (data.counts[t] ?? 0) : data.items.length)}</span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  ) : null;
+
   let body;
-  if (loading && !data) body = <LoadingState label="Loading changes…" />;
+  if (loading && !data)
+    body = <DataTable<ChangeRow> label="Changes" data={[]} loading columns={COLUMNS} initialColumnVisibility={{ purl: false }} />;
   else if (error) body = <ErrorState error={error} onRetry={reload} />;
   else if (data && !data.toScan)
     body = (
       <EmptyState
+        icon={<GitCompareArrows />}
         title="No completed scan yet"
         description="Changes compare the two latest successful scans of this project."
         action={can('scans', id) ? <ButtonLink to={`/projects/${encodeURIComponent(id)}/scans`}>Go to Scans</ButtonLink> : undefined}
@@ -197,9 +221,12 @@ export default function Changes() {
     body = (
       <>
         {!data.fromScan && (
-          <p className="m-0 border-b bg-muted/40 px-5 py-2 text-xs text-muted-foreground">
-            This project has one successful scan, so every finding shows as new. Run another scan to see what moved.
-          </p>
+          <div className="border-b px-4 py-3">
+            <Alert>
+              <Info aria-hidden="true" />
+              <AlertDescription>This project has one successful scan, so every finding shows as new. Run another scan to see what moved.</AlertDescription>
+            </Alert>
+          </div>
         )}
         <DataTable<ChangeRow>
           label="Changes"
@@ -212,29 +239,7 @@ export default function Changes() {
           total={data.items.length}
           emptyTitle={data.items.length === 0 ? 'Nothing changed' : 'No changes of this type'}
           emptyDescription={data.items.length === 0 ? 'The two latest scans have the same findings at the same levels.' : undefined}
-          toolbar={
-            <div role="group" aria-label="Change type" className="flex flex-wrap items-center gap-1">
-              {[null, ...CHANGE_TYPES].map((t) => {
-                const on = t === type;
-                const n = t ? data.counts[t] ?? 0 : data.items.length;
-                return (
-                  <button
-                    key={t ?? 'all'}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => setType(t)}
-                    className={cn(
-                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md px-2 text-xs font-medium',
-                      on ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                    )}
-                  >
-                    {t ? CHANGE_LABELS[t] : 'All'}
-                    <span className="font-mono tabular-nums opacity-80">{fmtNum(n)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          }
+          toolbar={typeTabs}
           renderPanel={(row, close) => <ChangePanel row={row} projectId={id} onClose={close} />}
         />
       </>
@@ -246,7 +251,14 @@ export default function Changes() {
         crumbs={crumbs}
         title="Changes"
         meta={meta}
-        actions={can('findings', id) ? <ButtonLink to={`/projects/${encodeURIComponent(id)}/findings`}>Findings</ButtonLink> : undefined}
+        actions={
+          can('findings', id) ? (
+            <ButtonLink to={`/projects/${encodeURIComponent(id)}/findings`}>
+              <FileSearch aria-hidden="true" />
+              Findings
+            </ButtonLink>
+          ) : undefined
+        }
       >
         <span className="text-xs text-muted-foreground">What moved in your supply chain between the two latest scans.</span>
       </PageHeader>

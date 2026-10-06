@@ -49,6 +49,14 @@ describe('<OrgHome>', () => {
     expect(within(table).getByText('never')).toBeInTheDocument();
     expect(screen.getByText('2 projects · 8 assets · 240 components')).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Recent scans' })).toHaveTextContent('payments-platform');
+    expect(screen.getByRole('heading', { name: 'Projects', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recent scans' })).toBeInTheDocument();
+  });
+
+  it('shows a skeleton while loading', async () => {
+    fakeApi([['GET', /^\/api\/home$/, () => new Promise(() => {})]]);
+    renderPage(<OrgHome />, at(meFor('developer', { permissions: ['home'] })));
+    expect(screen.getByRole('status', { name: 'Loading organization…' })).toBeInTheDocument();
   });
 
   it('lists shared risky components, most shared first', async () => {
@@ -99,9 +107,12 @@ describe('<OrgHome>', () => {
     expect(within(dialog).getByLabelText('Name')).toHaveFocus();
     await user.type(within(dialog).getByLabelText('Name'), 'new-one');
     await user.type(within(dialog).getByLabelText('Target'), 'https://github.com/acme/new-one');
-    await user.selectOptions(within(dialog).getByLabelText('Size tier'), 'Small');
+    await user.click(within(dialog).getByRole('combobox', { name: 'Size tier' }));
+    await user.click(await screen.findByRole('option', { name: /^Small/ }));
+    expect(within(dialog).getByRole('combobox', { name: 'Size tier' })).toHaveTextContent(/^Small/);
     await user.click(within(dialog).getByRole('button', { name: 'Create project' }));
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/projects/p9/scans'));
+    expect(await screen.findByText('Project “new-one” created')).toBeInTheDocument();
     const post = api.calls.find((c) => c.method === 'POST')!;
     expect(post.body).toEqual({ name: 'new-one', tier: 'Small', target: 'https://github.com/acme/new-one' });
   });
@@ -121,6 +132,7 @@ describe('<OrgHome>', () => {
     await user.type(within(dialog).getByLabelText('Target'), 'https://evil.example/x');
     await user.click(within(dialog).getByRole('button', { name: 'Create project' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Target host is not allowed');
+    expect(within(dialog).getByText('Target host is not allowed').closest('[data-slot=field]')).toContainElement(within(dialog).getByLabelText('Target'));
     expect(within(dialog).getByLabelText('Target')).toHaveAttribute('aria-invalid', 'true');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();

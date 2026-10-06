@@ -1,7 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '@/auth';
-import { Button } from '@/components/Button';
+import { CircleAlert } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
+import { BrandMark } from '@/components/Nav';
 
 /** Only same-app paths are allowed as a post-login redirect (no open redirect). */
 export function safeNext(next: string | null): string {
@@ -36,59 +43,61 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
-      <div className="flex w-full max-w-[360px] flex-col gap-5 rounded-lg border bg-card p-6 text-card-foreground shadow-[var(--shadow-sm)]">
-        <div className="flex items-center gap-2">
-          <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-            <circle cx="10" cy="10" r="2" />
-            <circle cx="10" cy="10" r="5.5" opacity="0.6" />
-            <circle cx="10" cy="10" r="9" opacity="0.3" />
-          </svg>
-          <h1 className="m-0 text-base font-semibold">Sign in to Blastradius</h1>
+    <div className="flex min-h-svh items-center justify-center bg-muted p-6 md:p-10">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <div className="flex items-center gap-2 self-center font-medium">
+          <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <BrandMark className="size-5" />
+          </div>
+          Blastradius
         </div>
-        <form onSubmit={submit} className="flex flex-col gap-3" noValidate>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-[13px] font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-[13px] font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </div>
-          {error && (
-            <p role="alert" className="m-0 text-[13px] text-destructive">
-              {error}
-            </p>
-          )}
-          <Button type="submit" size="default" disabled={busy || !email || !password}>
-            {busy ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </form>
-        <p className="m-0 text-xs leading-4 text-muted-foreground">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h1 className="text-xl font-semibold">Sign in to Blastradius</h1>
+            </CardTitle>
+            <CardDescription>Use your work email and password.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={submit} noValidate>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </Field>
+                {error && (
+                  <Alert variant="destructive">
+                    <CircleAlert />
+                    <AlertTitle>Sign in failed</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <Field>
+                  <Button type="submit" disabled={busy || !email || !password}>
+                    {busy && <Spinner role="presentation" aria-label={undefined} aria-hidden="true" />}
+                    {busy ? 'Signing in…' : 'Sign in'}
+                  </Button>
+                </Field>
+              </FieldGroup>
+            </form>
+          </CardContent>
+        </Card>
+        <FieldDescription className="px-2 text-center text-xs">
           Dev mode (<span className="font-mono">blastradius serve --dev</span>): sign in as <span className="font-mono">admin@local</span>,{' '}
           <span className="font-mono">appsec@local</span>, <span className="font-mono">developer@local</span> or{' '}
-          <span className="font-mono">auditor@local</span> with the password printed in the server console, then switch roles from the sidebar.
-        </p>
+          <span className="font-mono">auditor@local</span> with the password printed in the server console, then switch roles from the sidebar user menu.
+        </FieldDescription>
       </div>
     </div>
   );

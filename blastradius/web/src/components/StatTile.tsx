@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
-import { cn } from '@/lib/cn';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export type StatTone = 'default' | 'critical' | 'high' | 'muted' | 'success';
 
 const toneClass: Record<StatTone, string> = {
   default: 'text-foreground',
   critical: 'text-destructive',
-  high: 'text-warning',
+  high: 'text-level-high',
   muted: 'text-muted-foreground',
   success: 'text-success',
 };
@@ -19,13 +20,15 @@ export interface StatTileProps {
   className?: string;
 }
 
-/** Compact KPI tile: small label, large tabular number, optional hint line. */
+/** Compact KPI card (shadcn Card, the dashboard "section cards" layout). */
 export function StatTile({ label, value, hint, tone = 'default', className }: StatTileProps) {
   return (
-    <div className={cn('flex min-w-[140px] flex-1 flex-col gap-0.5 rounded-lg border bg-card px-4 py-3 text-card-foreground', className)}>
-      <span className="text-xs leading-4 text-muted-foreground">{label}</span>
-      <span className={cn('font-mono text-xl font-semibold leading-7 tabular-nums', toneClass[tone])}>{value}</span>
-      {hint !== undefined && <span className="text-xs leading-4 text-muted-foreground">{hint}</span>}
-    </div>
+    <Card className={cn('@container/card min-w-[140px] flex-1 gap-2 py-4', className)}>
+      <CardHeader className="gap-1 px-4">
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className={cn('font-mono text-2xl font-semibold tabular-nums', toneClass[tone])}>{value}</CardTitle>
+      </CardHeader>
+      {hint !== undefined && <CardFooter className="px-4 text-xs text-muted-foreground">{hint}</CardFooter>}
+    </Card>
   );
 }

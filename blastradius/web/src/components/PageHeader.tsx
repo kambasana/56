@@ -1,5 +1,15 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { useShellHeader } from './shell-header';
 
 export interface Crumb {
   label: ReactNode;
@@ -18,38 +28,62 @@ export interface PageHeaderProps {
   children?: ReactNode;
 }
 
-/** Top bar (breadcrumb + actions, 52px) and title row, as on every canvas screen. */
-export function PageHeader({ crumbs, title, meta, actions, children }: PageHeaderProps) {
+function Crumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
-    <div className="border-b">
-      <header className="flex min-h-[52px] flex-wrap items-center gap-x-4 gap-y-2 border-b px-5 py-1.5">
-        <nav aria-label="Breadcrumb" className="min-w-0">
-          <ol className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0 text-[13px] text-muted-foreground">
-            {(crumbs ?? []).map((c, i, all) => {
-              const last = i === all.length - 1;
-              return (
-                <li key={i} className="flex items-center gap-1.5">
-                  {c.to && !last ? (
-                    <Link to={c.to} className="text-muted-foreground no-underline hover:text-foreground">
-                      {c.label}
-                    </Link>
-                  ) : (
-                    <span aria-current={last ? 'page' : undefined} className={last ? 'text-foreground' : undefined}>
-                      {c.label}
-                    </span>
-                  )}
-                  {!last && <span aria-hidden="true">/</span>}
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-        <span className="grow" />
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-      </header>
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 px-5 py-2 text-[13px] leading-[18px]">
-        <h1 className="m-0 mr-1.5 text-[15px] font-semibold leading-[22px]">{title}</h1>
-        {meta && <span className="font-mono text-muted-foreground">{meta}</span>}
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList className="flex-nowrap">
+        {crumbs.map((c, i) => {
+          const last = i === crumbs.length - 1;
+          return (
+            <Fragment key={i}>
+              <BreadcrumbItem className={last ? 'min-w-0' : 'hidden md:inline-flex'}>
+                {c.to && !last ? (
+                  <BreadcrumbLink asChild>
+                    <Link to={c.to}>{c.label}</Link>
+                  </BreadcrumbLink>
+                ) : last ? (
+                  <BreadcrumbPage className="truncate">{c.label}</BreadcrumbPage>
+                ) : (
+                  <span>{c.label}</span>
+                )}
+              </BreadcrumbItem>
+              {!last && <BreadcrumbSeparator className="hidden md:block" />}
+            </Fragment>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+}
+
+function TopBar({ crumbs, actions }: { crumbs: Crumb[]; actions?: ReactNode }) {
+  return (
+    <>
+      <Crumbs crumbs={crumbs} />
+      <span className="grow" />
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </>
+  );
+}
+
+/**
+ * Page header: breadcrumb + actions in the shell's top bar (next to the sidebar trigger),
+ * then the title row (h1, meta, extra controls) at the top of the page.
+ */
+export function PageHeader({ crumbs, title, meta, actions, children }: PageHeaderProps) {
+  const shell = useShellHeader();
+  const trail = crumbs ?? [];
+  const top = <TopBar crumbs={trail} actions={actions} />;
+  return (
+    <div data-slot="page-header" className="border-b">
+      {shell ? (
+        shell.slot && createPortal(top, shell.slot)
+      ) : (
+        <header className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-1.5">{top}</header>
+      )}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 px-4 py-3">
+        <h1 className="mr-1.5 text-lg font-semibold tracking-tight">{title}</h1>
+        {meta && <span className="font-mono text-xs text-muted-foreground">{meta}</span>}
         <span className="grow" />
         {children}
       </div>

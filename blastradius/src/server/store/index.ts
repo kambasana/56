@@ -23,4 +23,5 @@ export * from './findings.js';
 export * from './exposure.js';
 export * from './changes.js';
 export * from './rbac.js';
+export * from './invites.js';
 export * from './seed.js';

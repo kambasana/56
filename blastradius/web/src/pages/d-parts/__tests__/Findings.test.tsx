@@ -41,22 +41,56 @@ describe('<Findings>', () => {
     expect(await screen.findByText('event-stream')).toBeInTheDocument();
     expect(within(bodyRows()[0]!).getByText('event-stream')).toBeInTheDocument();
     expect(screen.getByText(/2 findings · scan 2018-11-27 10:01 UTC/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Critical\s*1/ })).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Filter by level' }));
+    expect(await screen.findByRole('option', { name: /Critical\s*1/ })).toHaveAttribute('data-checked', 'false');
   });
 
-  it('filters by level chip and keeps it in the URL', async () => {
+  it('filters by the faceted level filter and keeps it in the URL', async () => {
     const user = userEvent.setup();
     serveFindings([findingRow(0), findingRow(1), findingRow(2), findingRow(3)]);
     renderPage(<Findings />, at());
     await screen.findByText('pkg-0');
-    await user.click(screen.getByRole('button', { name: /^Critical/ }));
+    await user.click(screen.getByRole('button', { name: 'Filter by level' }));
+    await user.click(await screen.findByRole('option', { name: /^Critical/ }));
     expect(bodyRows()).toHaveLength(1);
     expect(screen.getByTestId('where')).toHaveTextContent('level=critical');
-    await user.click(screen.getByRole('button', { name: /^High/ }));
+    // The checked state is part of the accessible name (cmdk owns aria-selected for highlight).
+    expect(screen.getByRole('option', { name: /^Critical, selected/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^High/ })).not.toHaveAccessibleName(/selected/);
+    await user.click(screen.getByRole('option', { name: /^High/ }));
     expect(bodyRows()).toHaveLength(2);
     expect(screen.getByTestId('where')).toHaveTextContent('level=critical%2Chigh');
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(screen.getByRole('button', { name: 'Filter by level: Critical, High' })).toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: 'Clear filters' }));
     expect(bodyRows()).toHaveLength(4);
+    expect(screen.getByTestId('where')).not.toHaveTextContent('level=');
+  });
+
+  it('filters by status with the Select and keeps it in the URL', async () => {
+    const user = userEvent.setup();
+    serveFindings([findingRow(0), findingRow(1, { status: 'reviewed' }), findingRow(2, { status: 'accepted_risk' })]);
+    renderPage(<Findings />, at());
+    await screen.findByText('pkg-0');
+    const trigger = screen.getByRole('combobox', { name: 'Filter by status' });
+    expect(trigger).toHaveTextContent('All statuses');
+    await user.click(trigger);
+    await user.click(await screen.findByRole('option', { name: 'Reviewed' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('status=reviewed');
+    expect(bodyRows()).toHaveLength(1);
+    expect(within(bodyRows()[0]!).getByText('pkg-1')).toBeInTheDocument();
+  });
+
+  it('shows the whole top reason, clamped in the cell and in full on hover', async () => {
+    const user = userEvent.setup();
+    const long = 'A new publisher was added two days before this release, and the release runs an install script that contacts a host never seen before.';
+    serveFindings([findingRow(1, { mainReason: { factor: 'maintainer_change', detail: long } })]);
+    renderPage(<Findings />, at());
+    const cell = await screen.findByText(long);
+    expect(cell.closest('[data-slot=hover-card-trigger]')).toHaveClass('line-clamp-2');
+    await user.hover(cell);
+    const card = await screen.findByText(long, { selector: '[data-slot=hover-card-content] span' });
+    expect(card).toBeInTheDocument();
+    expect(within(card.closest('[data-slot=hover-card-content]') as HTMLElement).getByText('Install script')).toBeInTheDocument();
   });
 
   it('reads level, status and text filters from the URL', async () => {
@@ -118,9 +152,11 @@ describe('<Findings>', () => {
     renderPage(<Findings />, at());
     await user.click(await screen.findByText('pkg-1'));
     const panel = await screen.findByRole('complementary', { name: 'Finding details' });
-    await user.selectOptions(within(panel).getByLabelText('Status'), 'reviewed');
+    await user.click(within(panel).getByLabelText('Status'));
+    await user.click(await screen.findByRole('option', { name: 'Reviewed' }));
     await user.click(within(panel).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(within(bodyRows()[0]!).getByText('Reviewed')).toBeInTheDocument());
+    expect(await screen.findByText('Marked reviewed')).toBeInTheDocument();
     const patch = api.calls.find((c) => c.method === 'PATCH')!;
     expect(patch.body).toEqual({ status: 'reviewed' });
     expect(patch.headers['X-Requested-With']).toBe('blastradius');
@@ -131,9 +167,10 @@ describe('<Findings>', () => {
     serveFindings([findingRow(1)]);
     renderPage(<Findings />, { ...at(), me: meFor('developer', { permissions: ['findings', 'review'] }) });
     await user.click(await screen.findByText('pkg-1'));
-    const select = await screen.findByLabelText('Status');
-    expect(within(select).queryByRole('option', { name: 'Accepted risk' })).toBeNull();
-    expect(within(select).getByRole('option', { name: 'Reviewed' })).toBeInTheDocument();
+    await user.click(await screen.findByLabelText('Status'));
+    const listbox = await screen.findByRole('listbox');
+    expect(within(listbox).queryByRole('option', { name: 'Accepted risk' })).toBeNull();
+    expect(within(listbox).getByRole('option', { name: 'Reviewed' })).toBeInTheDocument();
   });
 
   it('loads 5,000 rows across pages and renders only a virtual window', async () => {

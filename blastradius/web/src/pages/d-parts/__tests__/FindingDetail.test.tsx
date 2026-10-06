@@ -21,6 +21,24 @@ describe('<FindingDetail>', () => {
     expect(screen.getByRole('list', { name: 'Score history' })).toHaveTextContent('2018-11-20');
     expect(screen.getByRole('link', { name: 'Open in graph' })).toHaveAttribute('href', '/projects/p1/investigate?finding=f1');
     expect(screen.getByRole('link', { name: 'Back to findings' })).toHaveAttribute('href', '/projects/p1/findings');
+    for (const h of ['Why it scored 99', "Who's behind it", 'Evidence', 'History', 'Affected assets']) {
+      expect(screen.getByRole('region', { name: h })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('tab', { name: /Paths/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('loads the scoped graph only when the Graph tab is opened', async () => {
+    const user = userEvent.setup();
+    const api = fakeApi([
+      ['GET', /^\/api\/findings\/f1$/, () => findingDetail(findingRow(1))],
+      ['GET', /^\/api\/graph$/, () => ({ status: 500, body: { error: { code: 'internal', message: 'graph down' } } })],
+    ]);
+    renderPage(<FindingDetail />, at());
+    await screen.findByText('Flagged as malware by the registry');
+    expect(api.calls.some((c) => c.url.pathname === '/api/graph')).toBe(false);
+    await user.click(screen.getByRole('tab', { name: 'Graph' }));
+    expect(await screen.findByText('graph down')).toBeInTheDocument();
+    expect(api.calls.some((c) => c.url.pathname === '/api/graph')).toBe(true);
   });
 
   it('updates the status', async () => {
@@ -33,7 +51,8 @@ describe('<FindingDetail>', () => {
     renderPage(<FindingDetail />, at());
     await screen.findByText('Flagged as malware by the registry');
     const form = screen.getByRole('form', { name: 'Finding status' });
-    await user.selectOptions(within(form).getByLabelText('Status'), 'accepted_risk');
+    await user.click(within(form).getByLabelText('Status'));
+    await user.click(await screen.findByRole('option', { name: 'Accepted risk' }));
     await user.type(within(form).getByLabelText('Note'), 'vendored and patched');
     await user.click(within(form).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.getAllByText('Accepted risk').length).toBeGreaterThan(1));

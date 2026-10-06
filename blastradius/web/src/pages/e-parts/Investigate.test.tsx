@@ -7,18 +7,31 @@ import { meFor } from '@/test/fixtures';
 import { summarise } from './graph';
 import { fakeApi, renderPage } from './testkit';
 
-// Cytoscape needs a real canvas; tests use a stand-in that exposes nodes as buttons.
-vi.mock('@/components/ScopedGraph', () => ({
-  ScopedGraph: ({ graph, onNodeClick, label }: { graph: GraphResponse; onNodeClick?: (id: string) => void; label?: string }) => (
-    <div role="img" aria-label={label}>
-      {graph.nodes.map((n) => (
-        <button key={n.id} type="button" onClick={() => onNodeClick?.(n.id)}>
-          node:{n.label}
-        </button>
-      ))}
-    </div>
-  ),
-}));
+// Cytoscape needs a real canvas; tests use a stand-in that exposes nodes as buttons and records
+// the layout and the zoom / fit calls from the toolbar.
+const graphCalls = vi.hoisted(() => ({ zoomIn: 0, zoomOut: 0, fit: 0, layout: '' }));
+vi.mock('./InvestigateGraph', async () => {
+  const { useImperativeHandle } = await import('react');
+  return {
+    InvestigateGraph: ({ graph, onNodeClick, label, layout, controlsRef }: { graph: GraphResponse; onNodeClick?: (id: string) => void; label?: string; layout?: string; controlsRef?: React.Ref<unknown> }) => {
+      graphCalls.layout = layout ?? '';
+      useImperativeHandle(controlsRef, () => ({
+        zoomIn: () => graphCalls.zoomIn++,
+        zoomOut: () => graphCalls.zoomOut++,
+        fit: () => graphCalls.fit++,
+      }));
+      return (
+        <div role="img" aria-label={label} data-layout={layout}>
+          {graph.nodes.map((n) => (
+            <button key={n.id} type="button" onClick={() => onNodeClick?.(n.id)}>
+              node:{n.label}
+            </button>
+          ))}
+        </div>
+      );
+    },
+  };
+});
 
 const PURL = 'pkg:npm/flatmap-stream@0.1.1';
 
@@ -84,14 +97,16 @@ describe('<Investigate>', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /flatmap-stream@0.1.1/ }));
     expect(screen.getByTestId('where')).toHaveTextContent('/projects/p1/investigate?finding=f1');
-    // Dossier header (the centre's node-details panel repeats the label).
-    expect((await screen.findAllByRole('heading', { level: 2, name: /flatmap-stream@0.1.1/ }))[0]).toHaveTextContent('Critical');
+    // Dossier header.
+    expect(await screen.findByRole('heading', { level: 2, name: /flatmap-stream@0.1.1/ })).toHaveTextContent('Critical');
     const graphCall = calls.find((c) => c.path === '/api/graph')!;
     expect(graphCall.url.searchParams.get('finding')).toBe('f1');
     // Cap note says what was dropped.
     expect(screen.getByRole('note')).toHaveTextContent('Capped at 5 nodes');
     expect(screen.getByRole('note')).toHaveTextContent('12 nodes dropped into groups (12 more components)');
-    // Node details for the centre are open by default.
+    // Node details open in a sheet when a node is clicked (not by default, so the graph stays visible).
+    expect(screen.queryByRole('complementary', { name: 'Node details' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'node:flatmap-stream@0.1.1' }));
     const panel = screen.getByRole('complementary', { name: 'Node details' });
     expect(within(panel).getByText('maintains')).toBeInTheDocument();
     // Only http(s) evidence becomes a link.
@@ -108,6 +123,24 @@ describe('<Investigate>', () => {
     expect(within(panel).getByRole('heading', { name: 'person:right9ctrl' })).toBeInTheDocument();
     await userEvent.click(within(panel).getByRole('button', { name: 'Centre graph here' }));
     expect(screen.getByTestId('where')).toHaveTextContent('node=person%3Aright9ctrl');
+  });
+
+  it('has a graph toolbar with layout, zoom and fit controls', async () => {
+    api();
+    renderPage(<Investigate />, { path, at: '/projects/p1/investigate?finding=f1', me: meFor('org_admin') });
+    await screen.findByRole('img', { name: /Graph centred on/ });
+    expect(graphCalls.layout).toBe('breadthfirst');
+    const layout = screen.getByRole('radiogroup', { name: 'Layout' });
+    await userEvent.click(within(layout).getByRole('radio', { name: 'Force' }));
+    expect(graphCalls.layout).toBe('cose');
+    const zoom = screen.getByRole('group', { name: 'Zoom' });
+    await userEvent.click(within(zoom).getByRole('button', { name: 'Zoom in' }));
+    await userEvent.click(within(zoom).getByRole('button', { name: 'Zoom out' }));
+    await userEvent.click(within(zoom).getByRole('button', { name: 'Fit to view' }));
+    expect([graphCalls.zoomIn, graphCalls.zoomOut, graphCalls.fit]).toEqual([1, 1, 1]);
+    // Node details open in a sheet (dialog) next to the graph.
+    await userEvent.click(screen.getByRole('button', { name: 'node:web-app' }));
+    expect(screen.getByRole('dialog')).toContainElement(screen.getByRole('complementary', { name: 'Node details' }));
   });
 
   it('searches and lists results by kind', async () => {

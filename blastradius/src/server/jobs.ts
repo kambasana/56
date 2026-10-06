@@ -3,6 +3,8 @@
  * first, runs at most `concurrency` at a time through the engine pipeline, and records the
  * outcome. Scanning never executes repository code (the pipeline only parses manifests).
  */
+import { realpathSync } from 'node:fs';
+import { isPathInside } from '../core/paths.js';
 import { scan, type ScanOptions } from '../pipeline.js';
 import type { GitRunner } from '../ingest/git.js';
 import { checkTarget, cloneTarget } from './targets.js';
@@ -29,6 +31,11 @@ export interface ScanJobsOptions {
   fixturesDir?: string;
   /** Server-wide reference time (offline demos). */
   asOf?: Date;
+  /**
+   * Fixture replay (--dev-seed): local targets inside `root` scan offline against `fixturesDir`
+   * as of `asOf`. Every other target scans with the real current date (unless `asOf` is set).
+   */
+  fixtureReplay?: FixtureReplay;
   /** Extra engine options (tests inject an offline HttpClient, cache dir). */
   scanOptions?: Partial<ScanOptions>;
   /** Git runner override (tests). */
@@ -36,6 +43,24 @@ export interface ScanJobsOptions {
   /** Clone timeout (ms). */
   cloneTimeoutMs?: number;
   log?: (m: string) => void;
+}
+
+export interface FixtureReplay {
+  root: string;
+  asOf: Date;
+  fixturesDir: string;
+}
+
+/** The replay settings when `localPath` (already realpath-resolved) is inside the replay root. */
+export function fixtureReplayFor(replay: FixtureReplay | undefined, localPath: string): FixtureReplay | undefined {
+  if (!replay) return undefined;
+  let root: string;
+  try {
+    root = realpathSync(replay.root);
+  } catch {
+    return undefined;
+  }
+  return isPathInside(localPath, root) ? replay : undefined;
 }
 
 export class ScanJobs {
@@ -52,6 +77,11 @@ export class ScanJobs {
   /** Remember per-scan options (call right after enqueueScan, before kick). */
   setOverrides(scanId: string, o: ScanJobOverrides): void {
     this.overrides.set(scanId, o);
+  }
+
+  /** Fixture replay settings that apply to a local target path (see ScanJobsOptions.fixtureReplay). */
+  replayFor(localPath: string): FixtureReplay | undefined {
+    return fixtureReplayFor(this.opts.fixtureReplay, localPath);
   }
 
   get activeCount(): number {
@@ -114,9 +144,10 @@ export class ScanJobs {
     let cleanup: (() => Promise<void>) | undefined;
     try {
       const s = markScanRunning(store, scanId);
-      const fixturesDir = o.fixturesDir ?? (this.opts.offline ? this.opts.fixturesDir : undefined);
-      const offline = o.offline === true || s.offline || this.opts.offline === true || o.fixturesDir !== undefined;
       const target = checkTarget(s.target, this.opts.localRoots());
+      const replay = target.kind === 'local' ? fixtureReplayFor(this.opts.fixtureReplay, target.path) : undefined;
+      const fixturesDir = o.fixturesDir ?? (this.opts.offline ? this.opts.fixturesDir : undefined) ?? replay?.fixturesDir;
+      const offline = o.offline === true || s.offline || this.opts.offline === true || o.fixturesDir !== undefined || replay !== undefined;
       let dir: string;
       let commit: string | null = null;
       if (target.kind === 'git') {
@@ -133,7 +164,7 @@ export class ScanJobs {
         dir = target.path;
       }
       log(`scan ${scanId}: started`);
-      const asOf = o.asOf ?? this.opts.asOf;
+      const asOf = o.asOf ?? this.opts.asOf ?? replay?.asOf;
       const out = await scan({
         ...this.opts.scanOptions,
         target: dir,

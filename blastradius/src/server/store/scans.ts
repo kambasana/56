@@ -45,8 +45,12 @@ function toScan(r: ScanRow): Scan {
     error: r.error,
     summary: r.status === 'succeeded' ? parseJson<ScanSummary | null>(r.summary_json, null) : null,
     schemaVersion: r.schema_version === '1' ? '1' : null,
+    updatedAt: [r.created_at, r.started_at, r.finished_at].reduce<string>((a, b) => (b !== null && b > a ? b : a), r.created_at),
   };
 }
+
+/** SQL for a scan's updatedAt (ISO strings compare in time order). */
+const UPDATED_AT_SQL = `max(created_at, coalesce(started_at, ''), coalesce(finished_at, ''))`;
 
 export function toScanRefFromScan(s: Scan): ScanRef {
   return { id: s.id, projectId: s.projectId, status: s.status, createdAt: s.createdAt, finishedAt: s.finishedAt };
@@ -204,19 +208,37 @@ export function getScan(s: Store, orgId: string, scanId: string): Scan | null {
   return r ? toScan(r) : null;
 }
 
-/** Newest first. */
-export function listScans(s: Store, orgId: string, projectId: string, q: { limit?: number; cursor?: string; offset?: number } = {}): Page<Scan> {
+/**
+ * Newest first. With `updatedSince` (ISO time), only scans created, started or finished at or
+ * after it. `serverTime` is the clock at read time: the caller's next `updatedSince`.
+ */
+export function listScans(
+  s: Store,
+  orgId: string,
+  projectId: string,
+  q: { limit?: number; cursor?: string; offset?: number; updatedSince?: string } = {},
+): Page<Scan> & { serverTime: string } {
+  const serverTime = nowIso(s);
   const { limit, offset } = pageWindow(q);
-  const total = get<{ n: number }>(s, 'SELECT count(*) AS n FROM scan WHERE project_id = ? AND org_id = ?', projectId, orgId)?.n ?? 0;
+  let where = 'project_id = ? AND org_id = ?';
+  const params: Param[] = [projectId, orgId];
+  if (q.updatedSince !== undefined) {
+    const t = Date.parse(q.updatedSince);
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(q.updatedSince) || !Number.isFinite(t)) {
+      throw new StoreError('bad_request', 'updatedSince must be an ISO 8601 time', ['updatedSince']);
+    }
+    where += ` AND ${UPDATED_AT_SQL} >= ?`;
+    params.push(new Date(t).toISOString());
+  }
+  const total = get<{ n: number }>(s, `SELECT count(*) AS n FROM scan WHERE ${where}`, ...params)?.n ?? 0;
   const rows = all<ScanRow>(
     s,
-    `SELECT ${SCAN_COLUMNS} FROM scan WHERE project_id = ? AND org_id = ? ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
-    projectId,
-    orgId,
+    `SELECT ${SCAN_COLUMNS} FROM scan WHERE ${where} ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
+    ...params,
     limit,
     offset,
   );
-  return { items: rows.map(toScan), total, nextCursor: nextCursorFor(offset, rows.length, total) };
+  return { items: rows.map(toScan), total, nextCursor: nextCursorFor(offset, rows.length, total), serverTime };
 }
 
 export function latestScan(s: Store, projectId: string): ScanRef | null {

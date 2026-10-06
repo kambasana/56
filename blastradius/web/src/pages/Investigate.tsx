@@ -5,28 +5,42 @@
  * incidents. Never estate-wide: nothing is drawn until something is picked, and the server caps
  * nodes at the project tier's graphNodeCap (what was dropped is listed).
  *
- * The graph is mirrored by a keyboard-accessible Nodes table with the same details panel.
+ * The graph sits in a Card with a toolbar (layout ToggleGroup, zoom and fit Buttons); node
+ * details open in a Sheet. A keyboard-accessible Nodes table mirrors the graph.
  */
-import { useDeferredValue, useEffect, useId, useMemo, useState } from 'react';
+import { useDeferredValue, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
+import { Maximize2Icon, SearchIcon, TriangleAlertIcon, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import type { GraphNode, GraphResponse, InvestigateNodeResponse, RiskLevel } from '@server/api-types';
 import { api, isApiError } from '@/api';
 import { useAuth } from '@/auth';
 import { Badge, RiskBadge } from '@/components/Badge';
-import { ButtonLink, Button } from '@/components/Button';
+import { ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
-import { EmptyState, ErrorState, LoadingState } from '@/components/EmptyState';
+import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
-import { ScopedGraph } from '@/components/ScopedGraph';
 import { SidePanel } from '@/components/SidePanel';
-import { cn, fmtNum } from '@/lib/cn';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { fmtNum } from '@/lib/cn';
+import { cn } from '@/lib/utils';
 import { useApi } from '@/lib/useApi';
 import { useProject } from '@/project';
 import { canCentre, edgesOf, groupResults, KIND_LABEL, summarise } from './e-parts/graph';
-import { Select, TabPanel, Tabs, inputClass, safeHref } from './e-parts/ui';
+import { InvestigateGraph, type GraphControls, type GraphLayout } from './e-parts/InvestigateGraph';
+import { safeHref } from './e-parts/ui';
 
 type Tab = 'graph' | 'nodes' | 'appear' | 'links';
-type Layout = 'breadthfirst' | 'cose' | 'concentric';
 
 const projectPath = (pid: string, rest: string) => `/projects/${encodeURIComponent(pid)}/${rest}`;
 
@@ -68,60 +82,68 @@ export default function Investigate() {
   const selectedKey = finding ? `finding:${finding}` : node ? `node:${node}` : null;
 
   return (
-    <>
+    <TooltipProvider delayDuration={150}>
       <PageHeader crumbs={crumbs} title="Investigate" meta="graphs are scoped to one finding or entity" />
-      <div className="flex flex-wrap items-center gap-2 border-b px-5 py-2">
-        <label htmlFor={searchId} className="sr-only">
-          Search packages, people, orgs, funders and incidents
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search packages, people, orgs, funders, incidents"
-          className={cn(inputClass, 'w-full max-w-[420px] font-mono')}
-        />
-        <span className="text-xs text-muted-foreground">Scope: {project?.name ?? 'this project'} · latest scan</span>
-      </div>
       <div className="flex min-h-0 grow flex-wrap">
-        <aside aria-label="Results" className="flex max-h-[80vh] min-w-0 flex-[1_1_240px] flex-col overflow-auto border-r py-2 lg:max-w-[300px]">
-          {dq.length >= 2 ? (
-            search.loading && !search.data ? (
-              <LoadingState label="Searching…" />
-            ) : search.error ? (
-              <ErrorState error={search.error} onRetry={search.reload} />
-            ) : search.data && search.data.items.length > 0 ? (
-              groupResults(search.data.items).map((g) => (
-                <ResultGroup
-                  key={g.kind}
-                  label={g.label}
-                  items={g.items.map((it) => ({ key: `node:${it.id}`, name: it.label, meta: it.meta, mono: it.kind === 'component', onPick: () => pick({ node: it.id }) }))}
-                  selectedKey={selectedKey}
-                />
-              ))
-            ) : (
-              <EmptyState title="No matches" description="Nothing in the latest scan matches. Try part of a package name or an entity id." />
-            )
-          ) : (
-            <>
-              <p className="m-0 px-4 pb-2 text-xs text-muted-foreground">Type at least 2 characters to search, or start from a top finding.</p>
-              {suggestions.data && suggestions.data.items.length > 0 && (
-                <ResultGroup
-                  label="Top findings"
-                  items={suggestions.data.items.map((f) => ({
-                    key: `finding:${f.id}`,
-                    name: `${f.name}@${f.version}`,
-                    meta: `${f.level} · score ${Math.round(f.score)} · ${f.reach.assets} assets`,
-                    mono: true,
-                    onPick: () => pick({ finding: f.id }),
-                  }))}
-                  selectedKey={selectedKey}
-                />
+        <aside aria-label="Results" className="flex max-h-[85vh] min-w-0 flex-[1_1_240px] flex-col border-r lg:max-w-[300px]">
+          <div className="flex flex-col gap-1.5 border-b p-3">
+            <Label htmlFor={searchId} className="sr-only">
+              Search packages, people, orgs, funders and incidents
+            </Label>
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id={searchId}
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Packages, people, orgs, incidents"
+                className="h-8 pl-8 font-mono text-[13px]"
+              />
+            </div>
+            <span className="text-xs text-muted-foreground">Scope: {project?.name ?? 'this project'} · latest scan</span>
+          </div>
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="py-2">
+              {dq.length >= 2 ? (
+                search.loading && !search.data ? (
+                  <ResultsSkeleton />
+                ) : search.error ? (
+                  <ErrorState error={search.error} onRetry={search.reload} />
+                ) : search.data && search.data.items.length > 0 ? (
+                  groupResults(search.data.items).map((g) => (
+                    <ResultGroup
+                      key={g.kind}
+                      label={g.label}
+                      items={g.items.map((it) => ({ key: `node:${it.id}`, name: it.label, meta: it.meta, mono: it.kind === 'component', onPick: () => pick({ node: it.id }) }))}
+                      selectedKey={selectedKey}
+                    />
+                  ))
+                ) : (
+                  <EmptyState title="No matches" description="Nothing in the latest scan matches. Try part of a package name or an entity id." />
+                )
+              ) : (
+                <>
+                  <p className="px-4 pb-2 text-xs text-muted-foreground">Type at least 2 characters to search, or start from a top finding.</p>
+                  {suggestions.loading && !suggestions.data && canFindings && <ResultsSkeleton />}
+                  {suggestions.data && suggestions.data.items.length > 0 && (
+                    <ResultGroup
+                      label="Top findings"
+                      items={suggestions.data.items.map((f) => ({
+                        key: `finding:${f.id}`,
+                        name: `${f.name}@${f.version}`,
+                        meta: `${f.level} · score ${Math.round(f.score)} · ${f.reach.assets} assets`,
+                        mono: true,
+                        onPick: () => pick({ finding: f.id }),
+                      }))}
+                      selectedKey={selectedKey}
+                    />
+                  )}
+                  {suggestions.error && <p className="px-4 text-xs text-muted-foreground">Top findings could not be loaded.</p>}
+                </>
               )}
-              {suggestions.error && <p className="m-0 px-4 text-xs text-muted-foreground">Top findings could not be loaded.</p>}
-            </>
-          )}
+            </div>
+          </ScrollArea>
         </aside>
         <section aria-label="Dossier" className="flex min-w-0 flex-[999_1_560px] flex-col">
           {!projectId ? (
@@ -136,7 +158,20 @@ export default function Investigate() {
           )}
         </section>
       </div>
-    </>
+    </TooltipProvider>
+  );
+}
+
+function ResultsSkeleton() {
+  return (
+    <div role="status" aria-label="Searching…" className="flex flex-col gap-2 px-4 py-2">
+      {Array.from({ length: 5 }, (_, i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -150,26 +185,36 @@ interface ResultItem {
 
 function ResultGroup({ label, items, selectedKey }: { label: string; items: ResultItem[]; selectedKey: string | null }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-col pb-2">
-      <div className="px-4 pb-1 pt-2 text-xs font-medium text-muted-foreground">{label}</div>
+    <div role="group" aria-label={label} className="flex flex-col gap-0.5 px-2 pb-2">
+      <div className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground">{label}</div>
       {items.map((it) => {
         const on = it.key === selectedKey;
         return (
-          <button
+          <Button
             key={it.key}
             type="button"
+            variant="ghost"
             aria-pressed={on}
             onClick={it.onPick}
-            className={cn(
-              'flex w-full cursor-pointer flex-col items-start border-0 px-4 py-1.5 text-left outline-none hover:bg-muted/60 focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50',
-              on ? 'bg-muted' : 'bg-transparent',
-            )}
+            className={cn('h-auto w-full flex-col items-start gap-0 px-2 py-1.5 text-left font-normal', on && 'bg-accent text-accent-foreground')}
           >
             <span className={cn('max-w-full truncate text-[13px] font-medium', it.mono && 'font-mono')}>{it.name}</span>
             <span className="max-w-full truncate text-xs text-muted-foreground">{it.meta}</span>
-          </button>
+          </Button>
         );
       })}
+    </div>
+  );
+}
+
+function DossierSkeleton() {
+  return (
+    <div role="status" aria-label="Loading graph…" className="flex flex-col gap-3 p-4">
+      <span className="sr-only">Loading graph…</span>
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-7 w-72" />
+      <Skeleton className="h-4 w-96" />
+      <Skeleton className="h-[420px] w-full" />
     </div>
   );
 }
@@ -177,7 +222,8 @@ function ResultGroup({ label, items, selectedKey }: { label: string; items: Resu
 export function Dossier({ projectId, finding, node, onCentre }: { projectId: string; finding: string | null; node: string | null; onCentre: (id: string) => void }) {
   const { can } = useAuth();
   const [tab, setTab] = useState<Tab>('graph');
-  const [layout, setLayout] = useState<Layout>('breadthfirst');
+  const [layout, setLayout] = useState<GraphLayout>('breadthfirst');
+  const controls = useRef<GraphControls>(null);
   const graph = useApi<GraphResponse>(
     (s) => (finding ? api.graphForFinding(finding, s) : api.graphForNode(projectId, node ?? '', s)),
     [projectId, finding, node],
@@ -189,10 +235,10 @@ export function Dossier({ projectId, finding, node, onCentre }: { projectId: str
     (s) => (centreId ? api.investigateNode(projectId, centreId, s) : Promise.resolve(null)),
     [projectId, centreId],
   );
+  // Node details open on click (not by default) so the sheet does not cover the graph.
   const [sel, setSel] = useState<string | null>(null);
-  useEffect(() => setSel(g?.centre ?? null), [g]);
 
-  if (graph.loading && !g) return <LoadingState label="Loading graph…" />;
+  if (graph.loading && !g) return <DossierSkeleton />;
   if (graph.error) {
     return isApiError(graph.error, 'not_found') ? (
       <EmptyState title="Not in the latest scan" description="This finding or node does not occur in the project's latest succeeded scan." />
@@ -210,17 +256,17 @@ export function Dossier({ projectId, finding, node, onCentre }: { projectId: str
   const findingFor = (purl: string) => appearances.find((a) => a.projectId === projectId && a.purl === purl) ?? null;
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col gap-1.5 border-b px-5 py-3">
+    <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="gap-0">
+      <div className="flex flex-col gap-1.5 border-b px-4 py-3">
         <span className="text-xs text-muted-foreground">
           {KIND_LABEL[centreNode.kind] ?? centreNode.kind}
           {centreNode.entityType ? ` · ${centreNode.entityType}` : ''}
         </span>
-        <h2 className="m-0 flex flex-wrap items-center gap-2 break-all font-mono text-lg font-semibold leading-7">
+        <h2 className="flex flex-wrap items-center gap-2 font-mono text-lg leading-7 font-semibold break-all">
           {centreNode.label}
           {centreNode.level && <RiskBadge level={centreNode.level} />}
         </h2>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
           <Stat k="Nodes" v={`${fmtNum(sum.shown)}${sum.dropped ? ` of ${fmtNum(sum.total)}` : ''}`} />
           <Stat k="Assets" v={fmtNum(sum.byKind.asset ?? 0)} />
           <Stat k="Components" v={fmtNum(sum.byKind.component ?? 0)} />
@@ -229,103 +275,164 @@ export function Dossier({ projectId, finding, node, onCentre }: { projectId: str
           <Stat k="Cap" v={fmtNum(g.cap)} />
         </div>
         {g.truncated && (
-          <p role="note" className="m-0 rounded-md border border-warning/40 px-3 py-1.5 text-[13px] text-warning">
-            Capped at {fmtNum(g.cap)} nodes for this project's tier: {fmtNum(sum.dropped)} node{sum.dropped === 1 ? '' : 's'} dropped into groups
-            {sum.groups.length > 0 ? ` (${sum.groups.map((x) => x.label.replace(/^\+/, '')).join(', ')})` : ''}. Centre on a node to see its neighbourhood.
-          </p>
+          <Alert role="note" className="mt-1 border-warning/40 py-2 text-warning">
+            <TriangleAlertIcon />
+            <AlertDescription className="text-[13px] text-warning">
+              Capped at {fmtNum(g.cap)} nodes for this project's tier: {fmtNum(sum.dropped)} node{sum.dropped === 1 ? '' : 's'} dropped into groups
+              {sum.groups.length > 0 ? ` (${sum.groups.map((x) => x.label.replace(/^\+/, '')).join(', ')})` : ''}. Centre on a node to see its neighbourhood.
+            </AlertDescription>
+          </Alert>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-3 border-b px-5">
-        <Tabs
-          idBase="inv"
-          label="Dossier views"
-          value={tab}
-          onChange={setTab}
-          items={[
-            { id: 'graph', label: 'Graph' },
-            { id: 'nodes', label: `Nodes (${fmtNum(sum.shown + sum.groups.length)})` },
-            { id: 'appear', label: `Where it appears${info.data ? ` (${appearances.length})` : ''}`, disabled: !centreId },
-            { id: 'links', label: `Links and sources${info.data ? ` (${links.length})` : ''}`, disabled: !centreId },
-          ]}
-        />
-        <span className="grow" />
-        {tab === 'graph' && (
-          <Select label="Layout" value={layout} onChange={(e) => setLayout(e.target.value as Layout)}>
-            <option value="breadthfirst">Layered</option>
-            <option value="cose">Force</option>
-            <option value="concentric">Concentric</option>
-          </Select>
-        )}
+      <div className="flex flex-wrap items-center gap-3 border-b px-4 py-2">
+        <TabsList aria-label="Dossier views">
+          <TabsTrigger value="graph">Graph</TabsTrigger>
+          <TabsTrigger value="nodes">Nodes ({fmtNum(sum.shown + sum.groups.length)})</TabsTrigger>
+          <TabsTrigger value="appear" disabled={!centreId}>
+            Where it appears{info.data ? ` (${appearances.length})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="links" disabled={!centreId}>
+            Links and sources{info.data ? ` (${links.length})` : ''}
+          </TabsTrigger>
+        </TabsList>
       </div>
-      {tab === 'graph' && (
-        <TabPanel idBase="inv" id="graph" className="flex flex-wrap">
-          <div className="min-w-0 flex-[999_1_480px] p-4">
-            <ScopedGraph graph={g} layout={layout} height={520} onNodeClick={setSel} label={`Graph centred on ${centreNode.label}`} />
-            <p className="m-0 mt-1.5 text-xs text-muted-foreground">
-              Click a node for details. Dashed edges are unreviewed or low-confidence links; they never affect scores. The Nodes tab lists the same nodes for keyboard use.
-            </p>
+      <TabsContent value="graph" className="p-4">
+        <Card className="gap-0 overflow-hidden py-0">
+          <CardHeader className="flex flex-wrap items-center gap-2 border-b px-3 py-2 [.border-b]:pb-2">
+            <span id="graph-layout-label" className="text-xs text-muted-foreground">
+              Layout
+            </span>
+            <ToggleGroup type="single" variant="outline" size="sm" aria-labelledby="graph-layout-label" value={layout} onValueChange={(v) => v && setLayout(v as GraphLayout)}>
+              <ToggleGroupItem value="breadthfirst">Layered</ToggleGroupItem>
+              <ToggleGroupItem value="cose">Force</ToggleGroupItem>
+              <ToggleGroupItem value="concentric">Concentric</ToggleGroupItem>
+            </ToggleGroup>
+            <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
+            <div role="group" aria-label="Zoom" className="flex items-center gap-1">
+              <ToolButton label="Zoom in" onClick={() => controls.current?.zoomIn()}>
+                <ZoomInIcon />
+              </ToolButton>
+              <ToolButton label="Zoom out" onClick={() => controls.current?.zoomOut()}>
+                <ZoomOutIcon />
+              </ToolButton>
+              <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
+              <ToolButton label="Fit to view" onClick={() => controls.current?.fit()}>
+                <Maximize2Icon />
+              </ToolButton>
+            </div>
+          </CardHeader>
+          <CardContent className="px-0">
+            <InvestigateGraph
+              graph={g}
+              layout={layout}
+              selectedId={sel}
+              controlsRef={controls}
+              height={520}
+              onNodeClick={setSel}
+              label={`Graph centred on ${centreNode.label}`}
+            />
+          </CardContent>
+          <CardFooter className="flex-wrap gap-x-4 gap-y-1 border-t px-3 py-2 text-xs text-muted-foreground [.border-t]:pt-2">
+            <GraphLegend />
+            <span className="grow" />
+            <span>Click a node for details. Dashed edges are unreviewed or low-confidence links; they never affect scores. The Nodes tab lists the same nodes for keyboard use.</span>
+          </CardFooter>
+        </Card>
+        {selectedNode && (
+          <SidePanel
+            label="Node details"
+            eyebrow={<NodeEyebrow n={selectedNode} />}
+            title={selectedNode.label}
+            onClose={() => setSel(null)}
+            actions={<NodeActions n={selectedNode} centre={g.centre} projectId={projectId} onCentre={onCentre} finding={findingFor(selectedNode.id)} canFindings={can('findings', projectId)} />}
+          >
+            <NodeDetails g={g} n={selectedNode} />
+          </SidePanel>
+        )}
+      </TabsContent>
+      <TabsContent value="nodes" className="flex">
+        <NodesTable g={g} projectId={projectId} onCentre={onCentre} findingFor={findingFor} />
+      </TabsContent>
+      <TabsContent value="appear" className="flex">
+        {info.error ? (
+          <ErrorState error={info.error} onRetry={info.reload} />
+        ) : (
+          <AppearancesTable rows={appearances} loading={info.loading && !info.data} />
+        )}
+      </TabsContent>
+      <TabsContent value="links" className="flex flex-col gap-2 px-4 py-3">
+        {info.loading && !info.data ? (
+          <ResultsSkeleton />
+        ) : info.error ? (
+          <ErrorState error={info.error} onRetry={info.reload} />
+        ) : links.length === 0 ? (
+          <EmptyState title="No entity links" description="No maintainer, org, funder or incident links touch this node in the latest scans." />
+        ) : (
+          <div className="overflow-hidden rounded-lg border">
+            <Table aria-label="Entity links" className="text-[13px]">
+              <TableHeader className="bg-muted">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-8 px-4 text-xs text-muted-foreground">Link</TableHead>
+                  <TableHead className="h-8 text-xs text-muted-foreground">Relation</TableHead>
+                  <TableHead className="h-8 text-xs text-muted-foreground">Review</TableHead>
+                  <TableHead className="h-8 text-right text-xs text-muted-foreground">Confidence</TableHead>
+                  <TableHead className="h-8 text-xs text-muted-foreground">Method</TableHead>
+                  <TableHead className="h-8 px-4 text-xs text-muted-foreground">Evidence</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {links.map((l, i) => (
+                  <TableRow key={`${l.from}-${l.entityId}-${l.relation}-${i}`}>
+                    <TableCell className="px-4 font-mono">
+                      {l.from} → {l.entityId}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{l.relation}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={l.reviewed ? 'secondary' : 'outline'} className={l.reviewed ? '' : 'border-warning/40 text-warning'}>
+                        {l.reviewed ? 'reviewed' : 'unreviewed'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs tabular-nums">{l.confidence.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{l.method ?? '—'}</TableCell>
+                    <TableCell className="px-4">
+                      <Evidence urls={l.evidence} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-          {selectedNode && (
-            <SidePanel
-              label="Node details"
-              eyebrow={<NodeEyebrow n={selectedNode} />}
-              title={selectedNode.label}
-              onClose={() => setSel(null)}
-              actions={<NodeActions n={selectedNode} centre={g.centre} projectId={projectId} onCentre={onCentre} finding={findingFor(selectedNode.id)} canFindings={can('findings', projectId)} />}
-            >
-              <NodeDetails g={g} n={selectedNode} />
-            </SidePanel>
-          )}
-        </TabPanel>
-      )}
-      {tab === 'nodes' && (
-        <TabPanel idBase="inv" id="nodes" className="flex">
-          <NodesTable g={g} projectId={projectId} onCentre={onCentre} findingFor={findingFor} />
-        </TabPanel>
-      )}
-      {tab === 'appear' && (
-        <TabPanel idBase="inv" id="appear" className="flex">
-          {info.loading && !info.data ? (
-            <LoadingState />
-          ) : info.error ? (
-            <ErrorState error={info.error} onRetry={info.reload} />
-          ) : (
-            <AppearancesTable rows={appearances} />
-          )}
-        </TabPanel>
-      )}
-      {tab === 'links' && (
-        <TabPanel idBase="inv" id="links" className="flex flex-col gap-2 px-5 py-3">
-          {info.loading && !info.data ? (
-            <LoadingState />
-          ) : info.error ? (
-            <ErrorState error={info.error} onRetry={info.reload} />
-          ) : links.length === 0 ? (
-            <EmptyState title="No entity links" description="No maintainer, org, funder or incident links touch this node in the latest scans." />
-          ) : (
-            <ul className="m-0 flex list-none flex-col p-0">
-              {links.map((l, i) => (
-                <li key={`${l.from}-${l.entityId}-${l.relation}-${i}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b py-2 text-[13px]">
-                  <span className="font-mono">
-                    {l.from} → {l.entityId}
-                  </span>
-                  <Badge variant="outline">{l.relation}</Badge>
-                  <Badge variant={l.reviewed ? 'secondary' : 'outline'} className={l.reviewed ? '' : 'text-warning'}>
-                    {l.reviewed ? 'reviewed' : 'unreviewed'}
-                  </Badge>
-                  <span className="font-mono text-xs text-muted-foreground">confidence {l.confidence.toFixed(2)}</span>
-                  {l.method && <span className="text-xs text-muted-foreground">{l.method}</span>}
-                  <Evidence urls={l.evidence} />
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="m-0 text-xs text-muted-foreground">
-            Links record documented relationships with sources. They are not findings of wrongdoing. Unreviewed links never affect scores.
-          </p>
-        </TabPanel>
-      )}
-    </div>
+        )}
+        <p className="text-xs text-muted-foreground">Links record documented relationships with sources. They are not findings of wrongdoing. Unreviewed links never affect scores.</p>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function ToolButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={label} onClick={onClick}>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+const LEGEND_LEVELS: RiskLevel[] = ['critical', 'high', 'medium', 'low'];
+
+function GraphLegend() {
+  return (
+    <span className="flex flex-wrap items-center gap-1.5" aria-label="Risk colours" role="group">
+      {LEGEND_LEVELS.map((l) => (
+        <RiskBadge key={l} level={l} className="px-1.5 py-0 text-[11px]" />
+      ))}
+    </span>
   );
 }
 
@@ -359,7 +466,7 @@ function NodeActions({ n, centre, projectId, onCentre, finding, canFindings }: {
   return (
     <>
       {canCentre(n) && n.id !== centre && (
-        <Button size="xs" variant="outline" onClick={() => onCentre(n.id)}>
+        <Button type="button" size="xs" variant="outline" onClick={() => onCentre(n.id)}>
           Centre graph here
         </Button>
       )}
@@ -379,9 +486,11 @@ function Evidence({ urls }: { urls?: string[] }) {
       {urls.slice(0, 5).map((u, i) => {
         const href = safeHref(u);
         return href ? (
-          <a key={i} href={href} target="_blank" rel="noopener noreferrer nofollow" className="break-all">
-            source {i + 1}
-          </a>
+          <Button key={i} asChild variant="link" size="xs" className="h-auto p-0">
+            <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+              source {i + 1}
+            </a>
+          </Button>
         ) : (
           <span key={i} className="break-all text-muted-foreground">
             {u}
@@ -396,23 +505,25 @@ export function NodeDetails({ g, n }: { g: GraphResponse; n: GraphNode }) {
   const { incoming, outgoing } = edgesOf(g, n.id);
   const label = (id: string) => g.nodes.find((x) => x.id === id)?.label ?? id;
   const section = (title: string, edges: typeof incoming, dir: 'from' | 'to') => (
-    <div className="flex flex-col gap-1">
-      <h3 className="m-0 text-xs font-medium text-muted-foreground">
+    <div className="flex flex-col gap-1.5">
+      <h3 className="text-xs font-medium text-muted-foreground">
         {title} ({edges.length})
       </h3>
       {edges.length === 0 ? (
         <span className="text-muted-foreground">None</span>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+        <ul className="flex flex-col gap-1.5">
           {edges.map((e, i) => (
-            <li key={i} className="flex flex-col gap-0.5 rounded-md border px-2 py-1.5">
-              <span className="break-all font-mono">{label(dir === 'from' ? e.from : e.to)}</span>
-              <span className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-                <span>{e.relation}</span>
-                {e.confidence !== undefined && <span>· confidence {e.confidence.toFixed(2)}</span>}
-                {e.reviewed !== undefined && <span className={e.reviewed ? '' : 'text-warning'}>· {e.reviewed ? 'reviewed' : 'unreviewed'}</span>}
-              </span>
-              <Evidence urls={e.evidence} />
+            <li key={i}>
+              <Card className="gap-1 px-3 py-2 shadow-none">
+                <span className="font-mono break-all">{label(dir === 'from' ? e.from : e.to)}</span>
+                <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <Badge variant="outline">{e.relation}</Badge>
+                  {e.confidence !== undefined && <span>confidence {e.confidence.toFixed(2)}</span>}
+                  {e.reviewed !== undefined && <span className={e.reviewed ? '' : 'text-warning'}>· {e.reviewed ? 'reviewed' : 'unreviewed'}</span>}
+                </span>
+                <Evidence urls={e.evidence} />
+              </Card>
             </li>
           ))}
         </ul>
@@ -421,8 +532,8 @@ export function NodeDetails({ g, n }: { g: GraphResponse; n: GraphNode }) {
   );
   return (
     <div className="flex flex-col gap-3">
-      <div className="break-all font-mono text-xs text-muted-foreground">{n.id}</div>
-      {n.kind === 'group' && <p className="m-0">These nodes were folded together because the graph hit the tier's node cap ({g.cap}). Centre on a nearby node to see them.</p>}
+      <div className="font-mono text-xs break-all text-muted-foreground">{n.id}</div>
+      {n.kind === 'group' && <p>These nodes were folded together because the graph hit the tier's node cap ({g.cap}). Centre on a nearby node to see them.</p>}
       {section('Incoming', incoming, 'from')}
       {section('Outgoing', outgoing, 'to')}
     </div>
@@ -459,7 +570,7 @@ function NodesTable({ g, projectId, onCentre, findingFor }: {
           </span>
         ),
       },
-      { id: 'kind', accessorFn: (n) => KIND_LABEL[n.kind] ?? n.kind, header: 'Kind' },
+      { id: 'kind', accessorFn: (n) => KIND_LABEL[n.kind] ?? n.kind, header: 'Kind', meta: { facet: {} } },
       {
         id: 'level',
         accessorFn: (n) => (n.level ? LEVEL_RANK[n.level] : 9),
@@ -492,20 +603,20 @@ function NodesTable({ g, projectId, onCentre, findingFor }: {
   );
 }
 
-function AppearancesTable({ rows }: { rows: InvestigateNodeResponse['appearances'] }) {
+function AppearancesTable({ rows, loading }: { rows: InvestigateNodeResponse['appearances']; loading: boolean }) {
   const { can } = useAuth();
   const columns = useMemo<ColumnDef<InvestigateNodeResponse['appearances'][number], any>[]>(
     () => [
-      { id: 'project', accessorFn: (a) => a.projectName, header: 'Project', cell: ({ getValue }) => <span className="font-mono">{getValue()}</span> },
+      { id: 'project', accessorFn: (a) => a.projectName, header: 'Project', meta: { facet: {} }, cell: ({ getValue }) => <span className="font-mono">{getValue()}</span> },
       {
         id: 'purl',
         accessorFn: (a) => a.purl,
         header: 'Finding',
         cell: ({ row }) =>
           can('findings', row.original.projectId) ? (
-            <Link to={projectPath(row.original.projectId, `findings/${encodeURIComponent(row.original.findingId)}`)} className="font-mono">
-              {row.original.purl}
-            </Link>
+            <Button asChild variant="link" size="xs" className="h-auto p-0 font-mono text-[13px]">
+              <Link to={projectPath(row.original.projectId, `findings/${encodeURIComponent(row.original.findingId)}`)}>{row.original.purl}</Link>
+            </Button>
           ) : (
             <span className="font-mono">{row.original.purl}</span>
           ),
@@ -526,6 +637,7 @@ function AppearancesTable({ rows }: { rows: InvestigateNodeResponse['appearances
       label="Where it appears"
       data={rows}
       columns={columns}
+      loading={loading}
       getRowId={(a) => `${a.projectId}:${a.findingId}`}
       initialSorting={[{ id: 'score', desc: true }]}
       emptyTitle="Not in any finding"

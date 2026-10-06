@@ -5,7 +5,7 @@ import type { ReportRow } from '@server/api-types';
 import Integrations from '../Integrations';
 import Reports from '../Reports';
 import { meFor } from '@/test/fixtures';
-import { Reply, fakeApi, renderPage } from './testkit';
+import { Reply, choose, fakeApi, renderPage } from './testkit';
 
 function report(i: number, project = { id: 'p1', name: 'payments-platform' }): ReportRow {
   const id = `scan_${String(i).padStart(4, '0')}`;
@@ -28,11 +28,18 @@ describe('<Reports>', () => {
     expect(row).toHaveTextContent('payments-platform');
     expect(row).toHaveTextContent('2026-10-06 02:13 UTC');
     expect(row).toHaveTextContent('aaaaaaaa…beef');
+    // HTML is one click away (split button); every format is in the download menu.
+    const html = within(row).getByRole('link', { name: /^Download HTML report for payments-platform/ });
+    expect(html).toHaveAttribute('href', '/api/reports/scan_0001.html');
+    expect(html).toHaveAttribute('download', 'blastradius-scan_0001.html');
+    await userEvent.click(within(row).getByRole('button', { name: /More download formats/ }));
+    const menu = await screen.findByRole('menu');
     for (const f of ['html', 'json', 'sarif']) {
-      const a = within(row).getByRole('link', { name: new RegExp(`Download ${f.toUpperCase()} report`) });
+      const a = within(menu).getByRole('menuitem', { name: new RegExp(`Download ${f.toUpperCase()} report`) });
       expect(a).toHaveAttribute('href', `/api/reports/scan_0001.${f}`);
       expect(a).toHaveAttribute('download', `blastradius-scan_0001.${f}`);
     }
+    await userEvent.keyboard('{Escape}');
     expect(screen.getByText('Coming soon')).toBeInTheDocument();
   });
 
@@ -47,7 +54,7 @@ describe('<Reports>', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Load more' }));
     await waitFor(() => expect(screen.getByTestId('datatable-count')).toHaveTextContent('Showing 2 of 2'));
     expect(calls[1]!.url.searchParams.get('cursor')).toBe('next');
-    await userEvent.selectOptions(screen.getByLabelText('Project'), 'p1');
+    await choose('Project', 'payments-platform');
     await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('project')).toBe('p1'));
   });
 
@@ -94,6 +101,11 @@ describe('<Integrations>', () => {
     expect(within(cards[0]!).getByRole('link', { name: 'Open Reports' })).toHaveAttribute('href', '/reports');
     // Read-only: no configure buttons at all.
     expect(screen.queryByRole('button', { name: /configure|edit|add/i })).toBeNull();
+    // Each destination has a disabled switch until it is implemented.
+    const switches = within(dests).getAllByRole('switch');
+    expect(switches).toHaveLength(5);
+    for (const sw of switches) expect(sw).toBeDisabled();
+    expect(within(cards[2]!).getByRole('switch', { name: 'Enable Webhooks' })).not.toBeChecked();
   });
 
   it('shows an error state', async () => {

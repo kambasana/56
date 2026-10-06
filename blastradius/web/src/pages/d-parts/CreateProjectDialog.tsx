@@ -1,17 +1,26 @@
 /**
- * "New project" modal (POST /api/projects). Only rendered for users with manage_projects;
- * the server checks the permission and validates the target (https git URL on an allowed host,
- * or a local path under an allowed root) again.
+ * "New project" dialog (POST /api/projects): a shadcn Dialog with Field inputs and a Select for
+ * the size tier. Only rendered for users with manage_projects; the server checks the permission
+ * and validates the target (https git URL on an allowed host, or a local path under an allowed
+ * root) again. Field errors from the server are shown under the field they belong to.
  */
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import type { Project, SizeTier } from '@server/api-types';
 import { SIZE_TIERS, TIER_DEFAULTS } from '@server/api-types';
 import { api, isApiError } from '@/api';
-import { Button } from '@/components/Button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 
-const inputClass = 'h-8 w-full rounded-md border border-input bg-background px-2.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
+const FORM_FIELDS = ['name', 'target', 'tier', 'owner'] as const;
+type FormField = (typeof FORM_FIELDS)[number];
 
-export function CreateProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (p: Project) => void }) {
+export function CreateProjectDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated: (p: Project) => void }) {
   const id = useId();
   const [name, setName] = useState('');
   const [tier, setTier] = useState<SizeTier>('Standard');
@@ -20,39 +29,17 @@ export function CreateProjectDialog({ onClose, onCreated }: { onClose: () => voi
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<string[]>([]);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const firstRef = useRef<HTMLInputElement>(null);
-  const restoreRef = useRef<Element | null>(null);
 
+  // Start clean each time the dialog opens.
   useEffect(() => {
-    restoreRef.current = document.activeElement;
-    firstRef.current?.focus();
-    return () => {
-      const el = restoreRef.current;
-      if (el instanceof HTMLElement) el.focus();
-    };
-  }, []);
-
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      onClose();
-      return;
-    }
-    if (e.key !== 'Tab' || !dialogRef.current) return;
-    // Keep focus inside the dialog.
-    const focusables = [...dialogRef.current.querySelectorAll<HTMLElement>('input, select, button, textarea')].filter((el) => !el.hasAttribute('disabled'));
-    if (focusables.length === 0) return;
-    const first = focusables[0]!;
-    const last = focusables[focusables.length - 1]!;
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
+    if (!open) return;
+    setName('');
+    setTier('Standard');
+    setTarget('');
+    setOwner('');
+    setError(null);
+    setFields([]);
+  }, [open]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -61,6 +48,7 @@ export function CreateProjectDialog({ onClose, onCreated }: { onClose: () => voi
     setFields([]);
     try {
       const p = await api.createProject({ name: name.trim(), tier, target: target.trim(), ...(owner.trim() ? { owner: owner.trim() } : {}) });
+      toast.success(`Project “${p.name}” created`, { description: 'Run its first scan from the Scans page.' });
       onCreated(p);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create the project.');
@@ -70,85 +58,88 @@ export function CreateProjectDialog({ onClose, onCreated }: { onClose: () => voi
     }
   };
 
-  const invalid = (f: string) => (fields.includes(f) ? true : undefined);
+  // The server message goes under the first field it names; otherwise in an alert at the bottom.
+  const errorField: FormField | null = error ? (FORM_FIELDS.find((f) => fields.includes(f)) ?? null) : null;
+  const invalid = (f: FormField) => (fields.includes(f) ? true : undefined);
+  const fieldError = (f: FormField) => (errorField === f ? <FieldError>{error}</FieldError> : null);
   const t = TIER_DEFAULTS[tier];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 px-4 py-[10vh]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={`${id}-title`}
-        onKeyDown={onKeyDown}
-        className="w-full max-w-[480px] rounded-lg border bg-background p-5 text-[13px] text-foreground shadow-[var(--shadow-lg)]"
-      >
-        <h2 id={`${id}-title`} className="m-0 text-[15px] font-semibold">
-          New project
-        </h2>
-        <p className="m-0 mt-1 text-xs text-muted-foreground">Read-only: nothing from the target is installed or executed.</p>
-        <form className="mt-4 flex flex-col gap-3" onSubmit={(e) => void submit(e)}>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-name`} className="font-medium">
-              Name
-            </label>
-            <input ref={firstRef} id={`${id}-name`} required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={invalid('name')} className={inputClass} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-target`} className="font-medium">
-              Target
-            </label>
-            <input
-              id={`${id}-target`}
-              required
-              maxLength={2048}
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              placeholder="https://github.com/org/repo"
-              aria-invalid={invalid('target')}
-              aria-describedby={`${id}-target-hint`}
-              className={`${inputClass} font-mono`}
-            />
-            <span id={`${id}-target-hint`} className="text-xs text-muted-foreground">
-              An https URL on github.com, gitlab.com or bitbucket.org, or a local path the server allows.
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-tier`} className="font-medium">
-              Size tier
-            </label>
-            <select id={`${id}-tier`} value={tier} onChange={(e) => setTier(e.target.value as SizeTier)} aria-invalid={invalid('tier')} aria-describedby={`${id}-tier-hint`} className={inputClass}>
-              {SIZE_TIERS.map((s) => (
-                <option key={s} value={s}>
-                  {s} · {TIER_DEFAULTS[s].repoRange}
-                </option>
-              ))}
-            </select>
-            <span id={`${id}-tier-hint`} className="text-xs text-muted-foreground">
-              {t.fit} · scans {t.scanCadence} · graph cap {t.graphNodeCap} nodes
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={`${id}-owner`} className="font-medium">
-              Owner <span className="font-normal text-muted-foreground">(optional)</span>
-            </label>
-            <input id={`${id}-owner`} maxLength={200} value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Payments · A. Chen" className={inputClass} />
-          </div>
-          {error && (
-            <p role="alert" className="m-0 text-xs text-destructive">
-              {error}
-            </p>
+    <Dialog open={open} onOpenChange={(o) => !busy && onOpenChange(o)}>
+      <DialogContent className="sm:max-w-[480px]">
+        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-5" noValidate={false}>
+          <DialogHeader>
+            <DialogTitle>New project</DialogTitle>
+            <DialogDescription>Read-only: nothing from the target is installed or executed.</DialogDescription>
+          </DialogHeader>
+          <FieldGroup className="gap-4">
+            <Field data-invalid={invalid('name')}>
+              <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
+              <Input id={`${id}-name`} required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={invalid('name')} autoComplete="off" />
+              {fieldError('name')}
+            </Field>
+            <Field data-invalid={invalid('target')}>
+              <FieldLabel htmlFor={`${id}-target`}>Target</FieldLabel>
+              <Input
+                id={`${id}-target`}
+                required
+                maxLength={2048}
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                placeholder="https://github.com/org/repo"
+                aria-invalid={invalid('target')}
+                aria-describedby={`${id}-target-hint`}
+                className="font-mono"
+                autoComplete="off"
+              />
+              <FieldDescription id={`${id}-target-hint`}>An https URL on github.com, gitlab.com or bitbucket.org, or a local path the server allows.</FieldDescription>
+              {fieldError('target')}
+            </Field>
+            <Field data-invalid={invalid('tier')}>
+              <FieldLabel htmlFor={`${id}-tier`}>Size tier</FieldLabel>
+              <Select value={tier} onValueChange={(v) => setTier(v as SizeTier)}>
+                <SelectTrigger id={`${id}-tier`} className="w-full" aria-invalid={invalid('tier')} aria-describedby={`${id}-tier-hint`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SIZE_TIERS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s} · {TIER_DEFAULTS[s].repoRange}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldDescription id={`${id}-tier-hint`}>
+                {t.fit} · scans {t.scanCadence} · graph cap {t.graphNodeCap} nodes
+              </FieldDescription>
+              {fieldError('tier')}
+            </Field>
+            <Field data-invalid={invalid('owner')}>
+              <FieldLabel htmlFor={`${id}-owner`}>
+                Owner <span className="font-normal text-muted-foreground">(optional)</span>
+              </FieldLabel>
+              <Input id={`${id}-owner`} maxLength={200} value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Payments · A. Chen" aria-invalid={invalid('owner')} />
+              {fieldError('owner')}
+            </Field>
+          </FieldGroup>
+          {error && !errorField && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={busy}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={busy || !name.trim() || !target.trim()}>
+              {busy && <Spinner role={undefined} aria-label={undefined} aria-hidden="true" />}
               {busy ? 'Creating…' : 'Create project'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

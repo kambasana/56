@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { can as canWithRoles, type Permission, type RoleLike } from '@server/permissions';
-import { api, isApiError, setUnauthenticatedHandler, type LoginRequest, type MeResponse } from './api';
+import { api, isApiError, request, setUnauthenticatedHandler, type LoginRequest, type MeResponse, type SwitchOrgRequest, type SwitchOrgResponse } from './api';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'anonymous' | 'error';
 
@@ -38,6 +38,8 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   /** Dev mode role switcher (POST /api/dev/switch-user). */
   switchUser: (userId: string) => Promise<MeResponse>;
+  /** Switch the working org (POST /api/session/org); the user must be bound in it. */
+  switchOrg: (orgId: string) => Promise<MeResponse>;
   refresh: () => Promise<void>;
 }
 
@@ -101,6 +103,14 @@ export function AuthProvider({ children, initialMe }: { children: ReactNode; ini
     return m;
   }, []);
 
+  const switchOrg = useCallback(async (orgId: string) => {
+    const body: SwitchOrgRequest = { orgId };
+    const m = await request<SwitchOrgResponse>('POST', '/api/session/org', body);
+    setMe(m);
+    setStatus('authenticated');
+    return m;
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -110,9 +120,10 @@ export function AuthProvider({ children, initialMe }: { children: ReactNode; ini
       login,
       logout,
       switchUser,
+      switchOrg,
       refresh,
     }),
-    [status, me, error, login, logout, switchUser, refresh],
+    [status, me, error, login, logout, switchUser, switchOrg, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

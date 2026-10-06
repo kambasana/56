@@ -219,12 +219,18 @@ describe('RBAC', () => {
   });
 
   it('project-scope bindings grant access to that project only', async () => {
+    // Not a member yet: a binding is refused until the user is invited.
     const u = createUser(store, { email: 'scoped@local', name: 'Scoped', password: 'blastradius-dev' });
-    const res = await call('POST', '/api/bindings', {
+    const binding = { roleId: 'developer', subject: { kind: 'user', userId: u.id }, scope: { kind: 'project', projectId: seededProjectId } };
+    expect((await call('POST', '/api/bindings', { as: 'admin', body: binding })).status).toBe(400);
+    const res = await call('POST', '/api/members', {
       as: 'admin',
-      body: { roleId: 'developer', subject: { kind: 'user', userId: u.id }, scope: { kind: 'project', projectId: seededProjectId } },
+      body: { email: 'scoped@local', name: 'Scoped', bindings: [{ roleId: 'developer', scope: { kind: 'project', projectId: seededProjectId } }] },
     });
     expect(res.status).toBe(201);
+    // An existing account gets a pending invite and joins by confirming its own password.
+    const { invite } = (await res.json()) as { invite: { token: string } };
+    expect((await call('POST', '/api/auth/accept-invite', { body: { token: invite.token, password: 'blastradius-dev' } })).status).toBe(200);
     cookies.scoped = await login('scoped@local');
     expect((await call('GET', `/api/findings?project=${seededProjectId}`, { as: 'scoped' })).status).toBe(200);
     const projects = (await (await call('GET', '/api/projects', { as: 'scoped' })).json()) as { items: Project[] };

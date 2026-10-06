@@ -7,6 +7,7 @@ import type { ChangeRow, FindingDetail, FindingRow, MeResponse, ProjectRow, Scan
 import { setFetcher } from '@/api';
 import { AuthProvider } from '@/auth';
 import { ProjectProvider } from '@/project';
+import { Toaster } from '@/components/ui/sonner';
 
 export type Handler = (url: URL, init: RequestInit | undefined) => { status?: number; body: unknown } | unknown;
 export type RouteSpec = [method: string, path: RegExp, handler: Handler];
@@ -28,7 +29,7 @@ export function fakeApi(routes: RouteSpec[]) {
     calls.push({ method, url, headers: (init?.headers ?? {}) as Record<string, string>, body });
     const hit = routes.find(([m, re]) => m === method && re.test(url.pathname));
     if (!hit) return new Response(JSON.stringify({ error: { code: 'not_found', message: 'Not found' } }), { status: 404 });
-    const out = hit[2](url, init);
+    const out = await hit[2](url, init);
     const res = out && typeof out === 'object' && 'body' in (out as object) ? (out as { status?: number; body: unknown }) : { status: 200, body: out };
     return new Response(JSON.stringify(res.body), { status: res.status ?? 200 });
   });
@@ -52,6 +53,7 @@ export function renderPage(element: ReactElement, { path, pattern, me }: { path:
             <Route path="*" element={<p>elsewhere</p>} />
           </Routes>
           <Where />
+          <Toaster />
         </ProjectProvider>
       </AuthProvider>
     </MemoryRouter>,

@@ -287,4 +287,5 @@ export const WEB_ROUTES: readonly WebRoute[] = [
   { path: '/integrations', page: 'integrations', label: 'Integrations' },
   { path: '/settings', page: 'settings', label: 'Settings' },
   { path: '/login', page: null, label: 'Sign in' },
+  { path: '/accept-invite', page: null, label: 'Accept invite' },
 ];

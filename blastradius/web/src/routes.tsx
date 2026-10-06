@@ -13,6 +13,7 @@ import { landingPath } from './nav';
 import { AppShell } from './components/AppShell';
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from './components/EmptyState';
 import Login from './pages/Login';
+import AcceptInvite from './pages/AcceptInvite';
 
 type Page = LazyExoticComponent<ComponentType>;
 
@@ -71,6 +72,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route
         element={
           <RequireAuth>

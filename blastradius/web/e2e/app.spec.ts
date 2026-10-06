@@ -31,11 +31,32 @@ test.describe('navigation per default role', () => {
       if (role === 'auditor') {
         expect(labels).toEqual(['Reports']);
         await shot(page, 'auditor-nav');
+        await page.goto('/reports');
+        await expect(page.getByRole('link', { name: /^Download HTML report for payments-platform/ }).first()).toBeVisible();
+        await shot(page, 'auditor-reports');
       } else {
         expect(errors()).toEqual([]);
       }
     });
   }
+});
+
+test('sign-in page renders without console errors', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#email')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  await shot(page, 'login');
+});
+
+test('accept-invite page is public and rejects an unknown token', async ({ page }) => {
+  await page.goto('/accept-invite#token=not-a-real-token');
+  await expect(page.getByRole('heading', { name: 'Accept your invite' })).toBeVisible();
+  await page.getByLabel('Password').fill('a-brand-new-password');
+  await expect(page.getByRole('button', { name: 'Accept invite' })).toBeEnabled();
+  await page.waitForTimeout(250);
+  await shot(page, 'accept-invite');
+  await page.getByRole('button', { name: 'Accept invite' }).click();
+  await expect(page.getByRole('alert')).toContainText('invalid, expired or already used');
 });
 
 test('server denies the auditor GET /api/findings with 403', async ({ page }) => {
@@ -92,6 +113,12 @@ test.describe('admin screens', () => {
     await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings/`));
     await expect(page.getByText('flatmap-stream').first()).toBeVisible();
     await shot(page, 'finding');
+    // The graph tab loads Cytoscape on demand and draws the finding-scoped graph.
+    await page.getByRole('tab', { name: 'Graph' }).click();
+    const graph = page.getByRole('img', { name: 'Graph scoped to this finding' });
+    await expect(graph.locator('canvas').first()).toBeAttached();
+    await page.waitForTimeout(300);
+    await shot(page, 'finding-graph');
   });
 
   test('Exposure matrix', async ({ page }) => {
@@ -146,17 +173,125 @@ test.describe('admin screens', () => {
     await shot(page, 'integrations');
   });
 
-  test('Settings shows the permission matrix', async ({ page }) => {
+  test('Settings shows members, the permission matrix, bindings, project and audit tabs', async ({ page }) => {
     await page.goto('/settings');
+    // Members is the default tab.
+    await expect(page.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('table', { name: 'Members' })).toContainText('admin@local');
+    await shot(page, 'settings-members');
+    await page.getByRole('tab', { name: 'Roles' }).click();
+    await expect(page).toHaveURL(/[?&]tab=roles/);
     const matrix = page.getByRole('table').filter({ hasText: 'Org admin' }).first();
     await expect(matrix).toBeVisible();
     await expect(matrix).toContainText('Auditor');
     await shot(page, 'settings');
+    await page.goto('/settings?tab=bindings');
+    await expect(page.getByRole('table', { name: 'Role bindings' })).toBeVisible();
+    await shot(page, 'settings-bindings');
     await page.goto('/settings?tab=project');
     await expect(page.getByText('payments-platform').first()).toBeVisible();
     await shot(page, 'settings-project');
     await page.goto('/settings?tab=audit');
     await expect(page.getByRole('heading', { name: /audit/i }).first()).toBeVisible();
     await shot(page, 'settings-audit');
+  });
+
+  test('admin invites a member in dev mode; the member appears and can sign in', async ({ page }) => {
+    const email = `invitee-${Date.now()}@local`;
+    await page.goto('/settings');
+    await page.getByRole('button', { name: 'Invite member' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Invite member' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Email').fill(email);
+    await dialog.getByLabel('Name').fill('Invited Developer');
+    await dialog.getByRole('combobox', { name: 'Role' }).click();
+    await page.getByRole('option', { name: 'Developer', exact: true }).click();
+    await shot(page, 'settings-invite');
+    await dialog.getByRole('button', { name: 'Send invite' }).click();
+    const done = page.getByRole('dialog', { name: 'Member invited' });
+    await expect(done).toBeVisible();
+    const otp = await done.getByRole('textbox', { name: 'One-time password' }).inputValue();
+    expect(otp.length).toBeGreaterThanOrEqual(12);
+    await shot(page, 'settings-invite-result');
+    await done.getByRole('button', { name: 'Done' }).click();
+    await expect(done).toBeHidden();
+    await expect(page.getByRole('table', { name: 'Members' })).toContainText(email);
+    // The one-time password works on the normal sign-in form.
+    expect(errors(), 'console errors before sign-out').toEqual([]);
+    await page.request.post('/api/auth/logout', { headers: { 'X-Requested-With': 'blastradius' } });
+    await page.goto('/');
+    await expect(page.locator('#email')).toBeVisible();
+    // The signed-out /api/me 401 on the sign-in page is expected; drop it.
+    errors().splice(0);
+    await page.locator('#email').fill(email);
+    await page.locator('#password').fill(otp);
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(page.getByTestId('nav-role')).toContainText('Developer');
+  });
+
+  test('org switcher is visible and lists the current organization', async ({ page }) => {
+    await page.goto('/');
+    const switcher = page.getByRole('button', { name: /^Organization: .+\. Switch organization$/ });
+    await expect(switcher).toBeVisible();
+    await expect(page.getByTestId('nav-org')).not.toBeEmpty();
+    await switcher.click();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toContainText('Organizations');
+    await expect(menu.getByLabel('Current organization')).toBeVisible();
+    await shot(page, 'org-switcher');
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+  });
+
+  test('dark mode toggle switches the theme and renders screens without console errors', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveClass(/\blight\b/);
+    await page.getByTestId('nav-user').click();
+    await page.getByRole('menuitemradio', { name: 'Dark' }).click();
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+    await page.keyboard.press('Escape');
+    // The background really changed (theme tokens, not hard-coded colours).
+    const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(bg).not.toMatch(/^rgb\(255, 255, 255\)$/);
+    await expect(page.getByRole('cell', { name: /payments-platform/ }).first()).toBeVisible();
+    await shot(page, 'dark-org-home');
+    // The choice survives a reload.
+    await page.goto(`/projects/${project}/findings`);
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+    await expect(page.getByText('flatmap-stream', { exact: true }).first()).toBeVisible();
+    await shot(page, 'dark-findings');
+    await page.goto(`/projects/${project}/investigate?node=${encodeURIComponent('pkg:npm/event-stream@3.3.6')}`);
+    await expect(page.getByRole('img', { name: /graph/i }).first().locator('canvas').first()).toBeAttached();
+    await page.waitForTimeout(500);
+    await shot(page, 'dark-investigate');
+    // Back to light so later tests in this browser context start from the default.
+    await page.getByTestId('nav-user').click();
+    await page.getByRole('menuitemradio', { name: 'Light' }).click();
+    await expect(page.locator('html')).toHaveClass(/\blight\b/);
+  });
+
+  test('Findings "Top reason" column shows readable reason text', async ({ page }) => {
+    await page.goto(`/projects/${project}/findings`);
+    const table = page.getByRole('table').first();
+    const row = table.getByRole('row').filter({ has: page.getByText('flatmap-stream', { exact: true }) });
+    await expect(row).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: /Top reason/ })).toBeVisible();
+    const headers = await table.getByRole('columnheader').allInnerTexts();
+    const idx = headers.findIndex((h) => /Top reason/.test(h));
+    expect(idx, `Top reason header in ${JSON.stringify(headers)}`).toBeGreaterThanOrEqual(0);
+    const cell = row.getByRole('cell').nth(idx);
+    const text = (await cell.innerText()).trim();
+    // A real sentence, not an ellipsis-crushed sliver.
+    expect(text.length).toBeGreaterThan(20);
+    expect(text).toMatch(/[a-z]{3,}\s+[a-z]{3,}/i);
+    const box = await cell.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(300);
+    // Clamped to at most two lines but at least one full line of text is visible.
+    const span = cell.locator('span.line-clamp-2').first();
+    const h = await span.evaluate((el) => ({ client: el.clientHeight, line: parseFloat(getComputedStyle(el).lineHeight) || 20 }));
+    expect(h.client).toBeGreaterThanOrEqual(h.line * 0.9);
+    expect(h.client).toBeLessThanOrEqual(h.line * 2 + 2);
   });
 });

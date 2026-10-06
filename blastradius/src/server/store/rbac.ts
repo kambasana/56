@@ -390,6 +390,11 @@ export function projectsWithPermission(s: Store, orgId: string, userId: string, 
 // Members
 // ---------------------------------------------------------------------------
 
+/** True when the user has any user binding in the org (org or project scope). */
+export function isOrgMember(s: Store, orgId: string, userId: string): boolean {
+  return get<{ x: number }>(s, `SELECT 1 AS x FROM role_binding WHERE org_id = ? AND subject_kind = 'user' AND subject_ref = ? LIMIT 1`, orgId, userId) !== undefined;
+}
+
 /** Users with at least one user binding in the org, with those bindings. */
 export function listMembers(s: Store, orgId: string): ListMembersResponse {
   const bindings = listBindingRecords(s, orgId);

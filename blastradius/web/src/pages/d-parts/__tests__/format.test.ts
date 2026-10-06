@@ -13,6 +13,7 @@ describe('format helpers', () => {
 
   it('only links http(s) URLs', () => {
     expect(safeHref('https://example.org/a')).toBe('https://example.org/a');
+    expect(safeHref('http://example.org/a')).toBeNull();
     expect(safeHref('javascript:alert(1)')).toBeNull();
     expect(safeHref('data:text/html,x')).toBeNull();
     expect(safeHref('/relative')).toBeNull();

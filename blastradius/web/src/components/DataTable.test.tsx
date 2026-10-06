@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DataTable, type ColumnDef } from './DataTable';
@@ -69,9 +69,15 @@ describe('<DataTable>', () => {
     const user = userEvent.setup();
     render(<DataTable label="Findings" data={rows} columns={columns} getRowId={(r) => r.id} />);
     await user.click(screen.getByRole('button', { name: /Columns/ }));
-    await user.click(screen.getByRole('checkbox', { name: 'Level' }));
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Level' }));
+    // The menu stays open while toggling, like the shadcn data-table view options.
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Level' })).toHaveAttribute('aria-checked', 'false');
+    await user.keyboard('{Escape}');
     expect(screen.queryByRole('columnheader', { name: 'Level' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('checkbox', { name: 'Level' }));
+    expect(screen.getByRole('columnheader', { name: 'Score' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Columns/ }));
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Level' }));
+    await user.keyboard('{Escape}');
     expect(screen.getByRole('columnheader', { name: 'Level' })).toBeInTheDocument();
   });
 
@@ -95,9 +101,11 @@ describe('<DataTable>', () => {
     expect(screen.queryByRole('complementary', { name: 'Finding detail' })).not.toBeInTheDocument();
     await user.click(screen.getByText('colors'));
     const panel = screen.getByRole('complementary', { name: 'Finding detail' });
+    // The panel is a shadcn Sheet (Radix dialog, non-modal) titled by the row.
+    expect(screen.getByRole('dialog', { name: 'colors' })).toContainElement(panel);
     expect(within(panel).getByText('score 70')).toBeInTheDocument();
     expect(onRowClick).toHaveBeenCalledWith(rows[2]);
-    expect(screen.getByText('colors', { selector: 'td' }).closest('tr')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('colors', { selector: 'td' }).closest('tr')).toHaveAttribute('aria-current', 'true');
     await user.click(within(panel).getByRole('button', { name: 'Close panel' }));
     expect(screen.queryByRole('complementary', { name: 'Finding detail' })).not.toBeInTheDocument();
   });
@@ -136,6 +144,62 @@ describe('<DataTable>', () => {
     expect(screen.getByTestId('datatable-count')).toHaveTextContent('Showing 2,000 of 2,000');
     h.mockRestore();
     w.mockRestore();
+  });
+
+  it('filters a faceted column with the Popover + Command filter', async () => {
+    const user = userEvent.setup();
+    const faceted: ColumnDef<Row, any>[] = [...columns.slice(0, 2), { accessorKey: 'level', header: 'Level', meta: { facet: { title: 'Level' } } }];
+    render(<DataTable label="Findings" data={rows} columns={faceted} getRowId={(r) => r.id} />);
+    const toolbar = document.querySelector<HTMLElement>('[data-slot=data-table-toolbar]')!;
+    await user.click(within(toolbar).getByRole('button', { name: 'Level' }));
+    await user.click(screen.getByRole('option', { name: /critical/ }));
+    expect(bodyNames()).toEqual(['event-stream']);
+    await user.click(screen.getByRole('option', { name: /high/ }));
+    expect(bodyNames()).toEqual(['event-stream', 'colors']);
+    expect(screen.getByTestId('datatable-count')).toHaveTextContent('Showing 2 of 3');
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: /Reset/ }));
+    expect(bodyNames()).toHaveLength(3);
+  });
+
+  it('moves between rows with the arrow keys', async () => {
+    const user = userEvent.setup();
+    render(<DataTable label="Findings" data={rows} columns={columns} getRowId={(r) => r.id} onRowClick={() => {}} />);
+    const first = screen.getByText('left-pad').closest('tr')!;
+    first.focus();
+    await user.keyboard('{ArrowDown}');
+    await waitFor(() => expect(screen.getByText('event-stream').closest('tr')).toHaveFocus());
+  });
+
+  it('makes only one row a Tab stop (roving tabindex)', async () => {
+    const user = userEvent.setup();
+    render(<DataTable label="Findings" data={rows} columns={columns} getRowId={(r) => r.id} onRowClick={() => {}} />);
+    const bodyRows = () => Array.from(document.querySelectorAll<HTMLElement>('tbody tr[data-row-id]'));
+    expect(bodyRows().filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    expect(bodyRows()[0]).toHaveAttribute('tabindex', '0');
+    bodyRows()[0]!.focus();
+    await user.keyboard('{ArrowDown}');
+    await waitFor(() => expect(bodyRows()[1]).toHaveFocus());
+    expect(bodyRows().filter((r) => r.tabIndex === 0)).toEqual([bodyRows()[1]]);
+    expect(bodyRows().some((r) => r.hasAttribute('aria-selected'))).toBe(false);
+  });
+
+  it('announces the checked state of faceted filter options', async () => {
+    const user = userEvent.setup();
+    const faceted: ColumnDef<Row, any>[] = [...columns.slice(0, 2), { accessorKey: 'level', header: 'Level', meta: { facet: { title: 'Level' } } }];
+    render(<DataTable label="Findings" data={rows} columns={faceted} getRowId={(r) => r.id} />);
+    const toolbar = document.querySelector<HTMLElement>('[data-slot=data-table-toolbar]')!;
+    await user.click(within(toolbar).getByRole('button', { name: 'Level' }));
+    expect(screen.getByRole('option', { name: /critical/ })).not.toHaveAccessibleName(/selected/);
+    await user.click(screen.getByRole('option', { name: /critical/ }));
+    expect(screen.getByRole('option', { name: /critical/ })).toHaveAccessibleName(/critical, selected/);
+  });
+
+  it('shows skeleton rows while loading', () => {
+    render(<DataTable label="Findings" data={[]} columns={columns} loading />);
+    expect(screen.getByRole('table', { name: 'Findings' })).toHaveAttribute('aria-busy', 'true');
+    expect(document.querySelectorAll('[data-slot=skeleton]').length).toBeGreaterThan(0);
+    expect(screen.queryByText('No rows')).not.toBeInTheDocument();
   });
 
   it('shows the empty state for no data', () => {

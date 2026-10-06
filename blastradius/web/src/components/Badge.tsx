@@ -1,54 +1,54 @@
-import type { HTMLAttributes } from 'react';
+/**
+ * App badges on top of the shadcn/ui Badge (components/ui/badge.tsx).
+ *
+ * RiskBadge maps the four risk levels to theme tokens defined in index.css
+ * (--level-critical = destructive, --level-high = orange, --level-medium = amber,
+ * --level-low = muted), so light and dark mode stay consistent.
+ */
+import type { ComponentProps } from 'react';
+import { cva } from 'class-variance-authority';
 import type { RiskLevel } from '@server/api-types';
-import { cn } from '@/lib/cn';
+import { Badge as UiBadge, badgeVariants } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-export type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
+export type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive' | 'ghost' | 'link';
 
-const variants: Record<BadgeVariant, string> = {
-  default: 'border-transparent bg-primary text-primary-foreground',
-  secondary: 'border-transparent bg-secondary text-secondary-foreground',
-  outline: 'border-border text-foreground',
-  destructive: 'border-transparent bg-destructive text-destructive-foreground',
-};
+export type BadgeProps = ComponentProps<typeof UiBadge>;
 
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: BadgeVariant;
+/** shadcn Badge; defaults to the "secondary" variant (the app's neutral chip). */
+export function Badge({ variant = 'secondary', ...props }: BadgeProps) {
+  return <UiBadge variant={variant} {...props} />;
 }
 
-export function Badge({ variant = 'secondary', className, ...rest }: BadgeProps) {
-  return (
-    <span
-      className={cn(
-        'inline-flex w-fit shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-xs font-medium leading-4',
-        variants[variant],
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
+export { badgeVariants };
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['critical', 'high', 'medium', 'low'];
 
-/** Same mapping as the design canvas: critical filled red, high amber outline, medium outline, low muted. */
-const LEVEL_STYLE: Record<RiskLevel, { variant: BadgeVariant; className: string; label: string }> = {
-  critical: { variant: 'destructive', className: '', label: 'Critical' },
-  high: { variant: 'outline', className: 'text-warning border-warning/40', label: 'High' },
-  medium: { variant: 'outline', className: '', label: 'Medium' },
-  low: { variant: 'secondary', className: 'text-muted-foreground', label: 'Low' },
-};
+const LABELS: Record<RiskLevel, string> = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+
+export const levelBadgeVariants = cva('', {
+  variants: {
+    level: {
+      critical: 'border-transparent bg-level-critical text-white dark:bg-level-critical/60',
+      high: 'border-level-high/40 bg-level-high/10 text-level-high',
+      medium: 'border-level-medium/40 bg-level-medium/10 text-level-medium',
+      low: 'border-transparent bg-secondary text-level-low',
+    },
+  },
+  defaultVariants: { level: 'low' },
+});
 
 export function levelLabel(level: RiskLevel): string {
-  return LEVEL_STYLE[level]?.label ?? level;
+  return LABELS[level] ?? level;
 }
 
 /** Risk level badge (critical / high / medium / low), optionally with the score. */
 export function RiskBadge({ level, score, className }: { level: RiskLevel; score?: number; className?: string }) {
-  const s = LEVEL_STYLE[level] ?? LEVEL_STYLE.low;
+  const lv: RiskLevel = level in LABELS ? level : 'low';
   return (
-    <Badge variant={s.variant} className={cn(s.className, className)} data-level={level}>
-      {s.label}
-      {score !== undefined && <span className="font-mono opacity-80">{Math.round(score)}</span>}
-    </Badge>
+    <UiBadge variant="outline" className={cn(levelBadgeVariants({ level: lv }), className)} data-level={lv}>
+      {levelLabel(lv)}
+      {score !== undefined && <span className="font-mono tabular-nums opacity-80">{Math.round(score)}</span>}
+    </UiBadge>
   );
 }

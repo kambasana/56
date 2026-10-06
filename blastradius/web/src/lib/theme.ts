@@ -1,52 +1,43 @@
-import { useCallback, useEffect, useState } from 'react';
+/**
+ * Theme storage and the pre-render class switch. The React side lives in
+ * components/theme-provider.tsx (the shadcn/ui Vite dark-mode pattern, without next-themes).
+ */
+export type Theme = 'light' | 'dark' | 'system';
+/** @deprecated use Theme */
+export type ThemeChoice = Theme;
 
-export type ThemeChoice = 'light' | 'dark' | 'system';
-const KEY = 'blastradius.theme';
+export const THEME_STORAGE_KEY = 'blastradius.theme';
 
-function readChoice(): ThemeChoice {
+export function readTheme(key = THEME_STORAGE_KEY, fallback: Theme = 'system'): Theme {
   try {
-    const v = localStorage.getItem(KEY);
+    const v = localStorage.getItem(key);
     if (v === 'light' || v === 'dark' || v === 'system') return v;
+  } catch {
+    /* storage unavailable (private mode, blocked site data) */
+  }
+  return fallback;
+}
+
+export function writeTheme(theme: Theme, key = THEME_STORAGE_KEY): void {
+  try {
+    localStorage.setItem(key, theme);
   } catch {
     /* storage unavailable */
   }
-  return 'system';
 }
 
-function systemDark(): boolean {
-  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+export function systemTheme(): 'light' | 'dark' {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
 }
 
-/** Apply the theme to <html> (class "dark"). Call once before first render to avoid a flash. */
-export function applyTheme(choice: ThemeChoice = readChoice()): void {
-  const dark = choice === 'dark' || (choice === 'system' && systemDark());
-  document.documentElement.classList.toggle('dark', dark);
-}
-
-export function useTheme(): { choice: ThemeChoice; setChoice: (c: ThemeChoice) => void; cycle: () => void } {
-  const [choice, setChoiceState] = useState<ThemeChoice>(readChoice);
-
-  useEffect(() => {
-    applyTheme(choice);
-    if (choice !== 'system' || typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const on = () => applyTheme('system');
-    mq.addEventListener?.('change', on);
-    return () => mq.removeEventListener?.('change', on);
-  }, [choice]);
-
-  const setChoice = useCallback((c: ThemeChoice) => {
-    try {
-      localStorage.setItem(KEY, c);
-    } catch {
-      /* storage unavailable */
-    }
-    setChoiceState(c);
-  }, []);
-
-  const cycle = useCallback(() => {
-    setChoice(choice === 'system' ? 'light' : choice === 'light' ? 'dark' : 'system');
-  }, [choice, setChoice]);
-
-  return { choice, setChoice, cycle };
+/** Put "light" or "dark" on <html>. Call once before the first render to avoid a flash. */
+export function applyTheme(theme: Theme = readTheme()): 'light' | 'dark' {
+  const resolved = theme === 'system' ? systemTheme() : theme;
+  const root = document.documentElement;
+  root.classList.remove('light', 'dark');
+  root.classList.add(resolved);
+  root.style.colorScheme = resolved;
+  return resolved;
 }

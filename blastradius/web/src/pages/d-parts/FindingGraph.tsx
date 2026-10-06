@@ -3,19 +3,25 @@
  * Cytoscape is only fetched when someone asks for the graph.
  */
 import { api } from '@/api';
-import { ErrorState, LoadingState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ScopedGraph } from '@/components/ScopedGraph';
 import { useApi } from '@/lib/useApi';
 
 export default function FindingGraph({ findingId }: { findingId: string }) {
   const { data, error, loading, reload } = useApi((s) => api.graphForFinding(findingId, s), [findingId]);
-  if (loading && !data) return <LoadingState label="Loading graph…" />;
+  if (loading && !data)
+    return (
+      <div role="status" aria-label="Loading graph…">
+        <Skeleton className="h-[360px] w-full" />
+      </div>
+    );
   if (error) return <ErrorState error={error} onRetry={reload} />;
   if (!data) return null;
   return (
     <div className="flex flex-col gap-1.5">
       <ScopedGraph graph={data} height={360} label="Graph scoped to this finding" />
-      <p className="m-0 text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Scoped to this finding and capped at {data.cap} nodes{data.truncated ? '; some nodes are grouped' : ''}.
       </p>
     </div>

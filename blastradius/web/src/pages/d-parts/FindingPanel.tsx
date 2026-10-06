@@ -4,7 +4,10 @@ import { api } from '@/api';
 import { useAuth } from '@/auth';
 import { RiskBadge } from '@/components/Badge';
 import { ButtonLink } from '@/components/Button';
-import { ErrorState, LoadingState } from '@/components/EmptyState';
+import { ExternalLink, Network } from 'lucide-react';
+import { ErrorState } from '@/components/EmptyState';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { SidePanel } from '@/components/SidePanel';
 import { useApi } from '@/lib/useApi';
 import { fmtNum } from '@/lib/cn';
@@ -40,25 +43,34 @@ export function FindingPanel({ row, onClose, onUpdated }: { row: FindingRow; onC
       title={`${row.name}@${row.version}`}
       actions={
         <>
-          <ButtonLink to={findingHref(row.projectId, row.id)} size="xs">
+          <ButtonLink to={findingHref(row.projectId, row.id)} size="sm">
+            <ExternalLink aria-hidden="true" />
             Open finding
           </ButtonLink>
           {canGraph && (
-            <ButtonLink to={investigateHref(row.projectId, row.id)} size="xs">
+            <ButtonLink to={investigateHref(row.projectId, row.id)} size="sm">
+              <Network aria-hidden="true" />
               Open graph
             </ButtonLink>
           )}
         </>
       }
     >
-      <p className="m-0 pb-3 text-muted-foreground">
+      <p className="pb-3 text-muted-foreground">
         Reaches {fmtNum(row.reach.assets)} asset{row.reach.assets === 1 ? '' : 's'} ({fmtNum(row.reach.prodAssets)} in production) through {fmtNum(row.reach.paths)} path
         {row.reach.paths === 1 ? '' : 's'} · blast {fmtNum(Math.round(row.blastScore))}
       </p>
-      <div className="pb-3">
-        <StatusControl finding={row} onUpdated={onUpdated} />
-      </div>
-      {loading && !data && <LoadingState label="Loading finding…" />}
+      <StatusControl finding={row} onUpdated={onUpdated} />
+      <Separator className="my-4" />
+      {loading && !data && (
+        <div role="status" aria-label="Loading finding…" className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      )}
       {error && <ErrorState error={error} onRetry={reload} />}
       {data && (
         <div className="flex flex-col divide-y">

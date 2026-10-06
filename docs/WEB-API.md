@@ -37,6 +37,13 @@ Every non-2xx response has the same shape, `ApiError`:
 - **Session:** `POST /api/auth/login` sets cookie `br_session`. The value is a random 32-byte id, and the server stores only its SHA-256. Attributes: `HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`, plus `Secure` when served over https. `POST /api/auth/logout` deletes the session and clears the cookie.
 - **CSRF:** every `POST`, `PUT`, `PATCH` and `DELETE` under `/api/` must send the header `X-Requested-With: blastradius`. Any non-empty value is accepted, and the web client sends `blastradius`. If an `Origin` header is present, it must equal the server's own origin. Otherwise the response is 403 `csrf`. Login is included in this rule.
 - **Dev mode** (`blastradius serve --dev`): the server seeds the users `admin@local`, `appsec@local`, `developer@local` and `auditor@local`, each holding the built-in role of the same name at org scope. It prints their passwords to the console once. `POST /api/dev/switch-user` is the role switcher: it moves the session to another seeded user without a password. Outside dev mode it returns 404. Permissions are still enforced server-side from that user's real bindings.
+- **Invites:** `POST /api/members` (manage_members) adds a user to the working org by email and name, with 1–20 initial role bindings. Each binding follows the `POST /api/bindings` rules: you can only grant a role whose permissions you hold, and only an Org admin grants Org admin.
+  - **New email, dev mode:** the user is created at once, with the bindings and a generated one-time password returned once as `member` + `oneTimePassword`. The password is never logged or audited.
+  - **Every other case (outside dev mode, or an email that already has an account):** nothing is created or granted yet. The server stores a pending invite (email, the name the inviter typed, the bindings) and returns `invite: { token, expiresAt, email, name }`: a single-use token that expires after 7 days; only its SHA-256 is stored. The response is the same whether or not the email has an account, so the endpoint cannot probe accounts in other orgs, reveal their names, or attach them to an org without consent. The web app shows it as a link, `/accept-invite#token=…` (the token stays in the fragment). Inviting the same email again replaces its earlier unaccepted invites; that is how an expired invite is re-sent.
+  - **Accepting:** `POST /api/auth/accept-invite { token, password }`. With no account for the email, `password` (12–1024 characters) becomes the new account's password and the account takes the invited name. With an existing account, `password` must be that account's current password (its consent); its password and name are unchanged. Either way the bindings are granted, the token is consumed atomically, and the user is signed in like login (`MeResponse`). An unknown, expired, replaced or used token, or a wrong password for an existing account, gets 400 `bad_request` with a generic message. Attempts count against the per-address and per-email sign-in limits.
+  - **Conflict:** an email that is already a member of the org is 409 `conflict`: edit its bindings instead.
+  - **Audit:** each step is audited: `user.create`, `binding.create` per binding, `invite.create` (and `invite.revoke` for a replaced invite), `member.invite`, and later `invite.accept`.
+  - **Members only:** `POST /api/bindings` for a user subject only accepts users who already have a binding in the org. For anyone else it returns 400 with the same message as an unknown user, so it cannot probe accounts in other orgs. Group subjects are unaffected.
 - **Org creation:** `POST /api/orgs` is open to any signed-in user in dev mode, or when no org exists yet (first run). Otherwise only an Org admin of an existing org may create one. The creator gets an org-scope Org admin binding in the new org.
 
 ## Permissions
@@ -66,9 +73,10 @@ Permissions are data (`permissions.ts`):
 |---|---|---|---|---|
 | GET | `/api/health` | — | — | `HealthResponse` |
 | POST | `/api/auth/login` | — | `LoginRequest` | `LoginResponse` (sets cookie) |
+| POST | `/api/auth/accept-invite` | — | `AcceptInviteRequest` | `AcceptInviteResponse` (sets cookie; see Auth) |
 | POST | `/api/auth/logout` | auth | — | `OkResponse` |
 | POST | `/api/dev/switch-user` | auth, dev mode | `DevSwitchUserRequest` | `DevSwitchUserResponse` |
-| GET | `/api/me` | auth | — | `MeResponse` |
+| GET | `/api/me` | auth | — | `MeResponse` (`orgs` lists every org the user is bound in, for the org switcher) |
 | GET | `/api/orgs` | auth | — | `ListOrgsResponse` (orgs the user is bound in) |
 | POST | `/api/orgs` | see Auth | `CreateOrgRequest` | `CreateOrgResponse` 201 (the session switches to the new org) |
 | POST | `/api/session/org` | auth, bound in the org | `{ orgId }` | `MeResponse` (switches the session's working org; 404 for an org the user is not in; audited as `session.switch_org`) |
@@ -78,7 +86,7 @@ Permissions are data (`permissions.ts`):
 | GET | `/api/projects/:id` | projects or home | — | `GetProjectResponse` |
 | PATCH | `/api/projects/:id` | manage_projects | `UpdateProjectRequest` | `UpdateProjectResponse` |
 | DELETE | `/api/projects/:id` | manage_projects | — | `OkResponse` |
-| GET | `/api/projects/:id/scans` | scans | — | `ListScansResponse` |
+| GET | `/api/projects/:id/scans?limit=&cursor=&updatedSince=` | scans | `ListScansQuery` | `ListScansResponse` (adds `serverTime`; see Scan polling) |
 | POST | `/api/projects/:id/scans` | manage_projects | `CreateScanRequest` | `CreateScanResponse` 202 |
 | GET | `/api/scans/:id` | scans | — | `GetScanResponse` |
 | GET | `/api/findings?project=&scan=&level=&status=&q=&sort=` | findings | `ListFindingsQuery` | `ListFindingsResponse` |
@@ -98,9 +106,10 @@ Permissions are data (`permissions.ts`):
 | POST | `/api/roles/:id/reset` | manage_members | — | `ResetRoleResponse` (built-in only) |
 | DELETE | `/api/roles/:id` | manage_members | — | `OkResponse` (409 for built-in, or a role still bound) |
 | GET | `/api/bindings?project=` | settings | — | `ListBindingsResponse` |
-| POST | `/api/bindings` | manage_members | `CreateBindingRequest` | `CreateBindingResponse` 201 |
+| POST | `/api/bindings` | manage_members | `CreateBindingRequest` | `CreateBindingResponse` 201 (user subjects must already be members) |
 | DELETE | `/api/bindings/:id` | manage_members | — | `OkResponse` (409 if it removes the last Org admin) |
 | GET | `/api/members` | settings | — | `ListMembersResponse` |
+| POST | `/api/members` | manage_members | `InviteMemberRequest` | `InviteMemberResponse` 201 (see Auth: invites) |
 | GET | `/api/audit` | settings | — | `ListAuditResponse` |
 
 **Notes for implementers**
@@ -114,6 +123,8 @@ Permissions are data (`permissions.ts`):
   - Scans run in-process through `runScan`, with a concurrency limit (default 2).
   - A second scan request while one is queued or running for the same project returns 409.
   - The stored artefact is the `ScanResult` JSON, and reports are rendered from it on request.
+- **Scan polling:** every `Scan` carries `updatedAt`, the latest of `createdAt`, `startedAt` and `finishedAt`. `GET /api/projects/:id/scans` also returns `serverTime`. To poll for new and updated scans without dropping pages already loaded, pass the previous `serverTime` as `?updatedSince=`. The response then holds only scans whose `updatedAt` is at or after it, still newest first and pageable with `cursor`. Merge them into the loaded list by id. A row that changed exactly at `serverTime` can come back twice. A malformed `updatedSince` gets 400.
+- **Scan reference date:** scans run as of the current time. `serve --as-of` sets the time for every scan. `serve --dev-seed` replays the recorded fixtures as of 2018-11-27, but only for projects whose local target is inside `test/fixtures`; those scans run offline. Every other project scans with the real current date.
 - **Report downloads:** `:scanId` must match `^[A-Za-z0-9_-]+$` and must belong to the caller's org. Responses carry `Content-Disposition: attachment`. HTML reports are served with `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:`.
 - **Changes:** the diff compares the findings of two succeeded scans of one project by purl. Change types: new_finding, resolved, risk_up, risk_down, new_reason. Reviewing a change is deferred, so act on the finding instead.
 - **Graphs:** always scoped to a finding or a node. Nodes are capped at the project tier's `graphNodeCap`, and anything over the cap collapses into `group` nodes with `truncated: true`.
@@ -126,6 +137,7 @@ Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). E
 | Route | Page permission | Screen |
 |---|---|---|
 | `/login` | none | Sign in, plus the dev user switcher hint |
+| `/accept-invite` | none | Accept a member invite (token from the link's `#token=` fragment, or pasted) and sign in |
 | `/` | home | Org home: totals and the project table |
 | `/projects/:id/changes` | changes | Changes between the last two scans |
 | `/projects/:id/findings` | findings | Findings table with a side panel |

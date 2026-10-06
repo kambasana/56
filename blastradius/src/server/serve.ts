@@ -10,7 +10,7 @@ import type { GitRunner } from '../ingest/git.js';
 import type { ScanOptions } from '../pipeline.js';
 import { createApp } from './app.js';
 import type { ServerConfig, ServerDeps } from './context.js';
-import { ScanJobs } from './jobs.js';
+import { ScanJobs, type FixtureReplay } from './jobs.js';
 import { ConcurrencyGate, RateLimiter } from './ratelimit.js';
 import { DEFAULT_WEB_DIR } from './static.js';
 import {
@@ -35,6 +35,9 @@ export const E2E_REPO_DIR = fileURLToPath(new URL('../../test/fixtures/e2e-repo'
 export const FIXTURE_AS_OF = new Date('2018-11-27T00:00:00Z');
 export const DEV_PROJECT_NAME = 'payments-platform';
 
+/** --dev-seed: projects on fixture repos (under test/fixtures) replay the recorded responses as of the fixture date. */
+export const DEV_FIXTURE_REPLAY: FixtureReplay = { root: FIXTURES_DIR, asOf: FIXTURE_AS_OF, fixturesDir: FIXTURES_DIR };
+
 export function packageVersion(): string {
   try {
     const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version?: string };
@@ -55,6 +58,8 @@ export interface CreateServerOptions {
   fixturesDir?: string;
   /** Reference time for every scan (offline demos). */
   asOf?: Date;
+  /** Replay fixture-repo targets offline at the fixture date (see ScanJobsOptions.fixtureReplay). */
+  fixtureReplay?: FixtureReplay;
   /** web/dist; null disables static serving. */
   webDir?: string | null;
   concurrency?: number;
@@ -93,6 +98,7 @@ export function createServer(opts: CreateServerOptions = {}) {
     offline: config.offline,
     ...(config.fixturesDir !== undefined ? { fixturesDir: config.fixturesDir } : {}),
     ...(opts.asOf ? { asOf: opts.asOf } : {}),
+    ...(opts.fixtureReplay ? { fixtureReplay: opts.fixtureReplay } : {}),
     ...(opts.concurrency !== undefined ? { concurrency: opts.concurrency } : {}),
     ...(opts.scanOptions ? { scanOptions: opts.scanOptions } : {}),
     ...(opts.gitRunner ? { gitRunner: opts.gitRunner } : {}),
@@ -112,6 +118,7 @@ export function createServer(opts: CreateServerOptions = {}) {
 }
 
 export interface DevSeedOutcome {
+  orgId: string;
   password: string;
   users: string[];
   projectId: string;
@@ -143,7 +150,7 @@ export async function seedDevData(deps: Pick<ServerDeps, 'store' | 'jobs' | 'con
     jobs.kick();
     scanId = scan.id;
   }
-  return { password: seeded.password, users: seeded.users.map((u) => u.email), projectId: project.id, scanId };
+  return { orgId: seeded.org.id, password: seeded.password, users: seeded.users.map((u) => u.email), projectId: project.id, scanId };
 }
 
 export interface ServeOptions extends CreateServerOptions {
@@ -152,18 +159,24 @@ export interface ServeOptions extends CreateServerOptions {
   devSeed?: boolean;
 }
 
-/** Reference time for every scan: --as-of, else the fixture date under --dev-seed, else now. */
-export function serveAsOf(opts: Pick<ServeOptions, 'asOf' | 'devSeed'>): Date | undefined {
-  return opts.asOf ?? (opts.devSeed === true ? FIXTURE_AS_OF : undefined);
+/**
+ * Scan reference dates for `serve`: --as-of applies to every scan. Under --dev-seed only projects
+ * whose target is a fixture repo replay the fixture date; everything else scans as of now.
+ */
+export function serveScanDates(opts: Pick<ServeOptions, 'asOf' | 'devSeed'>): { asOf?: Date; fixtureReplay?: FixtureReplay } {
+  return {
+    ...(opts.asOf ? { asOf: opts.asOf } : {}),
+    ...(opts.devSeed === true ? { fixtureReplay: DEV_FIXTURE_REPLAY } : {}),
+  };
 }
 
 /** Start listening. Resolves once the port is bound; returns a close() that stops everything. */
 export async function serve(opts: ServeOptions = {}): Promise<{ url: string; close: () => Promise<void> }> {
   const devMode = opts.devMode === true || opts.devSeed === true;
-  // Dev seed scans replay the 2018 fixtures: rescans from the UI must use the same reference
-  // date, or today's date makes unchanged packages look newly abandoned.
-  const asOf = serveAsOf(opts);
-  const { app, deps, store, jobs } = createServer({ ...opts, devMode, ...(asOf ? { asOf } : {}) });
+  // Dev seed scans replay the 2018 fixtures: rescans of fixture-repo projects must use the same
+  // reference date (today's date makes unchanged packages look newly abandoned), while other
+  // projects scan with the real current date.
+  const { app, deps, store, jobs } = createServer({ ...opts, devMode, ...serveScanDates(opts) });
   const log = deps.log;
   const interrupted = failInterruptedScans(store);
   if (interrupted > 0) log(`marked ${interrupted} interrupted scan(s) as failed`);

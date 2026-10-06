@@ -7,27 +7,41 @@ import { useEffect, useId, useState } from 'react';
 import type { AssetPathView, EntityChainEntry, FindingDetail, FindingRow, FindingStatus, Reason } from '@server/api-types';
 import { api } from '@/api';
 import { useAuth } from '@/auth';
-import { Badge, RiskBadge } from '@/components/Badge';
-import { Button } from '@/components/Button';
-import { cn, fmtTime } from '@/lib/cn';
+import { toast } from 'sonner';
+import { RiskBadge } from '@/components/Badge';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { fmtTime } from '@/lib/cn';
 import { factorLabel, fmtDate, purlLabel, safeHref, STATUS_LABELS } from './format';
 import { Meter } from './ui';
 
 export function ReasonsList({ reasons }: { reasons: readonly Reason[] }) {
-  if (reasons.length === 0) return <p className="m-0 text-muted-foreground">No scored reasons.</p>;
+  if (reasons.length === 0) return <p className="text-sm text-muted-foreground">No scored reasons.</p>;
   return (
-    <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Reasons">
-      {reasons.map((r, i) => (
-        <li key={`${r.factor}-${i}`} className="flex gap-2.5">
-          <span className="w-10 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground" title="Contribution to the 0–100 score">
-            +{Math.round(r.contribution * 100)}
-          </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium">{factorLabel(r.factor)}</span>
-            <span className="break-words text-muted-foreground">{r.detail}</span>
-          </span>
-        </li>
-      ))}
+    <ul className="flex flex-col gap-3" aria-label="Reasons">
+      {reasons.map((r, i) => {
+        const pts = Math.round(r.contribution * 100);
+        const pct = Math.max(2, Math.min(100, pts));
+        return (
+          <li key={`${r.factor}-${i}`} className="flex flex-col gap-1">
+            <div className="flex items-baseline gap-2">
+              <span className="font-medium">{factorLabel(r.factor)}</span>
+              <span className="grow" />
+              <span className="font-mono text-xs tabular-nums text-muted-foreground" title="Contribution to the 0–100 score">
+                +{pts}
+              </span>
+            </div>
+            <span aria-hidden="true" className="block h-1 overflow-hidden rounded-full bg-muted">
+              <span className={pts > 40 ? 'block h-full bg-level-critical' : pts > 20 ? 'block h-full bg-level-high' : 'block h-full bg-muted-foreground/50'} style={{ width: `${pct}%` }} />
+            </span>
+            <span className="break-words text-sm text-muted-foreground">{r.detail}</span>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -47,11 +61,11 @@ function PathLine({ path, assetName }: { path: readonly string[]; assetName: str
 
 /** Affected assets with their dependency paths. `maxPaths` trims each asset's path list. */
 export function AssetPaths({ assets, maxPaths, maxAssets }: { assets: readonly AssetPathView[]; maxPaths?: number; maxAssets?: number }) {
-  if (assets.length === 0) return <p className="m-0 text-muted-foreground">No asset reaches this component.</p>;
+  if (assets.length === 0) return <p className="text-sm text-muted-foreground">No asset reaches this component.</p>;
   const shownAssets = maxAssets ? assets.slice(0, maxAssets) : assets;
   return (
     <div className="flex flex-col gap-2.5">
-      <ul className="m-0 flex list-none flex-col gap-2.5 p-0" aria-label="Paths to assets">
+      <ul className="flex flex-col gap-2.5" aria-label="Paths to assets">
         {shownAssets.map((a) => {
           const paths = maxPaths ? a.paths.slice(0, maxPaths) : a.paths;
           const more = a.paths.length - paths.length;
@@ -68,7 +82,7 @@ export function AssetPaths({ assets, maxPaths, maxAssets }: { assets: readonly A
                   exposure {a.exposure.toFixed(2)} <Meter value={a.exposure} max={1} label={`Exposure of ${a.assetName}`} />
                 </span>
               </div>
-              <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+              <ul className="flex flex-col gap-0.5">
                 {paths.map((p, i) => (
                   <PathLine key={i} path={p} assetName={a.assetName} />
                 ))}
@@ -84,10 +98,10 @@ export function AssetPaths({ assets, maxPaths, maxAssets }: { assets: readonly A
 }
 
 export function BehindIt({ chain }: { chain: readonly EntityChainEntry[] }) {
-  if (chain.length === 0) return <p className="m-0 text-muted-foreground">No linked organisations, funders or incidents.</p>;
+  if (chain.length === 0) return <p className="text-sm text-muted-foreground">No linked organisations, funders or incidents.</p>;
   return (
     <div className="flex flex-col gap-1.5">
-      <ol className="m-0 flex list-none flex-col gap-1.5 p-0" aria-label="Entity chain">
+      <ol className="flex flex-col gap-1.5" aria-label="Entity chain">
         {chain.map((e, i) => (
           <li key={`${e.entityId}-${i}`} className="flex flex-wrap items-center gap-2">
             {e.from && <span className="font-mono text-xs text-muted-foreground">{purlLabel(e.from)}</span>}
@@ -99,7 +113,7 @@ export function BehindIt({ chain }: { chain: readonly EntityChainEntry[] }) {
           </li>
         ))}
       </ol>
-      <p className="m-0 text-xs text-muted-foreground">Documented relationships with sources, not findings of wrongdoing.</p>
+      <p className="text-xs text-muted-foreground">Documented relationships with sources, not findings of wrongdoing.</p>
     </div>
   );
 }
@@ -127,32 +141,42 @@ export function collectEvidence(d: Pick<FindingDetail, 'reasons' | 'entityChain'
 
 export function EvidenceList({ detail }: { detail: Pick<FindingDetail, 'reasons' | 'entityChain'> }) {
   const items = collectEvidence(detail);
-  if (items.length === 0) return <p className="m-0 text-muted-foreground">No evidence links recorded.</p>;
+  if (items.length === 0) return <p className="text-sm text-muted-foreground">No evidence links recorded.</p>;
   return (
-    <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Evidence">
-      {items.map((e) => {
-        const href = safeHref(e.url);
-        return (
-          <li key={e.url} className="flex gap-2">
-            <span className="w-32 shrink-0 text-xs text-muted-foreground">{e.source}</span>
-            {href ? (
-              <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="min-w-0 break-all text-xs text-info underline-offset-2 hover:underline">
-                {e.url}
-              </a>
-            ) : (
-              <span className="min-w-0 break-all font-mono text-xs">{e.url}</span>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <Table aria-label="Evidence" className="text-xs">
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead className="h-8 w-36 pl-0 text-xs text-muted-foreground">Source</TableHead>
+          <TableHead className="h-8 pr-0 text-xs text-muted-foreground">Link</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((e) => {
+          const href = safeHref(e.url);
+          return (
+            <TableRow key={e.url} className="hover:bg-transparent">
+              <TableCell className="pl-0 align-top whitespace-normal text-muted-foreground">{e.source}</TableCell>
+              <TableCell className="pr-0 whitespace-normal">
+                {href ? (
+                  <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="break-all text-info underline-offset-2 hover:underline">
+                    {e.url}
+                  </a>
+                ) : (
+                  <span className="break-all font-mono">{e.url}</span>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }
 
 export function ScoreHistory({ history }: { history: FindingDetail['history'] }) {
-  if (history.length === 0) return <p className="m-0 text-muted-foreground">First seen in this scan.</p>;
+  if (history.length === 0) return <p className="text-sm text-muted-foreground">First seen in this scan.</p>;
   return (
-    <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Score history">
+    <ul className="flex flex-col gap-1" aria-label="Score history">
       {history.map((h) => (
         <li key={h.scanId} className="flex items-center gap-2">
           <span className="w-24 font-mono text-xs text-muted-foreground">{fmtDate(h.at)}</span>
@@ -166,7 +190,7 @@ export function ScoreHistory({ history }: { history: FindingDetail['history'] })
 export function StatusHistory({ changes }: { changes: FindingDetail['statusHistory'] }) {
   if (changes.length === 0) return null;
   return (
-    <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Status history">
+    <ul className="flex flex-col gap-1" aria-label="Status history">
       {changes.map((c, i) => (
         <li key={i} className="text-xs">
           <span className="font-mono text-muted-foreground">{fmtTime(c.at)}</span> {STATUS_LABELS[c.from]} → {STATUS_LABELS[c.to]}
@@ -190,8 +214,8 @@ export function allowedStatuses(can: (p: 'review' | 'accept_risk') => boolean, c
 }
 
 /**
- * Status select + optional note. Hidden entirely (static badge) when the user can change
- * nothing; the server enforces the same rule.
+ * Status Select + optional note. Hidden entirely when the user can change nothing; the server
+ * enforces the same rule. A saved change is confirmed with a toast.
  */
 export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onUpdated?: (row: FindingRow) => void }) {
   const { can } = useAuth();
@@ -200,13 +224,11 @@ export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onU
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const id = useId();
   useEffect(() => {
     setStatus(finding.status);
     setNote('');
     setError(null);
-    setSaved(false);
   }, [finding.id, finding.status]);
 
   if (allowed.length === 0) return null;
@@ -215,11 +237,10 @@ export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onU
   const save = async () => {
     setBusy(true);
     setError(null);
-    setSaved(false);
     try {
       const row = await api.updateFindingStatus(finding.id, { status, ...(note.trim() ? { note: note.trim() } : {}) });
-      setSaved(true);
       setNote('');
+      toast.success(`Marked ${STATUS_LABELS[row.status].toLowerCase()}`, { description: `${row.name}@${row.version}` });
       onUpdated?.(row);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not update the status.');
@@ -230,45 +251,38 @@ export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onU
 
   return (
     <form
-      className="flex flex-wrap items-center gap-1.5"
+      className="flex flex-col gap-2"
       aria-label="Finding status"
       onSubmit={(e) => {
         e.preventDefault();
         void save();
       }}
     >
-      <label htmlFor={`${id}-s`} className="text-xs text-muted-foreground">
-        Status
-      </label>
-      <select
-        id={`${id}-s`}
-        value={status}
-        onChange={(e) => setStatus(e.target.value as FindingStatus)}
-        className="h-8 rounded-md border border-input bg-background px-2 text-[13px]"
-      >
-        {options.map((s) => (
-          <option key={s} value={s} disabled={!allowed.includes(s)}>
-            {STATUS_LABELS[s]}
-          </option>
-        ))}
-      </select>
-      <label htmlFor={`${id}-n`} className="sr-only">
-        Note
-      </label>
-      <input
-        id={`${id}-n`}
-        value={note}
-        maxLength={500}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Note (optional)"
-        className="h-8 w-40 min-w-0 grow rounded-md border border-input bg-background px-2 text-[13px]"
-      />
-      <Button type="submit" variant="outline" disabled={busy || status === finding.status}>
-        {busy ? 'Saving…' : 'Save'}
-      </Button>
-      <span aria-live="polite" className={cn('text-xs', error ? 'text-destructive' : 'text-muted-foreground')}>
-        {error ?? (saved ? 'Saved' : '')}
-      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor={`${id}-s`} className="text-xs text-muted-foreground">
+          Status
+        </Label>
+        <Select value={status} onValueChange={(v) => setStatus(v as FindingStatus)}>
+          <SelectTrigger id={`${id}-s`} size="sm" className="w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((s) => (
+              <SelectItem key={s} value={s} disabled={!allowed.includes(s)}>
+                {STATUS_LABELS[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Label htmlFor={`${id}-n`} className="sr-only">
+          Note
+        </Label>
+        <Input id={`${id}-n`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="h-8 w-40 min-w-0 grow" />
+        <Button type="submit" variant="outline" size="sm" disabled={busy || status === finding.status}>
+          {busy ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
     </form>
   );
 }

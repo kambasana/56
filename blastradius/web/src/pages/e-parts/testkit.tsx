@@ -1,11 +1,13 @@
 /** Test helpers for the Track E screens: a fake API transport and a page renderer. */
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import type { MeResponse } from '@server/api-types';
 import { setFetcher } from '@/api';
 import { AuthProvider } from '@/auth';
 import { ProjectProvider } from '@/project';
+import { Toaster } from '@/components/ui/sonner';
 
 export interface Call {
   method: string;
@@ -59,8 +61,15 @@ export function renderPage(element: ReactElement, opts: { path: string; at: stri
             <Route path={opts.path} element={element} />
           </Routes>
           <Where />
+          <Toaster />
         </ProjectProvider>
       </AuthProvider>
     </MemoryRouter>,
   );
+}
+
+/** Pick an option in a shadcn (Radix) Select by its trigger's accessible name. */
+export async function choose(label: string | RegExp, option: string | RegExp, within: { getByRole: typeof screen.getByRole } = screen) {
+  await userEvent.click(within.getByRole('combobox', { name: label }));
+  await userEvent.click(await screen.findByRole('option', { name: option }));
 }

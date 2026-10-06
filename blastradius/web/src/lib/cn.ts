@@ -1,7 +1,8 @@
-/** Join class names, skipping falsy values. */
-export function cn(...parts: (string | false | null | undefined)[]): string {
-  return parts.filter(Boolean).join(' ');
-}
+/**
+ * App formatting helpers. `cn` is the shadcn/ui helper from ./utils (clsx + tailwind-merge),
+ * re-exported here so existing `@/lib/cn` imports keep working.
+ */
+export { cn } from './utils';
 
 const nf = new Intl.NumberFormat('en-US');
 export function fmtNum(n: number | null | undefined): string {
