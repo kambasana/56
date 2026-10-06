@@ -180,13 +180,15 @@ intrinsic(p) = 1 − Π (1 − wᵢ · fᵢ(p))
 | Factor fᵢ | Signal | Weight (initial) |
 |---|---|---|
 | Malware | Known `MAL-*` / incident `malware_publish` | **override → 1.0** |
-| Exploitable vuln | CVSS × EPSS, ×1.5 if in KEV | 0.6 |
+| Exploitable vuln | `clamp₀₁(CVSS/10 × exploitability × (1.5 if KEV))`, where exploitability = 0.4 + 0.6 × EPSS (1 if KEV, a default when EPSS is unknown). A bounded ranking heuristic, not a calibrated probability | 0.6 |
 | Recent maintainer/owner change | Days since change, decays over 90 days | 0.5 |
 | Install script present | Boolean, raised if obfuscated or makes network calls | 0.3 |
 | Weak posture | 1 − Scorecard/10 | 0.3 |
 | No provenance / unsigned | Boolean | 0.15 |
 | Single maintainer / low bus factor | Boolean | 0.15 |
 | Abandoned | No release or commit in 2 years and has open vulns | 0.2 |
+
+Every fᵢ is clamped to [0, 1] and every wᵢ ≤ 1, so each term (1 − wᵢ·fᵢ) stays in [0, 1] and intrinsic(p) stays in [0, 1]. Scores are relative risk for ranking and explanation, not probabilities; FIRST cautions that CVSS × EPSS is not probability × severity, so the vuln factor is kept as a capped heuristic until backtests calibrate it.
 
 **Step 2 — Inherited entity risk**, which carries the "funded by X who rug-pulled" logic:
 
