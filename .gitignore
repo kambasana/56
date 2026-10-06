@@ -35,3 +35,11 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Local secrets (API keys/tokens shared as text files) - never commit
+secrets/
+*.secret.txt
+*token*.txt
+*key*.txt
+.env
+.env.*
