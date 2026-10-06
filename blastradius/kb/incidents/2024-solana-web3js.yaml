@@ -1,0 +1,15 @@
+# @solana/web3.js (2024): versions 1.95.6 and 1.95.7 published with code that sent private key
+# material to a third party (GHSA-jcxm-7wvp-g6p5: ">=1.95.6 <1.95.8").
+# Publish time from the registry (2024-12-03T15:10Z).
+id: INC-2024-0003
+title: "@solana/web3.js 1.95.6 and 1.95.7 published with code that exfiltrated private key material"
+type: malware_publish
+status: confirmed
+date: 2024-12-03
+severity: critical
+affected:
+  - purl: pkg:npm/%40solana/web3.js
+    versions: ["1.95.6", "1.95.7"]
+entities: []
+evidence:
+  - https://github.com/advisories/GHSA-jcxm-7wvp-g6p5

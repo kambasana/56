@@ -1,0 +1,14 @@
+# eslint-scope (2018): version 3.7.2 published with code that read the installing user's npm
+# credentials (GHSA-hxxf-q3w9-4xgw, CWE-506). Publish time from the registry (2018-07-12T10:40Z).
+id: INC-2018-0002
+title: eslint-scope 3.7.2 published with code that read npm credentials on install
+type: malware_publish
+status: confirmed
+date: 2018-07-12
+severity: critical
+affected:
+  - purl: pkg:npm/eslint-scope
+    versions: ["3.7.2"]
+entities: []
+evidence:
+  - https://github.com/advisories/GHSA-hxxf-q3w9-4xgw
