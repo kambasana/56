@@ -1,0 +1,132 @@
+{
+  "note": "Recorded from the live registry on 2026-10-06 and trimmed to the last 4 versions and the fields the npm enricher reads. Email addresses were removed (data minimisation).",
+  "request": {
+    "url": "https://registry.npmjs.org/wrappy"
+  },
+  "response": {
+    "_id": "wrappy",
+    "name": "wrappy",
+    "description": "Callback wrapping utility",
+    "dist-tags": {
+      "latest": "1.0.2"
+    },
+    "maintainers": [
+      {
+        "name": "isaacs"
+      }
+    ],
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/npm/wrappy.git"
+    },
+    "time": {
+      "created": "2014-09-18T22:59:23.410Z",
+      "modified": "2023-06-22T16:34:09.617Z",
+      "1.0.0": "2014-09-18T22:59:23.410Z",
+      "1.0.1": "2014-09-18T23:13:15.838Z",
+      "1.0.2": "2016-05-17T23:30:52.415Z",
+      "0.0.0": "2021-04-22T23:17:34.192Z"
+    },
+    "versions": {
+      "1.0.0": {
+        "name": "wrappy",
+        "version": "1.0.0",
+        "dependencies": {},
+        "scripts": {
+          "test": "tap test/*.js"
+        },
+        "_npmUser": {
+          "name": "isaacs"
+        },
+        "maintainers": [
+          {
+            "name": "isaacs"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/npm/wrappy"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/wrappy/-/wrappy-1.0.0.tgz",
+          "integrity": "sha512-3y8PlpIQuv3/g9rN12ffm6FrWo+fCLlt8mtAruKSVgnPgdV4SoxOF8qmJ+6BXjsfDFe/EMUGFWjCu2dImNHjBQ=="
+        }
+      },
+      "1.0.1": {
+        "name": "wrappy",
+        "version": "1.0.1",
+        "dependencies": {},
+        "scripts": {
+          "test": "tap test/*.js"
+        },
+        "_npmUser": {
+          "name": "isaacs"
+        },
+        "maintainers": [
+          {
+            "name": "isaacs"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/npm/wrappy"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/wrappy/-/wrappy-1.0.1.tgz",
+          "integrity": "sha512-42h1d25nW6G/N7l16Oz4vqCOLIFobFBOwZrBYlCxJ/QuS2o1Gdn1PzSoiYndbnL9rgGIGZ6Qn09AIpyhrkepfw=="
+        }
+      },
+      "1.0.2": {
+        "name": "wrappy",
+        "version": "1.0.2",
+        "dependencies": {},
+        "scripts": {
+          "test": "tap --coverage test/*.js"
+        },
+        "_npmUser": {
+          "name": "zkat"
+        },
+        "maintainers": [
+          {
+            "name": "isaacs"
+          },
+          {
+            "name": "zkat"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/npm/wrappy.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/wrappy/-/wrappy-1.0.2.tgz",
+          "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="
+        }
+      },
+      "0.0.0": {
+        "name": "wrappy",
+        "version": "0.0.0",
+        "dependencies": {},
+        "scripts": {
+          "test": "tap test/*.js"
+        },
+        "_npmUser": {
+          "name": "isaacs"
+        },
+        "maintainers": [
+          {
+            "name": "isaacs"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/npm/wrappy.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/wrappy/-/wrappy-0.0.0.tgz",
+          "integrity": "sha512-LqL69QCiUu9q/qMG/a7l9bsJJQBN0QKOFx2l8RpT1NOu3v3BYxTiRVC0RkbW+8KlLCYtwksWopVWH0dY2r0Kug=="
+        }
+      }
+    }
+  }
+}

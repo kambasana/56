@@ -1,0 +1,37 @@
+{
+  "_note": "Hand-authored from the OSV schema; content follows the public GitHub advisory for event-stream 3.3.6 / flatmap-stream 0.1.1. Severity given only as a label (no CVSS vector) to exercise the label fallback.",
+  "request": { "url": "https://api.osv.dev/v1/vulns/GHSA-mh6f-8j2x-4483" },
+  "response": {
+    "id": "GHSA-mh6f-8j2x-4483",
+    "summary": "Critical severity vulnerability that affects event-stream and flatmap-stream",
+    "details": "The NPM package `flatmap-stream` is considered malicious. A malicious actor added this package as a dependency to the NPM `event-stream` package in versions `3.3.6` and later.",
+    "modified": "2023-11-08T03:57:44.646612Z",
+    "published": "2018-11-26T23:58:21Z",
+    "aliases": [],
+    "database_specific": {
+      "cwe_ids": ["CWE-506"],
+      "github_reviewed": true,
+      "github_reviewed_at": "2020-06-16T21:58:28Z",
+      "nvd_published_at": null,
+      "severity": "CRITICAL"
+    },
+    "references": [
+      { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-mh6f-8j2x-4483" },
+      { "type": "WEB", "url": "https://github.com/dominictarr/event-stream/issues/116" },
+      { "type": "WEB", "url": "https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident" }
+    ],
+    "affected": [
+      {
+        "package": { "ecosystem": "npm", "name": "event-stream", "purl": "pkg:npm/event-stream" },
+        "versions": ["3.3.6"],
+        "ranges": [{ "type": "SEMVER", "events": [{ "introduced": "3.3.6" }, { "fixed": "4.0.0" }] }]
+      },
+      {
+        "package": { "ecosystem": "npm", "name": "flatmap-stream", "purl": "pkg:npm/flatmap-stream" },
+        "versions": ["0.1.1"],
+        "ranges": [{ "type": "SEMVER", "events": [{ "introduced": "0.1.1" }, { "last_affected": "0.1.1" }] }]
+      }
+    ],
+    "schema_version": "1.6.0"
+  }
+}

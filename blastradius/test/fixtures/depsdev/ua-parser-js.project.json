@@ -1,0 +1,93 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/projects/github.com%2Ffaisalman%2Fua-parser-js"
+  },
+  "status": 200,
+  "response": {
+    "projectKey": {
+      "id": "github.com/faisalman/ua-parser-js"
+    },
+    "openIssuesCount": "20",
+    "starsCount": "9000",
+    "forksCount": "1200",
+    "license": "MIT",
+    "description": "UAParser.js - Detect Browser, Engine, OS, CPU, and Device type/model from User-Agent data.",
+    "homepage": "https://uaparser.dev",
+    "scorecard": {
+      "date": "2024-05-20T00:00:00Z",
+      "repository": {
+        "name": "github.com/faisalman/ua-parser-js",
+        "commit": "0000000000000000000000000000000000000001"
+      },
+      "scorecard": {
+        "version": "v5.0.0",
+        "commit": "0000000000000000000000000000000000000002"
+      },
+      "checks": [
+        {
+          "name": "Maintained",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained"
+          },
+          "score": 10,
+          "reason": "30 commit(s) and 5 issue activity found in the last 90 days -- score normalized to 10",
+          "details": []
+        },
+        {
+          "name": "Code-Review",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#code-review"
+          },
+          "score": 2,
+          "reason": "Found 3/15 approved changesets -- score normalized to 2",
+          "details": []
+        },
+        {
+          "name": "Branch-Protection",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection"
+          },
+          "score": -1,
+          "reason": "internal error: error during branchesHandler.setup",
+          "details": []
+        },
+        {
+          "name": "Signed-Releases",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#signed-releases"
+          },
+          "score": -1,
+          "reason": "no releases found",
+          "details": []
+        },
+        {
+          "name": "Token-Permissions",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#token-permissions"
+          },
+          "score": 0,
+          "reason": "detected GitHub workflow tokens with excessive permissions",
+          "details": []
+        },
+        {
+          "name": "Pinned-Dependencies",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#pinned-dependencies"
+          },
+          "score": 3,
+          "reason": "dependency not pinned by hash detected -- score normalized to 3",
+          "details": []
+        }
+      ],
+      "overallScore": 4.6,
+      "metadata": []
+    }
+  }
+}

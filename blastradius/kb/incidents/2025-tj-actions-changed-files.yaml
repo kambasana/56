@@ -1,0 +1,23 @@
+# tj-actions/changed-files (2025): repository tags were repointed to a commit that dumped
+# CI runner secrets into workflow logs.
+id: INC-2025-0001
+title: tj-actions/changed-files tags repointed to a commit that printed CI secrets to workflow logs
+type: ci_compromise
+status: confirmed
+date: 2025-03-14
+severity: high
+affected:
+  - purl: pkg:githubactions/tj-actions/changed-files
+    # Tags v1 through v45.0.7 were repointed to this commit during the incident window and
+    # have since been restored, so only a pin to the commit itself is affected today. A "*"
+    # entry would also match releases made after the fix.
+    # TODO(kb-review): SHA taken from public reporting on CVE-2025-30066 without network access
+    # in this session; re-check it against the GitHub advisory before relying on it.
+    versions: ["0e58ed8671d6b60d0890c21b07f8835ace038e67"]
+entities:
+  # The organisation's repository was the compromised party; the role states that fact only.
+  - ref: org:github/tj-actions
+    role: owner_of_compromised_repository
+    confidence: 1
+evidence:
+  - https://nvd.nist.gov/vuln/detail/CVE-2025-30066

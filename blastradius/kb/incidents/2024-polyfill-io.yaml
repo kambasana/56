@@ -1,0 +1,15 @@
+# polyfill.io (2024): the CDN domain changed ownership and began serving altered scripts.
+id: INC-2024-0002
+title: polyfill.io CDN domain changed ownership and served altered JavaScript to some visitors
+type: domain_or_name_takeover
+status: confirmed
+# TODO(kb-review): confirm date of first public report (late June 2024).
+date: 2024-06-25
+severity: high
+affected:
+  - purl: pkg:generic/polyfill.io
+    versions: ["*"]
+entities: []
+evidence:
+  # TODO(kb-review): verify URL; CVE-2024-38526 (pdoc's use of polyfill.io) is a candidate secondary source.
+  - https://sansec.io/research/polyfill-supply-chain-attack

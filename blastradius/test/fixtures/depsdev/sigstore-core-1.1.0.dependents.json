@@ -1,0 +1,12 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3alpha/systems/npm/packages/%40sigstore%2Fcore/versions/1.1.0:dependents"
+  },
+  "status": 200,
+  "response": {
+    "dependentCount": "57",
+    "directDependentCount": "9",
+    "indirectDependentCount": "48"
+  }
+}
