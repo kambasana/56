@@ -26,6 +26,8 @@ defaults:
 jobs:
   test:
     name: typecheck, test, build (offline)
+    # review/* branches hold partial slices of the code for CodeRabbit's file limit; they cannot build on their own.
+    if: ${{ !startsWith(github.base_ref, 'review/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
