@@ -327,6 +327,7 @@ docs/
 | **3. Breadth** | PyPI, Maven, Go, crates; container images; GuardDog behaviour checks; typosquat detection; outbound blast radius (zizmor/poutine + dependents) | Backtest recall ≥ 70% across ecosystems | 6–8 weeks |
 | **4. Product** | Web dashboard + graph view, org-wide scans, GitHub Action PR gate, continuous monitoring + alerts, API, auth | Org of 100 repos scanned nightly; alerts within 1 hour of a maintainer change | 6–8 weeks |
 | **5. Ongoing** | KB curation, weight calibration, community contributions, dispute handling | Monthly calibration review | continuous |
+| **6. Bring your own AI** | Optional AI assistance (§11): ACP agents (users' own Claude, Gemini and other subscriptions) plus direct providers (Anthropic, xAI/Grok, OpenAI, GitHub Models, Azure, Cloudflare Workers AI / AI Gateway, Ollama and Ollama Cloud) | Same AI features work with every provider; scans run identically with AI switched off | 4–6 weeks |
 
 ---
 
@@ -340,6 +341,7 @@ docs/
 | Historical data needed for backtests is missing | Start snapshotting on day 1; use archive.org and registry version history where available |
 | Building the KB takes a lot of effort | Auto-import OSV `MAL-*`; accept community PRs; keep curation focused on high-impact incidents |
 | Overlap with commercial tools (Socket, Lineaje, Endor) | Differentiate on being open, explainable, and modelling entities/funders, and integrate with existing scanners rather than competing with them |
+| AI output treated as fact, or prompt injection from scanned repos | AI never sets scores or confirms links; scanned content is fenced as untrusted data; every AI claim needs a citation to a stored fact (§11) |
 
 ---
 
@@ -348,5 +350,55 @@ docs/
 1. **Open-source or commercial?** This affects licensing and whether the incident KB is public.
 2. **First ecosystem:** npm is recommended because it has the most incidents and the richest metadata.
 3. **Delivery model:** CLI/Action first (recommended) or hosted SaaS first.
-4. **Language:** Python (recommended for speed of building) or Go (matches the ecosystem's existing tools, single binary).
+4. **Language:** ~~Python or Go~~ — **decided: TypeScript** (Node 22), shared with the planned web app.
 5. **Scope of "rug pull":** OSS maintainer sabotage only, or also crypto/DeFi token rug pulls? The second needs on-chain data sources and is effectively a separate module.
+
+---
+
+## 11. Bring your own AI (Phase 6)
+
+AI is **optional**. Every scan, score and report works with it switched off. When it's on, users choose where the model comes from, so they can use AI subscriptions and API keys they already pay for.
+
+### 11.1 Two ways to connect
+
+| Route | How it works | Examples |
+|---|---|---|
+| **ACP agent** (Agent Client Protocol) | Blastradius acts as an ACP *client*: it starts the user's agent locally and talks JSON-RPC over stdio. The agent signs in with the user's own subscription; Blastradius never sees their credentials. | Claude Code (via its ACP adapter), Gemini CLI, and any other agent with ACP support or an adapter (Grok and others as adapters appear) |
+| **Direct provider** | Blastradius calls a model API with a key or endpoint the user configures. | Anthropic, xAI (Grok), OpenAI, **GitHub Models**, **Azure** (Azure OpenAI / AI Foundry), **Cloudflare** Workers AI and AI Gateway, **Ollama** (local) and **Ollama Cloud**, plus any OpenAI-compatible endpoint |
+
+Most direct providers share an OpenAI-compatible chat API, so one adapter with per-provider settings (base URL, auth header, model name, API version for Azure) covers the majority. Anthropic gets its own native adapter.
+
+### 11.2 Design
+
+- **One interface:** `AiProvider { id, kind: 'acp' | 'api', capabilities, complete(request) }`. Features call the interface, never a vendor SDK directly.
+- **Config:** `blastradius.config.yml` → `ai: { provider, model, endpoint }`. Secrets come only from environment variables or the OS keychain, never the config file or reports. Model names are user-chosen and never hard-coded.
+- **Local first:** Ollama (local) means no data leaves the machine. Offline mode disables every remote provider.
+- **Capability probing:** features declare what they need (tool use, JSON output, context size) and degrade gracefully when a model lacks it.
+- **Cost guard:** a per-scan token budget, a dry-run that shows what would be sent, and a cache of AI results keyed by input hash.
+
+### 11.3 What the AI does (and doesn't)
+
+AI **assists**. It never decides.
+
+- ✅ Explains a finding in plain language, citing the stored facts and evidence behind it.
+- ✅ Drafts fix PRs (version pins, overrides, SHA-pinning actions) for a human to review.
+- ✅ Drafts incident KB records from a source URL; a curator reviews them like any other KB PR.
+- ✅ Suggests possible entity links. They're always stored as **unreviewed** and never scored until a person accepts them.
+- ✅ Answers questions about the graph ("why does payments-api reach color-kit?") using only Blastradius's own data.
+- ❌ Never changes scores, weights or levels.
+- ❌ Never marks a link as reviewed or an incident as confirmed.
+- ❌ Never states something about a person or organisation without a cited fact.
+
+### 11.4 Safety
+
+- **Prompt injection:** READMEs, package metadata, install scripts and workflow files are untrusted. They go to the model fenced as data with an instruction not to follow them, and AI output that tries to trigger actions is ignored.
+- **Data sharing:** before the first remote call, Blastradius shows which provider will receive what (package names, paths, findings), and asks the user to confirm. Org admins can restrict providers to a list (for example only Azure in their tenant, or only local Ollama).
+- **Grounding check:** every AI claim must cite a fact or evidence ID from the scan. Uncited claims are dropped from reports.
+- **Audit log:** each AI call records the provider, model, token counts and the IDs of the facts sent, never the secrets.
+
+### 11.5 Build order
+
+1. The provider interface plus Ollama (local) and one OpenAI-compatible adapter. Feature: "explain this finding".
+2. GitHub Models, Azure, Cloudflare, Ollama Cloud, xAI and Anthropic adapters, with a contract-test suite every adapter must pass.
+3. The ACP client, tested first with Claude Code's adapter and Gemini CLI, then other agents.
+4. Fix-PR drafting, KB drafting and suggested entity links, all behind human review.
