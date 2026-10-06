@@ -1,0 +1,182 @@
+/**
+ * In-process scan queue. Queued scans live in the store; this runner picks them up oldest
+ * first, runs at most `concurrency` at a time through the engine pipeline, and records the
+ * outcome. Scanning never executes repository code (the pipeline only parses manifests).
+ */
+import { scan, type ScanOptions } from '../pipeline.js';
+import type { GitRunner } from '../ingest/git.js';
+import { checkTarget, cloneTarget } from './targets.js';
+import { completeScan, failScan, getScanById, listQueuedScans, markScanRunning, type Store } from './store/index.js';
+
+export interface ScanJobOverrides {
+  /** Reference time (backtests / fixture replays). */
+  asOf?: Date;
+  /** Force offline with this fixtures dir. */
+  fixturesDir?: string;
+  offline?: boolean;
+  /** Git ref for git targets. */
+  ref?: string;
+}
+
+export interface ScanJobsOptions {
+  store: Store;
+  /** Max scans at once (1–4, default 2). */
+  concurrency?: number;
+  /** Local scan roots (realpath-checked again at run time). */
+  localRoots: () => readonly string[];
+  /** Server-wide offline mode with a fixtures dir. */
+  offline?: boolean;
+  fixturesDir?: string;
+  /** Server-wide reference time (offline demos). */
+  asOf?: Date;
+  /** Extra engine options (tests inject an offline HttpClient, cache dir). */
+  scanOptions?: Partial<ScanOptions>;
+  /** Git runner override (tests). */
+  gitRunner?: GitRunner;
+  /** Clone timeout (ms). */
+  cloneTimeoutMs?: number;
+  log?: (m: string) => void;
+}
+
+export class ScanJobs {
+  private readonly running = new Set<string>();
+  private readonly overrides = new Map<string, ScanJobOverrides>();
+  private readonly waiters = new Map<string, (() => void)[]>();
+  private readonly concurrency: number;
+  private stopped = false;
+
+  constructor(private readonly opts: ScanJobsOptions) {
+    this.concurrency = Math.min(4, Math.max(1, Math.floor(opts.concurrency ?? 2)));
+  }
+
+  /** Remember per-scan options (call right after enqueueScan, before kick). */
+  setOverrides(scanId: string, o: ScanJobOverrides): void {
+    this.overrides.set(scanId, o);
+  }
+
+  get activeCount(): number {
+    return this.running.size;
+  }
+
+  /** Start queued scans up to the concurrency limit. Safe to call any time. */
+  kick(): void {
+    if (this.stopped) return;
+    const free = this.concurrency - this.running.size;
+    if (free <= 0) return;
+    const queued = listQueuedScans(this.opts.store, 50).filter((s) => !this.running.has(s.id));
+    for (const s of queued.slice(0, free)) {
+      this.running.add(s.id);
+      void this.run(s.id).finally(() => {
+        this.running.delete(s.id);
+        this.overrides.delete(s.id);
+        for (const w of this.waiters.get(s.id) ?? []) w();
+        this.waiters.delete(s.id);
+        this.kick();
+      });
+    }
+  }
+
+  /** Resolves when the scan has finished (succeeded or failed). For tests and the dev seed. */
+  waitFor(scanId: string): Promise<void> {
+    const s = getScanById(this.opts.store, scanId);
+    if (!s || s.status === 'succeeded' || s.status === 'failed') return Promise.resolve();
+    return new Promise((resolve) => {
+      const list = this.waiters.get(scanId) ?? [];
+      list.push(resolve);
+      this.waiters.set(scanId, list);
+    });
+  }
+
+  /** Resolves when nothing is running or queued. */
+  async idle(): Promise<void> {
+    for (;;) {
+      if (this.running.size === 0 && listQueuedScans(this.opts.store, 1).length === 0) return;
+      await Promise.all([...this.running].map((id) => this.waitFor(id)));
+      if (this.running.size === 0) this.kick();
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+
+  /** Stop starting new scans. */
+  stop(): void {
+    this.stopped = true;
+  }
+
+  /** Wait for the scans running right now (they cannot be cancelled mid-pipeline). */
+  async drain(): Promise<void> {
+    await Promise.all([...this.running].map((id) => this.waitFor(id)));
+  }
+
+  private async run(scanId: string): Promise<void> {
+    const { store } = this.opts;
+    const log = this.opts.log ?? (() => {});
+    const o = this.overrides.get(scanId) ?? {};
+    let cleanup: (() => Promise<void>) | undefined;
+    try {
+      const s = markScanRunning(store, scanId);
+      const fixturesDir = o.fixturesDir ?? (this.opts.offline ? this.opts.fixturesDir : undefined);
+      const offline = o.offline === true || s.offline || this.opts.offline === true || o.fixturesDir !== undefined;
+      const target = checkTarget(s.target, this.opts.localRoots());
+      let dir: string;
+      let commit: string | null = null;
+      if (target.kind === 'git') {
+        if (offline) throw new SafeScanError('Offline scans need a local target');
+        const cloned = await cloneTarget(target.url, {
+          ...(o.ref !== undefined ? { ref: o.ref } : {}),
+          ...(this.opts.gitRunner ? { runner: this.opts.gitRunner } : {}),
+          ...(this.opts.cloneTimeoutMs !== undefined ? { timeoutMs: this.opts.cloneTimeoutMs } : {}),
+        });
+        cleanup = cloned.cleanup;
+        dir = cloned.dir;
+        commit = cloned.commit;
+      } else {
+        dir = target.path;
+      }
+      log(`scan ${scanId}: started`);
+      const asOf = o.asOf ?? this.opts.asOf;
+      const out = await scan({
+        ...this.opts.scanOptions,
+        target: dir,
+        offline,
+        ...(fixturesDir !== undefined ? { fixturesDir } : {}),
+        ...(asOf ? { now: asOf } : {}),
+      });
+      // Report the target as the project knows it, not the temp checkout path.
+      const result = { ...out.result, target: s.target };
+      completeScan(store, scanId, { result, inventory: out.inventory, commit });
+      log(`scan ${scanId}: succeeded (${result.findings.length} findings)`);
+    } catch (err) {
+      log(`scan ${scanId}: failed: ${err instanceof Error ? err.message : String(err)}`);
+      try {
+        failScan(store, scanId, safeScanMessage(err));
+      } catch {
+        // The scan row may already be final (or gone with its project).
+      }
+    } finally {
+      if (cleanup) await cleanup().catch(() => {});
+    }
+  }
+}
+
+/** An error whose message is safe to show to users as-is. */
+export class SafeScanError extends Error {}
+
+/** One safe line for the scan row: no file system paths, no URLs with secrets, no stack. */
+export function safeScanMessage(err: unknown): string {
+  if (err instanceof SafeScanError) return err.message;
+  const raw = err instanceof Error ? err.message : String(err);
+  if (/^git clone failed/i.test(raw)) {
+    if (/not found|does not exist|Repository not found/i.test(raw)) return 'Git clone failed: repository not found or not public';
+    if (/timed out|ETIMEDOUT|SIGTERM/i.test(raw)) return 'Git clone failed: timed out';
+    if (/Remote branch .* not found/i.test(raw)) return 'Git clone failed: ref not found';
+    return 'Git clone failed';
+  }
+  if (/^(Local path|Git |Invalid|Target|Credentials|Query|A port)/.test(raw)) return raw.slice(0, 200);
+  const cleaned = raw
+    .replace(/https?:\/\/\S+/g, '<url>')
+    .replace(/(^|[\s'"(=])(\/|[A-Za-z]:\\)[^\s'"),]*/g, '$1<path>')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300);
+  return cleaned ? `Scan failed: ${cleaned}` : 'Scan failed';
+}

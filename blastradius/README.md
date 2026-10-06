@@ -153,6 +153,29 @@ Every dependency reason carries a factual detail string and its public evidence 
 - **No profiling by nationality or ethnicity.** Sanctions incidents must cite an official source (OFAC).
 - **Data minimisation:** registry email addresses are dropped by default and never stored in entities.
 
+## Web app
+
+`blastradius serve` starts the web app and its API ([`docs/WEB-API.md`](../docs/WEB-API.md)). It binds to **127.0.0.1:8000 by default**;
+pass `--host`/`--port` to change that. Build both packages first:
+
+```bash
+npm ci && npm run build
+npm --prefix web ci && npm --prefix web run build      # writes web/dist, which serve picks up
+node dist/cli.js serve --dev-seed --offline --fixtures test/fixtures --db ./blastradius.db
+```
+
+- `--dev-seed` turns on dev mode and seeds org **Acme**, project **payments-platform** on `test/fixtures/e2e-repo`
+  and an offline fixture scan as of 2018-11-27 (event-stream and flatmap-stream show as critical). Re-running it
+  on the same database adds nothing.
+- Default dev users, one per built-in role: `admin@local` (Org admin), `appsec@local` (AppSec), `developer@local`
+  (Developer) and `auditor@local` (Auditor, Reports only). The password is `BLASTRADIUS_DEV_PASSWORD` if set, else
+  `blastradius-dev`, and is printed once in the server console. Dev mode also adds a "view as" role switcher to the
+  sidebar. Never use dev mode on a shared host.
+- Local scan targets must be under `--allow-local-root <dir>` (repeatable), else `BLASTRADIUS_SCAN_ROOT`
+  (colon-separated), else the current directory. Git targets must be https on github.com, gitlab.com or bitbucket.org.
+  Scans never execute repository code.
+- End-to-end tests: `npm --prefix web run e2e` (Playwright; starts the server above on a temporary database).
+
 ## Development
 
 ```sh
