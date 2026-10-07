@@ -46,7 +46,7 @@ describe('features CLI', () => {
     writeFileSync(join(dir, 'names.txt'), 'rc\nnot-recorded\n');
     const r = await run(['releases', '--overlay', OVERLAY, '--names', join(dir, 'names.txt')]);
     expect(r.code).toBe(0);
-    expect(r.out.map((x) => x.version).sort()).toEqual(['1.2.6', '1.2.7', '1.2.8', '1.2.9']);
+    expect(r.out.map((x) => x.version).sort()).toEqual(['0.0.5', '1.2.6', '1.2.7', '1.2.8', '1.2.9']);
     for (const x of r.out) {
       expect(Date.parse(x.asOf) - Date.parse(x.releasedAt)).toBe(3_600_000);
       expect(x.features).toHaveLength(FEATURE_NAMES.length);

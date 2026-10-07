@@ -110,8 +110,10 @@ describe('featuresAsOf: the recorded incidents show their signals', () => {
     expect(at('nx', '20.9.0').is_backport).toBe(1);
   });
 
-  it('chalk 5.6.1: a publisher who never published chalk before', () => {
-    expect(at('chalk', '5.6.1')).toMatchObject({ publisher_first_release: 1, publisher_differs_prev: 1, publisher_prior_releases: 0 });
+  it('chalk 5.6.1: publisher differs from the previous release, but has published chalk before', () => {
+    // With the recorder fix the replay packument carries qix's earlier chalk release, as the live registry does.
+    expect(at('chalk', '5.6.1')).toMatchObject({ publisher_first_release: 0, publisher_differs_prev: 1 });
+    expect(at('chalk', '5.6.1').publisher_prior_releases).toBeGreaterThan(0);
   });
 
   it('young dependency needs a first-publish lookup, else NaN', () => {
