@@ -29,7 +29,26 @@ export interface EnrichContext {
 export interface Enricher {
   /** Stable id, also used as Fact.source by convention: "osv", "depsdev", "npm", "github". */
   name: string;
+  /**
+   * True when enrich() reads facts produced by the enrichers listed before it (e.g. GitHub reads
+   * repo facts from deps.dev / npm). The scan pipeline runs independent enrichers concurrently
+   * and starts such an enricher only once all earlier ones have finished.
+   */
+  usesEarlierFacts?: boolean;
   enrich(inv: Inventory, ctx: EnrichContext): Promise<Fact[]>;
+}
+
+/**
+ * Split enrichers into stages that may run concurrently: a new stage starts at every enricher
+ * with `usesEarlierFacts`. Order inside and across stages is the declared order.
+ */
+export function enricherStages<E extends Pick<Enricher, 'usesEarlierFacts'>>(enrichers: readonly E[]): E[][] {
+  const stages: E[][] = [];
+  for (const e of enrichers) {
+    if (stages.length === 0 || e.usesEarlierFacts) stages.push([e]);
+    else stages[stages.length - 1]!.push(e);
+  }
+  return stages;
 }
 
 /** Run enrichers sequentially; an enricher that throws becomes a warning, not a failed scan. */

@@ -237,6 +237,24 @@ describe('RBAC', () => {
     const projects = (await (await call('GET', '/api/projects', { as: 'scoped' })).json()) as { items: Project[] };
     expect(projects.items.map((p) => p.id)).toEqual([seededProjectId]);
     expect((await call('GET', '/api/roles', { as: 'scoped' })).status).toBe(403);
+    const mine = await call('GET', '/api/me/projects', { as: 'scoped' });
+    expect(mine.status).toBe(200);
+    expect(((await mine.json()) as { items: { id: string }[] }).items.map((p) => p.id)).toEqual([seededProjectId]);
+  });
+
+  it('GET /api/me/projects names the projects any member may use, without 403 for page-less roles', async () => {
+    const admin = await call('GET', '/api/projects?limit=500', { as: 'admin' });
+    const all = ((await admin.json()) as { items: Project[] }).items.map((p) => ({ id: p.id, name: p.name }));
+    // The auditor has no projects/home page (GET /api/projects is 403) but an org-scope permission.
+    expect((await call('GET', '/api/projects?limit=500', { as: 'auditor' })).status).toBe(403);
+    for (const who of ['admin', 'auditor', 'developer']) {
+      const res = await call('GET', '/api/me/projects', { as: who });
+      expect(res.status, who).toBe(200);
+      const body = (await res.json()) as { items: { id: string; name: string }[] };
+      expect(body.items, who).toEqual(all);
+      expect(Object.keys(body.items[0] ?? {}).sort(), who).toEqual(['id', 'name']);
+    }
+    expect((await call('GET', '/api/me/projects')).status).toBe(401);
   });
 
   it('never confirms another org’s data (404, not 403)', async () => {

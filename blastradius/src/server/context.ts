@@ -131,6 +131,17 @@ export function visibleProjects(c: Ctx, ...perms: Permission[]): { session: Sess
   return { session, orgId, projectIds: ids };
 }
 
+/**
+ * Projects the caller holds any permission in: null = every project (some org-scope permission),
+ * else the projects with a project-scope grant. Never throws for a member without permissions.
+ */
+export function memberProjects(c: Ctx): { orgId: string; projectIds: string[] | null } {
+  const { session, orgId } = requireOrg(c);
+  const a = access(c, orgId, session.user.id);
+  if (a.permissions.length > 0) return { orgId, projectIds: null };
+  return { orgId, projectIds: Object.entries(a.projectPermissions).filter(([, list]) => list.length > 0).map(([id]) => id) };
+}
+
 /** Project-scoped check: 404 when the project is not in the caller's org, then 403. */
 export function requireProjectPerm(c: Ctx, projectId: string | undefined, ...anyOf: Permission[]): { session: Session; orgId: string; project: Project } {
   const { session, orgId } = requireOrg(c);

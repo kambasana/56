@@ -84,6 +84,7 @@ Permissions are data (`permissions.ts`):
 | POST | `/api/session/org` | auth, bound in the org | `{ orgId }` | `MeResponse` (switches the session's working org; 404 for an org the user is not in; audited as `session.switch_org`) |
 | GET | `/api/home` | home | — | `OrgHomeResponse` |
 | GET | `/api/projects?org=` | projects or home | — | `ListProjectsResponse` |
+| GET | `/api/me/projects` | auth (any member) | — | `ListMyProjectsResponse` (id and name of each project where the caller holds any permission; the nav and project switcher use it) |
 | POST | `/api/projects` | manage_projects | `CreateProjectRequest` | `CreateProjectResponse` 201 |
 | GET | `/api/projects/:id` | projects or home | — | `GetProjectResponse` |
 | PATCH | `/api/projects/:id` | manage_projects | `UpdateProjectRequest` | `UpdateProjectResponse` |

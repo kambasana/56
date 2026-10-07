@@ -16,7 +16,7 @@
  *
  * Wording is factual; facts describe accounts and repos, never intent.
  */
-import { HttpError, OfflineMissError } from '../../core/http.js';
+import { HostUnavailableError, HttpError, OfflineMissError, SkippedHosts } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, parsePurl, unversionedPurl } from '../../core/types.js';
 import type { ArchivedValue, Fact, FundingValue, Inventory, PurlString, RepoOwnerValue, RepoTransferValue } from '../../core/types.js';
@@ -81,6 +81,8 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
 
   return {
     name: SOURCE,
+    // Reads repo facts from the enrichers before it (deps.dev, npm): run after them.
+    ...(opts.repoFacts ? { usesEarlierFacts: true } : {}),
     async enrich(inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
       // GITHUB_TOKEN from the environment is only ever sent to the real GitHub API; a custom
       // apiBase needs an explicit opts.token.
@@ -105,6 +107,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
 
       const facts: Fact[] = [];
       const state = { apiBlocked: false, offlineMisses: 0 };
+      const skipped = new SkippedHosts();
       const meta = (evidence: string[]) => ({ source: SOURCE, fetchedAt: ctx.now, evidence: [...new Set(evidence)] });
 
       await mapLimit(repoKeys, Math.max(1, opts.concurrency ?? 4), async (key) => {
@@ -157,6 +160,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
       });
 
       if (state.offlineMisses > 0) ctx.warn?.(`github: ${state.offlineMisses} request(s) missing from fixtures/cache in offline mode`);
+      skipped.flush('github', ctx.warn);
       return facts;
 
       async function fetchRepo(owner: string, repo: string) {
@@ -169,6 +173,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           res = await ctx.http.request(url, { headers });
         } catch (err) {
           // Offline misses are rolled up into one summary warning at the end.
+          if (skipped.add(err)) return undefined;
           if (err instanceof OfflineMissError) state.offlineMisses++;
           else ctx.warn?.(`github: could not fetch ${owner}/${repo}: ${errorMessage(err)}`);
           return undefined;
@@ -209,6 +214,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           try {
             res = await ctx.http.request(url, { headers: { accept: 'text/plain' } });
           } catch (err) {
+            if (skipped.add(err)) return undefined;
             if (err instanceof OfflineMissError) state.offlineMisses++;
             else ctx.warn?.(`github: could not fetch FUNDING.yml for ${owner}/${repo}: ${errorMessage(err)}`);
             return undefined;
@@ -229,6 +235,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           if (!res) return undefined;
           return parseOpenCollective(res, slug, { includeIndividuals: opts.includeIndividualBackers, maxBackers: opts.maxBackers });
         } catch (err) {
+          if (skipped.add(err)) return undefined;
           if (err instanceof OfflineMissError) state.offlineMisses++;
           else ctx.warn?.(`github: Open Collective lookup failed for ${slug}: ${errorMessage(err)}`);
           return undefined;
@@ -305,7 +312,7 @@ export async function resolveRepoTargets(inv: Inventory, ctx: EnrichContext, rep
     try {
       p = await fetchPackument(ctx.http, name);
     } catch (err) {
-      if (!(err instanceof OfflineMissError || err instanceof HttpError)) ctx.warn?.(`github: could not resolve repo for ${name}: ${errorMessage(err)}`);
+      if (!(err instanceof OfflineMissError || err instanceof HttpError || err instanceof HostUnavailableError)) ctx.warn?.(`github: could not resolve repo for ${name}: ${errorMessage(err)}`);
       return; // the npm enricher already reports fetch failures
     }
     if (!p) return;

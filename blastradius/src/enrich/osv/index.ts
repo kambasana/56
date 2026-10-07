@@ -19,7 +19,7 @@
  * EPSS / KEV are not available from OSV; those optional fields are left unset.
  */
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
-import { OfflineMissError } from '../../core/http.js';
+import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import { makeFact } from '../../core/types.js';
 import type { Component, Fact, Inventory, MalwareValue, PurlString, Severity, VulnValue } from '../../core/types.js';
 import { cvss3BaseScore, severityForCvss, severityFromLabel } from './cvss.js';
@@ -278,8 +278,10 @@ function isObject(v: unknown): v is Record<string, unknown> {
 /** Collects failures; offline misses are summarised in one warning. */
 class Problems {
   private offlineMisses: string[] = [];
+  private readonly skipped = new SkippedHosts();
   constructor(private readonly ctx: EnrichContext) {}
   add(e: unknown, what: string): void {
+    if (this.skipped.add(e)) return;
     if (e instanceof OfflineMissError) this.offlineMisses.push(e.key);
     else this.warn(`osv: ${what} failed: ${errorMessage(e)}`);
   }
@@ -287,6 +289,7 @@ class Problems {
     this.ctx.warn?.(msg);
   }
   flush(): void {
+    this.skipped.flush('osv', this.ctx.warn);
     if (this.offlineMisses.length === 0) return;
     this.warn(
       `osv: ${this.offlineMisses.length} request(s) had no fixture or cached response offline (e.g. ${this.offlineMisses[0]})`,

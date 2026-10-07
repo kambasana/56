@@ -5,7 +5,7 @@
  * has a Tooltip, and the grid is keyboard navigable (arrow keys, Home/End, PageUp/Down, Enter).
  */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { DownloadIcon } from 'lucide-react';
 import type { ExposureMatrixResponse, RiskLevel } from '@server/api-types';
@@ -213,6 +213,25 @@ function strongestCell(data: ExposureMatrixResponse): { ri: number; ci: number }
   return best ? { ri: best.ri, ci: best.ci } : null;
 }
 
+/** Pixel insets of the matrix's sticky header row, totals row and row-header column. */
+export interface StickyInsets {
+  top: number;
+  bottom: number;
+  left: number;
+}
+const STICKY_DEFAULT: StickyInsets = { top: 133, bottom: 32, left: 220 };
+const sameInsets = (a: StickyInsets, b: StickyInsets) => a.top === b.top && a.bottom === b.bottom && a.left === b.left;
+
+/** Measure the sticky parts of the matrix inside its scroller (null without layout, e.g. jsdom). */
+export function measureSticky(scroller: HTMLElement | null): StickyInsets | null {
+  const thead = scroller?.querySelector('thead');
+  const tfoot = scroller?.querySelector('tfoot');
+  const corner = thead?.querySelector('th');
+  const top = thead?.getBoundingClientRect().height ?? 0;
+  if (!top) return null;
+  return { top: Math.ceil(top), bottom: Math.ceil(tfoot?.getBoundingClientRect().height ?? 0), left: Math.ceil(corner?.getBoundingClientRect().width ?? 0) };
+}
+
 interface Pos {
   /** Display index into `order`. */
   r: number;
@@ -236,17 +255,29 @@ export function Matrix({ data, order, canFindings, canInvestigate, loading }: {
     setActive((a) => ({ r: Math.min(a.r, Math.max(0, order.length - 1)), c: Math.min(a.c, Math.max(0, data.columns.length - 1)) }));
   }, [order.length, data.columns.length]);
 
+  // Sticky header row, totals row and row-header column, measured: cells must never be scrolled
+  // (by focus or by the virtualiser) to a spot where one of these covers them.
+  const [sticky, setSticky] = useState<StickyInsets>(STICKY_DEFAULT);
+  useLayoutEffect(() => {
+    const next = measureSticky(scrollRef.current);
+    if (next) setSticky((cur) => (sameInsets(cur, next) ? cur : next));
+  }, [data.columns.length, data.axis, order.length]);
+
   const virtualizer = useVirtualizer({
     count: order.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_H,
     overscan: 10,
     initialRect: { width: 1200, height: 640 },
+    // The header row sits inside the scroller above the body rows.
+    paddingStart: sticky.top,
+    scrollPaddingStart: sticky.top,
+    scrollPaddingEnd: sticky.bottom,
   });
   const items = virtualizer.getVirtualItems();
   // jsdom (tests) has no layout: fall back to the first rows.
   const rendered = items.length > 0 ? items.map((v) => v.index) : order.slice(0, 40).map((_, i) => i);
-  const padTop = items.length > 0 ? (items[0]?.start ?? 0) : 0;
+  const padTop = items.length > 0 ? Math.max(0, (items[0]?.start ?? 0) - sticky.top) : 0;
   const padBottom = items.length > 0 ? virtualizer.getTotalSize() - (items[items.length - 1]?.end ?? 0) : 0;
 
   const focusCell = useCallback(
@@ -295,6 +326,7 @@ export function Matrix({ data, order, canFindings, canInvestigate, loading }: {
         ref={scrollRef}
         data-testid="exposure-scroll"
         className="max-h-[640px] overflow-auto rounded-lg border bg-card [&>[data-slot=table-container]]:overflow-visible"
+        style={{ scrollPaddingTop: sticky.top, scrollPaddingBottom: sticky.bottom, scrollPaddingLeft: sticky.left }}
       >
         <Table
           role="grid"

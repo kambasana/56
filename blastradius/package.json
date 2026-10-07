@@ -15,7 +15,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "start": "tsx src/cli.ts"
+    "start": "tsx src/cli.ts",
+    "hammer": "npm run build && tsx test/hammer/run.ts",
+    "hammer:quick": "npm run build && tsx test/hammer/run.ts --skip-scale"
   },
   "dependencies": {
     "@hono/node-server": "2.1.3",

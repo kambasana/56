@@ -12,6 +12,7 @@ import { useAuth } from '@/auth';
 import { ButtonLink } from '@/components/Button';
 import { ErrorState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
+import { ScrollRegion } from '@/components/ScrollRegion';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -210,14 +211,14 @@ export default function Integrations() {
               </ul>
             </section>
             <SectionCard title="API" description="Same JSON as the CLI's report (schemaVersion 1). Session-authenticated in this version." contentClassName="p-4">
-              <pre className="overflow-auto rounded-md bg-muted px-3 py-2 font-mono text-xs leading-5">
+              <ScrollRegion as="pre" label="API examples" className="rounded-md bg-muted px-3 py-2 font-mono text-xs leading-5">
                 {[
                   '# Findings for a project (signed-in session cookie)',
                   'GET /api/findings?project=<id>&level=critical,high',
                   '# Report for one snapshot',
                   'GET /api/reports/<scanId>.sarif',
                 ].join('\n')}
-              </pre>
+              </ScrollRegion>
             </SectionCard>
           </>
         )}

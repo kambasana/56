@@ -40,6 +40,7 @@ import type {
   ListIntegrationsResponse,
   ListMembersResponse,
   ListOrgsResponse,
+  ListMyProjectsResponse,
   ListProjectsResponse,
   ListReportsResponse,
   ListRolesResponse,
@@ -165,6 +166,8 @@ export const api = {
   home: (signal?: AbortSignal) => get<OrgHomeResponse>('/api/home', undefined, signal),
 
   projects: (q?: { org?: Id } & PageQuery, signal?: AbortSignal) => get<ListProjectsResponse>('/api/projects', q, signal),
+  /** Id and name of the projects the caller may use (any member; the nav's list). */
+  myProjects: (signal?: AbortSignal) => get<ListMyProjectsResponse>('/api/me/projects', undefined, signal),
   project: (id: Id, signal?: AbortSignal) => get<GetProjectResponse>(`/api/projects/${enc(id)}`, undefined, signal),
   createProject: (body: CreateProjectRequest) => post<CreateProjectResponse>('/api/projects', body),
   updateProject: (id: Id, body: UpdateProjectRequest) => patch<UpdateProjectResponse>(`/api/projects/${enc(id)}`, body),

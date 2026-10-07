@@ -53,6 +53,54 @@ describe('scan', () => {
     expect(http.requestCount).toBe(0);
   });
 
+  it('runs independent enrichers concurrently but keeps facts and warnings in declared order', async () => {
+    const order: string[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const fact = (subject: string) => makeFact('vuln', subject as never, { id: subject, severity: 'low' } as never, meta);
+    const slow: Enricher = {
+      name: 'slow',
+      enrich: async (_inv, ctx) => {
+        order.push('slow:start');
+        await gate; // finishes only after "fast" has run: proves they overlap
+        ctx.warn?.('slow warning');
+        order.push('slow:end');
+        return [fact('pkg:npm/a@1.0.0')];
+      },
+    };
+    const fast: Enricher = {
+      name: 'fast',
+      enrich: async (_inv, ctx) => {
+        order.push('fast');
+        ctx.warn?.('fast warning');
+        release();
+        return [fact('pkg:npm/b@1.0.0')];
+      },
+    };
+    let seen: string[] = [];
+    const late: Enricher = {
+      name: 'late',
+      usesEarlierFacts: true,
+      enrich: async () => {
+        order.push('late');
+        return [];
+      },
+    };
+    const http = new HttpClient({ offline: true, cacheDir: false });
+    const out = await scan({
+      target: 'test/fixtures/ingest/lock-v1',
+      offline: true,
+      now: NOW,
+      http,
+      enrichers: (getFacts) => [slow, fast, { ...late, enrich: async (inv, ctx) => ((seen = getFacts().map((f) => f.subject)), late.enrich(inv, ctx)) }],
+    });
+    expect(order).toEqual(['slow:start', 'fast', 'slow:end', 'late']);
+    expect(seen).toEqual(['pkg:npm/a@1.0.0', 'pkg:npm/b@1.0.0']);
+    expect(out.facts.map((f) => f.subject)).toEqual(['pkg:npm/a@1.0.0', 'pkg:npm/b@1.0.0']);
+    const w = out.result.warnings ?? [];
+    expect(w.indexOf('slow warning')).toBeLessThan(w.indexOf('fast warning'));
+  });
+
   // Regression: --offline must not clone (git is live network access).
   it('refuses git URL targets in offline mode without invoking git', async () => {
     let calls = 0;

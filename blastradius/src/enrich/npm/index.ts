@@ -13,7 +13,7 @@
  * used online, so offline/backtest runs never mix fixture data with real history; historical
  * runs (ctx.historical) never read or record snapshots, even with an explicitly supplied store.
  */
-import { OfflineMissError } from '../../core/http.js';
+import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, npmPurl } from '../../core/types.js';
 import type { Component, Fact, Inventory } from '../../core/types.js';
@@ -46,7 +46,7 @@ export { errorMessage, mapLimit } from './util.js';
 export interface NpmEnricherOptions {
   /** Registry base URL (default https://registry.npmjs.org). */
   registry?: string;
-  /** Parallel packument fetches (default 6; HttpClient also rate-limits per host). */
+  /** Parallel packument fetches (default 12; HttpClient also rate-limits per host). */
   concurrency?: number;
   /** Change window in days for publisher/maintainer changes (default 365). */
   changeWindowDays?: number;
@@ -66,7 +66,7 @@ const SOURCE = 'npm';
 
 export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
   const registry = opts.registry ?? NPM_REGISTRY;
-  const concurrency = Math.max(1, opts.concurrency ?? 6);
+  const concurrency = Math.max(1, opts.concurrency ?? 12);
 
   return {
     name: SOURCE,
@@ -87,11 +87,13 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
       const facts: Fact[] = [];
       const names = [...byName.keys()].sort();
       const offlineMisses: string[] = [];
+      const skipped = new SkippedHosts();
       await mapLimit(names, concurrency, async (name) => {
         let packument: Packument | null;
         try {
           packument = await fetchPackument(ctx.http, name, registry);
         } catch (err) {
+          if (skipped.add(err)) return;
           if (err instanceof OfflineMissError) offlineMisses.push(name);
           else ctx.warn?.(`npm: could not fetch packument for ${name}: ${errorMessage(err)}`);
           return;
@@ -120,6 +122,7 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
         }
         if (store) facts.push(...(await snapshotFacts(store, packument, name, ctx)));
       });
+      skipped.flush('npm', ctx.warn);
       if (offlineMisses.length > 0) {
         const shown = offlineMisses.sort().slice(0, 10).map((n) => n.slice(0, 100));
         ctx.warn?.(

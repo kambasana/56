@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Finding, Inventory } from '../core/types.js';
-import { investigateNode, type ScanFindingSet } from './graph.js';
+import { investigateNode, purlLabel, type ScanFindingSet } from './graph.js';
 
 function set(projectId: string, findings: Finding[], purls: string[]): ScanFindingSet {
   return {
@@ -27,5 +27,15 @@ describe('investigateNode inventory lookup', () => {
     expect(investigateNode('pkg:npm/left-pad@1.3.0', sets)).not.toBeNull();
     expect(investigateNode('pkg:npm/absent', sets)).toBeNull();
     expect(investigateNode('left-pad', [set('p3', [], ['left-pad'])])).toBeNull();
+  });
+});
+
+describe('purlLabel', () => {
+  it('shows decoded names without the type and qualifiers', () => {
+    expect(purlLabel('pkg:npm/%40vue/cli-service@4.5.15')).toBe('@vue/cli-service@4.5.15');
+    expect(purlLabel('pkg:npm/%40intervolga/optimize-cssnano-plugin@1.0.6?repository_url=x')).toBe('@intervolga/optimize-cssnano-plugin@1.0.6');
+    expect(purlLabel('pkg:npm/left-pad@1.3.0')).toBe('left-pad@1.3.0');
+    // A malformed escape is shown as is rather than throwing.
+    expect(purlLabel('pkg:npm/bad%E0%A4%A@1.0.0')).toBe('bad%E0%A4%A@1.0.0');
   });
 });

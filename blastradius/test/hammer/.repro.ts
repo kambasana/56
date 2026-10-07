@@ -1,0 +1,17 @@
+import path from 'node:path';
+import { ApiClient, createDb, Server, waitForScan } from '/home/user/56/blastradius/test/hammer/lib/api.ts';
+const SP = '/tmp/claude-0/-home-user-56/0deb546c-84cd-5e11-be7b-f5bf04de5264/scratchpad';
+const creds = { email: 'hammer-admin@blastradius.test', password: 'repro-password-123456' };
+const db = path.join(SP, 'repro.sqlite');
+createDb(db, creds);
+const s = new Server('repro', db, { scanRoot: '/root/.cache/blastradius-hammer/repos', cacheDir: path.join(SP, 'cache-repro'), logFile: path.join(SP, 'repro-server.log') });
+await s.start();
+const api = new ApiClient(s.url);
+console.log((await api.login(creds)).status);
+const p = await api.req<{ id: string }>('POST', '/api/projects', { name: 'npmcli', tier: 'Large', target: '/root/.cache/blastradius-hammer/repos/npm__cli@b317f16c80df' });
+console.log(p.status, p.text.slice(0, 200));
+const sc = await api.req<{ id: string }>('POST', `/api/projects/${p.body.id}/scans`, {});
+const t0 = Date.now();
+const w = await waitForScan(api, sc.body.id, 3_600_000, s);
+console.log(JSON.stringify(w).slice(0, 1500), (Date.now() - t0) / 1000, 'peak', s.peakRssMb, 'exit', s.exit);
+await s.stop();

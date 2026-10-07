@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SidePanel } from '@/components/SidePanel';
 import { useApi } from '@/lib/useApi';
-import { fmtNum } from '@/lib/cn';
+import { fmtBlast, fmtNum } from '@/lib/cn';
 import { fmtDate } from './format';
 import { AssetPaths, BehindIt, EvidenceList, ReasonsList, StatusControl } from './FindingSections';
 import { Section, StatusBadge } from './ui';
@@ -58,7 +58,7 @@ export function FindingPanel({ row, onClose, onUpdated }: { row: FindingRow; onC
     >
       <p className="pb-3 text-muted-foreground">
         Reaches {fmtNum(row.reach.assets)} asset{row.reach.assets === 1 ? '' : 's'} ({fmtNum(row.reach.prodAssets)} in production) through {fmtNum(row.reach.paths)} path
-        {row.reach.paths === 1 ? '' : 's'} · blast {fmtNum(Math.round(row.blastScore))}
+        {row.reach.paths === 1 ? '' : 's'} · blast {fmtBlast(row.blastScore)}
       </p>
       <StatusControl finding={row} onUpdated={onUpdated} />
       <Separator className="my-4" />

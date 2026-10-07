@@ -1,9 +1,9 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { Nav, type NavProps } from './Nav';
-import { SidebarProvider } from './ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from './ui/sidebar';
 import { meFor } from '@/test/fixtures';
 import type { BuiltinRoleId } from '@server/permissions';
 
@@ -73,10 +73,76 @@ describe('<Nav>', () => {
   it('switches org from the header switcher', async () => {
     const user = userEvent.setup();
     const onSwitchOrg = vi.fn();
-    renderNav('org_admin', '/', { orgs: [{ id: 'org_1', name: 'acme-corp' }, { id: 'org_2', name: 'globex' }] }, { onSwitchOrg });
+    renderNav(
+      'org_admin',
+      '/',
+      {
+        orgs: [
+          { id: 'org_1', name: 'acme-corp' },
+          { id: 'org_2', name: 'globex' },
+        ],
+      },
+      { onSwitchOrg },
+    );
     await user.click(screen.getByRole('button', { name: /Switch organization/ }));
-    await user.click(screen.getByRole('menuitem', { name: /globex/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'globex' }));
     expect(onSwitchOrg).toHaveBeenCalledWith('org_2');
+  });
+
+  it('labels org items uniquely by name, current one checked', async () => {
+    const user = userEvent.setup();
+    const onSwitchOrg = vi.fn();
+    renderNav(
+      'org_admin',
+      '/',
+      {
+        org: { id: 'org_1', name: 'Hammer QA' },
+        orgs: [
+          { id: 'org_1', name: 'Hammer QA' },
+          { id: 'org_2', name: 'Hammer' },
+        ],
+      },
+      { onSwitchOrg },
+    );
+    await user.click(screen.getByRole('button', { name: /Switch organization/ }));
+    const menu = screen.getByRole('menu');
+    const items = within(menu).getAllByRole('menuitemradio');
+    expect(items.map((i) => i.getAttribute('aria-label'))).toEqual(['Hammer QA', 'Hammer']);
+    expect(within(menu).getByRole('menuitemradio', { name: 'Hammer QA' })).toHaveAttribute('aria-checked', 'true');
+    const other = within(menu).getByRole('menuitemradio', { name: 'Hammer' });
+    expect(other).toHaveAttribute('aria-checked', 'false');
+    await user.click(other);
+    expect(onSwitchOrg).toHaveBeenCalledWith('org_2');
+  });
+
+  it('keeps the sidebar rail inside the sidebar (never over the page)', () => {
+    const { container } = renderNav('org_admin');
+    const rail = container.querySelector('[data-slot=sidebar-rail]')!;
+    expect(rail.className).toContain('group-data-[side=left]:right-0');
+    expect(rail.className).not.toContain('-right-4');
+    expect(rail.className).not.toContain('-translate-x-1/2');
+  });
+
+  it('closes the mobile nav sheet after choosing a page', async () => {
+    const user = userEvent.setup();
+    const width = window.innerWidth;
+    window.innerWidth = 390;
+    try {
+      render(
+        <MemoryRouter initialEntries={['/projects/p1/findings']}>
+          <SidebarProvider>
+            <Nav me={meFor('org_admin')} projectId="p1" projects={projects} />
+            <SidebarTrigger />
+          </SidebarProvider>
+        </MemoryRouter>,
+      );
+      await user.click(screen.getByRole('button', { name: 'Toggle Sidebar' }));
+      const sheet = await screen.findByRole('dialog');
+      await user.click(within(sheet).getByRole('link', { name: 'Exposure matrix' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    } finally {
+      window.innerWidth = width;
+    }
   });
 
   it('offers theme, the dev role switcher in dev mode, and sign out in the user menu', async () => {

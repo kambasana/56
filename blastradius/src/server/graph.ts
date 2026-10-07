@@ -14,9 +14,18 @@ export function unversionedPurl(purl: string): string {
   return at === -1 ? noQ : noQ.slice(0, at);
 }
 
+/**
+ * Display label of a purl: type, qualifiers and percent-escapes removed, so
+ * "pkg:npm/%40vue/cli@4.5.15?x=1" reads "@vue/cli@4.5.15". For display only; ids stay purls.
+ */
 export function purlLabel(purl: string): string {
   const noQ = purl.split(/[?#]/)[0] ?? purl;
-  return noQ.replace(/^pkg:[^/]+\//, '');
+  const rest = noQ.replace(/^pkg:[^/]+\//, '');
+  try {
+    return decodeURIComponent(rest);
+  } catch {
+    return rest;
+  }
 }
 
 export interface ScanFindingSet {

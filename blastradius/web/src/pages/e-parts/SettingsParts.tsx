@@ -23,6 +23,7 @@ import { SIZE_TIERS, TIER_DEFAULTS } from '@server/api-types';
 import { api, isApiError, request } from '@/api';
 import { Badge } from '@/components/Badge';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
+import { ScrollRegion } from '@/components/ScrollRegion';
 import { SidePanel } from '@/components/SidePanel';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -474,7 +475,9 @@ export function AuditCard({ audit, members, compact }: { audit: PagedState<Audit
                     onClose={close}
                   >
                     <p className="mb-3">{describeAudit(a.action, a.target, a.detail)}</p>
-                    <pre className="overflow-auto rounded-md bg-muted p-3 font-mono text-xs leading-5">{JSON.stringify(a.detail, null, 2)}</pre>
+                    <ScrollRegion as="pre" label="Audit entry detail (JSON)" className="rounded-md bg-muted p-3 font-mono text-xs leading-5">
+                      {JSON.stringify(a.detail, null, 2)}
+                    </ScrollRegion>
                   </SidePanel>
                 )
           }
@@ -575,7 +578,7 @@ export function ProjectSettings({ project, editable, onSaved }: { project: Proje
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        <div className="overflow-hidden rounded-md border">
+        <ScrollRegion label={`${tier} tier settings`} className="rounded-md border">
           <Table aria-label={`${tier} tier settings`} className="text-[13px]">
             <TableHeader className="bg-muted">
               <TableRow className="hover:bg-transparent">
@@ -608,7 +611,7 @@ export function ProjectSettings({ project, editable, onSaved }: { project: Proje
               })}
             </TableBody>
           </Table>
-        </div>
+        </ScrollRegion>
       </SectionCard>
       {error && <ErrorAlert onDismiss={() => setError(null)}>{error.text}</ErrorAlert>}
       <div className="flex flex-wrap items-center gap-2">

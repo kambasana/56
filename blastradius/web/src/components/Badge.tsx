@@ -48,7 +48,7 @@ export function RiskBadge({ level, score, className }: { level: RiskLevel; score
   return (
     <UiBadge variant="outline" className={cn(levelBadgeVariants({ level: lv }), className)} data-level={lv}>
       {levelLabel(lv)}
-      {score !== undefined && <span className="font-mono tabular-nums opacity-80">{Math.round(score)}</span>}
+      {score !== undefined && <span className="font-mono tabular-nums">{Math.round(score)}</span>}
     </UiBadge>
   );
 }

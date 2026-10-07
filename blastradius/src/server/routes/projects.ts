@@ -1,4 +1,4 @@
-/** /api/orgs, /api/home, /api/projects, /api/projects/:id/scans, /api/scans/:id */
+/** /api/orgs, /api/home, /api/projects, /api/me/projects, /api/projects/:id/scans, /api/scans/:id */
 import type { Hono } from 'hono';
 import { z } from 'zod';
 import {
@@ -11,13 +11,14 @@ import {
   type ListOrgsResponse,
   type SwitchOrgResponse,
   type ListProjectsResponse,
+  type ListMyProjectsResponse,
   type ListScansResponse,
   type OkResponse,
   type OrgHomeResponse,
   type UpdateProjectResponse,
 } from '../api-types.js';
 import { ORG_ADMIN_ROLE_ID } from '../permissions.js';
-import { buildMe, deps, requireOrg, requireProjectPerm, requireSession, requireOrgPerm, visibleProjects, type AppEnv } from '../context.js';
+import { buildMe, deps, memberProjects, requireOrg, requireProjectPerm, requireSession, requireOrgPerm, visibleProjects, type AppEnv } from '../context.js';
 import { ApiHttpError, badRequest, forbidden, notFound } from '../errors.js';
 import { idParam, pageQuery, parseBody, queryString } from '../request.js';
 import { checkGitRef, checkTarget } from '../targets.js';
@@ -33,6 +34,7 @@ import {
   getScan,
   listOrgsForUser,
   listProjectRows,
+  listProjects,
   listScans,
   orgHome,
   rolesForUser,
@@ -120,6 +122,13 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
     const items = rows.slice(offset, offset + limit);
     const next = offset + items.length < rows.length ? encodeCursor(offset + items.length) : null;
     return c.json<ListProjectsResponse>({ items, total: rows.length, nextCursor: next });
+  });
+
+  // Names for the nav / project switcher: any member, only projects they hold a permission in.
+  app.get('/api/me/projects', (c) => {
+    const { orgId, projectIds } = memberProjects(c);
+    const items = listProjects(deps(c).store, orgId, projectIds).map((p) => ({ id: p.id, name: p.name }));
+    return c.json<ListMyProjectsResponse>({ items });
   });
 
   app.post('/api/projects', async (c) => {

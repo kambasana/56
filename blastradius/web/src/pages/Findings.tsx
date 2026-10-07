@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, Sele
 import { FileSearch, GitCompareArrows, TriangleAlert } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useApi } from '@/lib/useApi';
-import { fmtNum, fmtTime } from '@/lib/cn';
+import { fmtBlast, fmtNum, fmtTime } from '@/lib/cn';
 import { countByLevel, factorLabel, fmtDate, LEVEL_RANK, loadAllFindings, parseLevels, STATUS_LABELS } from './d-parts/format';
 import { FindingPanel } from './d-parts/FindingPanel';
 import { ClampedText, LevelFacet, StatusBadge } from './d-parts/ui';
@@ -36,7 +36,7 @@ const FINDING_COLUMNS: ColumnDef<FindingRow, any>[] = [
     enableHiding: false,
   },
   { id: 'score', header: 'Risk', accessorFn: (r) => r.score, cell: (c) => Math.round(c.getValue<number>()), meta: { align: 'right' }, size: 64, sortDescFirst: true },
-  { id: 'blast', header: 'Blast', accessorFn: (r) => r.blastScore, cell: (c) => fmtNum(Math.round(c.getValue<number>())), meta: { align: 'right' }, size: 72, sortDescFirst: true },
+  { id: 'blast', header: 'Blast', accessorFn: (r) => r.blastScore, cell: (c) => fmtBlast(c.getValue<number>()), meta: { align: 'right' }, size: 72, sortDescFirst: true },
   {
     id: 'assets',
     header: 'Assets',

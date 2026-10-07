@@ -12,7 +12,7 @@ import { useProject } from '@/project';
 import { RiskBadge } from '@/components/Badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowRight, FileSearch, GitCompareArrows, Info, Network } from 'lucide-react';
 import { ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
@@ -191,17 +191,18 @@ export default function Changes() {
       : `first scan ${fmtTime(data.toScan.finishedAt ?? data.toScan.createdAt)}`
     : undefined;
 
+  // The type tabs filter one table: the Tabs root wraps the table, which is the single TabsContent
+  // (value = the active tab), so the active trigger's aria-controls points at a real tabpanel.
+  const tab = type ?? 'all';
   const typeTabs = data ? (
-    <Tabs value={type ?? 'all'} onValueChange={(v) => setType(isChangeType(v) ? v : null)}>
-      <TabsList aria-label="Change type" className="h-8">
-        {[null, ...CHANGE_TYPES].map((t) => (
-          <TabsTrigger key={t ?? 'all'} value={t ?? 'all'} className="gap-1.5 px-2 text-xs">
-            {t ? CHANGE_LABELS[t] : 'All'}
-            <span className="font-mono tabular-nums text-muted-foreground">{fmtNum(t ? (data.counts[t] ?? 0) : data.items.length)}</span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <TabsList aria-label="Change type" className="h-8">
+      {[null, ...CHANGE_TYPES].map((t) => (
+        <TabsTrigger key={t ?? 'all'} value={t ?? 'all'} className="gap-1.5 px-2 text-xs">
+          {t ? CHANGE_LABELS[t] : 'All'}
+          <span className="font-mono tabular-nums text-muted-foreground">{fmtNum(t ? (data.counts[t] ?? 0) : data.items.length)}</span>
+        </TabsTrigger>
+      ))}
+    </TabsList>
   ) : null;
 
   let body;
@@ -219,7 +220,7 @@ export default function Changes() {
     );
   else if (data)
     body = (
-      <>
+      <Tabs value={tab} onValueChange={(v) => setType(isChangeType(v) ? v : null)} className="flex min-h-0 flex-1 flex-col gap-0">
         {!data.fromScan && (
           <div className="border-b px-4 py-3">
             <Alert>
@@ -228,21 +229,23 @@ export default function Changes() {
             </Alert>
           </div>
         )}
-        <DataTable<ChangeRow>
-          label="Changes"
-          data={rows}
-          columns={COLUMNS}
-          getRowId={(r) => r.id}
-          filterPlaceholder="Filter changes…"
-          initialSorting={[{ id: 'effect', desc: true }]}
-          initialColumnVisibility={{ purl: false }}
-          total={data.items.length}
-          emptyTitle={data.items.length === 0 ? 'Nothing changed' : 'No changes of this type'}
-          emptyDescription={data.items.length === 0 ? 'The two latest scans have the same findings at the same levels.' : undefined}
-          toolbar={typeTabs}
-          renderPanel={(row, close) => <ChangePanel row={row} projectId={id} onClose={close} />}
-        />
-      </>
+        <TabsContent value={tab} tabIndex={-1} className="flex min-h-0 flex-1 flex-col">
+          <DataTable<ChangeRow>
+            label="Changes"
+            data={rows}
+            columns={COLUMNS}
+            getRowId={(r) => r.id}
+            filterPlaceholder="Filter changes…"
+            initialSorting={[{ id: 'effect', desc: true }]}
+            initialColumnVisibility={{ purl: false }}
+            total={data.items.length}
+            emptyTitle={data.items.length === 0 ? 'Nothing changed' : 'No changes of this type'}
+            emptyDescription={data.items.length === 0 ? 'The two latest scans have the same findings at the same levels.' : undefined}
+            toolbar={typeTabs}
+            renderPanel={(row, close) => <ChangePanel row={row} projectId={id} onClose={close} />}
+          />
+        </TabsContent>
+      </Tabs>
     );
 
   return (

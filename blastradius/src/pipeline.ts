@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { HttpClient } from './core/http.js';
 import { defaultCacheDir, isPathInside } from './core/paths.js';
 import { looksLikeGitUrl } from './ingest/git.js';
-import type { EnrichContext, Enricher } from './core/plugin.js';
+import { enricherStages, type EnrichContext, type Enricher } from './core/plugin.js';
 import type { Fact, Incident, Inventory, ScanResult } from './core/types.js';
 import { ingestDetailed, type IngestOptions, type WorkflowInfo } from './ingest/index.js';
 import { createOsvEnricher } from './enrich/osv/index.js';
@@ -143,14 +143,30 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   const ctx: EnrichContext = { http, now, offline: opts.offline || http.offline, warn, historical };
   const facts: Fact[] = [];
   const enrichers = (opts.enrichers ?? defaultEnrichers)(() => facts);
-  for (const e of enrichers) {
-    log(`enriching: ${e.name}`);
-    try {
-      facts.push(...(await e.enrich(inventory, ctx)));
-    } catch (err) {
-      warn(`enricher ${e.name} failed: ${(err as Error).message}`);
+  // Independent enrichers (OSV, deps.dev, npm) talk to different hosts, so they run concurrently;
+  // one that reads earlier facts (GitHub) waits for them. Facts and warnings are still appended
+  // in the declared enricher order, so the result is the same as running them one by one.
+  for (const stage of enricherStages(enrichers)) {
+    const results = await Promise.all(
+      stage.map(async (e) => {
+        log(`enriching: ${e.name}`);
+        const notes: string[] = [];
+        const ectx: EnrichContext = { ...ctx, warn: (m) => notes.push(m) };
+        try {
+          return { facts: await e.enrich(inventory, ectx), notes };
+        } catch (err) {
+          notes.push(`enricher ${e.name} failed: ${(err as Error).message}`);
+          return { facts: [] as Fact[], notes };
+        }
+      }),
+    );
+    for (const r of results) {
+      facts.push(...r.facts);
+      for (const n of r.notes) warn(n);
     }
   }
+  const down = http.unavailableHosts();
+  if (down.length > 0) log(`skipped unreachable host(s) after repeated network errors: ${down.join(', ')}`);
 
   const known = factsKnownAt(facts, now);
   if (known.length < facts.length) {

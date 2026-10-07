@@ -17,7 +17,7 @@
  * and no warning. Offline misses are summarised in one warning.
  */
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
-import { OfflineMissError } from '../../core/http.js';
+import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import { makeFact, unversionedPurl } from '../../core/types.js';
 import type { Component, DependentsValue, Fact, Inventory, ProvenanceValue, PurlString, RepoValue, ScorecardValue } from '../../core/types.js';
 import { normalizeRepoUrl } from './repo.js';
@@ -262,12 +262,15 @@ function toCount(v: unknown): number | undefined {
 
 class Problems {
   private offlineMisses: string[] = [];
+  private readonly skipped = new SkippedHosts();
   constructor(private readonly ctx: EnrichContext) {}
   add(e: unknown, what: string): void {
+    if (this.skipped.add(e)) return;
     if (e instanceof OfflineMissError) this.offlineMisses.push(e.key);
     else this.ctx.warn?.(`depsdev: ${what} failed: ${errorMessage(e)}`);
   }
   flush(): void {
+    this.skipped.flush('depsdev', this.ctx.warn);
     if (this.offlineMisses.length === 0) return;
     this.ctx.warn?.(
       `depsdev: ${this.offlineMisses.length} request(s) had no fixture or cached response offline (e.g. ${this.offlineMisses[0]})`,

@@ -7,7 +7,11 @@
  * - Offline mode (option or BLASTRADIUS_OFFLINE=1): answers from fixtures
  *   (in-memory map and/or a fixtures directory), then from the cache (even if
  *   stale), and otherwise throws OfflineMissError naming the missing key.
- * - Retries 429/5xx with exponential backoff.
+ * - Retries 429/5xx and network errors with exponential backoff.
+ * - Per-host circuit breaker: after `breakerThreshold` consecutive network failures (no response at
+ *   all: DNS, refused, proxy-denied, timeout) a host is treated as unreachable for
+ *   `breakerCooldownMs`, so the rest of the scan fails fast (HostUnavailableError) instead of
+ *   queueing and retrying thousands of doomed requests. Any HTTP response, even a 5xx, closes it.
  *
  * Responses are untrusted data: size-capped while streaming and parsed with JSON.parse only.
  */
@@ -73,6 +77,10 @@ export interface HttpClientOptions {
   maxRetries?: number;
   /** Max response size in bytes (default 25 MB). */
   maxBytes?: number;
+  /** Consecutive network failures (no HTTP response) after which a host is skipped (default 4; 0 disables). */
+  breakerThreshold?: number;
+  /** How long an unreachable host is skipped before one request may probe it again (default 10 min). */
+  breakerCooldownMs?: number;
   userAgent?: string;
   /** Clock and sleep, injectable for tests. */
   now?: () => number;
@@ -97,6 +105,46 @@ export class ResponseTooLargeError extends HttpError {
     this.name = 'ResponseTooLargeError';
   }
 }
+
+/** The host failed `breakerThreshold` times in a row without answering: not tried again for a while. */
+export class HostUnavailableError extends Error {
+  constructor(
+    readonly url: string,
+    readonly host: string,
+    lastError?: unknown,
+  ) {
+    super(`${host} is unreachable (${lastError instanceof Error ? lastError.message : 'repeated network errors'}); skipping its requests for this scan`);
+    this.name = 'HostUnavailableError';
+  }
+}
+
+/**
+ * Rolls requests skipped by the circuit breaker up into one warning per host, so an unreachable
+ * API yields "N request(s) skipped" rather than one warning per component.
+ */
+export class SkippedHosts {
+  private readonly counts = new Map<string, { n: number; message: string }>();
+  /** True (and counted) when `e` is a HostUnavailableError. */
+  add(e: unknown): boolean {
+    if (!(e instanceof HostUnavailableError)) return false;
+    const cur = this.counts.get(e.host);
+    this.counts.set(e.host, { n: (cur?.n ?? 0) + 1, message: cur?.message ?? e.message });
+    return true;
+  }
+  /** One warning per skipped host, then reset. */
+  flush(source: string, warn: ((m: string) => void) | undefined): void {
+    for (const [host, { n }] of [...this.counts].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+      warn?.(`${source}: ${host} is unreachable (repeated network errors); ${n} request(s) skipped`);
+    }
+    this.counts.clear();
+  }
+}
+
+/**
+ * Default minimum interval between requests per host. registry.npmjs.org is a CDN built for
+ * npm install's request rates, so the npm enricher is not throttled to 10 requests per second.
+ */
+export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20 };
 
 export class OfflineMissError extends Error {
   constructor(
@@ -203,6 +251,10 @@ export class HttpClient {
   private readonly sleep: (ms: number) => Promise<void>;
   /** host → time the next request may start. */
   private readonly hostNext = new Map<string, number>();
+  private readonly breakerThreshold: number;
+  private readonly breakerCooldownMs: number;
+  /** host → consecutive network failures, and until when the host is skipped. */
+  private readonly breakers = new Map<string, { failures: number; openUntil: number; lastError?: unknown }>();
   /** Resolved disk cache directory, or false when disabled. */
   get cacheDirectory(): string | false {
     return this.cacheDir;
@@ -217,9 +269,11 @@ export class HttpClient {
     this.offline = opts.offline ?? process.env.BLASTRADIUS_OFFLINE === '1';
     this.fixturesDir = opts.fixturesDir ?? process.env.BLASTRADIUS_FIXTURES ?? undefined;
     this.minIntervalMs = opts.minIntervalMs ?? 100;
-    this.hostIntervals = opts.hostIntervals ?? {};
+    this.hostIntervals = { ...DEFAULT_HOST_INTERVALS, ...opts.hostIntervals };
     this.maxRetries = opts.maxRetries ?? 2;
     this.maxBytes = opts.maxBytes ?? 25 * 1024 * 1024;
+    this.breakerThreshold = Math.max(0, opts.breakerThreshold ?? 4);
+    this.breakerCooldownMs = Math.max(0, opts.breakerCooldownMs ?? 10 * 60 * 1000);
     this.userAgent = opts.userAgent ?? 'blastradius/0.1 (+supply-chain auditor)';
     this.now = opts.now ?? Date.now;
     this.sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
@@ -290,10 +344,33 @@ export class HttpClient {
     return res;
   }
 
+  /** True while `host` is skipped after repeated network failures (see breakerThreshold). */
+  isHostUnavailable(host: string): boolean {
+    const b = this.breakers.get(host);
+    return b !== undefined && this.breakerThreshold > 0 && b.failures >= this.breakerThreshold && this.now() < b.openUntil;
+  }
+
+  /** Hosts currently skipped as unreachable. */
+  unavailableHosts(): string[] {
+    return [...this.breakers.keys()].filter((h) => this.isHostUnavailable(h)).sort();
+  }
+
+  private noteFailure(host: string, err: unknown): void {
+    if (this.breakerThreshold <= 0) return;
+    const b = this.breakers.get(host) ?? { failures: 0, openUntil: 0 };
+    b.failures++;
+    b.lastError = err;
+    if (b.failures >= this.breakerThreshold) b.openUntil = this.now() + this.breakerCooldownMs;
+    this.breakers.set(host, b);
+  }
+
   private async sendWithRetry(host: string, req: TransportRequest): Promise<TransportResponse> {
     let attempt = 0;
     for (;;) {
+      // Checked before taking a rate-limit slot: a dead host must not hold up the queue.
+      if (this.isHostUnavailable(host)) throw new HostUnavailableError(req.url, host, this.breakers.get(host)?.lastError);
       await this.waitForHost(host);
+      if (this.isHostUnavailable(host)) throw new HostUnavailableError(req.url, host, this.breakers.get(host)?.lastError);
       this.requestCount++;
       let res: TransportResponse | undefined;
       let err: unknown;
@@ -303,6 +380,9 @@ export class HttpClient {
         if (e instanceof ResponseTooLargeError) throw e; // retrying would download it again
         err = e;
       }
+      // Any HTTP response means the host is reachable; only "no response at all" counts.
+      if (res !== undefined) this.breakers.delete(host);
+      else this.noteFailure(host, err);
       const retryable = err !== undefined || (res !== undefined && (res.status === 429 || res.status >= 500));
       if (!retryable && res) return res;
       if (attempt >= this.maxRetries) {

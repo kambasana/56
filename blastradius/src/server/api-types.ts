@@ -236,6 +236,15 @@ export interface ProjectRow extends Project {
 /** GET /api/projects?org= (org defaults to the session's org) */
 export type ListProjectsResponse = Page<ProjectRow>;
 
+/**
+ * GET /api/me/projects: id and name of every project in the working org where the caller holds
+ * any permission (all of them with any org-scope permission, else those with a project binding).
+ * Any signed-in member may call it; it is what the nav and project switcher use.
+ */
+export interface ListMyProjectsResponse {
+  items: ProjectRef[];
+}
+
 /** POST /api/projects */
 export interface CreateProjectRequest {
   name: string;

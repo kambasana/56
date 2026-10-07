@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { fixtureKey, HttpClient, HttpError, OfflineMissError, readBodyLimited, ResponseTooLargeError, type Transport } from './http.js';
+import { DEFAULT_HOST_INTERVALS, fixtureKey, HostUnavailableError, HttpClient, HttpError, OfflineMissError, readBodyLimited, ResponseTooLargeError, type Transport } from './http.js';
 
 let dir: string;
 beforeEach(async () => {
@@ -87,6 +87,10 @@ describe('HttpClient', () => {
     const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 200, now: () => t, sleep });
     await Promise.all([c.fetchJson('https://a.test/1'), c.fetchJson('https://a.test/2'), c.fetchJson('https://b.test/1')]);
     expect(waits).toEqual([200]); // second a.test request waits; b.test does not
+  });
+
+  it('does not throttle registry.npmjs.org to the generic 10 requests per second', () => {
+    expect(DEFAULT_HOST_INTERVALS['registry.npmjs.org']).toBeLessThan(100);
   });
 
   it('rejects non-http URLs', async () => {
@@ -248,5 +252,87 @@ describe('response size limit', () => {
       server.closeAllConnections();
       await new Promise<void>((r) => server.close(() => r()));
     }
+  });
+});
+
+describe('per-host circuit breaker', () => {
+  const refused = () => Object.assign(new TypeError('fetch failed'), { cause: new Error('CONNECT tunnel failed, response 403') });
+
+  it('stops calling a host that keeps failing without a response, and leaves other hosts alone', async () => {
+    const transport = vi.fn<Transport>(async (req) => {
+      if (req.url.startsWith('https://dead.test/')) throw refused();
+      return { status: 200, body: '{"ok":true}' };
+    });
+    const sleep = vi.fn(noSleep);
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, maxRetries: 2, breakerThreshold: 4, sleep });
+    // First request: 3 attempts (1 + 2 retries), all network errors.
+    await expect(c.fetchJson('https://dead.test/1')).rejects.toThrow('fetch failed');
+    expect(transport).toHaveBeenCalledTimes(3);
+    // Second request: one more failure trips the breaker; no further retries.
+    await expect(c.fetchJson('https://dead.test/2')).rejects.toBeInstanceOf(HostUnavailableError);
+    expect(transport).toHaveBeenCalledTimes(4);
+    expect(c.unavailableHosts()).toEqual(['dead.test']);
+    // From now on dead.test fails fast: no transport call, no backoff sleep.
+    sleep.mockClear();
+    for (let i = 3; i < 50; i++) await expect(c.fetchJson(`https://dead.test/${i}`)).rejects.toThrow(/dead\.test is unreachable/);
+    expect(transport).toHaveBeenCalledTimes(4);
+    expect(sleep).not.toHaveBeenCalled();
+    // Another host is unaffected.
+    expect(await c.fetchJson('https://alive.test/x')).toEqual({ ok: true });
+  });
+
+  it('counts only consecutive failures: any HTTP response (even 5xx or 404) resets the count', async () => {
+    let n = 0;
+    const transport = vi.fn<Transport>(async () => {
+      n++;
+      if (n % 3 === 0) return { status: 503, body: '' };
+      throw refused();
+    });
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, maxRetries: 0, breakerThreshold: 3, sleep: noSleep });
+    for (let i = 0; i < 12; i++) await c.request(`https://flaky.test/${i}`).catch(() => undefined);
+    expect(transport).toHaveBeenCalledTimes(12);
+    expect(c.isHostUnavailable('flaky.test')).toBe(false);
+  });
+
+  it('lets one request probe the host again after the cooldown', async () => {
+    let t = 0;
+    let up = false;
+    const transport = vi.fn<Transport>(async () => {
+      if (!up) throw refused();
+      return { status: 200, body: '1' };
+    });
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, maxRetries: 0, breakerThreshold: 2, breakerCooldownMs: 1000, now: () => t, sleep: noSleep });
+    await c.request('https://h.test/a').catch(() => undefined);
+    await c.request('https://h.test/b').catch(() => undefined);
+    await expect(c.request('https://h.test/c')).rejects.toBeInstanceOf(HostUnavailableError);
+    expect(transport).toHaveBeenCalledTimes(2);
+    // Still down after the cooldown: the probe fails and the breaker opens again at once.
+    t = 1500;
+    await expect(c.request('https://h.test/d')).rejects.toThrow('fetch failed');
+    await expect(c.request('https://h.test/e')).rejects.toBeInstanceOf(HostUnavailableError);
+    expect(transport).toHaveBeenCalledTimes(3);
+    // Back up: the next probe succeeds and closes the breaker.
+    t = 3000;
+    up = true;
+    expect(await c.fetchJson('https://h.test/f')).toBe(1);
+    expect(c.isHostUnavailable('h.test')).toBe(false);
+    expect(await c.fetchJson('https://h.test/g')).toBe(1);
+  });
+
+  it('can be disabled', async () => {
+    const transport = vi.fn<Transport>(async () => {
+      throw refused();
+    });
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, maxRetries: 0, breakerThreshold: 0, sleep: noSleep });
+    for (let i = 0; i < 10; i++) await expect(c.request(`https://d.test/${i}`)).rejects.toThrow('fetch failed');
+    expect(transport).toHaveBeenCalledTimes(10);
+  });
+
+  it('never trips on a reachable host, so results stay identical', async () => {
+    const transport = vi.fn<Transport>(async (req) => ({ status: req.url.endsWith('/404') ? 404 : 200, body: '{}' }));
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, breakerThreshold: 1, sleep: noSleep });
+    for (let i = 0; i < 20; i++) await c.request(i % 2 ? 'https://ok.test/404' : `https://ok.test/${i}`);
+    expect(transport).toHaveBeenCalledTimes(20);
+    expect(c.unavailableHosts()).toEqual([]);
   });
 });

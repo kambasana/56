@@ -5,6 +5,7 @@ export { DataTable, facetFilter, riskLevelFacet, type ColumnDef, type DataTableP
 export { EmptyState, ErrorState, ForbiddenState, LoadingState } from './EmptyState';
 export { Nav, BrandMark } from './Nav';
 export { PageHeader, type Crumb } from './PageHeader';
+export { ScrollRegion } from './ScrollRegion';
 export { SidePanel } from './SidePanel';
 export { StatTile, type StatTone } from './StatTile';
 export { ThemeProvider, useTheme } from './theme-provider';

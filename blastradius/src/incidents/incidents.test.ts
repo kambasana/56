@@ -150,6 +150,20 @@ evidence:
     const tj = res.incidents.find((i) => i.id === 'INC-2025-0001')!;
     expect(tj.affected[0]!.versions).not.toContain('*');
   });
+
+  // Hammer KB gap: the March 2022 node-ipc protestware also covers 9.2.2, 11.x and peacenotwar.
+  it('covers node-ipc 9.2.2 / 11.x and peacenotwar (GHSA-8gr3-2gjw-jj7g, GHSA-3mpp-xfvh-qh37)', async () => {
+    const res = await loadIncidents(KB_DIR);
+    const hit = (name: string, version: string) => res.incidents.filter((i) => incidentAffects(i, npmPurl(name, version))).map((i) => i.id);
+    expect(hit('node-ipc', '9.2.2')).toEqual(['INC-2022-0003']);
+    expect(hit('node-ipc', '11.1.0')).toEqual(['INC-2022-0003']);
+    expect(hit('peacenotwar', '9.1.6')).toEqual(['INC-2022-0003']);
+    expect(hit('node-ipc', '10.1.2')).toEqual(['INC-2022-0002']);
+    // Releases no advisory covers stay clear.
+    for (const v of ['9.2.1', '9.2.3', '10.1.0', '10.1.3', '12.0.0']) expect(hit('node-ipc', v), v).toEqual([]);
+    const inc = res.incidents.find((i) => i.id === 'INC-2022-0003')!;
+    expect(inc.evidence).toEqual(expect.arrayContaining(['https://github.com/advisories/GHSA-8gr3-2gjw-jj7g', 'https://github.com/advisories/GHSA-3mpp-xfvh-qh37']));
+  });
 });
 
 describe('OSV import and matching', () => {

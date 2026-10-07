@@ -54,10 +54,12 @@ export function ProjectProvider({ children, initialProjects }: { children: React
     const ac = new AbortController();
     setLoading(true);
     const fallback = Object.keys(me.projectPermissions).map((id) => ({ id, name: id }));
+    // /api/me/projects works for every member (GET /api/projects needs the projects or home page),
+    // so roles like Auditor do not hit a 403 on every screen.
     api
-      .projects({ limit: 500 }, ac.signal)
+      .myProjects(ac.signal)
       .then((page) => {
-        if (!ac.signal.aborted) setProjects(page.items.map((p) => ({ id: p.id, name: p.name })));
+        if (!ac.signal.aborted) setProjects(page.items);
       })
       .catch(() => {
         if (!ac.signal.aborted) setProjects(fallback);

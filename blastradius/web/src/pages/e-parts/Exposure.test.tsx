@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ExposureMatrixResponse } from '@server/api-types';
-import Exposure from '../Exposure';
+import Exposure, { measureSticky } from '../Exposure';
 import { meFor } from '@/test/fixtures';
 import { cellText, shade, sortRows, toCsv } from './exposure';
 import { Reply, choose, fakeApi, renderPage } from './testkit';
@@ -63,6 +63,20 @@ describe('Exposure helpers', () => {
     expect(csv.split('\n')[0]).toBe('asset,environment,criticality,blast_score,comp-0@1.0.0');
     expect(csv).toContain(`"'=HYPERLINK(""x"")"`);
     expect(csv).toContain(',0.25');
+  });
+});
+
+describe('sticky insets', () => {
+  it('measures header, totals row and row-header column so focused cells scroll clear of them', () => {
+    const box = document.createElement('div');
+    box.innerHTML = '<table><thead><tr><th>Asset</th></tr></thead><tbody></tbody><tfoot><tr><th>Reached</th></tr></tfoot></table>';
+    const rect = (h: number, w: number) => () => ({ height: h, width: w }) as DOMRect;
+    box.querySelector('thead')!.getBoundingClientRect = rect(132.5, 900);
+    box.querySelector('thead th')!.getBoundingClientRect = rect(132.5, 236.2);
+    box.querySelector('tfoot')!.getBoundingClientRect = rect(30.4, 900);
+    expect(measureSticky(box)).toEqual({ top: 133, bottom: 31, left: 237 });
+    expect(measureSticky(document.createElement('div'))).toBeNull();
+    expect(measureSticky(null)).toBeNull();
   });
 });
 

@@ -1,4 +1,5 @@
 # node-ipc (2022): releases that overwrote files on hosts matching geolocation checks (protestware).
+# node-ipc 9.2.2 / 11.x and the peacenotwar module (desktop message file) are INC-2022-0003.
 id: INC-2022-0002
 title: node-ipc 10.1.1 and 10.1.2 included code that overwrote files on hosts selected by IP geolocation
 type: maintainer_sabotage

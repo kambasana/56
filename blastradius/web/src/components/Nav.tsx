@@ -7,11 +7,10 @@
  *
  * Render inside <SidebarProvider> (AppShell does).
  */
-import type { ComponentType, ReactNode } from 'react';
+import { useEffect, type ComponentType, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import {
   BookOpen,
-  Check,
   ChevronsUpDown,
   FileText,
   FolderKanban,
@@ -95,12 +94,20 @@ export function BrandMark({ className }: { className?: string }) {
   );
 }
 
+/**
+ * SidebarRail placement. Upstream centres the 16px rail on the sidebar edge, so half of it lies over
+ * SidebarInset and swallows clicks on full-bleed table rows. Keep it to the sidebar's own 8px right
+ * padding (no controls there, also in icon mode), with the hover line on the edge.
+ */
+const RAIL_INSIDE = 'w-2 translate-x-0 group-data-[side=left]:right-0 after:left-auto after:right-0';
+
 function initials(name: string): string {
   const parts = name.trim().split(/[\s@._-]+/).filter(Boolean);
   return ((parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
 function NavGroup({ label, items, active }: { label: ReactNode; items: NavItem[]; active: string | null }) {
+  const { isMobile, setOpenMobile } = useSidebar();
   if (items.length === 0) return null;
   return (
     <SidebarGroup>
@@ -118,7 +125,12 @@ function NavGroup({ label, items, active }: { label: ReactNode; items: NavItem[]
                 </SidebarMenuButton>
               ) : (
                 <SidebarMenuButton asChild isActive={isActive} tooltip={it.label}>
-                  <Link to={it.to} aria-current={isActive ? 'page' : undefined}>
+                  <Link
+                    to={it.to}
+                    aria-current={isActive ? 'page' : undefined}
+                    // The mobile nav is a Sheet over the page: close it once a page is chosen.
+                    onClick={() => isMobile && setOpenMobile(false)}
+                  >
                     <Icon />
                     <span>{it.label}</span>
                   </Link>
@@ -164,16 +176,21 @@ function OrgSwitcher({ me, onSwitchOrg }: { me: MeResponse; onSwitchOrg?: (orgId
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-xs text-muted-foreground">Organizations</DropdownMenuLabel>
-            {me.orgs.map((o) => {
-              const current = o.id === me.org?.id;
-              return (
-                <DropdownMenuItem key={o.id} className="gap-2 p-2" onSelect={() => !current && onSwitchOrg?.(o.id)} disabled={!current && !onSwitchOrg}>
-                  <div className="flex size-6 items-center justify-center rounded-md border text-xs font-medium">{initials(o.name)}</div>
+            {/* One radio item per org: role=menuitemradio named exactly by the org, the current one checked. */}
+            <DropdownMenuRadioGroup
+              value={me.org?.id ?? ''}
+              onValueChange={(id) => id !== me.org?.id && onSwitchOrg?.(id)}
+              aria-label="Organizations"
+            >
+              {me.orgs.map((o) => (
+                <DropdownMenuRadioItem key={o.id} value={o.id} className="gap-2 p-2 pl-8" aria-label={o.name} disabled={o.id !== me.org?.id && !onSwitchOrg}>
+                  <div aria-hidden="true" className="flex size-6 items-center justify-center rounded-md border text-xs font-medium">
+                    {initials(o.name)}
+                  </div>
                   <span className="truncate">{o.name}</span>
-                  {current && <Check className="ml-auto" aria-label="Current organization" />}
-                </DropdownMenuItem>
-              );
-            })}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
@@ -321,7 +338,10 @@ function NavUser({ me, theme, onThemeChange, onCycleTheme, onSwitchUser, onLogou
 }
 
 export function Nav({ me, projectId, projects, onSwitchUser, onSwitchOrg, onLogout, theme, onThemeChange, onCycleTheme }: NavProps) {
-  const { pathname, hash } = useLocation();
+  const { pathname, hash, key } = useLocation();
+  const { setOpenMobile } = useSidebar();
+  // Any navigation (nav link, project switch, org switch, back button) closes the mobile sheet.
+  useEffect(() => setOpenMobile(false), [key, setOpenMobile]);
   const navigate = useNavigate();
   const model = buildNav(me, projectId);
   const active = activeNavId(pathname, hash);
@@ -349,7 +369,7 @@ export function Nav({ me, projectId, projects, onSwitchUser, onSwitchOrg, onLogo
       <SidebarFooter>
         <NavUser me={me} theme={theme} onThemeChange={onThemeChange} onCycleTheme={onCycleTheme} onSwitchUser={onSwitchUser} onLogout={onLogout} />
       </SidebarFooter>
-      <SidebarRail />
+      <SidebarRail className={RAIL_INSIDE} />
     </Sidebar>
   );
 }
