@@ -50,6 +50,29 @@ export const VIEWPORTS: readonly Viewport[] = [
   { name: 'mobile', width: 390, height: 844 },
 ];
 
+/**
+ * HAMMER_MODE=quick (default) checks every page once per role (light, desktop), plus one dark and
+ * one mobile pass, on the first 3 projects, and crawls only the "now" server. HAMMER_MODE=full
+ * crawls every role x theme x viewport on every project of every server (several times longer).
+ */
+export const FULL = process.env.HAMMER_MODE === 'full';
+export interface Combo {
+  role: Role;
+  theme: Theme;
+  vp: Viewport;
+}
+const vpBy = (n: Viewport['name']): Viewport => VIEWPORTS.find((v) => v.name === n)!;
+export const CRAWL_COMBOS: readonly Combo[] = FULL
+  ? ROLES.flatMap((role) => THEMES.flatMap((theme) => VIEWPORTS.map((vp) => ({ role, theme, vp }))))
+  : [...ROLES.map((role): Combo => ({ role, theme: 'light', vp: vpBy('desktop') })), { role: 'admin', theme: 'dark', vp: vpBy('desktop') }, { role: 'developer', theme: 'dark', vp: vpBy('mobile') }];
+export const SIGNED_OUT_COMBOS: readonly Omit<Combo, 'role'>[] = FULL
+  ? THEMES.flatMap((theme) => VIEWPORTS.map((vp) => ({ theme, vp })))
+  : [{ theme: 'light', vp: vpBy('desktop') }, { theme: 'dark', vp: vpBy('mobile') }];
+/** Quick mode crawls only the "now" server; the dated servers still run the scenario and feature suites. */
+export const CRAWL_THIS_SERVER = FULL || !process.env.HAMMER_SERVER_ASOF || process.env.HAMMER_SERVER_ASOF === 'now';
+/** Projects crawled per combo: all in full mode, the first 3 in quick mode (HAMMER_PROJECT_LIMIT overrides). */
+export const PROJECT_LIMIT = Number(process.env.HAMMER_PROJECT_LIMIT ?? (FULL ? 0 : 3));
+
 /** Built-in role id for each hammer role (PLAN §12 default templates). */
 export const ROLE_IDS: Record<Role, string> = { admin: 'org_admin', appsec: 'appsec', developer: 'developer', auditor: 'auditor' };
 

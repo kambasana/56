@@ -11,7 +11,7 @@
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { axeProblems, fullShot, layoutProblems, settle, slug, watch, type Watcher } from './lib/checks';
-import { readState, ROLES, SHOT_PREFIX, SHOTS_DIR, THEMES, VIEWPORTS, type HammerProject, type Role, type Theme, type Viewport } from './lib/env';
+import { CRAWL_COMBOS, CRAWL_THIS_SERVER, PROJECT_LIMIT, readState, SHOT_PREFIX, SHOTS_DIR, SIGNED_OUT_COMBOS, type HammerProject, type Role, type Theme, type Viewport } from './lib/env';
 import { probeGraph } from './lib/feature';
 import { record, statusOf } from './lib/report';
 import { closeMobileNav, mobileNavOpen, NAV_LABEL, navLinks, openAs, openMobileNav, ROLE_PAGES, type PagePerm } from './lib/session';
@@ -191,12 +191,13 @@ async function audit(page: Page, w: Watcher, spec: PageSpec, role: Role | 'anony
   return reasons.length === 0;
 }
 
-const limit = Number(process.env.HAMMER_PROJECT_LIMIT ?? 0);
+const limit = PROJECT_LIMIT;
 
-for (const role of ROLES) {
-  for (const theme of THEMES) {
-    for (const vp of VIEWPORTS) {
+for (const { role, theme, vp } of CRAWL_COMBOS) {
+  {
+    {
       test(`crawl ${role} ${theme} ${vp.name}`, async ({ browser }) => {
+        test.skip(!CRAWL_THIS_SERVER, 'quick mode crawls only the "now" server');
         const state = readState();
         const projects = limit > 0 ? state.projects.slice(0, limit) : state.projects;
         const { context, page } = await openAs(browser, role, theme, vp);
@@ -278,9 +279,10 @@ for (const role of ROLES) {
   }
 }
 
-for (const theme of THEMES) {
-  for (const vp of VIEWPORTS) {
+for (const { theme, vp } of SIGNED_OUT_COMBOS) {
+  {
     test(`crawl signed-out ${theme} ${vp.name}`, async ({ browser }) => {
+      test.skip(!CRAWL_THIS_SERVER, 'quick mode crawls only the "now" server');
       const { context, page } = await openAs(browser, null, theme, vp);
       const w = watch(page);
       const failed: string[] = [];

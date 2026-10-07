@@ -18,6 +18,11 @@ on:
         description: Blastradius branch, tag or commit in kambasana/56
         default: docs/blast-radius-plan
         required: true
+      mode:
+        description: quick (about 15 min, skips the huge vscode/superset scans) or full (every role x theme x viewport, about 90 min)
+        type: choice
+        options: [quick, full]
+        default: quick
       only:
         description: Comma-separated scenario ids (empty = all)
         default: ''
@@ -33,8 +38,9 @@ concurrency:
 jobs:
   hammer:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: ${{ inputs.mode == 'full' && 150 || 45 }}
     env:
+      HAMMER_MODE: ${{ inputs.mode }}
       GITHUB_TOKEN: ${{ secrets.HAMMER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       # The runner context is not available in job-level env, so set these paths here.
@@ -74,11 +80,12 @@ jobs:
           ONLY: ${{ inputs.only }}
         run: |
           args="--keep-servers --strict"
+          if [ "$HAMMER_MODE" != "full" ]; then args="$args --skip-scale"; fi
           if [ -n "$ONLY" ]; then args="$args --only $ONLY"; fi
           nohup npm run hammer -- $args > "$RUNNER_TEMP/hammer-runner.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/runner.pid"
           # Wait for the runner to finish scanning (results.json written) or exit early.
-          for i in $(seq 1 360); do
+          for i in $(seq 1 720); do
             if [ -f test/hammer/out/results.json ]; then break; fi
             if ! kill -0 "$(cat "$RUNNER_TEMP/runner.pid")" 2>/dev/null; then break; fi
             sleep 10
