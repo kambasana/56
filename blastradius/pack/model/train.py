@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import os
 import subprocess
@@ -66,7 +67,9 @@ MONOTONE = {
 
 
 def load(dataset_dir: str):
-    rows = [json.loads(l) for l in open(os.path.join(dataset_dir, "dataset.jsonl")) if l.strip()]
+    path = os.path.join(dataset_dir, "dataset.jsonl.gz")
+    fh = gzip.open(path, "rt") if os.path.exists(path) else open(os.path.join(dataset_dir, "dataset.jsonl"))
+    rows = [json.loads(l) for l in fh if l.strip()]
     report = json.load(open(os.path.join(dataset_dir, "report.json")))
     names = report["featureNames"]
     X = np.array([[np.nan if v is None else float(v) for v in r["features"]] for r in rows], dtype=np.float64)

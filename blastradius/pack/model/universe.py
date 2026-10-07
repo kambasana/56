@@ -9,6 +9,8 @@ Writes:
   negatives.txt  training negatives: packages the controls' latest releases depend on that are not
                  themselves controls, ranked by how many control packages use them (a stand-in for
                  "top packages by dependents" until deps.dev is reachable), capped at --max-negatives
+  hammer.txt     with --extra-lock: every package in those lockfiles (the hammer control repos,
+                 fetched at their pinned commits) that is not an Acme control or incident package
 
 negatives.txt is built from the packuments already in the cache: fetch controls.txt first, then
 alternate universe.py and fetch_packuments.py on negatives.txt; each round walks one hop further.
@@ -54,6 +56,7 @@ def main() -> None:
     ap.add_argument("--cache", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-negatives", type=int, default=1500)
+    ap.add_argument("--extra-lock", action="append", default=[], help="package-lock.json of a hammer control repo (repeatable)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     incidents = incident_names(a.replay)
@@ -75,10 +78,17 @@ def main() -> None:
     excluded = controls | set(incidents)
     ranked = sorted((n for n in counts if n not in excluded), key=lambda n: (-counts[n], n))
     negatives = ranked[: a.max_negatives]
-    for fname, names in (("incidents.txt", incidents), ("controls.txt", sorted(controls)), ("negatives.txt", negatives)):
+    hammer: set[str] = set()
+    for lock in a.extra_lock:
+        hammer.update(n for n, _ in lockfile_packages(lock))
+    hammer -= excluded
+    outputs = [("incidents.txt", incidents), ("controls.txt", sorted(controls)), ("negatives.txt", negatives)]
+    if a.extra_lock:
+        outputs.append(("hammer.txt", sorted(hammer)))
+    for fname, names in outputs:
         with open(os.path.join(a.out, fname), "w") as f:
             f.write("".join(n + "\n" for n in names))
-    print(json.dumps({"incidents": len(incidents), "controls": len(controls), "negatives": len(negatives), "negative_candidates": len(ranked)}))
+    print(json.dumps({"incidents": len(incidents), "controls": len(controls), "negatives": len(negatives), "negative_candidates": len(ranked), "hammer": len(hammer)}))
 
 
 if __name__ == "__main__":

@@ -47,11 +47,18 @@ export function mergeOverlay(live: Packument | undefined, overlay: Packument | u
   return { ...live, versions, time };
 }
 
+/** Packuments kept in memory at once (least recently used are dropped; a dataset run reads tens of thousands). */
+const MEMO_MAX = 4000;
+
 export function openStore(opts: { cacheDir?: string; overlayDir?: string }): PackumentStore {
   const memo = new Map<string, { p: Packument | undefined; origin?: string }>();
   const load = (name: string) => {
     let hit = memo.get(name);
-    if (!hit) {
+    if (hit) {
+      memo.delete(name);
+      memo.set(name, hit);
+    } else {
+      if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value!);
       const live = opts.cacheDir ? readJson(packumentFile(opts.cacheDir, name)) : undefined;
       const over = opts.overlayDir ? readJson(packumentFile(opts.overlayDir, name)) : undefined;
       const p = mergeOverlay(live, over);
