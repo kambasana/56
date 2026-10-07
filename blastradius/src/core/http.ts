@@ -153,8 +153,9 @@ export class SkippedHosts {
  * raw.githubusercontent.com are CDNs built for npm install / git-raw request rates, so the npm
  * packument and FUNDING.yml lookups are not throttled to 10 requests per second.
  */
-// Open Collective's public GraphQL API answers 429 to bursts (seen in the live hammer run): one request a second.
-export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25, 'api.opencollective.com': 1000 };
+// Open Collective's public GraphQL API answers 429 to bursts, even at one a second when several scans run
+// at once (live hammer runs): one request every 3 s. Set OPENCOLLECTIVE_API_KEY for a higher limit.
+export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25, 'api.opencollective.com': 3000 };
 
 export class OfflineMissError extends Error {
   constructor(

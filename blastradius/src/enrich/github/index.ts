@@ -70,6 +70,11 @@ export interface GithubEnricherOptions {
   maxRepos?: number;
   /** Parallel repo lookups (default 8). */
   concurrency?: number;
+  /**
+   * Open Collective personal token (header Api-Key) for a higher rate limit. Defaults to
+   * $OPENCOLLECTIVE_API_KEY, sent only to the real Open Collective API.
+   */
+  openCollectiveApiKey?: string;
 }
 
 const SOURCE = 'github';
@@ -78,6 +83,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
   const apiBase = (opts.apiBase ?? GITHUB_API).replace(/\/+$/, '');
   const rawBase = (opts.rawBase ?? GITHUB_RAW).replace(/\/+$/, '');
   const ocUrl = opts.openCollectiveUrl ?? OPEN_COLLECTIVE_API;
+  const ocKey = opts.openCollectiveApiKey ?? (ocUrl === OPEN_COLLECTIVE_API ? process.env.OPENCOLLECTIVE_API_KEY : undefined);
 
   return {
     name: SOURCE,
@@ -236,7 +242,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
       async function fetchOpenCollective(slug: string) {
         if (!OC_SLUG_RE.test(slug)) return undefined;
         try {
-          const res = await ctx.http.fetchJsonOrNull<OpenCollectiveResponse>(ocUrl, { method: 'POST', body: openCollectiveRequestBody(slug) });
+          const res = await ctx.http.fetchJsonOrNull<OpenCollectiveResponse>(ocUrl, { method: 'POST', body: openCollectiveRequestBody(slug), ...(ocKey ? { headers: { 'Api-Key': ocKey } } : {}) });
           if (!res) return undefined;
           return parseOpenCollective(res, slug, { includeIndividuals: opts.includeIndividualBackers, maxBackers: opts.maxBackers });
         } catch (err) {

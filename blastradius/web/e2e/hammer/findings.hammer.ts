@@ -205,7 +205,10 @@ test.describe('findings at scale', () => {
       if (asc[0] !== minScore) c.fail(`lowest risk shown first is ${asc[0]}, API minimum is ${minScore}`);
       const comp = table.getByRole('columnheader', { name: /Component/ });
       await comp.getByRole('button').click();
-      const names = (await rowsLoc(page).locator('td:nth-child(5) span.font-mono').allInnerTexts()).slice(0, 20);
+      // Find the Component column by its header, not by position (columns can be reordered or hidden).
+      const headers = await table.getByRole('columnheader').allInnerTexts();
+      const col = headers.findIndex((h) => /^Component/.test(h.trim())) + 1;
+      const names = (await rowsLoc(page).locator(`td:nth-child(${col}) span.font-mono`).allInnerTexts()).slice(0, 20);
       const sorted = [...names].sort((a, b) => a.localeCompare(b));
       if (names.join('|') !== sorted.join('|') && names.join('|') !== [...sorted].reverse().join('|')) c.fail(`Component sort is not alphabetical: ${names.slice(0, 6).join(', ')}`);
       // Back to the default.

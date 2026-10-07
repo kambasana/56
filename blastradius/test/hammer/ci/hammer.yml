@@ -42,6 +42,8 @@ jobs:
     env:
       HAMMER_MODE: ${{ inputs.mode }}
       GITHUB_TOKEN: ${{ secrets.HAMMER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+      # Optional: an Open Collective personal token raises its rate limit (funding lookups).
+      OPENCOLLECTIVE_API_KEY: ${{ secrets.OPENCOLLECTIVE_API_KEY }}
     steps:
       # The runner context is not available in job-level env, so set these paths here.
       - name: Set paths
