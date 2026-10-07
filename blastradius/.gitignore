@@ -6,3 +6,6 @@ out/
 coverage/
 test-results/
 playwright-report/
+
+# Local perf comparison builds
+.perf-before/
