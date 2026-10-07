@@ -3,7 +3,7 @@
  *
  * 1. Resolve which GitHub repo each component declares:
  *    - npm: package.json `repository` of the scanned version (packument fetched
- *      through the shared, memoised npm helper), or `repo` facts passed in via
+ *      through the shared npm helper and HTTP cache), or `repo` facts passed in via
  *      `repoFacts`;
  *    - GitHub Actions: the action's owner/repo.
  * 2. GET https://api.github.com/repos/{owner}/{repo} (GITHUB_TOKEN if set).
@@ -277,8 +277,8 @@ export function parseRepoResponse(data: GithubRepoResponse): ParsedRepo | undefi
 
 /**
  * Default target resolution. npm: from `repo`/`funding` facts when supplied,
- * otherwise from the packument (memoised per HttpClient, so normally already
- * fetched by the npm enricher). GitHub Actions: owner/repo of the action.
+ * otherwise from the packument (through the HttpClient cache, so normally
+ * already fetched by the npm enricher). GitHub Actions: owner/repo of the action.
  */
 export async function resolveRepoTargets(inv: Inventory, ctx: EnrichContext, repoFacts?: readonly Fact[]): Promise<GithubRepoTarget[]> {
   const targets: GithubRepoTarget[] = [];

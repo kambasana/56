@@ -198,6 +198,17 @@ CREATE TABLE invite (
 CREATE INDEX invite_org_email ON invite(org_id, email);
 `,
   },
+  {
+    version: 3,
+    name: 'report json sha256',
+    sql: `
+-- SHA-256 of the exact bytes of GET /api/reports/:scanId.json (the rendered JSON report), so
+-- the Reports page shows a hash anyone can check against the download. result_sha256 stays the
+-- hash of the stored (compact) ScanResult. Rows stored before this migration are filled in on
+-- first listing.
+ALTER TABLE scan ADD COLUMN report_sha256 TEXT;
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

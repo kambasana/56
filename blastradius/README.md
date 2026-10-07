@@ -99,6 +99,8 @@ blastradius: test/fixtures/e2e-repo
 
 All requests go through one HTTP client per scan, with an on-disk cache (24 h TTL), per-host rate limiting and retry with backoff. The cache and npm snapshots live in a per-user cache directory, never in the working directory: a scanned checkout cannot supply its own cached responses. A cache directory that resolves inside the scan target is disabled with a warning, and cache entries with a missing or future timestamp are ignored. Set `GITHUB_TOKEN` for higher GitHub rate limits; it is only ever sent to `api.github.com`.
 
+Behind an egress proxy, set `HTTPS_PROXY` (and/or `HTTP_PROXY`; `NO_PROXY` lists hosts to reach directly, including suffixes such as `.corp.example` and CIDRs such as `10.0.0.0/8`). Node's `fetch` ignores these variables by itself; the CLI (`scan` and `serve`) routes its requests through the proxy with an HTTP CONNECT tunnel (see `src/core/proxy.ts`). Git clones use git's own proxy settings, which read the same variables.
+
 **Network access:** OSV, deps.dev, Scorecard and the GitHub API need outbound network access. In the sandbox this was built in, those hosts are blocked (GitHub returns 403 without a token) and only `registry.npmjs.org` is reachable. Every enricher therefore works from recorded fixtures, and the whole test suite runs offline. Run online elsewhere to get live data. A lookup that fails becomes a warning in the report; it never aborts the scan.
 
 ### Offline / fixtures mode

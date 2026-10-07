@@ -12,6 +12,6 @@
   package.json#funding, via Open Collective GraphQL v2. Organisations only unless
   `includeIndividualBackers: true`.
 
-Repos are resolved from npm packuments (shared memoised fetch), from earlier `repo`/`funding` facts
+Repos are resolved from npm packuments (the npm helper, answered from the HTTP cache), from earlier `repo`/`funding` facts
 (`repoFacts: () => facts`), or a custom `resolveTargets`. GitHub Actions components map to their owner/repo.
 A 403/429 from the API stops further lookups for the scan (one warning). Fixtures: `test/fixtures/github/`.

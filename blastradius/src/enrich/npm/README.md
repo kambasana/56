@@ -1,7 +1,8 @@
 # enrich/npm — npm registry enricher
 
-`createNpmEnricher(opts?)` reads `GET https://registry.npmjs.org/{name}` once per package (memoised per
-`HttpClient`) and emits, for each scanned version (source `npm`):
+`createNpmEnricher(opts?)` reads `GET https://registry.npmjs.org/{name}` once per package (concurrent requests
+share one fetch, and the `HttpClient` cache answers later ones; only the fields the enrichers read are kept,
+so a large scan does not hold every full packument in memory) and emits, for each scanned version (source `npm`):
 
 | kind | subject | derivation |
 |---|---|---|

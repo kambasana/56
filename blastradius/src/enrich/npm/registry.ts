@@ -31,8 +31,9 @@ export function npmPackagePage(name: string, version?: string): string {
 const memo = new WeakMap<HttpClient, Map<string, Promise<Packument | null>>>();
 
 /**
- * Fetch a packument through the shared HttpClient. Results are memoised per
- * client, so the GitHub enricher can reuse what the npm enricher fetched.
+ * Fetch a packument through the shared HttpClient. Concurrent requests for the same package
+ * share one fetch; later ones are answered by the HttpClient's cache. Only the fields the
+ * enrichers read are kept (slimPackument).
  * Returns null for unknown packages (404). Throws HttpError / OfflineMissError.
  */
 export function fetchPackument(http: HttpClient, name: string, registry: string = NPM_REGISTRY): Promise<Packument | null> {
@@ -44,12 +45,66 @@ export function fetchPackument(http: HttpClient, name: string, registry: string 
   }
   let p = byUrl.get(url);
   if (!p) {
-    p = http.fetchJsonOrNull<unknown>(url).then((data) => (isObject(data) ? (data as Packument) : null));
-    // Do not memoise failures: a later caller may retry.
-    p.catch(() => byUrl.delete(url));
+    p = http.fetchJsonOrNull<unknown>(url).then((data) => (isObject(data) ? slimPackument(data) : null));
+    // Only requests in flight are shared. A settled packument is not kept for the rest of the scan
+    // (thousands of them do not fit in memory on a large monorepo); a later caller gets it again
+    // from the HttpClient's disk cache. Failures are never kept either: a later caller may retry.
+    const done = () => {
+      if (byUrl.get(url) === p) byUrl.delete(url);
+    };
+    p.then(done, done);
     byUrl.set(url, p);
   }
   return p;
+}
+
+/** Top-level packument fields read by the npm and GitHub enrichers (see types.ts). */
+const PACKUMENT_FIELDS = ['_id', 'name', 'dist-tags', 'versions', 'time', 'maintainers', 'repository'] as const;
+/** Version-manifest fields read by the enrichers (see NpmVersionManifest). */
+const MANIFEST_FIELDS = [
+  'name',
+  'version',
+  '_npmUser',
+  'maintainers',
+  'scripts',
+  'dependencies',
+  'optionalDependencies',
+  'repository',
+  'funding',
+  'deprecated',
+  'gypfile',
+  'hasInstallScript',
+] as const;
+
+function pick(src: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) if (Object.hasOwn(src, k)) out[k] = src[k];
+  return out;
+}
+
+/**
+ * Keep only the packument fields the enrichers read. Packuments are memoised for the whole scan
+ * (the GitHub enricher reuses them), and a full one carries READMEs, descriptions, keywords and
+ * every version's devDependencies, files, bin, engines and dist (tarball, integrity, signatures):
+ * a large monorepo scan held thousands of them at once (2+ GB). Every derivation (packument.ts,
+ * the GitHub repo lookup) sees exactly the same values for the fields it reads.
+ */
+export function slimPackument(data: Record<string, unknown>): Packument {
+  const out = pick(data, PACKUMENT_FIELDS);
+  if (isObject(data.versions)) {
+    const versions: Record<string, unknown> = {};
+    for (const [v, m] of Object.entries(data.versions)) {
+      if (!isObject(m)) {
+        versions[v] = m;
+        continue;
+      }
+      const slim = pick(m, MANIFEST_FIELDS);
+      if (Object.hasOwn(m, 'dist')) slim.dist = isObject(m.dist) ? pick(m.dist, ['attestations']) : m.dist;
+      versions[v] = slim;
+    }
+    out.versions = versions;
+  }
+  return out as Packument;
 }
 
 export function isObject(v: unknown): v is Record<string, unknown> {

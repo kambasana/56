@@ -1,8 +1,10 @@
 /**
  * Scans: queue -> running -> succeeded | failed. A succeeded scan stores the engine ScanResult
- * JSON (plus its SHA-256), a summary, the inventory's asset metadata and the finding rows.
+ * JSON (plus its SHA-256 and the SHA-256 of its JSON report download), a summary, the
+ * inventory's asset metadata and the finding rows.
  */
 import { createHash } from 'node:crypto';
+import { renderJson } from '../../report/json.js';
 import type { Page, ReportFormat, ReportRow, Scan, ScanRef, ScanStatus, ScanSummary } from '../api-types.js';
 import { REPORT_FORMATS } from '../api-types.js';
 import type { Inventory, ScanResult } from '../../core/types.js';
@@ -142,25 +144,40 @@ export interface CompleteScanInput {
   storeInventory?: boolean;
 }
 
+function sha256Hex(text: string): string {
+  return createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+/**
+ * SHA-256 of the exact bytes GET /api/reports/:scanId.json sends (UTF-8 of renderJson). The
+ * JSON report adds derived fields and is pretty-printed, so it differs from the stored compact
+ * ScanResult; this is the hash a downloader can check with `sha256sum`.
+ */
+export function reportJsonSha256(result: ScanResult): string {
+  return sha256Hex(renderJson(result));
+}
+
 /** Store the result and finding rows, and mark the scan succeeded, atomically. */
 export function completeScan(s: Store, scanId: string, input: CompleteScanInput): Scan {
   return tx(s, () => {
     const row = requireStatus(s, scanId, ['queued', 'running']);
     if (input.commit !== undefined) setScanCommit(s, scanId, input.commit);
     const resultJson = JSON.stringify(input.result);
-    const sha256 = createHash('sha256').update(resultJson, 'utf8').digest('hex');
+    const sha256 = sha256Hex(resultJson);
+    const reportSha256 = reportJsonSha256(input.result);
     const assets = assetMetaFromInventory(input.inventory);
     const at = nowIso(s);
     run(
       s,
       `UPDATE scan SET status = 'succeeded', finished_at = ?, started_at = COALESCE(started_at, ?), error = NULL,
-         schema_version = ?, result_json = ?, result_sha256 = ?, summary_json = ?, assets_json = ?, inventory_json = ?
+         schema_version = ?, result_json = ?, result_sha256 = ?, report_sha256 = ?, summary_json = ?, assets_json = ?, inventory_json = ?
        WHERE id = ?`,
       at,
       at,
       input.result.schemaVersion,
       resultJson,
       sha256,
+      reportSha256,
       JSON.stringify(summarizeResult(input.result)),
       JSON.stringify(assets),
       input.inventory && input.storeInventory !== false ? JSON.stringify(input.inventory) : null,
@@ -300,6 +317,16 @@ export function reportDownloads(scanId: string): Record<ReportFormat, string> {
   return Object.fromEntries(REPORT_FORMATS.map((f) => [f, `/api/reports/${scanId}.${f}`])) as Record<ReportFormat, string>;
 }
 
+/** Scans stored before report_sha256 existed: hash their JSON report once and keep it. */
+function backfillReportSha256(s: Store, scanId: string): string {
+  const r = get<{ result_json: string | null }>(s, 'SELECT result_json FROM scan WHERE id = ?', scanId);
+  const result = parseJson<ScanResult | null>(r?.result_json, null);
+  if (!result) return '';
+  const sha = reportJsonSha256(result);
+  run(s, 'UPDATE scan SET report_sha256 = ? WHERE id = ? AND report_sha256 IS NULL', sha, scanId);
+  return sha;
+}
+
 /** GET /api/reports: one row per succeeded scan, newest first. `projectIds` limits visibility. */
 export function listReports(
   s: Store,
@@ -320,9 +347,9 @@ export function listReports(
   }
   const w = where.join(' AND ');
   const total = get<{ n: number }>(s, `SELECT count(*) AS n FROM scan sc WHERE ${w}`, ...params)?.n ?? 0;
-  const rows = all<{ id: string; project_id: string; project_name: string; created_at: string; summary_json: string | null; result_sha256: string }>(
+  const rows = all<{ id: string; project_id: string; project_name: string; created_at: string; summary_json: string | null; report_sha256: string | null }>(
     s,
-    `SELECT sc.id, sc.project_id, p.name AS project_name, sc.created_at, sc.summary_json, sc.result_sha256
+    `SELECT sc.id, sc.project_id, p.name AS project_name, sc.created_at, sc.summary_json, sc.report_sha256
      FROM scan sc JOIN project p ON p.id = sc.project_id WHERE ${w}
      ORDER BY sc.created_at DESC, sc.rowid DESC LIMIT ? OFFSET ?`,
     ...params,
@@ -336,7 +363,7 @@ export function listReports(
       createdAt: r.created_at,
       counts: parseJson<ScanSummary | null>(r.summary_json, null)?.counts ?? emptyCounts(),
       downloads: reportDownloads(r.id),
-      sha256: r.result_sha256,
+      sha256: r.report_sha256 ?? backfillReportSha256(s, r.id),
     })),
     total,
     nextCursor: nextCursorFor(offset, rows.length, total),

@@ -595,7 +595,10 @@ export interface ReportRow {
   counts: Record<RiskLevel, number>;
   /** Download paths, e.g. "/api/reports/scan_ab12.html". */
   downloads: Record<ReportFormat, string>;
-  /** SHA-256 hex of the stored JSON ScanResult (the snapshot). */
+  /**
+   * SHA-256 hex of the exact bytes of the JSON download (`downloads.json`), so
+   * `sha256sum blastradius-<scanId>.json` prints the same value.
+   */
   sha256: string;
 }
 

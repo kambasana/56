@@ -129,6 +129,12 @@ Permissions are data (`permissions.ts`):
 - **Scan polling:** every `Scan` carries `updatedAt`, the latest of `createdAt`, `startedAt` and `finishedAt`. `GET /api/projects/:id/scans` also returns `serverTime`. To poll for new and updated scans without dropping pages already loaded, pass the previous `serverTime` as `?updatedSince=`. The response then holds only scans whose `updatedAt` is at or after it, still newest first and pageable with `cursor`. Merge them into the loaded list by id. A row that changed exactly at `serverTime` can come back twice. A malformed `updatedSince` gets 400.
 - **Scan reference date:** scans run as of the current time. `serve --as-of` sets the time for every scan. `serve --dev-seed` replays the recorded fixtures as of 2018-11-27, but only for projects whose local target is inside `test/fixtures`; those scans run offline. Every other project scans with the real current date.
 - **Report downloads:** `:scanId` must match `^[A-Za-z0-9_-]+$` and must belong to the caller's org. Responses carry `Content-Disposition: attachment`. HTML reports are served with `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:`.
+- **Report hash:** `ReportRow.sha256` (the SHA-256 column on the Reports page) is the SHA-256 of the exact bytes of `GET /api/reports/:scanId.json`, the pretty-printed JSON report with its derived fields. It is computed when the scan completes; scans stored before it existed get it on first listing. It is not the hash of the stored compact `ScanResult` (that stays internal as `result_sha256`). To verify a download:
+  ```sh
+  curl -fsS -b "br_session=$SESSION" -o blastradius-$SCAN.json "$BASE/api/reports/$SCAN.json"   # or the Download > JSON menu
+  sha256sum blastradius-$SCAN.json    # prints the value shown on the Reports page
+  ```
+  Hash the file as saved, without re-formatting it (`jq` or a re-serialisation changes the bytes).
 - **Changes:** the diff compares the findings of two succeeded scans of one project by purl. Change types: new_finding, resolved, risk_up, risk_down, new_reason. Reviewing a change is deferred, so act on the finding instead.
 - **Graphs:** always scoped to a finding or a node. Nodes are capped at the project tier's `graphNodeCap`, and anything over the cap collapses into `group` nodes with `truncated: true`.
 - **Deferred in 4a:** send_to_destinations, build_reports (custom report builder and signing), review_entity_links and manage_integrations. They exist in the catalogue and in role editing, but no endpoint uses them yet.

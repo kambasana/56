@@ -2,7 +2,7 @@
  * Presentational pieces shared by the Track D screens, composed from the shadcn/ui components
  * in @/components/ui (Badge, Card, Popover + Command, HoverCard, Skeleton) and theme tokens.
  */
-import type { ComponentProps, ReactNode } from 'react';
+import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Check, CircleCheck, CircleDashed, CirclePlus, CircleX, LoaderCircle } from 'lucide-react';
 import type { FindingStatus, RiskLevel, ScanStatus } from '@server/api-types';
 import { Badge } from '@/components/ui/badge';
@@ -227,11 +227,26 @@ export function DetailList({ items, className }: { items: [term: ReactNode, valu
 /**
  * Text clamped to `lines` lines; hovering (or focusing) shows the whole text in a HoverCard.
  * The full text stays in the DOM, so screen readers and the table filter see all of it.
+ *
+ * Pressing the pointer on the text (e.g. clicking a table row to open its side panel) closes the
+ * card and keeps it closed until the pointer leaves: otherwise the pending open delay fires after
+ * the panel has opened, the card lands on top of it and swallows the first Escape.
  */
 export function ClampedText({ children, full, lines = 2, className }: { children: ReactNode; full: ReactNode; lines?: 1 | 2 | 3; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const suppressed = useRef(false);
   return (
-    <HoverCard openDelay={250} closeDelay={80}>
-      <HoverCardTrigger asChild>
+    <HoverCard openDelay={250} closeDelay={80} open={open} onOpenChange={(next) => setOpen(next && !suppressed.current)}>
+      <HoverCardTrigger
+        asChild
+        onPointerDown={() => {
+          suppressed.current = true;
+          setOpen(false);
+        }}
+        onPointerLeave={() => {
+          suppressed.current = false;
+        }}
+      >
         <span className={cn('block', lines === 1 ? 'line-clamp-1' : lines === 2 ? 'line-clamp-2' : 'line-clamp-3', className)}>{children}</span>
       </HoverCardTrigger>
       <HoverCardContent align="start" className="w-96 text-sm">

@@ -4,6 +4,7 @@ import { resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { defaultCacheDir } from './core/paths.js';
+import { installEnvProxy } from './core/proxy.js';
 import type { RiskLevel } from './core/types.js';
 import { DEFAULT_KB_DIR, OUTPUT_FORMATS, scan, validateKb, type OutputFormat, type ScanOptions } from './pipeline.js';
 import { failsThreshold, formatSummary } from './summary.js';
@@ -211,8 +212,13 @@ function isMain(): boolean {
 }
 
 if (isMain()) {
-  buildProgram()
-    .parseAsync(process.argv)
+  // Node's fetch ignores HTTPS_PROXY/HTTP_PROXY on its own; route it through them (NO_PROXY respected).
+  installEnvProxy()
+    .catch((e: unknown) => {
+      process.stderr.write(`blastradius: could not set up the HTTPS_PROXY/HTTP_PROXY dispatcher: ${(e as Error).message}\n`);
+      return false;
+    })
+    .then(() => buildProgram().parseAsync(process.argv))
     .catch((e: unknown) => {
       process.stderr.write(`blastradius: ${(e as Error).message}\n`);
       process.exitCode = 1;

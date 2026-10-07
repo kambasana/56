@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { listAudit } from './audit.js';
 import { createUser } from './auth.js';
-import { all, openStore, StoreError, type Store } from './db.js';
+import { all, openStore, run, StoreError, type Store } from './db.js';
+import { renderReport } from '../../report/index.js';
 import { createOrg } from './orgs.js';
 import {
   classifyTarget,
@@ -117,6 +118,24 @@ describe('scans', () => {
     expect(f).toMatchObject({ status: 'failed', error: 'clone failed: timeout', summary: null });
     expect(listScans(s, orgId, p.id).items.map((x) => x.id)).toEqual([q2.id, q.id]);
     expect(code(() => setScanCommit(s, q2.id, 'not-a-sha; rm -rf'))).toBe('bad_request');
+  });
+
+  it('lists the SHA-256 of the JSON report download, and backfills rows stored before it existed', () => {
+    const { s, actor, orgId } = setup();
+    const p = createProject(s, orgId, { name: 'app', tier: 'Small', target: '/srv/app' }, actor);
+    const q = enqueueScan(s, orgId, p.id, { requestedBy: actor, offline: true });
+    const result = makeResult([{ name: 'evil', score: 92, factors: ['malware'] }]);
+    completeScan(s, q.id, { result, inventory: makeInventory() });
+    const download = renderReport(getScanResult(s, orgId, q.id)!.result, 'json');
+    const want = createHash('sha256').update(Buffer.from(download, 'utf8')).digest('hex');
+    expect(listReports(s, orgId).items[0]!.sha256).toBe(want);
+    // The snapshot hash is a different thing (compact stored ScanResult).
+    expect(getScanResult(s, orgId, q.id)!.sha256).not.toBe(want);
+
+    // A database from before migration 3: the column is empty until the first listing.
+    run(s, 'UPDATE scan SET report_sha256 = NULL WHERE id = ?', q.id);
+    expect(listReports(s, orgId).items[0]!.sha256).toBe(want);
+    expect(all<{ report_sha256: string | null }>(s, 'SELECT report_sha256 FROM scan WHERE id = ?', q.id)[0]!.report_sha256).toBe(want);
   });
 
   it('fails interrupted scans on restart', () => {

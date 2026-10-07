@@ -156,7 +156,7 @@ export default function Reports() {
         {list.error && list.items.length > 0 && <ErrorAlert>Could not load more reports: {list.error.message}</ErrorAlert>}
         <SectionCard
           title="History"
-          description="Every succeeded scan is a frozen snapshot. Reports are generated from it, so they can be reproduced later; the SHA-256 is of the stored JSON result."
+          description="Every succeeded scan is a frozen snapshot. Reports are generated from it, so they can be reproduced later; the SHA-256 is of the JSON download, byte for byte (check it with sha256sum)."
           contentClassName="flex"
         >
           {list.error && list.items.length === 0 ? (

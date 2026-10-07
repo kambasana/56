@@ -3,6 +3,8 @@
  * scrollable regions), the sidebar rail over table rows, the mobile nav sheet staying open,
  * 403s from the nav for roles without the projects page, and the Blast column precision.
  */
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { devProject, login } from './helpers';
@@ -114,4 +116,78 @@ test('mobile: the nav sheet closes after choosing a page', async ({ page }) => {
     await sheet.getByRole('link', { name, exact: true }).click();
     await expect(sheet).toBeHidden();
   }
+});
+
+test.describe('hammer round 2', () => {
+  test('Findings: clicking a row closes the Top reason hover card, and Escape closes the panel', async ({ page }) => {
+    await login(page, 'admin');
+    const project = await devProject(page);
+    await page.goto(`/projects/${project}/findings`);
+    const table = page.getByRole('table').first();
+    const trigger = table.locator('tbody tr [data-slot=hover-card-trigger]').first();
+    await expect(trigger).toBeVisible();
+    const card = page.locator('[data-slot=hover-card-content]');
+    const panel = page.getByRole('dialog');
+    // Press near the left edge of the reason text: the pointer stays on it, outside the panel
+    // that opens on the right (as when clicking the middle of a wide row).
+    const at = { position: { x: 8, y: 6 } };
+
+    // 1) The card is already open when the row is clicked.
+    await trigger.hover(at);
+    await expect(card).toBeVisible();
+    await trigger.click(at);
+    await expect(panel).toBeVisible();
+    await expect(card).toHaveCount(0);
+    await page.waitForTimeout(600); // longer than the card's open delay, pointer still on the text
+    await expect(card).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+
+    // 2) The row is clicked before the open delay ran out: the pending open must not land on the panel.
+    await page.mouse.move(0, 0);
+    await expect(card).toHaveCount(0);
+    await trigger.click(at);
+    await expect(panel).toBeVisible();
+    await page.waitForTimeout(600);
+    await expect(card).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+  });
+
+  test('user menu stays open through a transient viewport resize (full-page screenshot)', async ({ page }) => {
+    // A short viewport makes the page taller than the window, so Chromium resizes it (through
+    // 1x1) to take a full-page capture. That used to flip the sidebar to its mobile tree and
+    // back, remounting the open user menu closed.
+    await page.setViewportSize({ width: 1440, height: 400 });
+    await login(page, 'developer');
+    await settle(page);
+    await page.getByTestId('nav-user').click();
+    await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
+    await page.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' });
+    await page.getByRole('menuitem', { name: 'Sign out' }).click({ timeout: 5_000 });
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('Reports: the SHA-256 shown equals sha256 of the JSON download', async ({ page }) => {
+    await login(page, 'admin');
+    const project = await devProject(page);
+    await page.goto(`/reports?project=${project}`);
+    const table = page.getByRole('table').first();
+    const row = table.locator('tbody tr').first();
+    await expect(row).toBeVisible();
+    // The full hash is in the tooltip of the short one.
+    const headers = await table.getByRole('columnheader').allInnerTexts();
+    const idx = headers.findIndex((h) => /SHA-256/.test(h));
+    expect(idx).toBeGreaterThanOrEqual(0);
+    await row.locator('td').nth(idx).locator('span[tabindex="0"]').focus();
+    const tip = page.getByRole('tooltip');
+    await expect(tip).toHaveText(/^[0-9a-f]{64}$/);
+    const shown = (await tip.innerText()).trim();
+
+    await row.getByRole('button', { name: /More download formats/ }).click();
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /Download JSON report/ }).click()]);
+    const file = await download.path();
+    const bytes = readFileSync(file);
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(shown);
+  });
 });

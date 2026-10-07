@@ -2,6 +2,7 @@
  * API route tests through Hono's app.request(): auth, CSRF, RBAC denials, the scan lifecycle on
  * the offline e2e fixture, reports, graphs, and path traversal rejection. No port, no network.
  */
+import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -352,6 +353,9 @@ describe('seeded fixture scan and read endpoints', () => {
     expect(html.headers.get('content-security-policy')).toBe("default-src 'none'; style-src 'unsafe-inline'; img-src data:");
     const json = await call('GET', row.downloads.json, { as: 'auditor' });
     expect(json.headers.get('content-type')).toMatch(/^application\/json/);
+    // The listed SHA-256 is of the exact bytes of the JSON download.
+    const bytes = Buffer.from(await json.arrayBuffer());
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(row.sha256);
     const sarif = await call('GET', row.downloads.sarif, { as: 'auditor' });
     expect(((await sarif.json()) as { version: string }).version).toBe('2.1.0');
     expect((await call('GET', `/api/reports/${row.scanId}.exe`, { as: 'auditor' })).status).toBe(404);
