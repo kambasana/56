@@ -38,14 +38,6 @@ export interface ReplayServer {
   close(): Promise<void>;
 }
 
-/** Every version is malicious when a range starts at 0 and is never fixed. */
-function allVersions(a: Json): boolean {
-  return (a.ranges ?? []).some((r: Json) => {
-    const ev: Json[] = r.events ?? [];
-    return ev.some((e) => e.introduced === '0') && !ev.some((e) => 'fixed' in e || 'last_affected' in e);
-  });
-}
-
 export async function startReplayServer(opts: { clock: Date; dataDir?: string }): Promise<ReplayServer> {
   const dataDir = opts.dataDir ?? DATA_DIR;
   const packuments = new Map(loadDir(join(dataDir, 'registry')).map((p) => [p.name as string, p]));
