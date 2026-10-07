@@ -68,7 +68,7 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 2. **Replay server.** The engine runs against it unchanged.
 3. **Org-wide incident mode.** Engine and server: `/api/search/exposure`, `/api/alerts` and `/api/alerts/check`. Matching takes about 10 ms per incident and needs no re-scan.
 4. **New signal and matching fix.** `provenance_dropped` is a new signal. Advisory ranges now match (node-ipc).
-5. **Proof run.** 15/15 bad releases are critical after their advisory, and 12/16 were flagged before any advisory existed. node-ipc 9.2.2 has no advisory naming it, so it counts for early warning only.
+5. **Proof run.** 15/15 bad releases are critical after their advisory, and 11/16 were flagged before any advisory existed. An earlier count of 12/16 included chalk 5.6.1 by mistake: the recorded data had dropped qix's 2016–2017 chalk releases, so qix looked like a new publisher. The recorder now keeps each earlier publisher's last release. node-ipc 9.2.2 has no advisory naming it, so it counts for early warning only.
 6. **UI.** Home has "Is it anywhere?" and an Alerts card.
 7. **Automatic alerts.** The server re-checks all orgs when the pack refreshes, on a timer and after every scan. New alerts go once to a Slack-compatible webhook (see [WEB-API.md](WEB-API.md)).
 8. **New dependency in a patch release** (`dependency_added`, weight 0.4, SARIF rule BR011). It fires when a patch release adds a runtime dependency the previous release didn't have, **and** that dependency was brand new on npm (first released 30 days or less before). It is dropped when deps.dev shows the dependency has since reached 500 or more dependents. It fires on event-stream 3.3.6 (flatmap-stream) and node-ipc 9.2.2 (peacenotwar). On a real repo (telefonicaid/logops), the plain "any new dependency" version gave 16 medium findings. Requiring a brand-new dependency cut that to 6, all ljharb packages adopting has-tostringtag and call-bind the day they were released. The dependents check removes those when deps.dev is reachable.
@@ -77,7 +77,7 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 **Honest misses** (shown in the report, not hidden):
 - flatmap-stream: a brand-new package. Its parent event-stream 3.3.6 is flagged instead.
 - node-ipc 10.1.x: the same maintainer, with no install script.
-- debug 4.4.2: the same publisher.
+- chalk 5.6.1 and debug 4.4.2: the same publisher (qix, phished), with no install script. Only the advisory catches them.
 
 **Not yet done:**
 - Org membership and funders need the GitHub and Open Collective APIs. Without a GitHub token, the chain stops at npm accounts and repo owner. The hammer runs with a token.

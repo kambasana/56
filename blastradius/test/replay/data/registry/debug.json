@@ -125,6 +125,95 @@
    },
    "dist": {}
   },
+  "0.8.1": {
+   "name": "debug",
+   "version": "0.8.1",
+   "_npmUser": {
+    "name": "tjholowaychuk",
+    "email": "tj@vision-media.ca"
+   },
+   "maintainers": [
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "dependencies": {},
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "0.7.0": {
+   "name": "debug",
+   "version": "0.7.0",
+   "maintainers": [
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "dependencies": {},
+   "dist": {}
+  },
+  "3.1.0": {
+   "name": "debug",
+   "version": "3.1.0",
+   "_npmUser": {
+    "name": "tootallnate",
+    "email": "nathan@tootallnate.net"
+   },
+   "maintainers": [
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "kolban",
+     "email": "kolban1@kolban.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "dependencies": {
+    "ms": "2.0.0"
+   },
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "2.6.7": {
+   "name": "debug",
+   "version": "2.6.7",
+   "_npmUser": {
+    "name": "thebigredgeek",
+    "email": "rhyneandrew@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    }
+   ],
+   "scripts": {},
+   "dependencies": {
+    "ms": "2.0.0"
+   },
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
   "4.3.5": {
    "name": "debug",
    "version": "4.3.5",
@@ -389,6 +478,10 @@
  "time": {
   "created": "2011-11-29T01:11:23.618Z",
   "modified": "2025-09-13T17:25:19.913Z",
+  "0.7.0": "2012-07-09T19:11:59.699Z",
+  "0.8.1": "2014-04-15T02:04:45.652Z",
+  "2.6.7": "2017-05-17T04:33:51.578Z",
+  "3.1.0": "2017-09-26T19:13:51.492Z",
   "4.3.2": "2020-12-09T15:36:20.909Z",
   "4.3.3": "2021-11-27T13:14:24.425Z",
   "4.3.4": "2022-03-17T13:38:47.641Z",

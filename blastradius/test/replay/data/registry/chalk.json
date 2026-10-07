@@ -86,6 +86,83 @@
    "funding": "https://github.com/chalk/chalk?sponsor=1",
    "dist": {}
   },
+  "1.1.0": {
+   "name": "chalk",
+   "version": "1.1.0",
+   "_npmUser": {
+    "name": "jbnicolai",
+    "email": "jappelman@xebia.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "jbnicolai",
+     "email": "jappelman@xebia.com"
+    },
+    {
+     "name": "unicorn",
+     "email": "sindresorhus+unicorn@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "mocha",
+    "bench": "matcha benchmark.js",
+    "coverage": "nyc npm test && nyc report",
+    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
+   },
+   "dependencies": {
+    "has-ansi": "^2.0.0",
+    "strip-ansi": "^3.0.0",
+    "ansi-styles": "^2.1.0",
+    "supports-color": "^2.0.0",
+    "escape-string-regexp": "^1.0.2"
+   },
+   "repository": {
+    "url": "https://github.com/chalk/chalk",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "2.2.2": {
+   "name": "chalk",
+   "version": "2.2.2",
+   "_npmUser": {
+    "name": "qix",
+    "email": "i.am.qix@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "i.am.qix@gmail.com"
+    },
+    {
+     "name": "unicorn",
+     "email": "sindresorhus+unicorn@gmail.com"
+    },
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "xo && tsc --project types && nyc ava",
+    "bench": "matcha benchmark.js",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls"
+   },
+   "dependencies": {
+    "ansi-styles": "^3.1.0",
+    "supports-color": "^4.0.0",
+    "escape-string-regexp": "^1.0.5"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
   "5.4.0": {
    "name": "chalk",
    "version": "5.4.0",
@@ -254,6 +331,8 @@
  "time": {
   "created": "2013-08-03T00:21:56.318Z",
   "modified": "2026-09-27T03:40:44.615Z",
+  "1.1.0": "2015-07-01T13:32:13.906Z",
+  "2.2.2": "2017-10-24T03:20:46.238Z",
   "5.1.2": "2022-10-12T16:31:51.839Z",
   "5.2.0": "2022-12-08T18:46:27.169Z",
   "5.3.0": "2023-06-29T10:58:11.887Z",
