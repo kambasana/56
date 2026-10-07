@@ -107,7 +107,11 @@ for (const s of runner.servers ?? []) {
     HAMMER_SERVER_ASOF: s.asOf,
     HAMMER_KEEP_RESULTS: '1',
   };
-  const r = await runPlaywright(['-c', join(here, 'hammer.config.ts'), ...extra], env);
+  // Quick mode (HAMMER_MODE unset or quick): the dated servers only hold the historical incident
+  // scenarios, so run just the scenario suite there; every feature suite runs once, on "now".
+  const quickDated = process.env.HAMMER_MODE !== 'full' && s.asOf !== 'now';
+  const grep = quickDated && !extra.includes('--grep') ? ['--grep', 'scenarios\\.hammer\\.ts'] : [];
+  const r = await runPlaywright(['-c', join(here, 'hammer.config.ts'), ...grep, ...extra], env);
   ran.push(`${s.name}: exit ${r.status}${r.hung ? ' (runner hung after finishing; stopped)' : ''}`);
   if (r.status !== 0) failed++;
 }
