@@ -1,0 +1,5 @@
+# Bootstrap training only (docs/DATA-ML.md §2.6). Nothing here is needed at scan time.
+lightgbm==4.6.0
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2

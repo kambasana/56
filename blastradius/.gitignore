@@ -9,3 +9,5 @@ playwright-report/
 
 # Local perf comparison builds
 .perf-before/
+pack/model/.cache/
+__pycache__/
