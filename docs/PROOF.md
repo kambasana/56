@@ -4,7 +4,7 @@
 - Bad releases replayed: **16** across 7 incidents.
 - Critical once the advisory exists: **15/15** (1 with no advisory naming the version: node-ipc@9.2.2).
 - Early warning before any advisory: **12/16** (event-stream@3.3.6, ua-parser-js@0.7.29, ua-parser-js@0.8.0, ua-parser-js@1.0.0, coa@2.0.3, rc@1.2.9, node-ipc@9.2.2, chalk@5.6.1, eslint-config-prettier@8.10.1, eslint-config-prettier@10.1.6, nx@21.5.0, nx@20.9.0).
-- Org exposure answered from stored inventories in 62 ms or less per incident.
+- Org exposure answered from stored inventories in 10.5 ms or less per incident.
 
 | Incident | Bad release | Released → advisory | Early warning (release + 1 h) | After advisory | Scanned in |
 |---|---|---|---|---|---|
@@ -27,7 +27,7 @@
 
 ## Org exposure (Acme org, stored inventories, no re-scan)
 
-**event-stream-2018**:  (13 ms)
+**event-stream-2018**:  (10.5 ms)
 - davglass/registry-static: event-stream@3.3.6 [GHSA-mh6f-8j2x-4483] **production**: Direct dependency · used by registry-static (production)
 - davglass/registry-static: flatmap-stream@0.1.1 [GHSA-9x64-5r7x-2q53] **production**: Brought in by event-stream · used by registry-static (production)
 - davglass/registry-static: flatmap-stream@0.1.1 [GHSA-mh6f-8j2x-4483] **production**: Brought in by event-stream · used by registry-static (production)
@@ -35,20 +35,20 @@
 - Esri/a11y-map: flatmap-stream@0.1.1 [GHSA-9x64-5r7x-2q53]: Brought in by npm-run-all · used by a11ymap (dev/test dependencies only)
 - Esri/a11y-map: flatmap-stream@0.1.1 [GHSA-mh6f-8j2x-4483]: Brought in by npm-run-all · used by a11ymap (dev/test dependencies only)
 
-**ua-parser-js-2021**:  (4.4 ms)
+**ua-parser-js-2021**:  (3.5 ms)
 - Esger/Pentominos2: ua-parser-js@0.7.29 [GHSA-pjwm-rvh2-c87w]: Brought in by browser-sync · used by pentomino (dev/test dependencies only)
 
-**coa-rc-2021**: no project pins an affected version. (62 ms)
+**coa-rc-2021**: no project pins an affected version. (2.4 ms)
 
-**node-ipc-2022**: no project pins an affected version. (3.2 ms)
+**node-ipc-2022**: no project pins an affected version. (2.6 ms)
 
-**chalk-debug-2025**:  (4.1 ms)
+**chalk-debug-2025**:  (3.6 ms)
 - FinnLeh/vs-code-obsidian: chalk@5.6.1 [MAL-2025-46969]: Brought in by @vscode/test-electron · used by obsidian-code-sync (dev/test dependencies only)
 - FinnLeh/vs-code-obsidian: debug@4.4.2 [GHSA-4x49-vf9v-38px]: Brought in by @typescript-eslint/parser · used by obsidian-code-sync (dev/test dependencies only)
 - FinnLeh/vs-code-obsidian: debug@4.4.2 [MAL-2025-46974]: Brought in by @typescript-eslint/parser · used by obsidian-code-sync (dev/test dependencies only)
 
-**eslint-config-prettier-2025**: no project pins an affected version. (2.8 ms)
+**eslint-config-prettier-2025**: no project pins an affected version. (4.4 ms)
 
-**nx-2025**: no project pins an affected version. (2.5 ms)
+**nx-2025**: no project pins an affected version. (2.4 ms)
 
 Data: test/replay/data (recorded once; see manifest.json). Bad versions were unpublished by npm and are reconstructed from their advisories; everything else is recorded.

@@ -224,3 +224,23 @@ describe('entityPathsToIncidents', () => {
     expect(paths[1]!.confidence).toBeCloseTo(0.81);
   });
 });
+
+describe('ownershipOf (who is behind a package, incident or not)', () => {
+  it('lists accounts and the owner org, then the funders one hop further, without any incident', () => {
+    const g = buildEntityGraph(resolveEntities(syntheticFacts(), { incidents: [] }));
+    const own = g.ownershipOf(npmPurl('foo', '1.2.3'));
+    const pairs = own.map((e) => `${e.from} -${e.relation}-> ${e.entityId}`);
+    expect(pairs).toEqual(expect.arrayContaining([`${FOO} -maintains-> account:npm/alice`, `${FOO} -owns-> org:github/acme`, 'org:github/acme -funds-> funder:opencollective/acme-collective']));
+    // Nearest first, every entry carries evidence, never a package node, no unreviewed links.
+    expect(own.findIndex((e) => e.from !== FOO)).toBeGreaterThan(own.findLastIndex((e) => e.from === FOO));
+    for (const e of own) {
+      expect(e.evidence!.length).toBeGreaterThan(0);
+      expect(e.entityId.startsWith('pkg:')).toBe(false);
+      expect(e.reviewed || e.method === 'deterministic').toBe(true);
+    }
+    expect(g.ownershipOf(npmPurl('foo'), 1).every((e) => e.from === FOO)).toBe(true);
+    expect(g.ownershipOf(npmPurl('foo'), 2, 2)).toHaveLength(2);
+    expect(g.ownershipOf('not a purl')).toEqual([]);
+    expect(g.ownershipOf(npmPurl('foo'))).toEqual(own); // stable
+  });
+});

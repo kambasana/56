@@ -80,7 +80,7 @@ export function FindingPanel({ row, onClose, onUpdated }: { row: FindingRow; onC
             <AssetPaths assets={data.assets} maxPaths={3} maxAssets={8} />
           </Section>
           <Section title="Who's behind it">
-            <BehindIt chain={data.entityChain} />
+            <BehindIt chain={data.entityChain} ownership={data.ownership} />
           </Section>
           <Section title="Evidence" hint="Every claim, with its source">
             <EvidenceList detail={data} />

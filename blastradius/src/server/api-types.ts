@@ -417,6 +417,8 @@ export interface FindingDetail extends FindingRow {
   /** Affected assets with every path (engine blastRadius.assets, joined with asset metadata). */
   assets: AssetPathView[];
   entityChain: EntityChainEntry[];
+  /** Who is behind the package, incident or not (engine Finding.behind). */
+  ownership: EntityChainEntry[];
   /** The untouched engine object, for export and for screens that need more. */
   finding: Finding;
   /** Same purl across this project's previous scans, newest first. */

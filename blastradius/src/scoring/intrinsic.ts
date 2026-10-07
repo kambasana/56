@@ -2,7 +2,7 @@
  * Intrinsic risk of a component version (PLAN §3.6 step 1):
  *   intrinsic(p) = 1 − Π (1 − wᵢ · fᵢ(p)),  with a malware override to 1.0.
  */
-import { factsFor, type Component, type Fact, type Incident, type Reason } from '../core/types.js';
+import { factsFor, npmPurl, type Component, type Fact, type Incident, type Reason } from '../core/types.js';
 import {
   ABANDONED_DAYS,
   ABANDONED_VALUES,
@@ -51,6 +51,9 @@ export function vulnValue(v: { cvss?: number; severity: string; epss?: number; k
 export function ownershipDecay(days: number): number {
   return clamp01(1 - days / OWNERSHIP_DECAY_DAYS);
 }
+
+/** Dependents (deps.dev) above which a once-new dependency counts as established. */
+const ESTABLISHED_DEPENDENTS = 500;
 
 export function scoreIntrinsic(
   component: Component,
@@ -243,15 +246,29 @@ export function scoreIntrinsic(
     });
   }
 
-  // New dependency in a patch release (event-stream 3.3.6 → flatmap-stream, node-ipc 9.2.2 → peacenotwar).
+  // New dependency in a patch release, and that dependency is itself brand new on the registry
+  // (event-stream 3.3.6 → flatmap-stream, node-ipc 9.2.2 → peacenotwar). Adding an established
+  // package in a patch is routine and does not count.
   const dep = mine.find((f): f is Extract<Fact, { kind: 'dependency_added' }> => f.kind === 'dependency_added');
-  if (dep && dep.value.added.length > 0) {
-    const names = dep.value.added.slice(0, 5).map((n) => short(n, 60));
+  // A brand-new dependency that has since become a common building block (has-tostringtag,
+  // call-bind: thousands of dependents) is a maintainer splitting code, not an attack; without
+  // dependents data (offline) the signal stays.
+  const young = (dep?.value.young ?? []).filter((y) => {
+    let count: number | undefined;
+    try {
+      count = factsFor(facts, npmPurl(y.name)).find((f): f is Extract<Fact, { kind: 'dependents' }> => f.kind === 'dependents')?.value.count;
+    } catch {
+      return true;
+    }
+    return !(typeof count === 'number' && count >= ESTABLISHED_DEPENDENTS);
+  });
+  if (dep && young.length > 0) {
+    const names = young.slice(0, 5).map((y) => `${short(y.name, 60)} (${y.daysBeforeRelease > 0 ? `first released ${y.daysBeforeRelease} days earlier` : 'first released the same day or later'})`);
     cands.push({
       factor: 'dependency_added',
       value: 1,
       weight: w.dependency_added,
-      detail: `Patch release ${short(dep.value.version, 40)} added ${dep.value.added.length === 1 ? 'a new dependency' : `${dep.value.added.length} new dependencies`} not in ${short(dep.value.previousVersion, 40)}: ${names.join(', ')}${dep.value.added.length > names.length ? ', …' : ''}`,
+      detail: `Patch release ${short(dep.value.version, 40)} added ${young.length === 1 ? 'a brand-new dependency' : `${young.length} brand-new dependencies`} not in ${short(dep.value.previousVersion, 40)}: ${names.join(', ')}${young.length > names.length ? ', …' : ''}`,
       evidence: ev(dep),
     });
   }

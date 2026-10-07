@@ -11,7 +11,7 @@
  * This module does not apply severity / status / age / hop decay; scoring does. `confidence` on a
  * result is Π(link confidence) × incident-entity confidence, as a convenience.
  */
-import { unversionedPurl, type Entity, type EntityLink, type Incident, type PurlString } from '../core/types.js';
+import { unversionedPurl, type Entity, type EntityChainEntry, type EntityLink, type Incident, type PurlString } from '../core/types.js';
 import type { EntityGraphData } from './resolve.js';
 import { isLinkUsable } from './review.js';
 
@@ -77,6 +77,39 @@ export class EntityGraph {
   /** Usable links touching a node (entity id or unversioned purl). */
   linksOf(id: string): EntityLink[] {
     return (this.adjacency.get(id) ?? []).map((x) => x.link);
+  }
+
+  /**
+   * Who is behind a package, incident or not: breadth-first over its usable links up to `maxHops`
+   * out (package → account / repo owner → org / funder), never through another package. Each
+   * entry runs from the node nearer the package to the one further out; at most `max` entries,
+   * nearest first, then by relation and id so the output is stable.
+   */
+  ownershipOf(purl: PurlString, maxHops = 2, max = 24): EntityChainEntry[] {
+    let start: string;
+    try {
+      start = unversionedPurl(purl);
+    } catch {
+      return [];
+    }
+    const out: EntityChainEntry[] = [];
+    const seen = new Set([start]);
+    let frontier = [start];
+    for (let hop = 0; hop < maxHops && frontier.length > 0 && out.length < max; hop++) {
+      const next: string[] = [];
+      for (const node of frontier) {
+        const edges = [...(this.adjacency.get(node) ?? [])].sort((a, b) => (a.link.relation + a.other < b.link.relation + b.other ? -1 : 1));
+        for (const { link, other } of edges) {
+          if (seen.has(other) || isPurlNode(other)) continue;
+          if (out.length >= max) break;
+          seen.add(other);
+          next.push(other);
+          out.push({ from: node, entityId: other, relation: link.relation, confidence: link.confidence, evidence: [...link.evidence], method: link.method, reviewed: link.reviewed });
+        }
+      }
+      frontier = next;
+    }
+    return out;
   }
 
   /**

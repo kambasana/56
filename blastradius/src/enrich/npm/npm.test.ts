@@ -12,6 +12,7 @@ import {
   createNpmEnricher,
   fundingFromManifestField,
   isPatchBump,
+  markYoungDependencies,
   packumentFacts,
   packumentUrl,
   parseMaintainers,
@@ -182,10 +183,26 @@ describe('event-stream (publisher handover, 2018)', () => {
     const p = await loadPackument('event-stream');
     const [dep, ...rest] = packumentFacts(p, 'event-stream', '3.3.6', { now: NOW }).filter(isFactOf('dependency_added'));
     expect(rest).toHaveLength(0);
-    expect(dep!.value).toEqual({ version: '3.3.6', previousVersion: '3.3.5', added: ['flatmap-stream'] });
+    expect(dep!.value).toEqual({ version: '3.3.6', previousVersion: '3.3.5', added: ['flatmap-stream'], releasedAt: '2018-09-09T08:28:59.503Z', young: [] });
     expect(dep!.evidence).toEqual(['https://www.npmjs.com/package/event-stream/v/3.3.6', 'https://www.npmjs.com/package/event-stream/v/3.3.5']);
     // 3.3.5 added nothing; 4.0.0 is a major bump (dropped flatmap-stream anyway).
     for (const v of ['3.3.5', '4.0.0']) expect(packumentFacts(p, 'event-stream', v, { now: NOW }).filter(isFactOf('dependency_added')), v).toEqual([]);
+  });
+
+  it('marks only brand-new added dependencies as young (unknown ones never count)', async () => {
+    const p = await loadPackument('event-stream');
+    const facts = packumentFacts(p, 'event-stream', '3.3.6', { now: NOW });
+    const day = 86_400_000;
+    const rel = Date.parse('2018-09-09T08:28:59.503Z');
+    const youngOf = (first: number | null | undefined) => {
+      markYoungDependencies(facts, () => first);
+      return (facts.find(isFactOf('dependency_added'))!.value as { young: unknown[] }).young;
+    };
+    expect(youngOf(rel - 4 * day)).toEqual([{ name: 'flatmap-stream', daysBeforeRelease: 4 }]);
+    expect(youngOf(null)).toEqual([{ name: 'flatmap-stream', daysBeforeRelease: 0 }]);
+    expect(youngOf(rel + 60 * day)).toEqual([{ name: 'flatmap-stream', daysBeforeRelease: -60 }]);
+    expect(youngOf(rel - 700 * day)).toEqual([]);
+    expect(youngOf(undefined)).toEqual([]);
   });
 
   it('isPatchBump only accepts same major.minor release versions', () => {

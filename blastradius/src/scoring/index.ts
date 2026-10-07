@@ -90,8 +90,9 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
 
     const entityReasons = ent.reasons.map((r, i) => ({ ...r, contribution: i === 0 ? round((1 - intr.intrinsic) * ent.risk) : 0 }));
     const reasons = sortReasons([...intr.reasons, ...entityReasons]);
+    const behind = paths?.ownershipOf?.(c.purl) ?? [];
     if (noiseRule && reasons.every((r) => isPostureReason(r) || !(r.value > 0))) {
-      health.push({ purl: c.purl, score, reasons });
+      health.push({ purl: c.purl, score, reasons, ...(behind.length ? { behind } : {}) });
       continue;
     }
     const hasInstallScript = intr.reasons.some((r) => r.factor === 'install_script');
@@ -105,6 +106,7 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
       reasons,
       blastRadius: { assets: inbound.assets, score: round(risk * inbound.weightedExposure, 3) },
       entityChain: ent.chain,
+      ...(behind.length ? { behind } : {}),
     });
   }
   findings.sort(compareFindings);

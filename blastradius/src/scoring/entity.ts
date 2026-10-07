@@ -34,6 +34,8 @@ export interface EntityPathLike {
 
 export interface EntityPathProvider {
   entityPathsToIncidents(purl: string, maxHops?: number): EntityPathLike[];
+  /** Who is behind the package, incident or not (EntityGraph.ownershipOf). Optional. */
+  ownershipOf?(purl: string, maxHops?: number): EntityChainEntry[];
 }
 
 export type { EntityChainEntry } from '../core/types.js';

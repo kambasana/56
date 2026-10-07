@@ -36,6 +36,27 @@ const repoAsset = (extra: Partial<Asset> = {}): Asset => ({
   ...extra,
 });
 
+describe('dependency_added (new dependency in a patch release)', () => {
+  const c = comp('node-ipc', '9.2.2');
+  const dep = (young: { name: string; daysBeforeRelease: number }[]) =>
+    makeFact('dependency_added', c.purl, { version: '9.2.2', previousVersion: '9.2.1', added: ['peacenotwar'], releasedAt: daysAgo(10), young }, meta('npm'));
+  const factor = (facts: Fact[]) => scoreIntrinsic(c, facts, { now: NOW }).reasons.find((r) => r.factor === 'dependency_added');
+
+  it('fires only when an added dependency was brand new at release time', () => {
+    expect(factor([dep([{ name: 'peacenotwar', daysBeforeRelease: 6 }])])?.detail).toBe(
+      'Patch release 9.2.2 added a brand-new dependency not in 9.2.1: peacenotwar (first released 6 days earlier)',
+    );
+    expect(factor([dep([])])).toBeUndefined();
+  });
+
+  it('is dropped when that dependency has since become widely used (deps.dev dependents)', () => {
+    const young = dep([{ name: 'peacenotwar', daysBeforeRelease: 0 }]);
+    const dependents = (count: number) => makeFact('dependents', npmPurl('peacenotwar'), { count }, meta('depsdev'));
+    expect(factor([young, dependents(12)])).toBeDefined();
+    expect(factor([young, dependents(5000)])).toBeUndefined();
+  });
+});
+
 describe('intrinsic risk', () => {
   // Regression: one Scorecard viewer link, not an encoded and an unencoded copy.
   it('cites the Scorecard viewer page once', () => {

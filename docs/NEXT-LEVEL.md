@@ -71,7 +71,8 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 5. **Proof run.** 15/15 bad releases are critical after their advisory, and 12/16 were flagged before any advisory existed. node-ipc 9.2.2 has no advisory naming it, so it counts for early warning only.
 6. **UI.** Home has "Is it anywhere?" and an Alerts card.
 7. **Automatic alerts.** The server re-checks all orgs when the pack refreshes, on a timer and after every scan. New alerts go once to a Slack-compatible webhook (see [WEB-API.md](WEB-API.md)).
-8. **New dependency in a patch release** (`dependency_added`, weight 0.4). A patch release adds a runtime dependency the previous release didn't have. It fires on event-stream 3.3.6 (flatmap-stream) and node-ipc 9.2.2 (peacenotwar), and reports SARIF rule BR011.
+8. **New dependency in a patch release** (`dependency_added`, weight 0.4, SARIF rule BR011). It fires when a patch release adds a runtime dependency the previous release didn't have, **and** that dependency was brand new on npm (first released 30 days or less before). It is dropped when deps.dev shows the dependency has since reached 500 or more dependents. It fires on event-stream 3.3.6 (flatmap-stream) and node-ipc 9.2.2 (peacenotwar). On a real repo (telefonicaid/logops), the plain "any new dependency" version gave 16 medium findings. Requiring a brand-new dependency cut that to 6, all ljharb packages adopting has-tostringtag and call-bind the day they were released. The dependents check removes those when deps.dev is reachable.
+9. **Who's behind it, for every package.** Each finding and upkeep entry now carries `behind`: the package's own documented links, up to two hops (npm accounts and repo owner, then their orgs and funders). This no longer depends on an incident. The table's "Behind" column falls back to the repo owner. On the logops scan, 17/17 findings and 402/402 upkeep entries have a chain.
 
 **Honest misses** (shown in the report, not hidden):
 - flatmap-stream: a brand-new package. Its parent event-stream 3.3.6 is flagged instead.
@@ -79,7 +80,7 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 - debug 4.4.2: the same publisher.
 
 **Not yet done:**
-- The "who's behind it" chain (maintainer → org → funder) for ordinary packages, not only incident-linked ones.
+- Org membership and funders need the GitHub and Open Collective APIs. Without a GitHub token, the chain stops at npm accounts and repo owner. The hammer runs with a token.
 
 ## Out of scope for this round
 

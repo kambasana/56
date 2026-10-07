@@ -17,7 +17,7 @@ import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, npmPurl } from '../../core/types.js';
 import type { Component, Fact, Inventory } from '../../core/types.js';
-import { packumentFacts, summarizePackument } from './packument.js';
+import { firstPublishedMs, markYoungDependencies, packumentFacts, summarizePackument } from './packument.js';
 import { NPM_REGISTRY, fetchPackument, isValidNpmName, npmPackagePage } from './registry.js';
 import { NpmSnapshotStore, diffSnapshots } from './snapshots.js';
 import type { NpmMaintainerChangeValue, Packument } from './types.js';
@@ -32,6 +32,8 @@ export {
   derivePublisherChange,
   deriveReleaseAge,
   isPatchBump,
+  markYoungDependencies,
+  firstPublishedMs,
   packumentFacts,
   parseMaintainers,
   summarizePackument,
@@ -89,6 +91,8 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
       const names = [...byName.keys()].sort();
       const offlineMisses: string[] = [];
       const skipped = new SkippedHosts();
+      // First release per package (null: none by ctx.now), for dependency_added.
+      const firstPublished = new Map<string, number | null>();
       await mapLimit(names, concurrency, async (name) => {
         let packument: Packument | null;
         try {
@@ -103,6 +107,7 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
           ctx.warn?.(`npm: package ${name} not found in registry (404)`);
           return;
         }
+        firstPublished.set(name, firstPublishedMs(packument, ctx.now) ?? null);
         const seen = new Set<string>();
         for (const c of byName.get(name)!) {
           if (seen.has(c.version)) continue;
@@ -123,6 +128,21 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
         }
         if (store) facts.push(...(await snapshotFacts(store, packument, name, ctx)));
       });
+      // Added dependencies are usually in the inventory already; fetch the few that are not.
+      const missing = [
+        ...new Set(facts.flatMap((f) => (f.kind === 'dependency_added' ? f.value.added : [])).filter((n) => !firstPublished.has(n) && isValidNpmName(n))),
+      ]
+        .sort()
+        .slice(0, 50);
+      await mapLimit(missing, concurrency, async (name) => {
+        try {
+          const p = await fetchPackument(ctx.http, name, registry);
+          firstPublished.set(name, p ? (firstPublishedMs(p, ctx.now) ?? null) : null);
+        } catch (err) {
+          skipped.add(err); // unknown: never counted as young
+        }
+      });
+      markYoungDependencies(facts, (n) => firstPublished.get(n));
       skipped.flush('npm', ctx.warn);
       if (offlineMisses.length > 0) {
         const shown = offlineMisses.sort().slice(0, 10).map((n) => n.slice(0, 100));

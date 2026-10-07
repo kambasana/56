@@ -174,6 +174,36 @@ export function isPatchBump(base: string, version: string): boolean {
   return !!a && !!b && a[1] === b[1] && a[2] === b[2] && Number(b[3]) > Number(a[3]);
 }
 
+/** A dependency counts as brand new when its first release is at most this many days before the release adding it. */
+export const YOUNG_DEPENDENCY_DAYS = 30;
+
+/** First release time (ms) of a package as of `asOf`; undefined when it had none by then. */
+export function firstPublishedMs(p: Packument, asOf?: Date): number | undefined {
+  return versionHistory(p, asOf)[0]?.publishedMs;
+}
+
+/**
+ * Fill `young` on dependency_added facts: which added dependencies were brand new at release time.
+ * `firstPublished(name)` returns the first release time in ms, null when the package had no release
+ * at all (only after the scan's clock), or undefined when unknown (not fetched; never counted).
+ */
+export function markYoungDependencies(facts: Fact[], firstPublished: (name: string) => number | null | undefined): void {
+  for (const f of facts) {
+    if (f.kind !== 'dependency_added') continue;
+    const v = f.value as DependencyAddedValue;
+    const rel = v.releasedAt ? Date.parse(v.releasedAt) : NaN;
+    if (!Number.isFinite(rel)) continue;
+    const young: { name: string; daysBeforeRelease: number }[] = [];
+    for (const name of v.added) {
+      const first = firstPublished(name);
+      if (first === undefined) continue;
+      const days = first === null ? 0 : Math.floor((rel - first) / 86_400_000);
+      if (first === null || days <= YOUNG_DEPENDENCY_DAYS) young.push({ name, daysBeforeRelease: days });
+    }
+    v.young = young;
+  }
+}
+
 /** Runtime/optional dependency names present in `version` but not in `baseVersion`. */
 export function addedDependencies(p: Packument, version: string, baseVersion: string): string[] {
   const base = dependencyNames(manifest(p, baseVersion));
@@ -376,7 +406,8 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
 
   const added = prev && prevManifest && isPatchBump(prev.version, version) ? addedDependencies(p, version, prev.version) : [];
   if (prev && added.length > 0) {
-    const value: DependencyAddedValue = { version, previousVersion: prev.version, added: added.slice(0, 20) };
+    const value: DependencyAddedValue = { version, previousVersion: prev.version, added: added.slice(0, 20), young: [] };
+    if (rec) value.releasedAt = rec.publishedAt;
     facts.push(makeFact('dependency_added', subject, value, meta([versionPage, npmPackagePage(name, prev.version)])));
   }
 

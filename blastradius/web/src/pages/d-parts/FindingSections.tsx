@@ -97,29 +97,55 @@ export function AssetPaths({ assets, maxPaths, maxAssets }: { assets: readonly A
   );
 }
 
-export function BehindIt({ chain }: { chain: readonly EntityChainEntry[] }) {
-  if (chain.length === 0) return <p className="text-sm text-muted-foreground">No linked organisations, funders or incidents.</p>;
+const ENTITY_KIND: Record<string, string> = { account: 'Account', org: 'Org', person: 'Person', funder: 'Funder' };
+
+/** "account:npm/qix" -> { kind: "Account", name: "npm/qix" }; anything else is shown as is. */
+export function entityLabel(id: string): { kind?: string; name: string } {
+  const at = id.indexOf(':');
+  const kind = at > 0 ? ENTITY_KIND[id.slice(0, at)] : undefined;
+  return kind ? { kind, name: id.slice(at + 1) } : { name: id };
+}
+
+function ChainList({ chain, label }: { chain: readonly EntityChainEntry[]; label: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <ol className="flex flex-col gap-1.5" aria-label="Entity chain">
-        {chain.map((e, i) => (
-          <li key={`${e.entityId}-${i}`} className="flex flex-wrap items-center gap-2">
-            {e.from && <span className="font-mono text-xs text-muted-foreground">{purlLabel(e.from)}</span>}
+    <ol className="flex flex-col gap-1.5" aria-label={label}>
+      {chain.map((e, i) => {
+        const to = entityLabel(e.entityId);
+        return (
+          <li key={`${e.from ?? ''}-${e.entityId}-${i}`} className="flex flex-wrap items-center gap-2">
+            {e.from && <span className="font-mono text-xs text-muted-foreground">{e.from.startsWith('pkg:') ? purlLabel(e.from) : entityLabel(e.from).name}</span>}
             <span className="text-xs text-muted-foreground">
               {e.relation.replace(/_/g, ' ')} · {e.confidence.toFixed(2)}
             </span>
-            <span className="font-medium">{e.entityId}</span>
+            {to.kind && <Badge variant="secondary">{to.kind}</Badge>}
+            <span className="font-medium">{to.name}</span>
             {e.reviewed === false && <Badge variant="outline">unreviewed</Badge>}
           </li>
-        ))}
-      </ol>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Incident chain (if any), then who publishes, owns and funds the package. */
+export function BehindIt({ chain, ownership = [] }: { chain: readonly EntityChainEntry[]; ownership?: readonly EntityChainEntry[] }) {
+  if (chain.length === 0 && ownership.length === 0) return <p className="text-sm text-muted-foreground">No linked organisations, funders or incidents.</p>;
+  return (
+    <div className="flex flex-col gap-3">
+      {chain.length > 0 && <ChainList chain={chain} label="Entity chain" />}
+      {ownership.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {chain.length > 0 && <span className="text-xs font-medium text-muted-foreground">Publishers, owners and funders</span>}
+          <ChainList chain={ownership} label="Ownership" />
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">Documented relationships with sources, not findings of wrongdoing.</p>
     </div>
   );
 }
 
 /** Every evidence URL on the finding (reasons and entity links), de-duplicated. */
-export function collectEvidence(d: Pick<FindingDetail, 'reasons' | 'entityChain'>): { source: string; url: string }[] {
+export function collectEvidence(d: Pick<FindingDetail, 'reasons' | 'entityChain'> & { ownership?: FindingDetail['ownership'] }): { source: string; url: string }[] {
   const seen = new Set<string>();
   const out: { source: string; url: string }[] = [];
   for (const r of d.reasons) {
@@ -129,7 +155,7 @@ export function collectEvidence(d: Pick<FindingDetail, 'reasons' | 'entityChain'
       out.push({ source: factorLabel(r.factor), url });
     }
   }
-  for (const e of d.entityChain) {
+  for (const e of [...d.entityChain, ...(d.ownership ?? [])]) {
     for (const url of e.evidence ?? []) {
       if (seen.has(url)) continue;
       seen.add(url);
@@ -139,7 +165,7 @@ export function collectEvidence(d: Pick<FindingDetail, 'reasons' | 'entityChain'
   return out;
 }
 
-export function EvidenceList({ detail }: { detail: Pick<FindingDetail, 'reasons' | 'entityChain'> }) {
+export function EvidenceList({ detail }: { detail: Pick<FindingDetail, 'reasons' | 'entityChain'> & { ownership?: FindingDetail['ownership'] } }) {
   const items = collectEvidence(detail);
   if (items.length === 0) return <p className="text-sm text-muted-foreground">No evidence links recorded.</p>;
   return (

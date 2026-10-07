@@ -27,6 +27,23 @@ describe('<FindingDetail>', () => {
     expect(screen.getByRole('tab', { name: /Paths/ })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it("shows who is behind an ordinary package (no incident): accounts, owner org and funders, with evidence", async () => {
+    const ev = (u: string) => ({ evidence: [u], method: 'deterministic' as const, reviewed: true, confidence: 1 });
+    const ownership = [
+      { from: 'pkg:npm/chalk', entityId: 'account:npm/qix', relation: 'maintains' as const, ...ev('https://www.npmjs.com/package/chalk') },
+      { from: 'pkg:npm/chalk', entityId: 'org:github/chalk', relation: 'owns' as const, ...ev('https://github.com/chalk/chalk') },
+      { from: 'org:github/chalk', entityId: 'funder:opencollective/acme-corp', relation: 'funds' as const, ...ev('https://opencollective.com/chalk') },
+    ];
+    fakeApi([['GET', /^\/api\/findings\/f1$/, () => findingDetail(findingRow(1), { entityChain: [], ownership })]]);
+    renderPage(<FindingDetail />, at());
+    const list = await screen.findByRole('list', { name: 'Ownership' });
+    expect(screen.queryByRole('list', { name: 'Entity chain' })).not.toBeInTheDocument();
+    expect(list).toHaveTextContent('chalkmaintains · 1.00Accountnpm/qix');
+    expect(list).toHaveTextContent('chalkowns · 1.00Orggithub/chalk');
+    expect(list).toHaveTextContent('github/chalkfunds · 1.00Funderopencollective/acme-corp');
+    expect(screen.getByRole('link', { name: 'https://opencollective.com/chalk' })).toBeInTheDocument();
+  });
+
   it('loads the scoped graph only when the Graph tab is opened', async () => {
     const user = userEvent.setup();
     const api = fakeApi([

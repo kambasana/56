@@ -495,6 +495,15 @@ export interface DependencyAddedValue {
   previousVersion: string;
   /** Dependency names new in `version`, sorted. */
   added: string[];
+  /** When `version` was published. */
+  releasedAt?: string;
+  /**
+   * Added dependencies that were brand new on the registry when `version` came out (first release
+   * at most YOUNG_DEPENDENCY_DAYS before it, or only after it). Only these make it a risk signal:
+   * a patch pulling in a well-known package is routine, one pulling in a package made last week
+   * is the event-stream / node-ipc pattern. Days can be negative.
+   */
+  young?: { name: string; daysBeforeRelease: number }[];
 }
 
 export interface ReleaseAgeValue {
@@ -729,6 +738,12 @@ export interface Finding {
    * override) is a single hop from the purl to the incident.
    */
   entityChain: EntityChainEntry[];
+  /**
+   * Who is behind the package, incident or not: its own documented links up to two hops out
+   * (npm accounts and the repo owner, then the orgs they belong to and who funds them). Same entry
+   * shape as `entityChain`, without the incident hop. Absent when nothing is known.
+   */
+  behind?: EntityChainEntry[];
 }
 
 export interface EntityChainEntry {
@@ -780,4 +795,6 @@ export interface HealthEntry {
   /** What the combined posture signals would have scored (0–100), for sorting. */
   score: number;
   reasons: Reason[];
+  /** Who is behind the package (see Finding.behind). */
+  behind?: EntityChainEntry[];
 }

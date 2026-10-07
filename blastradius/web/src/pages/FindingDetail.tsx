@@ -121,7 +121,7 @@ export default function FindingDetail() {
               <ReasonsList reasons={data.reasons} />
             </SectionCard>
             <SectionCard id="behind" title="Who's behind it" description="Each link shows its confidence. Unreviewed links below 0.80 are not scored.">
-              <BehindIt chain={data.entityChain} />
+              <BehindIt chain={data.entityChain} ownership={data.ownership} />
             </SectionCard>
             <SectionCard id="evidence" title="Evidence" description="Every claim on this page, with its source">
               <EvidenceList detail={data} />

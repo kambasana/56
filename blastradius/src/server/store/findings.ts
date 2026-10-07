@@ -14,7 +14,7 @@ import type {
   StatusChange,
 } from '../api-types.js';
 import { FINDING_STATUSES } from '../api-types.js';
-import type { Asset, AssetKind, Criticality, Ecosystem, Environment, Finding, Inventory, RiskLevel } from '../../core/types.js';
+import type { Asset, AssetKind, Criticality, Ecosystem, EntityChainEntry, Environment, Finding, Inventory, RiskLevel } from '../../core/types.js';
 import { parsePurl } from '../../core/types.js';
 import { describeReach } from '../../report/reach.js';
 import { writeAudit } from './audit.js';
@@ -90,6 +90,16 @@ export interface DerivedFinding {
   search: string;
 }
 
+
+const OWNER_RANK: Record<string, number> = { owns: 0, funds: 1, member_of: 2, publishes: 3, maintains: 4, linked_to: 5 };
+
+/** The single most telling "who's behind it" entry for the table column. */
+function pickOwner(behind: readonly EntityChainEntry[]): EntityChainEntry | null {
+  let best: EntityChainEntry | null = null;
+  for (const e of behind) if (!best || (OWNER_RANK[e.relation] ?? 9) < (OWNER_RANK[best.relation] ?? 9)) best = e;
+  return best;
+}
+
 function ecosystemFor(type: string): Ecosystem {
   if (type === 'npm') return 'npm';
   if (type === 'githubactions' || type === 'github') return 'githubactions';
@@ -112,7 +122,8 @@ export function deriveFinding(f: Finding, assetOf: (id: string) => AssetMeta = f
   const exposures = f.blastRadius?.assets ?? [];
   const reasons = f.reasons ?? [];
   const chain = f.entityChain ?? [];
-  const last = chain.length > 0 ? chain[chain.length - 1]! : null;
+  // An incident chain says most; otherwise name who is behind the package (repo owner first).
+  const last = chain.length > 0 ? chain[chain.length - 1]! : pickOwner(f.behind ?? []);
   const top = reasons[0];
   return {
     purl: f.purl,
@@ -420,6 +431,7 @@ export function getFindingDetail(s: Store, orgId: string, findingId: string): Fi
     reasons: finding.reasons ?? [],
     assets,
     entityChain: finding.entityChain ?? [],
+    ownership: finding.behind ?? [],
     finding,
     history,
     statusHistory: statusHistory(s, row.projectId, row.purl),

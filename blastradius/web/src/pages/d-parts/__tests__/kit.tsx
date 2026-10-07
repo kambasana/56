@@ -106,6 +106,7 @@ export function findingDetail(row: FindingRow, over: Partial<FindingDetail> = {}
       },
     ],
     entityChain: [{ from: 'pkg:npm/event-stream', entityId: 'INC-2018-0001', relation: 'incident', confidence: 1, evidence: ['https://example.org/incident'], reviewed: true }],
+    ownership: [],
     finding: {} as FindingDetail['finding'],
     history: [{ scanId: 's1', at: '2018-11-20T10:00:00.000Z', score: 40, level: 'medium' }],
     statusHistory: [],
