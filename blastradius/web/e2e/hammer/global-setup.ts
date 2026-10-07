@@ -34,6 +34,7 @@ import {
   type HammerUser,
   type Role,
   type Scenario,
+  webBuildMtimeMs,
 } from './lib/env';
 
 const run = promisify(execFile);
@@ -212,6 +213,7 @@ export default async function globalSetup(): Promise<void> {
     scenarioProjects,
     sources,
     users: users.map(({ password: _p, ...u }) => u),
+    webBuildMtimeMs: webBuildMtimeMs(),
   };
   writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
   await admin.dispose();

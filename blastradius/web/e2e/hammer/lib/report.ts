@@ -8,7 +8,7 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { HERE, OUT_DIR, RESULTS_DIR, RESULTS_ROOT, SERVER, type HammerState } from './env';
+import { HERE, OUT_DIR, RESULTS_DIR, RESULTS_ROOT, SERVER, webBuildMtimeMs, type HammerState } from './env';
 
 export type Status = 'pass' | 'fail' | 'blocked';
 
@@ -95,6 +95,11 @@ export function writeReport(): string {
   lines.push('# Blastradius hammer: Playwright report', '');
   lines.push(`Generated ${new Date().toISOString()}.`, '');
   lines.push(`**${rows.length} checks: ${count('pass')} pass, ${count('fail')} fail, ${count('blocked')} blocked.** Blocked is not a pass: a data source or the data itself was missing.`, '');
+  const nowBuild = webBuildMtimeMs();
+  const skewed = states.filter((st) => st.webBuildMtimeMs != null && st.webBuildMtimeMs !== nowBuild);
+  if (skewed.length) {
+    lines.push(`> **Warning: web/dist was rebuilt during the run** (servers ${skewed.map((st) => st.server).join(', ')}). The server serves web/dist from disk, so these results mix two builds of the UI (and a newer UI may call API routes the running server does not have). Rerun on one build before trusting them.`, '');
+  }
   for (const state of states) {
     lines.push(`## Server \`${state.server}\` (${state.baseURL}, as of ${state.asOf ?? 'server default'}, dev mode ${state.devMode}, run ${state.runId})`, '');
     lines.push('Data sources: ' + Object.entries(state.sources).map(([h, ok]) => `${h} ${ok ? 'reachable' : '**blocked**'}`).join(', '), '');

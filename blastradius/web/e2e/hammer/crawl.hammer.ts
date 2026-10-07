@@ -233,6 +233,8 @@ for (const role of ROLES) {
               await settle(page, 20_000);
               if (vp.name === 'mobile') {
                 // On a phone the nav sheet should get out of the way once a destination is picked.
+                // Allow the sheet's close animation (~300 ms) to finish before calling it stuck open.
+                await page.getByRole('navigation', { name: 'Main' }).waitFor({ state: 'hidden', timeout: 2_000 }).catch(() => undefined);
                 if (await mobileNavOpen(page)) {
                   sheetStaysOpen.push(l.label);
                   await closeMobileNav(page);

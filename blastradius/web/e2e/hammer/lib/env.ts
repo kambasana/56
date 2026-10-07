@@ -5,7 +5,7 @@
  * Nothing here is mocked. The suite runs against a live `blastradius serve` that the scenario
  * runner already filled with scans of real public repositories at pinned commits.
  */
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -114,6 +114,17 @@ export interface HammerState {
   /** Host -> reachable from this container. */
   sources: Record<string, boolean>;
   users: Omit<HammerUser, 'password'>[];
+  /** web/dist/index.html mtime at setup: the server serves web/dist from disk, so a rebuild mid-run mixes builds. */
+  webBuildMtimeMs?: number | null;
+}
+
+export const WEB_INDEX = join(WEB_ROOT, 'dist', 'index.html');
+export function webBuildMtimeMs(): number | null {
+  try {
+    return statSync(WEB_INDEX).mtimeMs;
+  } catch {
+    return null;
+  }
 }
 
 /** Scenarios this server is expected to hold (all of them unless run-all.mjs named a reference date). */

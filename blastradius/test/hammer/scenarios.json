@@ -51,8 +51,8 @@
       "why": "node-ipc 9.2.2 + peacenotwar 9.1.6 (Mar 2022 protestware) via @vue/cli-shared-utils 4.5.15; the next commit d1a93658 'update @vue/cli to mitigate peacenotwar event' is the fix. KB INC-2022-0002 lists only node-ipc 10.1.1/10.1.2, so this probes a real KB coverage gap: a finding must exist, but it is not expected to be critical from the KB alone.",
       "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
       "expect": [
-        { "purl": "pkg:npm/node-ipc@9.2.2", "level": "present", "note": "not in KB affected versions (10.1.1/10.1.2 only); report the level actually produced. If it is low/absent, that is a KB coverage gap to report, not a pass." },
-        { "purl": "pkg:npm/peacenotwar@9.1.6", "level": "present", "note": "protestware payload package; publish date 2022-03-15 (new package/release-age signals). Critical only if OSV carries a malware record." }
+        { "purl": "pkg:npm/node-ipc@9.2.2", "level": "critical", "note": "INC-2022-0003 lists 9.2.2 (pulls in peacenotwar). It came out low before that KB entry existed; anything below critical is a regression." },
+        { "purl": "pkg:npm/peacenotwar@9.1.6", "level": "critical", "note": "protestware payload package, covered by INC-2022-0003." }
       ],
       "verified": "git fetch --depth=2 of fix commit d1a93658fa12956a8a0bb8d16ff185421e653dfe gave parent 6842cfb6 (2022-03-19T13:20:46+11:00); the fix touches package-lock.json. At 6842cfb6, package-lock.json (lockfileVersion 2, 1100 entries): line 6886 \"node_modules/node-ipc\": { line 6887 \"version\": \"9.2.2\" (dev: true); line 7645 \"node_modules/peacenotwar\": { line 7646 \"version\": \"9.1.6\". colors resolves to 1.4.0 (not affected). No compromised node-ipc 10.1.1/10.1.2 lockfile could be found on GitHub code search."
     },

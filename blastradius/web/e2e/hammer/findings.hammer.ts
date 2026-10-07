@@ -244,9 +244,10 @@ test.describe('findings at scale', () => {
       await rowsLoc(page).first().focus();
       const idx = async () => page.evaluate(() => Number((document.activeElement as HTMLElement | null)?.dataset.index ?? -1));
       // One key per frame at most, like a held key; focus moves on the next animation frame.
+      // On a short table ArrowDown must stop at the last row (a 1-finding project stays on row 0).
       for (let i = 1; i <= 3; i++) {
         await page.keyboard.press('ArrowDown');
-        await expect.poll(idx, { timeout: 2_000 }).toBe(i);
+        await expect.poll(idx, { timeout: 2_000 }).toBe(Math.min(i, rows.length - 1));
       }
       await page.keyboard.press('End');
       await expect.poll(idx, { timeout: 5_000 }).toBe(rows.length - 1);

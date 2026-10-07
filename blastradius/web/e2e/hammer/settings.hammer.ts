@@ -33,6 +33,9 @@ async function uiSignIn(page: Page, email: string, password: string): Promise<vo
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  // Let the landing page finish loading (as a person would) before using the menus. No retries:
+  // a menu that then ignores a click is still a failure.
+  await settle(page);
 }
 
 async function navLabels(page: Page): Promise<string[]> {
@@ -139,7 +142,7 @@ test('second org: invite an existing account by link, accept it, switch orgs', a
     const current = (await page.getByTestId('nav-org').innerText()).trim();
     const other = current === orgName ? state.orgName : orgName;
     // Match the org name exactly: "Hammer" is a prefix of "Hammer Org B …", so a substring match is ambiguous.
-    const item = (name: string) => page.getByRole('menu').getByRole('menuitem').filter({ has: page.getByText(name, { exact: true }) });
+    const item = (name: string) => page.getByRole('menu').locator('[role=menuitem], [role=menuitemradio]').filter({ has: page.getByText(name, { exact: true }) });
     await item(other).click();
     await expect(page.getByText(`Switched to ${other}`)).toBeVisible();
     await expect(page.getByTestId('nav-org')).toHaveText(other);

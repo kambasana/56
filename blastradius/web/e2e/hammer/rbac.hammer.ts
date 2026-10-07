@@ -7,7 +7,7 @@
  */
 import { expect, request, test } from '@playwright/test';
 import { BASE_URL, ROLES, userFor, type Role } from './lib/env';
-import { api, Check, getJson, scannedProjects } from './lib/feature';
+import { api, Check, getJson, readState, scannedProjects } from './lib/feature';
 import { ROLE_PAGES } from './lib/session';
 
 type Need = { any: string[] } | 'auth';
@@ -59,13 +59,27 @@ for (const role of ROLES) {
       const want = allowed(role, need) ? 200 : 403;
       if (r.status() !== want) c.fail(`GET ${path.split('?')[0]} -> ${r.status()}, expected ${want}`);
     }
-    // /api/projects is filtered rather than refused.
+    // GET /api/projects needs "projects or home" (WEB-API.md route table); holders get a filtered
+    // list, a role with neither anywhere (Auditor) gets 403. The nav and project switcher use
+    // GET /api/me/projects, which any member may call and which lists only projects they can use.
     const list = await ctx.get('/api/projects?limit=500');
-    if (list.status() !== 200) c.fail(`GET /api/projects -> ${list.status()}`);
+    const listWant = allowed(role, { any: ['projects', 'home'] }) ? 200 : 403;
+    if (list.status() !== listWant) c.fail(`GET /api/projects -> ${list.status()}, expected ${listWant}`);
+    else if (list.status() === 200 && ((await list.json()) as { items: unknown[] }).items.length === 0) c.fail(`${role} sees no projects in GET /api/projects`);
+    const mine = await ctx.get('/api/me/projects');
+    if (mine.status() !== 200) c.fail(`GET /api/me/projects -> ${mine.status()}, expected 200 for any member`);
     else {
-      const n = ((await list.json()) as { items: unknown[] }).items.length;
-      if (role === 'auditor' && n !== 0) c.fail(`auditor sees ${n} projects in GET /api/projects`);
-      if (role !== 'auditor' && n === 0) c.fail(`${role} sees no projects`);
+      const items = ((await mine.json()) as { items?: { id: string; name: string }[] }).items;
+      if (!items) c.fail('GET /api/me/projects: no items array');
+      else {
+        // Every hammer role holds an org-scope binding, so each sees every project that existed at
+        // setup (other tests may add throwaway projects meanwhile), as id and name only.
+        const ids = new Set(items.map((x) => x.id));
+        const missing = readState().projects.filter((x) => !ids.has(x.id));
+        if (missing.length) c.fail(`${role}: GET /api/me/projects lacks ${missing.length} project(s), e.g. ${missing[0]!.name}`);
+        const extraKeys = items.flatMap((x) => Object.keys(x)).filter((k) => k !== 'id' && k !== 'name');
+        if (extraKeys.length) c.fail(`GET /api/me/projects returns more than id and name: ${[...new Set(extraKeys)].join(', ')}`);
+      }
     }
 
     // Writes go to a throwaway project, so a broken permission check cannot damage a scenario.
