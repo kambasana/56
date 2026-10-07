@@ -2,7 +2,7 @@
  * Intrinsic risk of a component version (PLAN §3.6 step 1):
  *   intrinsic(p) = 1 − Π (1 − wᵢ · fᵢ(p)),  with a malware override to 1.0.
  */
-import { factsFor, npmPurl, type Component, type Fact, type Incident, type Reason } from '../core/types.js';
+import { factsFor, type Component, type Fact, type Incident, type Reason } from '../core/types.js';
 import {
   ABANDONED_DAYS,
   ABANDONED_VALUES,
@@ -14,6 +14,7 @@ import {
   REPO_TRANSFER_UNDATED_VALUE,
   VULN,
   type FactorWeights,
+  ESTABLISHED_WEEKLY_DOWNLOADS,
 } from './weights.js';
 import { incidentsAffectingExactly } from './incidents.js';
 import { clamp01, cleanEvidence, cmpStr, daysSince, noisyOr, round, short, sortReasons } from './util.js';
@@ -51,9 +52,6 @@ export function vulnValue(v: { cvss?: number; severity: string; epss?: number; k
 export function ownershipDecay(days: number): number {
   return clamp01(1 - days / OWNERSHIP_DECAY_DAYS);
 }
-
-/** Dependents (deps.dev) above which a once-new dependency counts as established. */
-const ESTABLISHED_DEPENDENTS = 500;
 
 export function scoreIntrinsic(
   component: Component,
@@ -251,17 +249,9 @@ export function scoreIntrinsic(
   // package in a patch is routine and does not count.
   const dep = mine.find((f): f is Extract<Fact, { kind: 'dependency_added' }> => f.kind === 'dependency_added');
   // A brand-new dependency that has since become a common building block (has-tostringtag,
-  // call-bind: thousands of dependents) is a maintainer splitting code, not an attack; without
-  // dependents data (offline) the signal stays.
-  const young = (dep?.value.young ?? []).filter((y) => {
-    let count: number | undefined;
-    try {
-      count = factsFor(facts, npmPurl(y.name)).find((f): f is Extract<Fact, { kind: 'dependents' }> => f.kind === 'dependents')?.value.count;
-    } catch {
-      return true;
-    }
-    return !(typeof count === 'number' && count >= ESTABLISHED_DEPENDENTS);
-  });
+  // call-bind: 100M+ downloads a week) is a maintainer splitting code, not an attack. Without
+  // download data (offline, replays, as-of scans in the past) the signal stays.
+  const young = (dep?.value.young ?? []).filter((y) => !(typeof y.weeklyDownloads === 'number' && y.weeklyDownloads >= ESTABLISHED_WEEKLY_DOWNLOADS));
   if (dep && young.length > 0) {
     const names = young.slice(0, 5).map((y) => `${short(y.name, 60)} (${y.daysBeforeRelease > 0 ? `first released ${y.daysBeforeRelease} days earlier` : 'first released the same day or later'})`);
     cands.push({

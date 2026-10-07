@@ -503,7 +503,7 @@ export interface DependencyAddedValue {
    * a patch pulling in a well-known package is routine, one pulling in a package made last week
    * is the event-stream / node-ipc pattern. Days can be negative.
    */
-  young?: { name: string; daysBeforeRelease: number }[];
+  young?: { name: string; daysBeforeRelease: number; weeklyDownloads?: number }[];
 }
 
 export interface ReleaseAgeValue {

@@ -63,6 +63,13 @@ export interface NpmEnricherOptions {
   snapshots?: 'auto' | boolean | NpmSnapshotStore;
   /** Snapshot directory for 'auto' / true (default <user cache dir>/snapshots). */
   snapshotDir?: string;
+  /**
+   * npm downloads API, used to tell a brand-new dependency that has since become a common
+   * building block (has-tostringtag: ~190M downloads a week) from an obscure one (peacenotwar:
+   * ~4k). Default https://api.npmjs.org with the public registry, off with any other registry
+   * (replays). Never used for as-of scans in the past: today's downloads would be hindsight.
+   */
+  downloadsApi?: string | false;
 }
 
 const SOURCE = 'npm';
@@ -143,6 +150,9 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
         }
       });
       markYoungDependencies(facts, (n) => firstPublished.get(n));
+      const downloadsApi = opts.downloadsApi ?? (registry === NPM_REGISTRY ? 'https://api.npmjs.org' : false);
+      const live = Math.abs(Date.now() - ctx.now.getTime()) < 7 * 86_400_000;
+      if (downloadsApi && live) await addWeeklyDownloads(facts, ctx, downloadsApi, concurrency);
       skipped.flush('npm', ctx.warn);
       if (offlineMisses.length > 0) {
         const shown = offlineMisses.sort().slice(0, 10).map((n) => n.slice(0, 100));
@@ -153,6 +163,25 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
       return dedupe(facts);
     },
   };
+}
+
+/** Fill `weeklyDownloads` on young added dependencies (best effort; unknown stays unset). */
+async function addWeeklyDownloads(facts: Fact[], ctx: EnrichContext, api: string, concurrency: number): Promise<void> {
+  const young = facts.flatMap((f) => (f.kind === 'dependency_added' ? (f.value.young ?? []) : []));
+  const names = [...new Set(young.map((y) => y.name))].filter(isValidNpmName).sort().slice(0, 50);
+  const counts = new Map<string, number>();
+  await mapLimit(names, concurrency, async (name) => {
+    try {
+      const data = await ctx.http.fetchJsonOrNull<{ downloads?: unknown }>(`${api.replace(/\/$/, '')}/downloads/point/last-week/${name}`);
+      if (typeof data?.downloads === 'number' && Number.isFinite(data.downloads)) counts.set(name, data.downloads);
+    } catch {
+      // unknown: the dependency keeps counting as young
+    }
+  });
+  for (const y of young) {
+    const n = counts.get(y.name);
+    if (n !== undefined) y.weeklyDownloads = n;
+  }
 }
 
 function hasVersion(p: Packument, version: string): boolean {
