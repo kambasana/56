@@ -240,7 +240,10 @@ test.describe('admin screens', () => {
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
     await expect(menu).toContainText('Organizations');
-    await expect(menu.getByLabel('Current organization')).toBeVisible();
+    // One radio item per organization, named by the org; the current one is checked.
+    const current = menu.getByRole('menuitemradio', { checked: true });
+    await expect(current).toHaveCount(1);
+    await expect(current).toBeVisible();
     await shot(page, 'org-switcher');
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
