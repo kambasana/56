@@ -64,22 +64,22 @@ The exact versions are checked against the recorded data. Any that can't be conf
 
 Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](PROOF.md):
 
-1. **Recorded dataset.** 7 incidents, 15 bad releases and a 6-repo org, with provenance in `manifest.json`.
+1. **Recorded dataset.** 7 incidents, 16 bad releases and a 6-repo org, with provenance in `manifest.json`.
 2. **Replay server.** The engine runs against it unchanged.
 3. **Org-wide incident mode.** Engine and server: `/api/search/exposure`, `/api/alerts` and `/api/alerts/check`. Matching takes about 10 ms per incident and needs no re-scan.
 4. **New signal and matching fix.** `provenance_dropped` is a new signal. Advisory ranges now match (node-ipc).
-5. **Proof run.** 15/15 bad releases are critical after their advisory, and 11/15 were flagged before any advisory existed.
+5. **Proof run.** 15/15 bad releases are critical after their advisory, and 12/16 were flagged before any advisory existed. node-ipc 9.2.2 has no advisory naming it, so it counts for early warning only.
 6. **UI.** Home has "Is it anywhere?" and an Alerts card.
+7. **Automatic alerts.** The server re-checks all orgs when the pack refreshes, on a timer and after every scan. New alerts go once to a Slack-compatible webhook (see [WEB-API.md](WEB-API.md)).
+8. **New dependency in a patch release** (`dependency_added`, weight 0.4). A patch release adds a runtime dependency the previous release didn't have. It fires on event-stream 3.3.6 (flatmap-stream) and node-ipc 9.2.2 (peacenotwar), and reports SARIF rule BR011.
 
 **Honest misses** (shown in the report, not hidden):
-- flatmap-stream: a brand-new package.
+- flatmap-stream: a brand-new package. Its parent event-stream 3.3.6 is flagged instead.
 - node-ipc 10.1.x: the same maintainer, with no install script.
 - debug 4.4.2: the same publisher.
 
-7. **Automatic alerts.** The server re-checks all orgs when the pack refreshes, on a timer and after every scan. New alerts go once to a Slack-compatible webhook (see [WEB-API.md](WEB-API.md)).
-
 **Not yet done:**
-- A "new dependency in a patch release" signal, which would catch flatmap-stream and peacenotwar.
+- The "who's behind it" chain (maintainer → org → funder) for ordinary packages, not only incident-linked ones.
 
 ## Out of scope for this round
 

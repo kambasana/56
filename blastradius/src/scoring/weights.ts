@@ -17,6 +17,8 @@ export interface FactorWeights {
   no_provenance: number;
   /** Provenance present on the previous release, missing on this one. */
   provenance_dropped: number;
+  /** A patch release added a runtime dependency the previous release did not have. */
+  dependency_added: number;
   single_maintainer: number;
   abandoned: number;
 }
@@ -29,6 +31,7 @@ export const DEFAULT_WEIGHTS: Readonly<FactorWeights> = Object.freeze({
   weak_posture: 0.3,
   no_provenance: 0.15,
   provenance_dropped: 0.5,
+  dependency_added: 0.4,
   single_maintainer: 0.15,
   abandoned: 0.2,
 });

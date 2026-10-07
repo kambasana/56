@@ -20,6 +20,7 @@ const FACTOR_LABELS: Record<string, string> = {
   weak_posture: 'Weak repo posture',
   no_provenance: 'No provenance',
   provenance_dropped: 'Provenance dropped',
+  dependency_added: 'New dependency in patch',
   single_maintainer: 'Single maintainer',
   abandoned: 'Abandoned',
   entity_incident: 'Linked incident',

@@ -11,6 +11,7 @@ import {
   analyzeInstallScripts,
   createNpmEnricher,
   fundingFromManifestField,
+  isPatchBump,
   packumentFacts,
   packumentUrl,
   parseMaintainers,
@@ -175,6 +176,25 @@ describe('event-stream (publisher handover, 2018)', () => {
     const publisher = facts.find(isFactOf('publisher'))!;
     expect(publisher.value).toEqual({ name: 'right9ctrl', version: '3.3.6', publishedAt: '2018-09-09T08:28:59.503Z' });
     expect(publisher.value).not.toHaveProperty('email');
+  });
+
+  it('emits dependency_added when a patch release adds a runtime dependency (3.3.6 adds flatmap-stream)', async () => {
+    const p = await loadPackument('event-stream');
+    const [dep, ...rest] = packumentFacts(p, 'event-stream', '3.3.6', { now: NOW }).filter(isFactOf('dependency_added'));
+    expect(rest).toHaveLength(0);
+    expect(dep!.value).toEqual({ version: '3.3.6', previousVersion: '3.3.5', added: ['flatmap-stream'] });
+    expect(dep!.evidence).toEqual(['https://www.npmjs.com/package/event-stream/v/3.3.6', 'https://www.npmjs.com/package/event-stream/v/3.3.5']);
+    // 3.3.5 added nothing; 4.0.0 is a major bump (dropped flatmap-stream anyway).
+    for (const v of ['3.3.5', '4.0.0']) expect(packumentFacts(p, 'event-stream', v, { now: NOW }).filter(isFactOf('dependency_added')), v).toEqual([]);
+  });
+
+  it('isPatchBump only accepts same major.minor release versions', () => {
+    expect(isPatchBump('3.3.5', '3.3.6')).toBe(true);
+    expect(isPatchBump('9.2.1', '9.2.2')).toBe(true);
+    expect(isPatchBump('3.3.6', '3.4.0')).toBe(false);
+    expect(isPatchBump('3.3.6', '4.0.0')).toBe(false);
+    expect(isPatchBump('1.0.0', '1.0.1-beta.1')).toBe(false);
+    expect(isPatchBump('1.0.2', '1.0.1')).toBe(false);
   });
 
   it('marks firstTimePublisher on the first version by the new account', async () => {

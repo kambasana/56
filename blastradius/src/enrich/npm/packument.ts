@@ -16,6 +16,7 @@ import type {
   ProvenanceValue,
   PublisherValue,
   ReleaseAgeValue,
+  DependencyAddedValue,
   RepoValue,
 } from '../../core/types.js';
 import { isObject, npmPackagePage } from './registry.js';
@@ -164,6 +165,13 @@ function dependencyNames(m: NpmVersionManifest | undefined): Set<string> {
     for (const k of Object.keys(field).slice(0, 5000)) if (k.length <= HANDLE_MAX) names.add(k);
   }
   return names;
+}
+
+/** True when `version` only bumps the patch number of `base` (same major.minor, release builds only). */
+export function isPatchBump(base: string, version: string): boolean {
+  const a = /^(\d+)\.(\d+)\.(\d+)$/.exec(base);
+  const b = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  return !!a && !!b && a[1] === b[1] && a[2] === b[2] && Number(b[3]) > Number(a[3]);
 }
 
 /** Runtime/optional dependency names present in `version` but not in `baseVersion`. */
@@ -365,6 +373,12 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
     markNewInstallHooks(scripts, analyzeInstallScripts(prevManifest.scripts, { gypfile: prevManifest.gypfile === true }), prev.version);
   }
   facts.push(makeFact('install_script', subject, scripts, meta([versionPage])));
+
+  const added = prev && prevManifest && isPatchBump(prev.version, version) ? addedDependencies(p, version, prev.version) : [];
+  if (prev && added.length > 0) {
+    const value: DependencyAddedValue = { version, previousVersion: prev.version, added: added.slice(0, 20) };
+    facts.push(makeFact('dependency_added', subject, value, meta([versionPage, npmPackagePage(name, prev.version)])));
+  }
 
   const provenance = deriveProvenance(m);
   if (!provenance.hasProvenance && prev && prevManifest && deriveProvenance(prevManifest).hasProvenance) provenance.droppedSince = prev.version;

@@ -243,6 +243,19 @@ export function scoreIntrinsic(
     });
   }
 
+  // New dependency in a patch release (event-stream 3.3.6 → flatmap-stream, node-ipc 9.2.2 → peacenotwar).
+  const dep = mine.find((f): f is Extract<Fact, { kind: 'dependency_added' }> => f.kind === 'dependency_added');
+  if (dep && dep.value.added.length > 0) {
+    const names = dep.value.added.slice(0, 5).map((n) => short(n, 60));
+    cands.push({
+      factor: 'dependency_added',
+      value: 1,
+      weight: w.dependency_added,
+      detail: `Patch release ${short(dep.value.version, 40)} added ${dep.value.added.length === 1 ? 'a new dependency' : `${dep.value.added.length} new dependencies`} not in ${short(dep.value.previousVersion, 40)}: ${names.join(', ')}${dep.value.added.length > names.length ? ', …' : ''}`,
+      evidence: ev(dep),
+    });
+  }
+
   // Single maintainer.
   const maint = mine.find((f): f is Extract<Fact, { kind: 'maintainers' }> => f.kind === 'maintainers');
   if (maint && maint.value.count === 1) {

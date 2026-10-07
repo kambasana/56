@@ -30,6 +30,7 @@ export const RULE_FAMILIES: readonly RuleFamily[] = [
   { id: 'BR008', name: 'abandoned', factors: ['abandoned'], short: 'Abandoned or archived', full: 'No release in two years and/or an archived source repository.', securitySeverity: 4.0 },
   { id: 'BR009', name: 'entity-incident', factors: ['entity_incident', 'incident_affected'], short: 'Linked to a recorded incident', full: 'The package, or an account/org linked to it by reviewed public evidence, is referenced by an incident in the knowledge base.', securitySeverity: 6.5 },
   { id: 'BR010', name: 'workflow-outbound', factors: [], short: 'Risky publishing workflow', full: 'A workflow combines compromise-prone settings (privileged triggers, unpinned actions, write tokens, OIDC) with the ability to publish.', securitySeverity: 6.0 },
+  { id: 'BR011', name: 'dependency-added', factors: ['dependency_added'], short: 'New dependency in a patch release', full: 'A patch release added a runtime dependency that the previous release did not have (the event-stream and node-ipc pattern).', securitySeverity: 5.0 },
   { id: 'BR099', name: 'other', factors: [], short: 'Other supply-chain risk signal', full: 'Other risk factor.', securitySeverity: 3.0 },
 ];
 

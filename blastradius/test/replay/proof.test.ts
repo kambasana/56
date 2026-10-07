@@ -15,19 +15,22 @@ const bad = () => results.flatMap((r) => r.bad.map((b) => ({ incident: r.id, ...
 describe('proof on recorded real events', () => {
   it('every bad release is critical once its advisory exists', () => {
     expect(bad().length).toBeGreaterThanOrEqual(15);
-    expect(bad().filter((b) => b.afterAdvisory?.level !== 'critical').map((b) => `${b.name}@${b.version}`)).toEqual([]);
+    expect(bad().filter((b) => b.advisoryAt && b.afterAdvisory?.level !== 'critical').map((b) => `${b.name}@${b.version}`)).toEqual([]);
   });
 
-  it('early warnings before any advisory do not regress (11 of 15 today)', () => {
+  it('early warnings before any advisory do not regress (12 of 16 today)', () => {
     const warned = bad().filter((b) => (b.earlyWarning?.signals.length ?? 0) > 0).map((b) => `${b.name}@${b.version}`);
     expect(warned).toEqual(
       expect.arrayContaining(['event-stream@3.3.6', 'ua-parser-js@0.7.29', 'coa@2.0.3', 'rc@1.2.9', 'chalk@5.6.1', 'eslint-config-prettier@8.10.1', 'nx@21.5.0', 'nx@20.9.0']),
     );
-    expect(warned.length).toBeGreaterThanOrEqual(11);
+    expect(warned.length).toBeGreaterThanOrEqual(12);
     // The longest lead: event-stream's new publisher, months before the advisory.
     const es = bad().find((b) => b.name === 'event-stream')!;
     expect(es.exposureHours).toBeGreaterThan(24 * 70);
     expect(es.earlyWarning?.signals).toContain('publisher_change');
+    // A patch release that adds a dependency: event-stream 3.3.6 (flatmap-stream), node-ipc 9.2.2 (peacenotwar).
+    expect(es.earlyWarning?.signals).toContain('dependency_added');
+    expect(bad().find((b) => b.name === 'node-ipc' && b.version === '9.2.2')?.earlyWarning?.signals).toContain('dependency_added');
   });
 
   it('org exposure: the right projects, production only where it really is, in milliseconds', () => {

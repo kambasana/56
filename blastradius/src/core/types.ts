@@ -302,6 +302,7 @@ export const FACT_KINDS = [
   'funding',
   'archived',
   'release_age',
+  'dependency_added',
 ] as const;
 
 export type FactKind = (typeof FACT_KINDS)[number];
@@ -488,6 +489,14 @@ export interface ArchivedValue {
   lastPushAt?: string;
 }
 
+/** Runtime dependencies that a patch release added (none of them were in the previous release). */
+export interface DependencyAddedValue {
+  version: string;
+  previousVersion: string;
+  /** Dependency names new in `version`, sorted. */
+  added: string[];
+}
+
 export interface ReleaseAgeValue {
   version: string;
   /** ISO timestamp this version was published. */
@@ -520,6 +529,7 @@ export interface FactValueMap {
   funding: FundingValue;
   archived: ArchivedValue;
   release_age: ReleaseAgeValue;
+  dependency_added: DependencyAddedValue;
 }
 
 /** A fact of one specific kind. */

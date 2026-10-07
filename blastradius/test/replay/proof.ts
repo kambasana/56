@@ -30,15 +30,16 @@ import { readFileSync } from 'node:fs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EMPTY_KB = mkdtempSync(join(tmpdir(), 'proof-kb-'));
 /** Pre-disclosure signals (upkeep factors such as no_provenance are not early warnings). */
-const SIGNAL_FACTORS = new Set(['publisher_change', 'maintainer_change', 'install_script', 'repo_transfer', 'provenance_dropped']);
+const SIGNAL_FACTORS = new Set(['publisher_change', 'maintainer_change', 'install_script', 'repo_transfer', 'provenance_dropped', 'dependency_added']);
 
 export interface BadVersionResult {
   name: string;
   version: string;
   releasedAt: string;
-  advisoryAt: string;
-  /** Hours from the bad release to the first advisory naming it. */
-  exposureHours: number;
+  /** First advisory naming this version; null when none does (e.g. node-ipc 9.2.2). */
+  advisoryAt: string | null;
+  /** Hours from the bad release to the first advisory naming it (null without one). */
+  exposureHours: number | null;
   scannedIn: string;
   earlyWarning: { level: string; signals: string[] } | null;
   afterAdvisory: { level: string; malware: boolean } | null;
@@ -95,21 +96,21 @@ export async function runProof(): Promise<IncidentResult[]> {
       for (const b of inc.bad) {
         const releasedAt = packument(b.name).time?.[b.version] as string | undefined;
         const naming = advs.filter((a) => advisoryAffects(a as never, b.name, b.version));
-        const advisoryAt = naming.map((a) => a.published as string).sort()[0];
-        if (!releasedAt || !advisoryAt) continue;
+        const advisoryAt = naming.map((a) => a.published as string).sort()[0] ?? null;
+        if (!releasedAt) continue;
         const purl = `pkg:npm/${b.name.startsWith('@') ? `%40${b.name.slice(1)}` : b.name}@${b.version}`;
         const hit = hits.find((h) => h.purl === purl);
         const dir = hit ? orgRepoDir(hit.projectId) : probeProject(b.name, b.version);
         const scannedIn = hit ? hit.projectName : 'probe project (no org repo pins it)';
         const pick = (f: Finding | undefined) => f;
         const early = pick((await scanDirAt(server, dir, new Date(Date.parse(releasedAt) + H))).result.findings.find((f) => f.purl === purl));
-        const after = pick((await scanDirAt(server, dir, new Date(Date.parse(advisoryAt) + H))).result.findings.find((f) => f.purl === purl));
+        const after = advisoryAt ? pick((await scanDirAt(server, dir, new Date(Date.parse(advisoryAt) + H))).result.findings.find((f) => f.purl === purl)) : undefined;
         bad.push({
           name: b.name,
           version: b.version,
           releasedAt,
           advisoryAt,
-          exposureHours: Math.round(((Date.parse(advisoryAt) - Date.parse(releasedAt)) / H) * 10) / 10,
+          exposureHours: advisoryAt ? Math.round(((Date.parse(advisoryAt) - Date.parse(releasedAt)) / H) * 10) / 10 : null,
           scannedIn,
           earlyWarning: early ? { level: early.level, signals: [...new Set(early.reasons.filter((r) => r.value > 0 && SIGNAL_FACTORS.has(r.factor)).map((r) => r.factor))] } : null,
           afterAdvisory: after ? { level: after.level, malware: after.reasons.some((r) => r.factor === 'malware') } : null,
@@ -135,10 +136,11 @@ export async function runProof(): Promise<IncidentResult[]> {
 export function proofMarkdown(results: IncidentResult[]): string {
   const lines = ['# Blastradius proof run (recorded real events, replayed offline)', ''];
   const all = results.flatMap((r) => r.bad);
-  const detected = all.filter((b) => b.afterAdvisory?.level === 'critical').length;
+  const advised = all.filter((b) => b.advisoryAt);
+  const detected = advised.filter((b) => b.afterAdvisory?.level === 'critical').length;
   const warned = all.filter((b) => (b.earlyWarning?.signals.length ?? 0) > 0);
   lines.push(`- Bad releases replayed: **${all.length}** across ${results.length} incidents.`);
-  lines.push(`- Critical once the advisory exists: **${detected}/${all.length}**.`);
+  lines.push(`- Critical once the advisory exists: **${detected}/${advised.length}**${advised.length < all.length ? ` (${all.length - advised.length} with no advisory naming the version: ${all.filter((b) => !b.advisoryAt).map((b) => `${b.name}@${b.version}`).join(', ')})` : ''}.`);
   lines.push(`- Early warning before any advisory: **${warned.length}/${all.length}** (${warned.map((b) => `${b.name}@${b.version}`).join(', ') || 'none'}).`);
   lines.push(`- Org exposure answered from stored inventories in ${Math.max(...results.map((r) => r.org.ms))} ms or less per incident.`);
   lines.push('');
@@ -147,7 +149,7 @@ export function proofMarkdown(results: IncidentResult[]): string {
   for (const r of results)
     for (const b of r.bad)
       lines.push(
-        `| ${r.id} | ${b.name}@${b.version} | ${b.exposureHours} h | ${b.earlyWarning ? (b.earlyWarning.signals.length ? `${b.earlyWarning.level}: ${b.earlyWarning.signals.join(', ')}` : 'no signal') : 'no finding'} | ${b.afterAdvisory ? `${b.afterAdvisory.level}${b.afterAdvisory.malware ? ' (malware)' : ''}` : 'not flagged'} | ${b.scannedIn} |`,
+        `| ${r.id} | ${b.name}@${b.version} | ${b.exposureHours === null ? 'no advisory' : `${b.exposureHours} h`} | ${b.earlyWarning ? (b.earlyWarning.signals.length ? `${b.earlyWarning.level}: ${b.earlyWarning.signals.join(', ')}` : 'no signal') : 'no finding'} | ${!b.advisoryAt ? 'n/a' : b.afterAdvisory ? `${b.afterAdvisory.level}${b.afterAdvisory.malware ? ' (malware)' : ''}` : 'not flagged'} | ${b.scannedIn} |`,
       );
   lines.push('', '## Org exposure (Acme org, stored inventories, no re-scan)', '');
   for (const r of results) {

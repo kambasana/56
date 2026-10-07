@@ -31,6 +31,7 @@ export {
   deriveProvenance,
   derivePublisherChange,
   deriveReleaseAge,
+  isPatchBump,
   packumentFacts,
   parseMaintainers,
   summarizePackument,
