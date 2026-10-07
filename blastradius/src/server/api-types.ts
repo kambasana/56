@@ -366,6 +366,8 @@ export interface FindingRow {
   /** Reason factor ids, in engine order. */
   factors: string[];
   reach: { assets: number; prodAssets: number; paths: number };
+  /** Reach in plain words, e.g. "Brought in by event-stream · used by api (production)". */
+  reachText: string;
   blastScore: number;
   /** Last entity in the chain (e.g. an incident or funder), if any. */
   behind: { entityId: string; relation: EntityChainEntry['relation']; confidence: number } | null;

@@ -16,6 +16,7 @@ import type {
 import { FINDING_STATUSES } from '../api-types.js';
 import type { Asset, AssetKind, Criticality, Ecosystem, Environment, Finding, Inventory, RiskLevel } from '../../core/types.js';
 import { parsePurl } from '../../core/types.js';
+import { describeReach } from '../../report/reach.js';
 import { writeAudit } from './audit.js';
 import { all, get, likeEscape, newId, nextCursorFor, nowIso, pageWindow, parseJson, placeholders, run, StoreError, tx, type Param, type Store } from './db.js';
 
@@ -81,6 +82,7 @@ export interface DerivedFinding {
   blastScore: number;
   assets: number;
   prodAssets: number;
+  reachText: string;
   paths: number;
   mainReason: { factor: string; detail: string } | null;
   factors: string[];
@@ -123,6 +125,7 @@ export function deriveFinding(f: Finding, assetOf: (id: string) => AssetMeta = f
     assets: exposures.length,
     prodAssets: exposures.filter((a) => assetOf(a.assetId).environment === 'prod').length,
     paths: exposures.reduce((n, a) => n + (a.paths?.length ?? 0), 0),
+    reachText: describeReach(f, (id) => assetOf(id)),
     mainReason: top ? { factor: top.factor, detail: top.detail } : null,
     factors: reasons.map((r) => r.factor),
     behind: last ? { entityId: last.entityId, relation: last.relation, confidence: last.confidence } : null,
@@ -152,8 +155,8 @@ export function insertFindingRows(
     run(
       s,
       `INSERT INTO finding (id, scan_id, project_id, org_id, ord, purl, name, version, ecosystem, score, level, level_rank,
-         blast_score, assets, prod_assets, paths, top_factor, top_detail, factors, behind, search, first_seen_at, finding_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         blast_score, assets, prod_assets, paths, reach_text, top_factor, top_detail, factors, behind, search, first_seen_at, finding_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       newId('fnd'),
       scan.id,
       scan.projectId,
@@ -170,6 +173,7 @@ export function insertFindingRows(
       d.assets,
       d.prodAssets,
       d.paths,
+      d.reachText,
       d.mainReason?.factor ?? null,
       d.mainReason?.detail ?? null,
       JSON.stringify(d.factors),
@@ -202,6 +206,7 @@ export interface FindingSqlRow {
   assets: number;
   prod_assets: number;
   paths: number;
+  reach_text: string | null;
   top_factor: string | null;
   top_detail: string | null;
   factors: string;
@@ -211,10 +216,17 @@ export interface FindingSqlRow {
 }
 
 export const FINDING_COLUMNS = `f.id, f.scan_id, f.project_id, f.org_id, f.purl, f.name, f.version, f.ecosystem, f.score, f.level,
-  f.blast_score, f.assets, f.prod_assets, f.paths, f.top_factor, f.top_detail, f.factors, f.behind, f.first_seen_at,
+  f.blast_score, f.assets, f.prod_assets, f.paths, f.reach_text, f.top_factor, f.top_detail, f.factors, f.behind, f.first_seen_at,
   COALESCE(st.status, 'new') AS status`;
 
 export const FINDING_FROM = `finding f LEFT JOIN finding_state st ON st.project_id = f.project_id AND st.purl = f.purl`;
+
+/** Rows stored before reach_text existed: say what the counts can. */
+function countsReach(assets: number, prod: number): string {
+  if (assets === 0) return 'In the lockfile, but no dependency path from this project reaches it';
+  const where = assets === 1 ? 'Used by 1 part of this project' : `Used by ${assets} parts of this project`;
+  return prod > 0 ? `${where} (${prod === assets ? 'production' : `${prod} in production`})` : where;
+}
 
 export function toFindingRow(r: FindingSqlRow): FindingRow {
   return {
@@ -230,6 +242,7 @@ export function toFindingRow(r: FindingSqlRow): FindingRow {
     mainReason: r.top_factor !== null ? { factor: r.top_factor, detail: r.top_detail ?? '' } : null,
     factors: parseJson<string[]>(r.factors, []),
     reach: { assets: r.assets, prodAssets: r.prod_assets, paths: r.paths },
+    reachText: r.reach_text ?? countsReach(r.assets, r.prod_assets),
     blastScore: r.blast_score,
     behind: parseJson<FindingRow['behind']>(r.behind, null),
     status: r.status,

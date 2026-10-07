@@ -78,6 +78,7 @@ export function findingRow(i: number, over: Partial<FindingRow> = {}): FindingRo
     mainReason: { factor: 'maintainer_change', detail: `detail for pkg-${i}` },
     factors: ['maintainer_change', 'install_script'],
     reach: { assets: 3, prodAssets: 1, paths: 4 },
+    reachText: 'Brought in by event-stream · used by payments-api (production)',
     blastScore: 120,
     behind: null,
     status: 'new',

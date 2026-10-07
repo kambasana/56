@@ -64,6 +64,7 @@ describe('deriveFinding', () => {
       factors: ['malware', 'entity_incident'],
       behind: { entityId: 'INC-2018-0001', relation: 'incident', confidence: 1 },
     });
+    expect(d.reachText).toMatch(/used by 2 parts of this project \(app, \.github\/workflows\/ci\.yml\) \(1 in production\)$/);
     expect(deriveFinding(makeFinding({ name: '@babel/core', score: 1 })).name).toBe('@babel/core');
     expect(deriveFinding({ ...f, purl: 'garbage' }).name).toBe('garbage');
     expect(fallbackAssetMeta('workflow:x.yml')).toMatchObject({ kind: 'workflow', name: 'x.yml', environment: 'ci' });
@@ -81,6 +82,7 @@ describe('listFindings', () => {
     expect(all.total).toBe(4);
     expect(all.items.map((r) => r.name)).toEqual(['event-stream', '@babel/core', 'left-pad', 'percent%name']);
     expect(all.items[0]).toMatchObject({ reach: { assets: 2, prodAssets: 1, paths: 2 }, status: 'new', ecosystem: 'npm' });
+    expect(all.items[0]!.reachText).toMatch(/used by 2 parts of this project/);
 
     expect(listFindings(s, orgId, { projectId: project.id, scanId: first.id }).total).toBe(2);
     expect(listFindings(s, orgId, { projectId: project.id, levels: ['critical', 'high'] }).total).toBe(2);

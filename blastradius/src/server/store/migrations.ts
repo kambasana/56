@@ -209,6 +209,16 @@ CREATE INDEX invite_org_email ON invite(org_id, email);
 ALTER TABLE scan ADD COLUMN report_sha256 TEXT;
 `,
   },
+  {
+    version: 4,
+    name: 'finding reach text',
+    sql: `
+-- Reach in plain words ("Brought in by event-stream · used by api (production)"), built from the
+-- finding's dependency paths at insert time. NULL for rows stored before this migration; the API
+-- then falls back to a sentence from the counts.
+ALTER TABLE finding ADD COLUMN reach_text TEXT;
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

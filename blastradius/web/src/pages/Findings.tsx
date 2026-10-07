@@ -41,23 +41,6 @@ const FINDING_COLUMNS: ColumnDef<FindingRow, any>[] = [
   { id: 'score', header: 'Risk', accessorFn: (r) => r.score, cell: (c) => Math.round(c.getValue<number>()), meta: { align: 'right' }, size: 64, sortDescFirst: true },
   { id: 'blast', header: 'Blast', accessorFn: (r) => r.blastScore, cell: (c) => fmtBlast(c.getValue<number>()), meta: { align: 'right' }, size: 72, sortDescFirst: true },
   {
-    id: 'assets',
-    header: 'Assets',
-    accessorFn: (r) => r.reach.assets,
-    cell: (c) => {
-      const r = c.row.original.reach;
-      return (
-        <span title={`${r.prodAssets} in production · ${r.paths} paths`}>
-          {fmtNum(r.assets)}
-          {r.prodAssets > 0 && <span className="text-level-critical"> · {fmtNum(r.prodAssets)}p</span>}
-        </span>
-      );
-    },
-    meta: { align: 'right' },
-    size: 80,
-    sortDescFirst: true,
-  },
-  {
     id: 'component',
     header: 'Component',
     accessorFn: (r) => r.name,
@@ -70,6 +53,23 @@ const FINDING_COLUMNS: ColumnDef<FindingRow, any>[] = [
     meta: { className: 'max-w-[240px]' },
   },
   { id: 'version', header: 'Version', accessorFn: (r) => r.version, cell: (c) => <span className="font-mono">{c.getValue<string>()}</span>, size: 96 },
+  {
+    id: 'assets',
+    header: 'Reach',
+    // Sorts by how many parts of the project it reaches; shows where and who brings it in.
+    accessorFn: (r) => r.reach.assets,
+    cell: (c) => {
+      const r = c.row.original;
+      return (
+        <span className="line-clamp-2 text-xs text-muted-foreground" title={`${r.reachText} · ${r.reach.paths} dependency path${r.reach.paths === 1 ? '' : 's'}`}>
+          {r.reachText}
+        </span>
+      );
+    },
+    meta: { className: 'max-w-[280px]' },
+    size: 280,
+    sortDescFirst: true,
+  },
   {
     id: 'reason',
     header: 'Top reason',

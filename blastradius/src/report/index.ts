@@ -25,6 +25,7 @@ export function renderReport(result: ScanResult, format: ReportFormat, opts: { a
 }
 
 export { renderJson, toJsonReport, findingReach, nameAndVersion, type JsonReport, type ReportFinding, type FindingReach } from './json.js';
+export { describeReach, type ReachAsset } from './reach.js';
 export { renderSarif, toSarif, ruleForFactor, sarifLevel, RULE_FAMILIES, SARIF_SCHEMA, type SarifOptions, type RuleFamily } from './sarif.js';
 export { renderHtml, type HtmlOptions } from './html.js';
 export { escapeHtml, safeHttpUrl, plainText } from './escape.js';

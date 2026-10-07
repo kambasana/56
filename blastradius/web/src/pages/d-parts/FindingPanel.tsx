@@ -57,8 +57,7 @@ export function FindingPanel({ row, onClose, onUpdated }: { row: FindingRow; onC
       }
     >
       <p className="pb-3 text-muted-foreground">
-        Reaches {fmtNum(row.reach.assets)} asset{row.reach.assets === 1 ? '' : 's'} ({fmtNum(row.reach.prodAssets)} in production) through {fmtNum(row.reach.paths)} path
-        {row.reach.paths === 1 ? '' : 's'} · blast {fmtBlast(row.blastScore)}
+        {row.reachText} · {fmtNum(row.reach.paths)} dependency path{row.reach.paths === 1 ? '' : 's'} · blast {fmtBlast(row.blastScore)}
       </p>
       <StatusControl finding={row} onUpdated={onUpdated} />
       <Separator className="my-4" />
