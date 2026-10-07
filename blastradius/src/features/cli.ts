@@ -6,17 +6,22 @@
  *       → {"schema": "...", "names": [...]}
  *   tsx src/features/cli.ts releases --cache DIR [--overlay DIR] --names FILE [--offset-ms 3600000] [--until ISO]
  *       → one row per release of every listed package, as of release + offset
- *   tsx src/features/cli.ts rows --cache DIR [--overlay DIR] < requests.jsonl
+ *   tsx src/features/cli.ts rows --cache DIR [--overlay DIR] [--allow-missing-manifest] < requests.jsonl
  *       → one row per request {"name","version","asOf", ...extra fields copied through}
  *
- * Rows are JSONL: {name, version, releasedAt, asOf, origin, features: [...]} with null for NaN.
- * Packuments come from disk only (see store.ts); nothing here touches the network.
+ * Both take --downloads DIR (daily series per package, see downloads.ts) for the download features.
+ * --allow-missing-manifest describes releases npm has unpublished from their `time` entry and
+ * earlier history (MANIFEST_FEATURES are NaN; the row says `manifest: false`).
+ *
+ * Rows are JSONL: {name, version, releasedAt, asOf, origin, manifest, features: [...]} with null
+ * for NaN. Packuments and download series come from disk only; nothing here touches the network.
  */
 import { createReadStream, readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { isObject } from '../enrich/npm/registry.js';
-import { featureArray, FEATURE_NAMES, FEATURE_SCHEMA, featuresAsOf } from './asof.js';
+import { featureArray, FEATURE_NAMES, FEATURE_SCHEMA, featuresAsOf, MANIFEST_FEATURES } from './asof.js';
+import { downloadsAsOf, readDownloadSeries } from './downloads.js';
 import { openStore, type PackumentStore } from './store.js';
 
 function arg(args: string[], flag: string): string | undefined {
@@ -24,12 +29,25 @@ function arg(args: string[], flag: string): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
-function row(store: PackumentStore, name: string, version: string, asOf: Date, extra: Record<string, unknown> = {}): string | undefined {
+interface RowOptions {
+  downloadsDir?: string;
+  allowMissingManifest?: boolean;
+}
+
+function row(store: PackumentStore, name: string, version: string, asOf: Date, opts: RowOptions, extra: Record<string, unknown> = {}): string | undefined {
   const p = store.get(name);
   if (!p) return undefined;
   const t = isObject(p.time) ? p.time[version] : undefined;
-  const f = featuresAsOf(p, name, version, asOf, { firstPublished: (d) => store.firstPublished(d, asOf.getTime()) });
+  const releasedMs = typeof t === 'string' ? Date.parse(t) : NaN;
+  const dl = opts.downloadsDir && Number.isFinite(releasedMs) && releasedMs <= asOf.getTime() ? downloadsAsOf(readDownloadSeries(opts.downloadsDir, name), releasedMs) : {};
+  const f = featuresAsOf(p, name, version, asOf, {
+    firstPublished: (d) => store.firstPublished(d, asOf.getTime()),
+    ...(dl.weekly !== undefined ? { downloadsWeekly: dl.weekly } : {}),
+    ...(dl.trend !== undefined ? { downloadsTrend: dl.trend } : {}),
+    ...(opts.allowMissingManifest ? { allowMissingManifest: true } : {}),
+  });
   if (!f) return undefined;
+  const manifest = isObject(p.versions) && isObject(p.versions[version]);
   return JSON.stringify({
     ...extra,
     name,
@@ -37,6 +55,7 @@ function row(store: PackumentStore, name: string, version: string, asOf: Date, e
     releasedAt: typeof t === 'string' ? t : null,
     asOf: asOf.toISOString(),
     origin: store.origin(name),
+    manifest,
     features: featureArray(f).map((x) => (Number.isFinite(x) ? x : null)),
   });
 }
@@ -44,7 +63,7 @@ function row(store: PackumentStore, name: string, version: string, asOf: Date, e
 export async function main(argv: string[], out: (line: string) => void, err: (line: string) => void): Promise<number> {
   const [cmd, ...args] = argv;
   if (cmd === 'schema') {
-    out(JSON.stringify({ schema: FEATURE_SCHEMA, names: FEATURE_NAMES }));
+    out(JSON.stringify({ schema: FEATURE_SCHEMA, names: FEATURE_NAMES, manifestFeatures: MANIFEST_FEATURES }));
     return 0;
   }
   const cacheDir = arg(args, '--cache');
@@ -54,6 +73,8 @@ export async function main(argv: string[], out: (line: string) => void, err: (li
     return 2;
   }
   const store = openStore({ ...(cacheDir ? { cacheDir } : {}), ...(overlayDir ? { overlayDir } : {}) });
+  const downloadsDir = arg(args, '--downloads');
+  const opts: RowOptions = { ...(downloadsDir ? { downloadsDir } : {}), ...(args.includes('--allow-missing-manifest') ? { allowMissingManifest: true } : {}) };
   let missing = 0;
   if (cmd === 'releases') {
     const namesFile = arg(args, '--names');
@@ -75,7 +96,7 @@ export async function main(argv: string[], out: (line: string) => void, err: (li
       for (const v of Object.keys(versions).sort()) {
         const t = typeof time[v] === 'string' ? Date.parse(time[v]) : NaN;
         if (!Number.isFinite(t) || t + offset > until) continue;
-        const line = row(store, name, v, new Date(t + offset));
+        const line = row(store, name, v, new Date(t + offset), opts);
         if (line) out(line);
       }
     }
@@ -87,7 +108,7 @@ export async function main(argv: string[], out: (line: string) => void, err: (li
       const name = typeof req.name === 'string' ? req.name : '';
       const version = typeof req.version === 'string' ? req.version : '';
       const asOf = new Date(typeof req.asOf === 'string' ? req.asOf : NaN);
-      const line = name && version && Number.isFinite(asOf.getTime()) ? row(store, name, version, asOf, req) : undefined;
+      const line = name && version && Number.isFinite(asOf.getTime()) ? row(store, name, version, asOf, opts, req) : undefined;
       if (line) out(line);
       else {
         missing++;

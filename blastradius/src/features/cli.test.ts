@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -39,6 +39,7 @@ describe('features CLI', () => {
   it('prints the schema', async () => {
     const r = await run(['schema']);
     expect(r.out[0].names).toEqual([...FEATURE_NAMES]);
+    expect(r.out[0].manifestFeatures).toContain('install_hooks');
   });
 
   it('emits one row per release, as of release + offset, NaN as null', async () => {
@@ -62,5 +63,29 @@ describe('features CLI', () => {
     const r = await run(['rows', '--overlay', OVERLAY, '--requests', req]);
     expect(r.out[0]).toMatchObject({ name: 'rc', version: '1.2.9', label: 1, origin: 'overlay' });
     expect(r.out[1]).toMatchObject({ features: null, dropped: 'release not visible at asOf' });
+  });
+
+  it('describes an unpublished release from its time entry only when asked, with downloads from disk', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'feat-'));
+    const cache = join(dir, 'cache');
+    const dl = join(dir, 'dl');
+    mkdirSync(cache);
+    mkdirSync(dl);
+    writeFileSync(
+      join(cache, 'x.json'),
+      JSON.stringify({ name: 'x', time: { '1.0.0': '2024-01-01T00:00:00Z', '1.0.1': '2024-03-01T00:00:00Z', '1.0.2': '2024-05-01T12:00:00Z' }, versions: { '1.0.0': { version: '1.0.0' }, '1.0.1': { version: '1.0.1' } } }),
+    );
+    writeFileSync(join(dl, 'x.json'), JSON.stringify({ from: '2024-01-01', counts: Array(200).fill(7) }));
+    const req = join(dir, 'req.jsonl');
+    writeFileSync(req, '{"name":"x","version":"1.0.2","asOf":"2024-05-01T13:00:00Z","label":1}\n');
+    const without = await run(['rows', '--cache', cache, '--requests', req]);
+    expect(without.out[0]).toMatchObject({ features: null });
+    const r = await run(['rows', '--cache', cache, '--downloads', dl, '--allow-missing-manifest', '--requests', req]);
+    expect(r.out[0]).toMatchObject({ name: 'x', version: '1.0.2', manifest: false, label: 1 });
+    const f = r.out[0].features as (number | null)[];
+    expect(f[FEATURE_NAMES.indexOf('prior_releases')]).toBe(2);
+    expect(f[FEATURE_NAMES.indexOf('install_hooks')]).toBeNull();
+    expect(f[FEATURE_NAMES.indexOf('downloads_weekly_log10')]).toBeCloseTo(Math.log10(50));
+    expect(f[FEATURE_NAMES.indexOf('downloads_trend')]).toBeCloseTo(1);
   });
 });

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Packument } from '../enrich/npm/types.js';
 import { DATA_DIR } from '../../test/replay/server.js';
-import { editDistance, featureArray, FEATURE_NAMES, featuresAsOf } from './asof.js';
+import { editDistance, featureArray, FEATURE_NAMES, featuresAsOf, MANIFEST_FEATURES } from './asof.js';
 
 const H = 3600_000;
 const registry = readdirSync(join(DATA_DIR, 'registry'))
@@ -147,5 +147,41 @@ describe('editDistance', () => {
     expect(editDistance('lodash', 'lodahs')).toBe(2);
     expect(editDistance('cross-env', 'crossenv')).toBe(1);
     expect(editDistance('a', 'abcdefgh')).toBe(4);
+  });
+});
+
+describe('featuresAsOf: releases npm has unpublished (time entry only)', () => {
+  const withoutManifest = (p: (typeof registry)[number], v: string) => {
+    const q = structuredClone(p);
+    delete q.versions[v];
+    return q;
+  };
+
+  it('is undefined unless allowMissingManifest is set', () => {
+    const p = byName.get('nx')!;
+    const asOf = new Date(Date.parse(p.time['21.5.0']!) + H);
+    expect(featuresAsOf(withoutManifest(p, '21.5.0'), 'nx', '21.5.0', asOf)).toBeUndefined();
+    expect(featuresAsOf(withoutManifest(p, '21.5.0'), 'nx', '21.5.0', asOf, { allowMissingManifest: true })).toBeDefined();
+  });
+
+  it('keeps every history feature and makes exactly MANIFEST_FEATURES NaN', () => {
+    for (const { p, v, t } of releases) {
+      const asOf = new Date(t + H);
+      const full = featuresAsOf(p, p.name, v, asOf)!;
+      const gone = featuresAsOf(withoutManifest(p, v), p.name, v, asOf, { allowMissingManifest: true })!;
+      for (const n of FEATURE_NAMES) {
+        if (MANIFEST_FEATURES.includes(n)) expect(gone[n], `${p.name}@${v} ${n}`).toBeNaN();
+        else expect(gone[n], `${p.name}@${v} ${n}`).toEqual(full[n]);
+      }
+    }
+  });
+
+  it('downloads are optional facts and only enter when supplied', () => {
+    const p = byName.get('rc')!;
+    const asOf = new Date(Date.parse(p.time['1.2.9']!) + H);
+    expect(featuresAsOf(p, 'rc', '1.2.9', asOf)!.downloads_weekly_log10).toBeNaN();
+    const f = featuresAsOf(p, 'rc', '1.2.9', asOf, { downloadsWeekly: 999, downloadsTrend: 2 })!;
+    expect(f.downloads_weekly_log10).toBeCloseTo(3);
+    expect(f.downloads_trend).toBe(2);
   });
 });

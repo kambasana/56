@@ -21,7 +21,7 @@ import type { NpmVersionManifest, Packument } from '../enrich/npm/types.js';
 import { RISKY_INSTALL_SCRIPT_FLAGS } from '../core/install-flags.js';
 
 /** Bump when a feature's meaning or order changes; a model trained on another version is rejected. */
-export const FEATURE_SCHEMA = 'blastradius-features/v1';
+export const FEATURE_SCHEMA = 'blastradius-features/v2';
 
 /** Feature order is part of the contract with the exported model. Append only. */
 export const FEATURE_NAMES = [
@@ -72,9 +72,37 @@ export const FEATURE_NAMES = [
   'dependents_log10',
   'downloads_trend',
   'typosquat_distance',
+  // v2: weekly downloads before the release (log10(1 + n)); see downloads.ts for the window.
+  'downloads_weekly_log10',
 ] as const;
 
 export type FeatureName = (typeof FEATURE_NAMES)[number];
+
+/**
+ * Features that describe the release's own manifest. npm unpublishes most malicious releases, so
+ * for those only the `time` entry survives and these are NaN (`allowMissingManifest`). A model must
+ * not learn "manifest missing" as a signal: a history-only variant masks these on every row.
+ */
+export const MANIFEST_FEATURES: readonly FeatureName[] = [
+  'publisher_prior_releases',
+  'publisher_first_release',
+  'publisher_tenure_days',
+  'publisher_differs_prev',
+  'days_since_new_publisher',
+  'trusted_publisher',
+  'has_provenance',
+  'maintainers_count',
+  'maintainers_added_vs_prev',
+  'maintainers_removed_vs_prev',
+  'days_since_maintainer_change',
+  'install_hooks',
+  'new_install_hooks',
+  'install_flags_risky',
+  'deps_count',
+  'deps_added',
+  'deps_removed',
+  'young_deps_added',
+];
 export type FeatureVector = Record<FeatureName, number>;
 
 export interface FeatureExtras {
@@ -88,6 +116,13 @@ export interface FeatureExtras {
   dependents?: number;
   /** Recent weekly downloads divided by the trailing average (as of `asOf`). */
   downloadsTrend?: number;
+  /** Downloads in the week before the release (as of `asOf`; see downloads.ts). */
+  downloadsWeekly?: number;
+  /**
+   * Describe a release whose manifest is gone (npm unpublished it) from its `time` entry and the
+   * history before it; every MANIFEST_FEATURES value is NaN. Off by default.
+   */
+  allowMissingManifest?: boolean;
   /** Popular package names for the typosquat distance (the package's own name is skipped). */
   popularNames?: readonly string[];
 }
@@ -214,7 +249,7 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
   const all = timeline(p, limit);
   const idx = all.findIndex((r) => r.version === version);
   const cur = all[idx];
-  if (!cur?.manifest) return undefined;
+  if (!cur || (!cur.manifest && !extras.allowMissingManifest)) return undefined;
   const t = cur.ms;
   const prior = all.filter((r, i) => i !== idx && r.ms <= t && (r.ms < t || i < idx));
   const priorKnown = prior.filter((r) => r.manifest);
@@ -244,8 +279,18 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
   // --- Publisher --------------------------------------------------------------------------
   const pub = publisherOf(m);
   const withPub = priorKnown.filter((r) => publisherOf(r.manifest));
-  const pubs = new Set(withPub.map((r) => publisherOf(r.manifest)!));
-  f.distinct_publishers_prior = pubs.size;
+  f.distinct_publishers_prior = new Set(withPub.map((r) => publisherOf(r.manifest)!)).size;
+  f.trusted_publisher = trustedOf(m);
+  f.prev_trusted_publisher = trustedOf(prev?.manifest);
+  f.trusted_share_prior = share(prior, (x) => trustedOf(x));
+  f.has_provenance = provenanceOf(m);
+  f.prev_has_provenance = provenanceOf(prev?.manifest);
+  f.provenance_share_prior = share(prior, (x) => provenanceOf(x));
+  f.install_script_share_prior = share(prior, (x) => (hooksOf(x).hooks.length > 0 ? 1 : 0));
+  if (prev?.manifest) f.prev_install_hooks = hooksOf(prev.manifest).hooks.length;
+  externals(f, name, extras);
+  if (!m) return f;
+
   if (pub) {
     const mine = withPub.filter((r) => publisherOf(r.manifest) === pub);
     f.publisher_prior_releases = mine.length;
@@ -265,14 +310,6 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
     }
   }
   if (newPublisherAt !== undefined) f.days_since_new_publisher = (t - newPublisherAt) / DAY;
-
-  // --- Publish method ---------------------------------------------------------------------
-  f.trusted_publisher = trustedOf(m);
-  f.prev_trusted_publisher = trustedOf(prev?.manifest);
-  f.trusted_share_prior = share(prior, (x) => trustedOf(x));
-  f.has_provenance = provenanceOf(m);
-  f.prev_has_provenance = provenanceOf(prev?.manifest);
-  f.provenance_share_prior = share(prior, (x) => provenanceOf(x));
 
   // --- Maintainers ------------------------------------------------------------------------
   const maint = maintainersOf(m);
@@ -298,10 +335,8 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
   f.install_flags_risky = (hooks.flags ?? []).filter((x) => RISKY.has(x)).length;
   if (prev?.manifest) {
     const ph = hooksOf(prev.manifest);
-    f.prev_install_hooks = ph.hooks.length;
     f.new_install_hooks = hooks.hooks.filter((h) => !ph.hooks.includes(h)).length;
   }
-  f.install_script_share_prior = share(prior, (x) => (hooksOf(x).hooks.length > 0 ? 1 : 0));
 
   // --- Dependencies -----------------------------------------------------------------------
   const deps = depNames(m);
@@ -324,7 +359,11 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
     }
   }
 
-  // --- Optional external facts ------------------------------------------------------------
+  return f;
+}
+
+/** Optional external facts; the caller guarantees each is as of `asOf`. */
+function externals(f: FeatureVector, name: string, extras: FeatureExtras): void {
   if (typeof extras.scorecardScore === 'number' && Number.isFinite(extras.scorecardScore)) f.scorecard_score = extras.scorecardScore;
   if (typeof extras.dependents === 'number' && Number.isFinite(extras.dependents) && extras.dependents >= 0) f.dependents_log10 = Math.log10(1 + extras.dependents);
   if (typeof extras.downloadsTrend === 'number' && Number.isFinite(extras.downloadsTrend)) f.downloads_trend = extras.downloadsTrend;
@@ -333,7 +372,7 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
     for (const other of extras.popularNames) if (other !== name) best = Math.min(best, editDistance(name, other, 3));
     f.typosquat_distance = best;
   }
-  return f;
+  if (typeof extras.downloadsWeekly === 'number' && Number.isFinite(extras.downloadsWeekly) && extras.downloadsWeekly >= 0) f.downloads_weekly_log10 = Math.log10(1 + extras.downloadsWeekly);
 }
 
 /** The vector as an array in FEATURE_NAMES order (the model's input). */

@@ -15,6 +15,7 @@ import concurrent.futures as cf
 import json
 import os
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -22,6 +23,19 @@ import urllib.request
 
 REGISTRY = "https://registry.npmjs.org/"
 HOOKS = ("preinstall", "install", "postinstall")
+# Same politeness as the engine's HttpClient (src/core/http.ts DEFAULT_HOST_INTERVALS).
+MIN_INTERVAL_S = 0.020
+_gate = threading.Lock()
+_next = [0.0]
+
+
+def _wait_turn() -> None:
+    with _gate:
+        now = time.monotonic()
+        at = max(now, _next[0])
+        _next[0] = at + MIN_INTERVAL_S
+    if at > now:
+        time.sleep(at - now)
 
 
 def cache_file(cache: str, name: str) -> str:
@@ -75,6 +89,7 @@ def fetch(name: str, cache: str, retries: int = 4) -> str | None:
     delay = 2.0
     for attempt in range(retries):
         try:
+            _wait_turn()
             req = urllib.request.Request(url, headers={"accept": "application/json", "user-agent": "blastradius-bootstrap"})
             with urllib.request.urlopen(req, timeout=120) as r:
                 p = json.load(r)
@@ -99,7 +114,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--names", required=True)
     ap.add_argument("--cache", required=True)
-    ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--workers", type=int, default=8)
     a = ap.parse_args()
     os.makedirs(a.cache, exist_ok=True)
     names = sorted({l.strip() for l in open(a.names) if l.strip()})
