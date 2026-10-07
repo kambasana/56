@@ -1,0 +1,266 @@
+{
+ "_id": "event-stream",
+ "name": "event-stream",
+ "versions": {
+  "3.3.2": {
+   "name": "event-stream",
+   "version": "3.3.2",
+   "_npmUser": {
+    "name": "dominictarr",
+    "email": "dominic.tarr@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "dominictarr",
+     "email": "dominic.tarr@gmail.com"
+    }
+   ],
+   "scripts": {
+    "prepublish": "npm ls && npm test",
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "through": "~2.3.1",
+    "duplexer": "~0.1.1",
+    "from": "~0",
+    "map-stream": "~0.1.0",
+    "pause-stream": "0.0.11",
+    "split": "0.3",
+    "stream-combiner": "~0.0.4"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
+  "3.3.3": {
+   "name": "event-stream",
+   "version": "3.3.3",
+   "_npmUser": {
+    "name": "dominictarr",
+    "email": "dominic.tarr@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "dominictarr",
+     "email": "dominic.tarr@gmail.com"
+    }
+   ],
+   "scripts": {
+    "prepublish": "npm ls && npm test",
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "through": "~2.3.1",
+    "duplexer": "~0.1.1",
+    "from": "~0",
+    "map-stream": "~0.1.0",
+    "pause-stream": "0.0.11",
+    "split": "0.3",
+    "stream-combiner": "~0.0.4"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
+  "3.3.4": {
+   "name": "event-stream",
+   "version": "3.3.4",
+   "_npmUser": {
+    "name": "dominictarr",
+    "email": "dominic.tarr@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "dominictarr",
+     "email": "dominic.tarr@gmail.com"
+    }
+   ],
+   "scripts": {
+    "prepublish": "npm ls && npm test",
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "through": "~2.3.1",
+    "duplexer": "~0.1.1",
+    "from": "~0",
+    "map-stream": "~0.1.0",
+    "pause-stream": "0.0.11",
+    "split": "0.3",
+    "stream-combiner": "~0.0.4"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
+  "3.3.5": {
+   "name": "event-stream",
+   "version": "3.3.5",
+   "_npmUser": {
+    "name": "right9ctrl",
+    "email": "right9ctrl@outlook.com"
+   },
+   "maintainers": [
+    {
+     "email": "dominic.tarr@gmail.com",
+     "name": "dominictarr"
+    },
+    {
+     "email": "right9ctrl@outlook.com",
+     "name": "right9ctrl"
+    }
+   ],
+   "scripts": {
+    "prepublish": "npm ls && npm test",
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "duplexer": "^0.1.1",
+    "from": "^0.1.7",
+    "map-stream": "0.0.7",
+    "pause-stream": "^0.0.11",
+    "split": "^1.0.1",
+    "stream-combiner": "^0.2.2",
+    "through": "^2.3.8"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
+  "4.0.0": {
+   "name": "event-stream",
+   "version": "4.0.0",
+   "_npmUser": {
+    "name": "right9ctrl",
+    "email": "right9ctrl@outlook.com"
+   },
+   "maintainers": [
+    {
+     "email": "right9ctrl@outlook.com",
+     "name": "right9ctrl"
+    }
+   ],
+   "scripts": {
+    "prepublish": "npm ls && npm test",
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "duplexer": "^0.1.1",
+    "from": "^0.1.7",
+    "map-stream": "0.0.7",
+    "pause-stream": "^0.0.11",
+    "split": "^1.0.1",
+    "stream-combiner": "^0.2.2",
+    "through": "^2.3.8"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
+  "4.0.1": {
+   "name": "event-stream",
+   "version": "4.0.1",
+   "_npmUser": {
+    "name": "right9ctrl",
+    "email": "right9ctrl@outlook.com"
+   },
+   "maintainers": [
+    {
+     "email": "right9ctrl@outlook.com",
+     "name": "right9ctrl"
+    }
+   ],
+   "scripts": {
+    "prepublish": "npm ls && npm test",
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "duplexer": "^0.1.1",
+    "from": "^0.1.7",
+    "map-stream": "0.0.7",
+    "pause-stream": "^0.0.11",
+    "split": "^1.0.1",
+    "stream-combiner": "^0.2.2",
+    "through": "^2.3.8"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
+  "3.3.6": {
+   "name": "event-stream",
+   "version": "3.3.6",
+   "_npmUser": {
+    "name": "right9ctrl"
+   },
+   "maintainers": [
+    {
+     "email": "dominic.tarr@gmail.com",
+     "name": "dominictarr"
+    },
+    {
+     "email": "right9ctrl@outlook.com",
+     "name": "right9ctrl"
+    }
+   ],
+   "dependencies": {
+    "duplexer": "^0.1.1",
+    "from": "^0.1.7",
+    "map-stream": "0.0.7",
+    "pause-stream": "^0.0.11",
+    "split": "^1.0.1",
+    "stream-combiner": "^0.2.2",
+    "through": "^2.3.8",
+    "flatmap-stream": "^0.1.0"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-mh6f-8j2x-4483",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "modified": "2022-11-08T10:38:35.230Z",
+  "created": "2011-08-22T05:26:46.363Z",
+  "3.3.2": "2015-10-16T04:25:40.139Z",
+  "3.3.3": "2016-06-18T23:39:10.007Z",
+  "3.3.4": "2016-07-17T07:24:09.767Z",
+  "3.3.5": "2018-09-05T05:27:47.219Z",
+  "3.3.6": "2018-09-09T08:28:59.503Z",
+  "4.0.0": "2018-09-16T11:20:20.938Z",
+  "4.0.1": "2018-09-29T06:55:49.107Z"
+ },
+ "maintainers": [
+  {
+   "email": "npm@npmjs.com",
+   "name": "npm"
+  }
+ ],
+ "repository": {
+  "type": "git",
+  "url": "git://github.com/dominictarr/event-stream.git"
+ }
+}

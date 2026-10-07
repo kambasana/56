@@ -1,0 +1,277 @@
+{
+ "_id": "chalk",
+ "name": "chalk",
+ "versions": {
+  "5.1.2": {
+   "name": "chalk",
+   "version": "5.1.2",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.2.0": {
+   "name": "chalk",
+   "version": "5.2.0",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.3.0": {
+   "name": "chalk",
+   "version": "5.3.0",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.4.0": {
+   "name": "chalk",
+   "version": "5.4.0",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.4.1": {
+   "name": "chalk",
+   "version": "5.4.1",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.5.0": {
+   "name": "chalk",
+   "version": "5.5.0",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.6.0": {
+   "name": "chalk",
+   "version": "5.6.0",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.6.2": {
+   "name": "chalk",
+   "version": "5.6.2",
+   "_npmUser": {
+    "name": "sindresorhus",
+    "email": "sindresorhus@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "xo && c8 ava && tsd",
+    "bench": "matcha benchmark.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "funding": "https://github.com/chalk/chalk?sponsor=1",
+   "dist": {}
+  },
+  "5.6.1": {
+   "name": "chalk",
+   "version": "5.6.1",
+   "_npmUser": {
+    "name": "qix"
+   },
+   "maintainers": [
+    {
+     "name": "sindresorhus",
+     "email": "sindresorhus@gmail.com"
+    },
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    }
+   ],
+   "dependencies": {},
+   "repository": {
+    "url": "git+https://github.com/chalk/chalk.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://osv.dev/vulnerability/MAL-2025-46969",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "created": "2013-08-03T00:21:56.318Z",
+  "modified": "2026-09-27T03:40:44.615Z",
+  "5.1.2": "2022-10-12T16:31:51.839Z",
+  "5.2.0": "2022-12-08T18:46:27.169Z",
+  "5.3.0": "2023-06-29T10:58:11.887Z",
+  "5.4.0": "2024-12-18T18:00:41.792Z",
+  "5.4.1": "2024-12-21T17:04:53.006Z",
+  "5.5.0": "2025-08-03T23:22:09.818Z",
+  "5.6.0": "2025-08-17T07:27:47.572Z",
+  "5.6.1": "2025-09-08T13:13:05.239Z",
+  "5.6.2": "2025-09-08T14:47:54.486Z"
+ },
+ "maintainers": [
+  {
+   "name": "sindresorhus",
+   "email": "sindresorhus@gmail.com"
+  }
+ ],
+ "repository": {
+  "url": "git+https://github.com/chalk/chalk.git",
+  "type": "git"
+ }
+}

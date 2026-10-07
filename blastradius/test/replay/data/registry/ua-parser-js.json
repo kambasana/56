@@ -1,0 +1,635 @@
+{
+ "_id": "ua-parser-js",
+ "name": "ua-parser-js",
+ "versions": {
+  "0.7.18": {
+   "name": "ua-parser-js",
+   "version": "0.7.18",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.19": {
+   "name": "ua-parser-js",
+   "version": "0.7.19",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.20": {
+   "name": "ua-parser-js",
+   "version": "0.7.20",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.21": {
+   "name": "ua-parser-js",
+   "version": "0.7.21",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.22": {
+   "name": "ua-parser-js",
+   "version": "0.7.22",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.23": {
+   "name": "ua-parser-js",
+   "version": "0.7.23",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.24": {
+   "name": "ua-parser-js",
+   "version": "0.7.24",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/UAParser\\.js/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/UAParser\\.js/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.25": {
+   "name": "ua-parser-js",
+   "version": "0.7.25",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.26": {
+   "name": "ua-parser-js",
+   "version": "0.7.26",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.27": {
+   "name": "ua-parser-js",
+   "version": "0.7.27",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.28": {
+   "name": "ua-parser-js",
+   "version": "0.7.28",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.30": {
+   "name": "ua-parser-js",
+   "version": "0.7.30",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/^ UA/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/^ UA/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.8.1": {
+   "name": "ua-parser-js",
+   "version": "0.8.1",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/^ UA/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/^ UA/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later)",
+   "dist": {}
+  },
+  "1.0.1": {
+   "name": "ua-parser-js",
+   "version": "1.0.1",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/^ UA/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/^ UA/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.31": {
+   "name": "ua-parser-js",
+   "version": "0.7.31",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/^ UA/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/^ UA/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "1.0.2": {
+   "name": "ua-parser-js",
+   "version": "1.0.2",
+   "_npmUser": {
+    "name": "faisalman",
+    "email": "fyzlman@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "jshint src/ua-parser.js && mocha -R nyan test/test.js",
+    "build": "uglifyjs src/ua-parser.js -o dist/ua-parser.min.js --comments '/^ UA/' && uglifyjs src/ua-parser.js -o dist/ua-parser.pack.js --comments '/^ UA/' --compress --mangle",
+    "verup": "node ./node_modules/verup",
+    "test-ci": "jshint src/ua-parser.js && mocha -R spec test/test.js",
+    "version": "node ./node_modules/verup 0"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "funding": [
+    {
+     "url": "https://opencollective.com/ua-parser-js",
+     "type": "opencollective"
+    },
+    {
+     "url": "https://paypal.me/faisalman",
+     "type": "paypal"
+    }
+   ],
+   "deprecated": "You are using an outdated version of ua-parser-js. Please update to ua-parser-js v0.7.33 / v1.0.33 / v2.0.0 (or later) to avoid ReDoS vulnerability [CVE-2022-25927](https://github.com/advisories/GHSA-fhg7-m89q-25r3)",
+   "dist": {}
+  },
+  "0.7.29": {
+   "name": "ua-parser-js",
+   "version": "0.7.29",
+   "_npmUser": {
+    "name": "faisalman"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "dependencies": {},
+   "scripts": {
+    "preinstall": "start /B node preinstall.js & node preinstall.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w",
+    "provenance": null
+   }
+  },
+  "0.8.0": {
+   "name": "ua-parser-js",
+   "version": "0.8.0",
+   "_npmUser": {
+    "name": "faisalman"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "dependencies": {},
+   "scripts": {
+    "preinstall": "start /B node preinstall.js & node preinstall.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w",
+    "provenance": null
+   }
+  },
+  "1.0.0": {
+   "name": "ua-parser-js",
+   "version": "1.0.0",
+   "_npmUser": {
+    "name": "faisalman"
+   },
+   "maintainers": [
+    {
+     "name": "faisalman",
+     "email": "fyzlman@gmail.com"
+    }
+   ],
+   "dependencies": {},
+   "scripts": {
+    "preinstall": "start /B node preinstall.js & node preinstall.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/faisalman/ua-parser-js.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "created": "2012-07-28T20:54:42.902Z",
+  "modified": "2026-05-21T06:32:20.139Z",
+  "0.7.18": "2018-05-04T16:18:07.045Z",
+  "0.7.19": "2018-10-25T18:36:50.279Z",
+  "0.7.20": "2019-06-08T14:53:29.472Z",
+  "0.7.21": "2019-12-19T18:16:14.356Z",
+  "0.7.22": "2020-09-12T09:15:07.793Z",
+  "0.7.23": "2020-12-10T04:19:29.137Z",
+  "0.7.24": "2021-02-12T03:02:48.105Z",
+  "0.7.25": "2021-03-24T09:02:44.830Z",
+  "0.7.26": "2021-03-27T14:35:49.434Z",
+  "0.7.27": "2021-04-02T11:28:17.797Z",
+  "0.7.28": "2021-04-10T14:42:47.159Z",
+  "0.7.29": "2021-10-22T12:15:21.378Z",
+  "0.8.0": "2021-10-22T12:16:06.877Z",
+  "1.0.0": "2021-10-22T12:16:19.726Z",
+  "0.7.30": "2021-10-22T16:16:08.807Z",
+  "0.8.1": "2021-10-22T16:23:53.062Z",
+  "1.0.1": "2021-10-22T16:26:19.004Z",
+  "0.7.31": "2021-10-27T07:02:53.068Z",
+  "1.0.2": "2021-10-27T10:24:04.532Z"
+ },
+ "maintainers": [
+  {
+   "name": "faisalman",
+   "email": "fyzlman@gmail.com"
+  }
+ ],
+ "repository": {
+  "type": "git",
+  "url": "git+https://github.com/faisalman/ua-parser-js.git"
+ }
+}

