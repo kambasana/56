@@ -93,7 +93,7 @@ A package outside the pack still scans: known-bad checks always run (OSV live, p
 - **libraries.io:** stale.
 - **Socket and Phylum data:** proprietary.
 
-**Licence rule for the pack:** embed only CC-BY, Apache, MIT, CDLA-Permissive or CC0 data, and include a NOTICE table (source, licence, snapshot date) in the manifest. ecosyste.ms is CC BY-SA (share-alike), so it is only used at bootstrap time to compute features, and none of its raw rows ship. This holds unless a commercial licence is bought.
+**Licence rule for the pack:** embed only CC-BY, Apache, MIT, CDLA-Permissive or CC0 data, and include a NOTICE table (source, licence, snapshot date) in the manifest. ecosyste.ms is CC BY-SA (share-alike), so it is only used at bootstrap time to compute features, and none of its raw rows ship. Decided 2026-10-07: no commercial licence for now.
 
 **What nobody provides (our own asset):**
 - the maintainer → org → funder → rug-pull history;
