@@ -43,3 +43,4 @@ secrets/
 *key*.txt
 .env
 .env.*
+blastradius/test/replay/out/

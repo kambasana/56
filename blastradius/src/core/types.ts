@@ -358,6 +358,11 @@ export interface ProvenanceValue {
   /** Source repo the attestation names, if any. */
   sourceRepo?: string;
   url?: string;
+  /**
+   * Set when this version has no provenance but the release it follows did: a release made
+   * outside the usual pipeline (the nx and eslint-config-prettier attacks used stolen tokens).
+   */
+  droppedSince?: string;
 }
 
 export interface DependentsValue {

@@ -223,7 +223,17 @@ export function scoreIntrinsic(
 
   // No provenance (only when the registry was actually checked).
   const prov = mine.filter((f): f is Extract<Fact, { kind: 'provenance' }> => f.kind === 'provenance');
-  if (prov.length > 0 && !prov.some((f) => f.value.hasProvenance)) {
+  const dropped = prov.find((f) => !f.value.hasProvenance && f.value.droppedSince);
+  if (dropped) {
+    // A signal, not upkeep: the usual signed pipeline was bypassed for this release.
+    cands.push({
+      factor: 'provenance_dropped',
+      value: 1,
+      weight: w.provenance_dropped,
+      detail: `Published without the build provenance that the previous release (${short(dropped.value.droppedSince!, 40)}) had`,
+      evidence: cleanEvidence(prov.flatMap((f) => f.evidence ?? [])),
+    });
+  } else if (prov.length > 0 && !prov.some((f) => f.value.hasProvenance)) {
     cands.push({
       factor: 'no_provenance',
       value: 1,

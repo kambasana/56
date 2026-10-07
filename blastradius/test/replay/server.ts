@@ -13,6 +13,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { advisoryAffects, type AdvisoryLike } from '../../src/watch/match.js';
 
 export const DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), 'data');
 
@@ -76,7 +77,8 @@ export async function startReplayServer(opts: { clock: Date; dataDir?: string })
     return advisories.filter(
       (a) =>
         visible(a.published) &&
-        (a.affected ?? []).some((x: Json) => x.package?.name === name && (allVersions(x) || (version !== undefined && (x.versions ?? []).includes(version)))),
+        // Same rule as OSV: explicit versions, or the SEMVER ranges when no list is given.
+        version !== undefined && advisoryAffects(a as AdvisoryLike, name, version),
     );
   }
 

@@ -18,7 +18,8 @@
     "start": "tsx src/cli.ts",
     "hammer": "npm run build && tsx test/hammer/run.ts",
     "hammer:quick": "npm run build && tsx test/hammer/run.ts --skip-scale",
-    "pack:build": "tsx src/pack/main.ts"
+    "pack:build": "tsx src/pack/main.ts",
+    "proof": "tsx test/replay/proof.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.1.3",

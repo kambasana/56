@@ -367,6 +367,7 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
   facts.push(makeFact('install_script', subject, scripts, meta([versionPage])));
 
   const provenance = deriveProvenance(m);
+  if (!provenance.hasProvenance && prev && prevManifest && deriveProvenance(prevManifest).hasProvenance) provenance.droppedSince = prev.version;
   facts.push(makeFact('provenance', subject, provenance, meta(provenance.url ? [versionPage, provenance.url] : [versionPage])));
 
   const age = deriveReleaseAge(p, version, opts.now);

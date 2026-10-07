@@ -15,6 +15,8 @@ export interface FactorWeights {
   install_script: number;
   weak_posture: number;
   no_provenance: number;
+  /** Provenance present on the previous release, missing on this one. */
+  provenance_dropped: number;
   single_maintainer: number;
   abandoned: number;
 }
@@ -26,6 +28,7 @@ export const DEFAULT_WEIGHTS: Readonly<FactorWeights> = Object.freeze({
   install_script: 0.3,
   weak_posture: 0.3,
   no_provenance: 0.15,
+  provenance_dropped: 0.5,
   single_maintainer: 0.15,
   abandoned: 0.2,
 });
