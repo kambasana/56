@@ -60,6 +60,27 @@ The exact versions are checked against the recorded data. Any that can't be conf
    - The blast number replaced by "N projects · M in production".
    - The replay org is loadable as a demo (`serve --demo replay`).
 
+## Status (2026-10-07)
+
+Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](PROOF.md):
+
+1. **Recorded dataset.** 7 incidents, 15 bad releases and a 6-repo org, with provenance in `manifest.json`.
+2. **Replay server.** The engine runs against it unchanged.
+3. **Org-wide incident mode.** Engine and server: `/api/search/exposure`, `/api/alerts` and `/api/alerts/check`. Matching takes about 10 ms per incident and needs no re-scan.
+4. **New signal and matching fix.** `provenance_dropped` is a new signal. Advisory ranges now match (node-ipc).
+5. **Proof run.** 15/15 bad releases are critical after their advisory, and 11/15 were flagged before any advisory existed.
+6. **UI.** Home has "Is it anywhere?" and an Alerts card.
+
+**Honest misses** (shown in the report, not hidden):
+- flatmap-stream: a brand-new package.
+- node-ipc 10.1.x: the same maintainer, with no install script.
+- debug 4.4.2: the same publisher.
+
+**Not yet done:**
+- A scheduled watch, which would run `alerts/check` automatically when the pack refreshes. Today it's an API call.
+- A Slack webhook.
+- A "new dependency in a patch release" signal, which would catch flatmap-stream and peacenotwar.
+
 ## Out of scope for this round
 
 - The funder graph and the trained model. The replay dataset is what will later train and gate the model.

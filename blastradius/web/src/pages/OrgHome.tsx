@@ -21,6 +21,7 @@ import { fmtNum, fmtTime } from '@/lib/cn';
 import { CreateProjectDialog } from './d-parts/CreateProjectDialog';
 import { emptyCounts, LEVELS } from './d-parts/format';
 import { LevelCounts, PageSkeleton, ScanStatusBadge, SectionCard } from './d-parts/ui';
+import { AlertsCard, ExposureSearch } from './d-parts/IncidentPanel';
 
 /** First project page the user may open, in nav order. */
 const PROJECT_PAGES: { perm: Permission; path: string }[] = [
@@ -220,6 +221,12 @@ export default function OrgHome() {
           <StatTile label="Medium · low" value={`${fmtNum(t.counts.medium)} · ${fmtNum(t.counts.low)}`} tone="muted" hint="Latest scans" />
           <StatTile label="To review" value={fmtNum(t.toReview)} hint="New findings in the latest scans" />
         </div>
+        {(can('exposure') || can('findings')) && (
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            {can('exposure') && <ExposureSearch />}
+            <AlertsCard />
+          </div>
+        )}
         <SectionCard
           id="projects"
           title="Projects"

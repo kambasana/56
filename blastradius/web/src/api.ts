@@ -7,6 +7,8 @@
  * and the session cookie travels with `credentials: 'same-origin'`.
  */
 import type {
+  ListAlertsResponse,
+  SearchExposureResponse,
   ProjectHealthResponse,
   ApiError,
   ApiErrorCode,
@@ -178,6 +180,8 @@ export const api = {
   runScan: (projectId: Id, body: CreateScanRequest = {}) => post<CreateScanResponse>(`/api/projects/${enc(projectId)}/scans`, body),
   scan: (id: Id, signal?: AbortSignal) => get<GetScanResponse>(`/api/scans/${enc(id)}`, undefined, signal),
 
+  searchExposure: (q: string, signal?: AbortSignal) => get<SearchExposureResponse>('/api/search/exposure', { q }, signal),
+  alerts: (signal?: AbortSignal) => get<ListAlertsResponse>('/api/alerts', { limit: 100 }, signal),
   projectHealth: (id: Id, signal?: AbortSignal) => get<ProjectHealthResponse>(`/api/projects/${enc(id)}/health`, undefined, signal),
   findings: (q: ListFindingsQuery, signal?: AbortSignal) => get<ListFindingsResponse>('/api/findings', q, signal),
   finding: (id: Id, signal?: AbortSignal) => get<GetFindingResponse>(`/api/findings/${enc(id)}`, undefined, signal),

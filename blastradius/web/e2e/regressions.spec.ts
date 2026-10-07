@@ -212,3 +212,23 @@ test('Findings: upkeep-only signals sit in their own tab, apart from findings (n
   const fpurls = new Set(((await findings.json()) as { items: { purl: string }[] }).items.map((f) => f.purl));
   expect(items.filter((i) => fpurls.has(i.purl))).toEqual([]);
 });
+
+test('Home: "is it anywhere?" finds event-stream, and an advisory check raises an alert', async ({ page }) => {
+  await login(page, 'admin');
+  await page.goto('/');
+  await settle(page);
+  const search = page.getByRole('search', { name: 'Search all projects for a package' });
+  await search.getByRole('textbox').fill('event-stream@3.3.6');
+  await search.getByRole('button', { name: 'Search' }).click();
+  const results = page.getByRole('list', { name: 'Search results' });
+  await expect(results.locator('li').first()).toContainText('event-stream@3.3.6');
+  await expect(results.locator('li').first()).toContainText(/used by/);
+  await expect(page.getByText(/projects contain event-stream@3\.3\.6/)).toBeVisible();
+
+  const advisory = JSON.parse(readFileSync(new URL('../../test/replay/data/advisories/GHSA-mh6f-8j2x-4483.json', import.meta.url), 'utf8')) as unknown;
+  const res = await page.request.post('/api/alerts/check', { data: { advisories: [advisory] }, headers: { 'X-Requested-With': 'blastradius' } });
+  expect(res.status()).toBe(200);
+  await page.reload();
+  await settle(page);
+  await expect(page.getByRole('list', { name: 'Alerts' }).locator('li').first()).toContainText('GHSA-mh6f-8j2x-4483');
+});
