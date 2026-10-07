@@ -110,7 +110,64 @@ These come from our incident KB plus entity resolution and need ongoing curation
 - **Scan time:** `blastradius scan --pack pack.json.gz` or `BLASTRADIUS_PACK=…` (the server reads the same variable). The pack enricher runs after OSV and only adds what live OSV did not already report, so offline and blocked-network scans still flag known malware.
 - **Bootstrap job:** `test/hammer/ci/pack.yml` (copy into the private repo) builds the pack and publishes it as a release asset; the hammer workflow uses the newest one.
 - **Noise rule and reach in words:** shipped (health list and "Upkeep signals" tab; `describeReach`).
-- **Next:** maintainer → org → funder graph (npm packuments, GitHub `fundingLinks`, Open Collective), features and the model with its backtest gate.
+- **Next:** maintainer → org → funder graph (npm packuments, GitHub `fundingLinks`, Open Collective); more labelled compromises for the model (below).
+
+### Features, model and backtest gate (branch `data-ml/model`, 2026-10-07)
+
+**Built:**
+- **Shared as-of feature module** (`src/features/asof.ts`). It turns a packument and a release into 40 features: release cadence and dormancy, same-day multi-major releases, backports, the publisher's history and tenure, trusted publishing, provenance (and its share in earlier releases), per-version maintainer changes, new install hooks and risky flags, dependency churn, young dependencies, and optional Scorecard, dependents, downloads and typosquat distance. Missing values are NaN.
+  - **No leakage.** Only versions and `time` entries up to `asOf` are read. Today's packument-level fields (`maintainers`, `dist-tags`, `modified`), `deprecated`, the registry's `hasInstallScript` and the replay notes are never read.
+  - **Stable over time.** Every feature is measured relative to the release, so a vector does not change after it is computed.
+  - **Tested on the replay data.** For all 270+ recorded releases, three inputs give the same vector: a registry snapshot at `asOf`, the packument plus a later malicious release, and a scan a year later.
+  - **One code path.** `npm run features` (`src/features/cli.ts`) emits JSONL. The bootstrap uses it and nothing else to compute features.
+- **TypeScript evaluator** (`src/model/gbdt.ts`, `bundle.ts`).
+  - It reads LightGBM `dump_model` JSON. It handles numerical splits, `missing_type` None/Zero/NaN with `default_left`, and the binary sigmoid. Categorical splits are refused.
+  - Isotonic calibration uses table lookup with clipping, as sklearn does.
+  - The bundle is tied to the feature schema and its feature order, and a mismatch is refused.
+- **Bootstrap scripts** (`pack/model/`, Python with pinned `requirements.txt`): `fetch_packuments.py`, `universe.py`, `build_dataset.py`, `train.py` and `known_bad.py`.
+  - **Training:** LightGBM with depth 3 and class weights. Isotonic calibration is fitted on out-of-fold predictions grouped by incident and package.
+  - **Threshold:** the F2-best value on training data only.
+  - **Parity check:** the TS evaluator must match LightGBM to within 1e-6, or the run fails.
+  - **Workflow:** `test/hammer/ci/train.yml` is for the private repo and is not wired up. It publishes the model only when the gate passes.
+- **Backtest gate** (`npm run model:gate`, `test/model/gate.ts`).
+  - **Recall:** recorded compromises, scored at release + 1 h.
+  - **Noise:** findings per Acme org repo, both at each pinned release and on a fixed scan day.
+  - **Baseline:** the noisy-OR on the same packuments.
+  - **Pass rule:** strictly better on held-out recall and on noise. Pareto dominance is reported but does not pass the gate.
+
+**Local run** (registry.npmjs.org only; report in `blastradius/pack/model/reports/2026-10-07-local.md`):
+
+- **Dataset.** 1,019 packages: the incident packages, plus negatives found by walking dependencies out from the Acme lockfiles. The 1,733 control packages are never trained on. That gives 140,153 releases. Train: before 2023, 37,286 releases, 10 positives from 4 incidents. Test: 102,867 releases, 6 positives (chalk/debug, eslint-config-prettier, nx). All 16 labelled releases were kept. 3 packages returned 404 and were dropped.
+- **Parity.** 105,167 rows. The largest difference is 0 on raw scores and 2.8e-17 on probabilities.
+- **Model quality.**
+
+  | | ROC AUC |
+  |---|---|
+  | Training split (in-sample) | 0.999 |
+  | Out-of-fold, by incident | 0.50 |
+  | Held-out test | 0.33 |
+
+  A variant with monotone constraints did no better. The top features by gain are cadence features, so the model memorises packages rather than attack patterns.
+- **Gate: FAIL.**
+
+  | Measure | Model | Noisy-OR |
+  |---|---|---|
+  | Held-out recall | 0/6 | 4/6 |
+  | Noise per repo, scored at each release | 23.2 | 95.7 |
+  | Noise per repo, scanned on 2026-10-07 | 23.2 | 10.8 |
+
+  **The model is not wired into scoring. The hand-set weights stay.**
+- **Why.** Ten positives from four campaigns, each with a different signal (new publisher, new install hook, new dependency, protestware), cannot teach a pattern that transfers to a new campaign. The data is the bottleneck, not the code.
+- **Found on the way.** With the full live history, chalk 5.6.1 is **not** a publisher change: qix has published chalk since 2016. The proof run's early warning for chalk comes from the trimmed replay packument. Live, the noisy-OR misses chalk 5.6.1 as well, so held-out recall is 4/6, not 5/6.
+
+**Still needed (networked Actions run and more data):**
+- **More labelled compromises.** This is the blocker.
+  - **The problem:** npm unpublishes malicious releases. The live `time` map keeps their dates, but their manifests are gone.
+  - **Today's coverage:** only the 16 replay releases have manifests, rebuilt by hand from the advisories.
+  - **Options:** reconstruct more manifests from supplychain-attack-data and the advisories; recover archived manifests from a registry mirror or the replicate.npmjs.com changes feed; or train a time-only variant on the thousands of OSV `MAL-*` compromised releases. The time-only variant would need care, because the missing manifest itself must never become a feature.
+- **Data the local run could not reach.** Scorecard and dependents data from deps.dev, and as-of download trends, are blocked locally, so those features stay NaN. They need as-of snapshots (deps.dev BigQuery history) to be leak-free.
+- **Training negatives.** Draw them from deps.dev top-N instead of the dependency walk, and drop known-bad versions from the OSV export (`known_bad.py`; the workflow does this).
+- **Re-run.** Run `train.yml` in the private repo, then the gate. Only a passing run publishes a model.
 
 ## 5. Deliverables
 
