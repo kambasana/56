@@ -64,7 +64,46 @@ A package outside the pack still scans: known-bad checks always run (OSV live, p
 
 **AI rule:** PLAN §11 stands. LLM assistants never change scores. The trained model is deterministic, versioned, backtested and explained per finding, so it is allowed to set the "likely next compromise" score (decided 2026-10-07).
 
-## 4. Deliverables
+## 4. Reuse, not reinvent (researched 2026-10-07)
+
+| Need | Reuse | Licence | Notes |
+|---|---|---|---|
+| Malware, compromise and vulnerability records | **OSV bulk export** `gs://osv-vulnerabilities/npm/all.zip` (230k records, 222k `MAL-*`; refreshed daily) | CC-BY-4.0 / Apache-2.0 | Replaces per-package live queries for the pack. **Label filter:** only `MAL-*` records naming specific versions of a package that had earlier non-malicious releases count as "compromised release". Whole-package spam and typosquats are a separate class. |
+| Curated compromises of legitimate packages | **tstromberg/supplychain-attack-data** (187 incidents, 734 npm artifacts, with a `cause` field) | Apache-2.0 | Seeds the incident KB (imported as `alleged` until reviewed) and the labels. |
+| Extra labels | **DataDog malicious-software-packages-dataset** manifests ("compromised benign" flag) | Apache-2.0 | Manifests only; never unpack samples. |
+| Top packages, dependents, Scorecard, provenance | **deps.dev** API, plus its BigQuery dataset for the one-off top-N and dependents history | CC-BY-4.0 | Scorecard via deps.dev first; OpenSSF's own hosted data is at risk after its cloud funding lapsed. |
+| Registry history | **npm packuments + attestations API** | npm ToS | Add `_npmUser.trustedPublisher` (publish-method downgrade, as in axios 2026-03) and "in `time` but missing from `versions`" (unpublished, often malicious). |
+| Repo collaborator changes | **GH Archive** (BigQuery `MemberEvent`) | public | The only time-stamped "new collaborator before a release" signal. |
+| Funding | **GitHub GraphQL `fundingLinks`** + Sponsors (public), **Open Collective GraphQL** | platform ToS | Replaces our FUNDING.yml parser. |
+| Known-exploited, exploit probability | **CISA KEV**, **FIRST EPSS** | CC0 / attribution | Bundled in the pack. |
+| Metadata heuristics | **Datadog GuardDog** rules (email domain, metadata mismatch), **OSS Gadget** squat mutations | Apache-2.0 / MIT | Ported into the shared TS feature module. |
+| Multi-ecosystem lockfiles | **OSV-SCALIBR / osv-scanner** (read-only extractors), **Syft** (kept) | Apache-2.0 | For PyPI, Maven, Go and crates. Our npm parser stays because it keeps scopes and workspaces. |
+| SBOM in and out | **@cyclonedx/cyclonedx-library**, **packageurl-js** | Apache-2.0 / MIT | |
+| Bootstrap number-crunching | **DuckDB** | MIT | Emits the SQLite pack. |
+| Entity matching | **Splink 4** (probabilistic record linkage) | MIT | Per-field match weights become link evidence; links below 0.8 still go to review. |
+| Model | **LightGBM** → `dump_model` JSON + a small TS evaluator | MIT | Parity check against LightGBM predictions is part of the bootstrap. |
+| Graph UI | **Cytoscape.js** (kept) with WebGL renderer + ELK layout for chains | MIT | |
+
+**Not adopted:**
+- **GUAC:** a heavy Go service with no maintainer, funder or incident model.
+- **cdxgen:** runs build tools, which breaks "never execute".
+- **Trivy:** its own releases were compromised in March 2026.
+- **packj:** AGPL licence.
+- **OpenSSF Criticality Score:** its data was shut down in August 2026.
+- **libraries.io:** stale.
+- **Socket and Phylum data:** proprietary.
+
+**Licence rule for the pack:** embed only CC-BY, Apache, MIT, CDLA-Permissive or CC0 data, and include a NOTICE table (source, licence, snapshot date) in the manifest. ecosyste.ms is CC BY-SA (share-alike), so it is only used at bootstrap time to compute features, and none of its raw rows ship. This holds unless a commercial licence is bought.
+
+**What nobody provides (our own asset):**
+- the maintainer → org → funder → rug-pull history;
+- npm-account ↔ GitHub-user ground truth beyond trusted publishing.
+
+These come from our incident KB plus entity resolution and need ongoing curation.
+
+**Base-rate warning:** account-takeover compromises of legitimate npm packages number in the low hundreds to about 1,000 (2018–2026) and are clustered in campaigns such as Shai-Hulud and chalk/debug. Splits are grouped by campaign and time, so one worm cannot leak across folds.
+
+## 5. Deliverables
 
 - **Bootstrap scripts:** `blastradius/pack/` (collect, normalise, resolve, features, label, train in Python, export, backtest) and a `pack` workflow for the private repo.
 - **Engine:** pack loader, a scan-time lookup path, the shared TypeScript feature module, and a tree evaluator.
