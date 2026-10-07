@@ -289,6 +289,8 @@ export interface ScanSummary {
   inventory: InventorySummary;
   counts: Record<RiskLevel, number>;
   findings: number;
+  /** Components with upkeep signals only (noise rule; not findings). Absent on scans stored before it. */
+  health?: number;
   outbound: number;
   warnings: string[];
 }
@@ -775,3 +777,17 @@ export interface HealthResponse {
 
 /** Re-exported engine types the web app needs, so it imports from one place. */
 export type { AssetExposure, Finding, OutboundFinding, Reason, RiskLevel, EntityChainEntry, Environment, Criticality, Ecosystem };
+
+/** GET /api/projects/:id/health: upkeep-only signals from the latest succeeded scan (not findings). */
+export interface HealthItem {
+  purl: string;
+  name: string;
+  version: string;
+  /** What the upkeep signals together would score (0–100); for ordering only. */
+  score: number;
+  signals: { factor: string; detail: string }[];
+}
+export interface ProjectHealthResponse {
+  scanId: string | null;
+  items: HealthItem[];
+}

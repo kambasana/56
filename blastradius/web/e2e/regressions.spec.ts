@@ -36,7 +36,7 @@ test.describe('accessibility (axe serious/critical)', () => {
         '/settings?tab=bindings',
         '/settings?tab=project',
         '/settings?tab=audit',
-        ...['changes', 'findings', 'exposure', 'investigate', 'scans'].map((p) => `/projects/${project}/${p}`),
+        ...['changes', 'findings', 'findings?view=health', 'exposure', 'investigate', 'scans'].map((p) => `/projects/${project}/${p}`),
       ];
       const problems: string[] = [];
       for (const path of paths) {
@@ -190,4 +190,25 @@ test.describe('hammer round 2', () => {
     const bytes = readFileSync(file);
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(shown);
   });
+});
+
+test('Findings: upkeep-only signals sit in their own tab, apart from findings (noise rule)', async ({ page }) => {
+  await login(page, 'admin');
+  const project = await devProject(page);
+  const health = await page.request.get(`/api/projects/${project}/health`);
+  expect(health.status()).toBe(200);
+  const items = ((await health.json()) as { items: { purl: string }[] }).items;
+  await page.goto(`/projects/${project}/findings`);
+  await settle(page);
+  const upkeep = page.getByRole('tab', { name: /Upkeep signals/ });
+  await expect(upkeep).toContainText(`(${items.length})`);
+  await upkeep.click();
+  await expect(page).toHaveURL(/[?&]view=health/);
+  const table = page.getByRole('table', { name: 'Upkeep signals' });
+  await expect(table).toBeVisible();
+  if (items.length) await expect(table.locator('tbody tr').first()).toBeVisible();
+  // No purl is both a finding and an upkeep entry.
+  const findings = await page.request.get(`/api/findings?project=${project}&limit=500`);
+  const fpurls = new Set(((await findings.json()) as { items: { purl: string }[] }).items.map((f) => f.purl));
+  expect(items.filter((i) => fpurls.has(i.purl))).toEqual([]);
 });

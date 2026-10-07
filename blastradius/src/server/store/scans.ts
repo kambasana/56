@@ -65,6 +65,7 @@ export function summarizeResult(result: ScanResult): ScanSummary {
     inventory: result.inventory,
     counts,
     findings: result.findings.length,
+    health: result.health?.length ?? 0,
     outbound: result.outbound?.length ?? 0,
     warnings: (result.warnings ?? []).slice(0, 200),
   };
@@ -288,6 +289,12 @@ export function getScanResult(s: Store, orgId: string, scanId: string): { result
   if (!r?.result_json || !r.result_sha256) return null;
   const result = parseJson<ScanResult | null>(r.result_json, null);
   return result ? { result, sha256: r.result_sha256, projectId: r.project_id } : null;
+}
+
+/** The id of a project's newest succeeded scan (org-scoped). */
+export function latestSucceededScanId(s: Store, orgId: string, projectId: string): string | null {
+  const r = get<{ id: string }>(s, `SELECT id FROM scan WHERE project_id = ? AND org_id = ? AND status = 'succeeded' ORDER BY created_at DESC, rowid DESC LIMIT 1`, projectId, orgId);
+  return r?.id ?? null;
 }
 
 /** The stored inventory of a succeeded scan, when it was kept (org-scoped). */

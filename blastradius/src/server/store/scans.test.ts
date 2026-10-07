@@ -24,6 +24,7 @@ import {
   getScan,
   getScanInventory,
   getScanResult,
+  latestSucceededScanId,
   listQueuedScans,
   listReports,
   listScans,
@@ -121,11 +122,14 @@ describe('scans', () => {
   });
 
   it('lists the SHA-256 of the JSON report download, and backfills rows stored before it existed', () => {
-    const { s, actor, orgId } = setup();
+    const { s, actor, orgId, otherOrgId } = setup();
     const p = createProject(s, orgId, { name: 'app', tier: 'Small', target: '/srv/app' }, actor);
     const q = enqueueScan(s, orgId, p.id, { requestedBy: actor, offline: true });
     const result = makeResult([{ name: 'evil', score: 92, factors: ['malware'] }]);
     completeScan(s, q.id, { result, inventory: makeInventory() });
+    // Noise rule: health entries are counted in the summary and found via the newest succeeded scan.
+    expect(latestSucceededScanId(s, orgId, p.id)).toBe(q.id);
+    expect(latestSucceededScanId(s, otherOrgId, p.id)).toBeNull();
     const download = renderReport(getScanResult(s, orgId, q.id)!.result, 'json');
     const want = createHash('sha256').update(Buffer.from(download, 'utf8')).digest('hex');
     expect(listReports(s, orgId).items[0]!.sha256).toBe(want);

@@ -15,9 +15,11 @@ import {
   type ListScansResponse,
   type OkResponse,
   type OrgHomeResponse,
+  type ProjectHealthResponse,
   type UpdateProjectResponse,
 } from '../api-types.js';
 import { ORG_ADMIN_ROLE_ID } from '../permissions.js';
+import { nameAndVersion } from '../../report/json.js';
 import { buildMe, deps, memberProjects, requireOrg, requireProjectPerm, requireSession, requireOrgPerm, visibleProjects, type AppEnv } from '../context.js';
 import { ApiHttpError, badRequest, forbidden, notFound } from '../errors.js';
 import { idParam, pageQuery, parseBody, queryString } from '../request.js';
@@ -32,6 +34,8 @@ import {
   enqueueScan,
   getProjectRow,
   getScan,
+  getScanResult,
+  latestSucceededScanId,
   listOrgsForUser,
   listProjectRows,
   listProjects,
@@ -173,6 +177,22 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
     const { session, orgId } = requireProjectPerm(c, id, 'manage_projects');
     deleteProject(deps(c).store, orgId, id, session.user.id);
     return c.json<OkResponse>({ ok: true });
+  });
+
+  // Upkeep-only signals of the newest succeeded scan (noise rule: these are not findings).
+  app.get('/api/projects/:id/health', (c) => {
+    const id = idParam(c, 'id');
+    const { orgId } = requireProjectPerm(c, id, 'findings');
+    const store = deps(c).store;
+    const scanId = latestSucceededScanId(store, orgId, id);
+    const stored = scanId ? getScanResult(store, orgId, scanId) : null;
+    const items = (stored?.result.health ?? []).map((h) => ({
+      purl: h.purl,
+      ...nameAndVersion(h.purl),
+      score: h.score,
+      signals: h.reasons.filter((r) => r.value > 0).map((r) => ({ factor: r.factor, detail: r.detail })),
+    }));
+    return c.json<ProjectHealthResponse>({ scanId, items });
   });
 
   // ---- Scans ----------------------------------------------------------------

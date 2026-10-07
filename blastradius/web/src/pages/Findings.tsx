@@ -17,6 +17,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileSearch, GitCompareArrows, TriangleAlert } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { api } from '@/api';
+import { HealthTable } from './d-parts/HealthTable';
 import { useApi } from '@/lib/useApi';
 import { fmtBlast, fmtNum, fmtTime } from '@/lib/cn';
 import { countByLevel, factorLabel, fmtDate, LEVEL_RANK, loadAllFindings, parseLevels, STATUS_LABELS } from './d-parts/format';
@@ -132,6 +135,8 @@ export default function Findings() {
 
   const { data, error, loading, reload } = useApi((s) => loadAllFindings(id, s), [id]);
   const [overrides, setOverrides] = useState<Record<string, FindingRow>>({});
+  const view = params.get('view') === 'health' ? 'health' : 'findings';
+  const health = useApi((s) => api.projectHealth(id, s), [id]);
 
   const all = useMemo(() => (data ? data.items.map((r) => overrides[r.id] ?? r) : []), [data, overrides]);
   const byStatus = useMemo(() => (status ? all.filter((r) => r.status === status) : all), [all, status]);
@@ -221,6 +226,22 @@ export default function Findings() {
     );
   else body = table(rows, false);
 
+  const healthCount = health.data?.items.length ?? 0;
+  const tabs = (
+    <Tabs value={view} onValueChange={(v) => update({ view: v === 'health' ? 'health' : null, f: null })} className="gap-0">
+      <div className="border-b px-4 pt-2">
+        <TabsList>
+          <TabsTrigger value="findings">Findings{data ? ` (${fmtNum(data.total)})` : ''}</TabsTrigger>
+          <TabsTrigger value="health" title="Upkeep signals only (no provenance, single maintainer, weak posture, unmaintained). Not counted as risk.">
+            Upkeep signals{health.data ? ` (${fmtNum(healthCount)})` : ''}
+          </TabsTrigger>
+        </TabsList>
+      </div>
+      <TabsContent value="findings">{body}</TabsContent>
+      <TabsContent value="health">{health.error ? <ErrorState error={health.error} onRetry={health.reload} /> : <HealthTable items={health.data?.items ?? []} loading={health.loading && !health.data} />}</TabsContent>
+    </Tabs>
+  );
+
   return (
     <>
       <PageHeader
@@ -239,7 +260,7 @@ export default function Findings() {
           </>
         }
       />
-      {body}
+      {tabs}
     </>
   );
 }
