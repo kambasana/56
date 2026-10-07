@@ -118,6 +118,86 @@
    },
    "dist": {}
   },
+  "0.1.1": {
+   "name": "coa",
+   "version": "0.1.1",
+   "maintainers": [
+    {
+     "name": "veged",
+     "email": "veged@mail.ru"
+    }
+   ],
+   "dependencies": {
+    "q": ">=0.7.1"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "dist": {}
+  },
+  "1.0.1": {
+   "name": "coa",
+   "version": "1.0.1",
+   "_npmUser": {
+    "name": "veged",
+    "email": "veged@ya.ru"
+   },
+   "maintainers": [
+    {
+     "name": "veged",
+     "email": "veged@mail.ru"
+    },
+    {
+     "name": "arikon",
+     "email": "peimei@ya.ru"
+    }
+   ],
+   "scripts": {
+    "test": "make test",
+    "coverage": "make coverage"
+   },
+   "dependencies": {
+    "q": "^1.1.2"
+   },
+   "optionalDependencies": {},
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "dist": {}
+  },
+  "0.4.1": {
+   "name": "coa",
+   "version": "0.4.1",
+   "_npmUser": {
+    "name": "arikon",
+    "email": "arikon@yandex-team.ru"
+   },
+   "maintainers": [
+    {
+     "name": "veged",
+     "email": "veged@mail.ru"
+    },
+    {
+     "name": "arikon",
+     "email": "peimei@ya.ru"
+    }
+   ],
+   "scripts": {
+    "test": "make test",
+    "coverage": "make coverage"
+   },
+   "dependencies": {
+    "q": "~0.9.6"
+   },
+   "optionalDependencies": {},
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/veged/coa.git"
+   },
+   "dist": {}
+  },
   "2.0.3": {
    "name": "coa",
    "version": "2.0.3",
@@ -161,6 +241,9 @@
  "time": {
   "modified": "2022-06-13T06:24:05.720Z",
   "created": "2011-07-19T22:07:50.546Z",
+  "0.1.1": "2011-09-29T21:43:35.652Z",
+  "0.4.1": "2014-05-27T08:56:35.578Z",
+  "1.0.1": "2015-03-30T10:53:56.038Z",
   "2.0.0": "2017-07-07T20:26:42.901Z",
   "2.0.1": "2018-01-10T20:45:24.906Z",
   "2.0.2": "2018-12-11T01:33:27.419Z",

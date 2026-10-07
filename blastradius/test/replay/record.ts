@@ -19,8 +19,10 @@ import { slimPackument } from '../../src/enrich/npm/registry.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DATA = join(HERE, 'data');
+/** --registry-only re-records just the npm packuments and keeps the advisories, repos and their manifest entries. */
+const registryOnly = process.argv.includes('--registry-only');
 const osvDir = process.argv[process.argv.indexOf('--osv-dir') + 1];
-if (!process.argv.includes('--osv-dir') || !osvDir) throw new Error('--osv-dir <dir> is required');
+if (!registryOnly && (!process.argv.includes('--osv-dir') || !osvDir)) throw new Error('--osv-dir <dir> is required');
 
 interface Bad { name: string; version: string; publisher: string; published?: string; scripts?: Record<string, string>; dependencies?: Record<string, string>; provenance?: boolean; source: string }
 interface Inc { id: string; advisories: string[]; bad: Bad[]; packages: string[] }
@@ -70,14 +72,23 @@ for (const name of [...names].sort()) {
   };
   const versions: Record<string, any> = {};
   const all = Object.keys(slim.versions ?? {});
-  // Keep the window, and the last 3 releases before it (so "previous publisher" is known).
-  const before = all.filter((v) => Date.parse(time[v] ?? '') < from).sort((a, b) => Date.parse(time[a]!) - Date.parse(time[b]!)).slice(-3);
+  // Keep the window, the last 3 releases before it (so "previous publisher" is known), and each
+  // earlier publisher's latest release before it: without those, an account returning after years
+  // (qix on chalk 5.6.1, last published 2.0.1 in 2017) looks like a brand-new publisher.
+  const earlier = all.filter((v) => Date.parse(time[v] ?? '') < from).sort((a, b) => Date.parse(time[a]!) - Date.parse(time[b]!));
+  const lastBy = new Map<string, string>();
+  for (const v of earlier) lastBy.set(String(slim.versions[v]?._npmUser?.name ?? ''), v);
+  const before = [...new Set([...earlier.slice(-3), ...lastBy.values()])];
   // Prereleases (nx publishes thousands of canaries) are dropped unless they are a bad version.
   const stable = (v: string) => !v.includes('-') || bads.some((b) => b.version === v);
   for (const v of [...before, ...all.filter(inWindow)].filter(stable)) versions[v] = slim.versions[v];
   for (const b of bads) {
     if (versions[b.version]) continue;
-    const prev = Object.values(versions).filter((m: any) => Date.parse(time[m.version] ?? '') < Date.parse(time[b.version] ?? '')).pop() as Record<string, any> | undefined;
+    // The release right before the bad one, by publish time (not insertion order).
+    const prev = Object.values(versions)
+      .filter((m: any) => Date.parse(time[m.version] ?? '') < Date.parse(time[b.version] ?? ''))
+      .sort((x: any, y: any) => Date.parse(time[x.version]!) - Date.parse(time[y.version]!))
+      .pop() as Record<string, any> | undefined;
     versions[b.version] = {
       name,
       version: b.version,
@@ -99,8 +110,8 @@ for (const name of [...names].sort()) {
 }
 
 // 2. Advisories from the local OSV export.
-for (const id of [...new Set(config.incidents.flatMap((i) => i.advisories))].sort()) {
-  const rec = JSON.parse(readFileSync(join(osvDir, `${id}.json`), 'utf8'));
+for (const id of registryOnly ? [] : [...new Set(config.incidents.flatMap((i) => i.advisories))].sort()) {
+  const rec = JSON.parse(readFileSync(join(osvDir!, `${id}.json`), 'utf8'));
   const slim = {
     id: rec.id,
     aliases: rec.aliases,
@@ -117,7 +128,7 @@ for (const id of [...new Set(config.incidents.flatMap((i) => i.advisories))].sor
 }
 
 // 3. Org repos at pinned commits.
-for (const o of ORG) {
+for (const o of registryOnly ? [] : ORG) {
   const dir = mkdtempSync(join(tmpdir(), 'replay-'));
   try {
     execFileSync('git', ['init', '-q', dir]);
@@ -136,4 +147,10 @@ for (const o of ORG) {
   }
 }
 
-write('manifest.json', { recordedAt: now, licences: { registry: 'npm public registry metadata', advisories: 'OSV (CC-BY-4.0 / per source)', repos: 'each repo under its own licence; only lockfiles and package.json are kept' }, items: provenance });
+if (registryOnly) {
+  // Replace only the packument entries; advisories and repos keep their original provenance.
+  const old = JSON.parse(readFileSync(join(DATA, 'manifest.json'), 'utf8')) as { items: Record<string, unknown>[] } & Record<string, unknown>;
+  write('manifest.json', { ...old, registryRecordedAt: now, items: [...old.items.filter((x) => x.kind !== 'packument'), ...provenance] });
+} else {
+  write('manifest.json', { recordedAt: now, licences: { registry: 'npm public registry metadata', advisories: 'OSV (CC-BY-4.0 / per source)', repos: 'each repo under its own licence; only lockfiles and package.json are kept' }, items: provenance });
+}

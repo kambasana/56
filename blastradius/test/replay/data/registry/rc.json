@@ -86,6 +86,28 @@
    },
    "dist": {}
   },
+  "0.0.5": {
+   "name": "rc",
+   "version": "0.0.5",
+   "maintainers": [
+    {
+     "name": "dominictarr",
+     "email": "dominic.tarr@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "node test.js"
+   },
+   "dependencies": {
+    "optimist": "~0.3.4",
+    "config-chain": "~0.3.2"
+   },
+   "repository": {
+    "url": "https://github.com/dominictarr/rc.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
   "1.2.9": {
    "name": "rc",
    "version": "1.2.9",
@@ -122,6 +144,7 @@
  "time": {
   "created": "2012-08-05T13:49:44.698Z",
   "modified": "2025-02-21T12:54:43.768Z",
+  "0.0.5": "2012-08-21T16:49:51.668Z",
   "1.2.6": "2018-03-13T04:38:55.888Z",
   "1.2.7": "2018-04-29T17:48:10.164Z",
   "1.2.8": "2018-05-26T23:43:53.976Z",

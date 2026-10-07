@@ -36,6 +36,12 @@ export const DEFAULT_WEIGHTS: Readonly<FactorWeights> = Object.freeze({
   abandoned: 0.2,
 });
 
+/**
+ * dependency_added: a brand-new dependency with at least this many npm downloads a week today has
+ * become a common building block (has-tostringtag ~190M), not an attack vehicle (peacenotwar ~4k).
+ */
+export const ESTABLISHED_WEEKLY_DOWNLOADS = 100_000;
+
 /** Vulnerability factor tuning. */
 export const VULN = Object.freeze({
   /** Base value when no CVSS score is known, by severity label. */

@@ -18,12 +18,15 @@ describe('proof on recorded real events', () => {
     expect(bad().filter((b) => b.advisoryAt && b.afterAdvisory?.level !== 'critical').map((b) => `${b.name}@${b.version}`)).toEqual([]);
   });
 
-  it('early warnings before any advisory do not regress (12 of 16 today)', () => {
+  it('early warnings before any advisory do not regress (11 of 16 today)', () => {
     const warned = bad().filter((b) => (b.earlyWarning?.signals.length ?? 0) > 0).map((b) => `${b.name}@${b.version}`);
     expect(warned).toEqual(
-      expect.arrayContaining(['event-stream@3.3.6', 'ua-parser-js@0.7.29', 'coa@2.0.3', 'rc@1.2.9', 'chalk@5.6.1', 'eslint-config-prettier@8.10.1', 'nx@21.5.0', 'nx@20.9.0']),
+      expect.arrayContaining(['event-stream@3.3.6', 'ua-parser-js@0.7.29', 'coa@2.0.3', 'rc@1.2.9', 'node-ipc@9.2.2', 'eslint-config-prettier@8.10.1', 'nx@21.5.0', 'nx@20.9.0']),
     );
-    expect(warned.length).toBeGreaterThanOrEqual(12);
+    expect(warned.length).toBeGreaterThanOrEqual(11);
+    // chalk 5.6.1 was published by qix, who had published chalk before (2016-2017): no publisher
+    // change. An earlier trimmed recording hid that history and showed a false early warning.
+    expect(warned).not.toContain('chalk@5.6.1');
     // The longest lead: event-stream's new publisher, months before the advisory.
     const es = bad().find((b) => b.name === 'event-stream')!;
     expect(es.exposureHours).toBeGreaterThan(24 * 70);

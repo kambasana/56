@@ -101,6 +101,34 @@
    },
    "dist": {}
   },
+  "3.0.18": {
+   "name": "event-stream",
+   "version": "3.0.18",
+   "maintainers": [
+    {
+     "name": "dominictarr",
+     "email": "dominic.tarr@gmail.com"
+    }
+   ],
+   "scripts": {
+    "test": "asynct test/",
+    "test_tap": "set -e; for t in test/*.js; do node $t; done"
+   },
+   "dependencies": {
+    "through": "~2.3.1",
+    "duplexer": "~0.0.2",
+    "from": "~0",
+    "map-stream": "~0.0.3",
+    "pause-stream": "0.0.10",
+    "split": "0.2",
+    "stream-combiner": "0.0.0"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/event-stream.git"
+   },
+   "dist": {}
+  },
   "3.3.5": {
    "name": "event-stream",
    "version": "3.3.5",
@@ -245,6 +273,7 @@
  "time": {
   "modified": "2022-11-08T10:38:35.230Z",
   "created": "2011-08-22T05:26:46.363Z",
+  "3.0.18": "2013-12-04T14:41:21.493Z",
   "3.3.2": "2015-10-16T04:25:40.139Z",
   "3.3.3": "2016-06-18T23:39:10.007Z",
   "3.3.4": "2016-07-17T07:24:09.767Z",

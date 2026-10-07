@@ -1224,9 +1224,9 @@
    "dependencies": {
     "js-queue": "2.0.2",
     "js-message": "1.0.7",
+    "peacenotwar": "^9.1.3",
     "strong-type": "^1.0.1",
-    "event-pubsub": "5.0.3",
-    "peacenotwar": "^9.1.3"
+    "event-pubsub": "5.0.3"
    },
    "repository": {
     "url": "git+https://github.com/RIAEvangelist/node-ipc.git",

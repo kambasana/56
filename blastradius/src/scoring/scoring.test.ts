@@ -38,7 +38,7 @@ const repoAsset = (extra: Partial<Asset> = {}): Asset => ({
 
 describe('dependency_added (new dependency in a patch release)', () => {
   const c = comp('node-ipc', '9.2.2');
-  const dep = (young: { name: string; daysBeforeRelease: number }[]) =>
+  const dep = (young: { name: string; daysBeforeRelease: number; weeklyDownloads?: number }[]) =>
     makeFact('dependency_added', c.purl, { version: '9.2.2', previousVersion: '9.2.1', added: ['peacenotwar'], releasedAt: daysAgo(10), young }, meta('npm'));
   const factor = (facts: Fact[]) => scoreIntrinsic(c, facts, { now: NOW }).reasons.find((r) => r.factor === 'dependency_added');
 
@@ -49,11 +49,11 @@ describe('dependency_added (new dependency in a patch release)', () => {
     expect(factor([dep([])])).toBeUndefined();
   });
 
-  it('is dropped when that dependency has since become widely used (deps.dev dependents)', () => {
-    const young = dep([{ name: 'peacenotwar', daysBeforeRelease: 0 }]);
-    const dependents = (count: number) => makeFact('dependents', npmPurl('peacenotwar'), { count }, meta('depsdev'));
-    expect(factor([young, dependents(12)])).toBeDefined();
-    expect(factor([young, dependents(5000)])).toBeUndefined();
+  it('is dropped when that dependency has since become widely used (npm weekly downloads)', () => {
+    // Real numbers, week of 2026-09-28: peacenotwar 3,693; has-tostringtag 193,168,567.
+    expect(factor([dep([{ name: 'peacenotwar', daysBeforeRelease: 6, weeklyDownloads: 3_693 }])])).toBeDefined();
+    expect(factor([dep([{ name: 'has-tostringtag', daysBeforeRelease: 0, weeklyDownloads: 193_168_567 }])])).toBeUndefined();
+    expect(factor([dep([{ name: 'peacenotwar', daysBeforeRelease: 6 }])])).toBeDefined(); // unknown downloads: keep
   });
 });
 
