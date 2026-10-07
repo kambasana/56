@@ -793,3 +793,43 @@ export interface ProjectHealthResponse {
   scanId: string | null;
   items: HealthItem[];
 }
+
+/** Org-wide incident mode. */
+export interface ExposureHitRow {
+  projectId: string;
+  projectName: string;
+  purl: string;
+  name: string;
+  version: string;
+  production: boolean;
+  /** e.g. "Brought in by npm-run-all · used by a11ymap (dev/test dependencies only)". */
+  reachText: string;
+}
+/** GET /api/search/exposure?q=name or name@version: "is X anywhere?" across visible projects. */
+export interface SearchExposureResponse {
+  query: { name: string; version: string | null };
+  projectsSearched: number;
+  items: ExposureHitRow[];
+}
+export interface AlertItem {
+  id: string;
+  projectId: string;
+  projectName: string;
+  purl: string;
+  advisoryId: string;
+  advisoryPublished: string | null;
+  production: boolean;
+  reachText: string;
+  createdAt: string;
+}
+/** GET /api/alerts */
+export interface ListAlertsResponse {
+  items: AlertItem[];
+}
+/** POST /api/alerts/check { advisories?: OSV records }: without a body the knowledge pack is used. */
+export interface CheckAlertsResponse {
+  source: 'advisories' | 'pack';
+  projectsChecked: number;
+  ms: number;
+  created: AlertItem[];
+}

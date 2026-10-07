@@ -219,6 +219,28 @@ ALTER TABLE scan ADD COLUMN report_sha256 TEXT;
 ALTER TABLE finding ADD COLUMN reach_text TEXT;
 `,
   },
+  {
+    version: 5,
+    name: 'alerts',
+    sql: `
+-- Org-wide incident mode: one row per (project, component, advisory) found by checking new
+-- advisories or the knowledge pack against stored inventories. Never re-created once seen.
+CREATE TABLE alert (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  project_id TEXT NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+  scan_id TEXT,
+  purl TEXT NOT NULL,
+  advisory_id TEXT NOT NULL,
+  advisory_published TEXT,
+  production INTEGER NOT NULL DEFAULT 0,
+  reach_text TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE (org_id, project_id, purl, advisory_id)
+);
+CREATE INDEX alert_org_created ON alert (org_id, created_at DESC);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

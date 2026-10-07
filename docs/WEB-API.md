@@ -164,3 +164,14 @@ Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). E
 - **Landing page:** if the user lacks `home`, `/` redirects to the first allowed route. For example, an Auditor lands on `/reports`.
 - **No session:** any route redirects to `/login`.
 - **Forbidden routes:** a route the user is not allowed to see renders a 403 state. The server-side API check is what actually protects the data.
+
+
+## Org-wide incident mode
+
+Answered from the stored inventory of each project's newest succeeded scan; nothing is re-scanned.
+
+| Route | Permission | What |
+|---|---|---|
+| `GET /api/search/exposure?q=name[@version]` | `exposure` (org or per project) | "Is X anywhere?": every visible project that contains the package, with production/dev and reach in words |
+| `GET /api/alerts?limit=` | `findings` or `exposure` | Alerts, newest first |
+| `POST /api/alerts/check` `{ advisories?: OSV[] }` | `manage_projects` | Match advisories (OSV records), or the knowledge pack (`BLASTRADIUS_PACK`) when none are given, against all projects. Each (project, component, advisory) becomes an alert once. Returns the new alerts and the time taken. |

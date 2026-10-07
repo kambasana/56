@@ -3,12 +3,15 @@
  * the offline e2e fixture, reports, graphs, and path traversal rejection. No port, no network.
  */
 import { createHash } from 'node:crypto';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HttpClient } from '../core/http.js';
 import type {
+  CheckAlertsResponse,
+  ListAlertsResponse,
+  SearchExposureResponse,
   ChangesResponse,
   FindingDetail,
   GraphResponse,
@@ -566,5 +569,43 @@ describe('git targets', () => {
     expect(done.status).toBe('failed');
     expect(done.error).toBe('Git clone failed: repository not found or not public');
     failSrv.jobs.stop();
+  });
+});
+
+describe('org-wide incident mode', () => {
+  const advisory = JSON.parse(readFileSync(join(process.cwd(), 'test/replay/data/advisories/GHSA-mh6f-8j2x-4483.json'), 'utf8')) as unknown;
+
+  it('"is X anywhere?" searches stored inventories, with reach in words', async () => {
+    const res = await call('GET', '/api/search/exposure?q=event-stream@3.3.6', { as: 'admin' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SearchExposureResponse;
+    expect(body.query).toEqual({ name: 'event-stream', version: '3.3.6' });
+    expect(body.items.length).toBeGreaterThan(0);
+    expect(body.items[0]).toMatchObject({ projectId: seededProjectId, name: 'event-stream', version: '3.3.6', reachText: expect.stringMatching(/used by/) });
+    expect((await call('GET', '/api/search/exposure?q=', { as: 'admin' })).status).toBe(400);
+    expect((await call('GET', '/api/search/exposure?q=event-stream', { as: 'auditor' })).status).toBe(403);
+  });
+
+  it('a new advisory becomes alerts once, without re-scanning', async () => {
+    const first = await call('POST', '/api/alerts/check', { as: 'admin', body: { advisories: [advisory] } });
+    expect(first.status).toBe(200);
+    const r1 = (await first.json()) as CheckAlertsResponse;
+    expect(r1.source).toBe('advisories');
+    expect(r1.created.map((a) => `${a.purl} ${a.advisoryId}`)).toContain('pkg:npm/event-stream@3.3.6 GHSA-mh6f-8j2x-4483');
+    const again = (await (await call('POST', '/api/alerts/check', { as: 'admin', body: { advisories: [advisory] } })).json()) as CheckAlertsResponse;
+    expect(again.created).toEqual([]);
+    const list = (await (await call('GET', '/api/alerts', { as: 'appsec' })).json()) as ListAlertsResponse;
+    expect(list.items.length).toBe(r1.created.length);
+    expect((await call('POST', '/api/alerts/check', { as: 'auditor', body: { advisories: [advisory] } })).status).toBe(403);
+  });
+
+  it('without advisories and without a pack it says what is missing', async () => {
+    const saved = process.env.BLASTRADIUS_PACK;
+    delete process.env.BLASTRADIUS_PACK;
+    try {
+      expect((await call('POST', '/api/alerts/check', { as: 'admin', body: {} })).status).toBe(400);
+    } finally {
+      if (saved !== undefined) process.env.BLASTRADIUS_PACK = saved;
+    }
   });
 });

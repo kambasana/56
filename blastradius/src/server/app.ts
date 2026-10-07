@@ -8,6 +8,7 @@ import type { AppEnv, ServerDeps } from './context.js';
 import { resolveOrgId } from './context.js';
 import { errorResponse, toErrorResponse } from './errors.js';
 import { registerAuthRoutes, SESSION_COOKIE } from './routes/auth.js';
+import { registerAlertRoutes } from './routes/alerts.js';
 import { registerFindingRoutes } from './routes/findings.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerReportRoutes } from './routes/reports.js';
@@ -68,6 +69,7 @@ export function createApp(deps: ServerDeps): Hono<AppEnv> {
   registerAuthRoutes(app);
   registerProjectRoutes(app);
   registerFindingRoutes(app);
+  registerAlertRoutes(app);
   registerReportRoutes(app);
   registerSettingsRoutes(app);
 

@@ -25,3 +25,4 @@ export * from './changes.js';
 export * from './rbac.js';
 export * from './invites.js';
 export * from './seed.js';
+export * from './alerts.js';

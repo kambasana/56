@@ -6,6 +6,8 @@
 import { parsePurl, type AssetExposure, type Inventory } from '../core/types.js';
 import { describeReach } from '../report/reach.js';
 import { buildDependencyGraph, inboundExposure } from '../scoring/blast.js';
+import { packMalware } from '../pack/load.js';
+import type { KnowledgePack } from '../pack/types.js';
 
 /** The OSV fields matching needs (OSV records and knowledge-pack entries both fit). */
 export interface AdvisoryLike {
@@ -110,6 +112,25 @@ export function matchAdvisories(inventories: readonly StoredInventory[], advisor
         if (seen.has(key) || !advisoryAffects(adv, nv.name, nv.version)) continue;
         seen.add(key);
         hits.push({ ...hitFor(s, c.purl, nv), advisoryId: adv.id, ...(adv.published ? { advisoryPublished: adv.published } : {}) });
+      }
+    }
+  }
+  return hits.sort(byProjectThenPurl);
+}
+
+/** Hits from the knowledge pack's known-bad list (whole-package malware and bad releases). */
+export function matchPack(inventories: readonly StoredInventory[], pack: KnowledgePack): ExposureHit[] {
+  const hits: ExposureHit[] = [];
+  for (const s of inventories) {
+    const seen = new Set<string>();
+    for (const c of s.inventory.components) {
+      const nv = npmName(c.purl);
+      if (!nv) continue;
+      for (const ref of packMalware(pack, nv.name, nv.version)) {
+        const key = `${c.purl}\u0000${ref.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        hits.push({ ...hitFor(s, c.purl, nv), advisoryId: ref.id, ...(ref.published ? { advisoryPublished: ref.published } : {}) });
       }
     }
   }
