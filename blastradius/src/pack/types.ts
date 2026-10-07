@@ -4,7 +4,8 @@
  * malware from the OSV bulk export and curated supply-chain incidents. Later versions add the
  * maintainer → org → funder graph, features and the model.
  */
-export const PACK_SCHEMA = 1;
+/** 2: adds malware.ranges (range-only advisories); v1 packs misread those as every version. */
+export const PACK_SCHEMA = 2;
 
 export interface PackSource {
   name: string;
@@ -50,7 +51,9 @@ export interface KnowledgePack {
     packages: Record<string, PackMalwareRef[]>;
     /** Specific bad releases of packages that also had good ones: name → version → refs. */
     versions: Record<string, Record<string, PackMalwareRef[]>>;
+    /** Range-only advisories (no version list), e.g. fsevents >=1.0.0 <1.2.11: name → [{ ref, ranges }]. */
+    ranges: Record<string, { ref: PackMalwareRef; ranges: { events?: Record<string, string>[] }[] }[]>;
   };
   incidents: PackIncident[];
-  counts: { malwarePackages: number; compromisedPackages: number; compromisedVersions: number; incidents: number };
+  counts: { malwarePackages: number; compromisedPackages: number; compromisedVersions: number; rangeAdvisories: number; incidents: number };
 }

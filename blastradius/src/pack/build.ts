@@ -7,6 +7,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { coversAllVersions, type OsvRange } from '../core/osv-range.js';
 import { PACK_SCHEMA, type KnowledgePack, type PackIncident, type PackMalwareRef, type PackSource } from './types.js';
 
 interface OsvRecord {
@@ -16,14 +17,6 @@ interface OsvRecord {
   withdrawn?: unknown;
   database_specific?: { cwe_ids?: unknown };
   affected?: { package?: { name?: unknown; ecosystem?: unknown }; versions?: unknown; ranges?: { events?: Record<string, unknown>[] }[] }[];
-}
-
-/** A range that starts at 0 and is never fixed means every version is malicious. */
-function allVersions(a: NonNullable<OsvRecord['affected']>[number]): boolean {
-  return (a.ranges ?? []).some((r) => {
-    const ev = r.events ?? [];
-    return ev.some((e) => e.introduced === '0') && !ev.some((e) => 'fixed' in e || 'last_affected' in e || 'limit' in e);
-  });
 }
 
 const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length < 300;
@@ -55,8 +48,13 @@ export function addOsvRecord(pack: KnowledgePack['malware'], rec: OsvRecord): bo
     const name = a.package?.name;
     if (!str(name) || a.package?.ecosystem !== 'npm') continue;
     const versions = Array.isArray(a.versions) ? a.versions.filter(str) : [];
-    if (allVersions(a) || versions.length === 0) {
+    const ranges = Array.isArray(a.ranges) ? a.ranges : [];
+    if (coversAllVersions(ranges as OsvRange[]) || (versions.length === 0 && ranges.length === 0)) {
       addRef((pack.packages[name] ??= []), ref);
+    } else if (versions.length === 0) {
+      // Range only (e.g. fsevents >=1.0.0 <1.2.11): keep the range, never "every version".
+      const list = (pack.ranges[name] ??= []);
+      if (!list.some((x) => x.ref.id === ref.id)) list.push({ ref, ranges: ranges.map((r) => ({ events: (r.events ?? []).map((e) => Object.fromEntries(Object.entries(e).filter(([, v]) => typeof v === 'string'))) as Record<string, string>[] })) });
     } else {
       const byVersion = (pack.versions[name] ??= {});
       for (const v of versions) addRef((byVersion[v] ??= []), ref);
@@ -132,9 +130,9 @@ export function emptyPack(builtAt: string): KnowledgePack {
     schema: PACK_SCHEMA,
     builtAt,
     sources: [],
-    malware: { packages: {}, versions: {} },
+    malware: { packages: {}, versions: {}, ranges: {} },
     incidents: [],
-    counts: { malwarePackages: 0, compromisedPackages: 0, compromisedVersions: 0, incidents: 0 },
+    counts: { malwarePackages: 0, compromisedPackages: 0, compromisedVersions: 0, rangeAdvisories: 0, incidents: 0 },
   };
 }
 
@@ -143,11 +141,13 @@ export function finishPack(pack: KnowledgePack, sources: PackSource[]): Knowledg
   const sortObj = <T>(o: Record<string, T>): Record<string, T> => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]!]));
   pack.malware.packages = sortObj(pack.malware.packages);
   pack.malware.versions = sortObj(Object.fromEntries(Object.entries(pack.malware.versions).map(([k, v]) => [k, sortObj(v)])));
+  pack.malware.ranges = sortObj(pack.malware.ranges);
   pack.sources = sources;
   pack.counts = {
     malwarePackages: Object.keys(pack.malware.packages).length,
     compromisedPackages: Object.keys(pack.malware.versions).length,
     compromisedVersions: Object.values(pack.malware.versions).reduce((n, v) => n + Object.keys(v).length, 0),
+    rangeAdvisories: Object.values(pack.malware.ranges).reduce((n, v) => n + v.length, 0),
     incidents: pack.incidents.length,
   };
   return pack;

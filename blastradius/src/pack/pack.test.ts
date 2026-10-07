@@ -18,6 +18,16 @@ describe('pack builder', () => {
     expect(p.malware.packages['0-shadowenv']).toEqual([{ id: 'MAL-2022-10', published: '2022-06-20T20:22:01.000Z' }]);
     expect(p.malware.versions.chalk).toEqual({ '5.6.1': [{ id: 'MAL-2025-46969' }] });
   });
+  it('keeps range-only advisories as ranges (MAL-2023-462: fsevents >=1.0.0 <1.2.11), never as every version', () => {
+    const p = emptyPack('x');
+    addOsvRecord(p.malware, { id: 'MAL-2023-462', affected: [{ package: npm('fsevents'), ranges: [{ events: [{ introduced: '1.0.0' }, { fixed: '1.2.11' }] }] }] });
+    expect(p.malware.packages.fsevents).toBeUndefined();
+    const pack = finishPack(p, []);
+    expect(packMalware(pack, 'fsevents', '2.3.3')).toEqual([]);
+    expect(packMalware(pack, 'fsevents', '1.2.10').map((r) => r.id)).toEqual(['MAL-2023-462']);
+    expect(packMalware(pack, 'fsevents', '1.2.11')).toEqual([]);
+    expect(pack.counts.rangeAdvisories).toBe(1);
+  });
   it('keeps GitHub advisories only when tagged CWE-506, and never twice', () => {
     const es = { id: 'GHSA-mh6f-8j2x-4483', database_specific: { cwe_ids: ['CWE-506'] }, affected: [{ package: npm('event-stream'), versions: ['3.3.6'] }, { package: npm('event-stream'), versions: ['3.3.6'] }] };
     expect(isMalwareAdvisory(es)).toBe(true);

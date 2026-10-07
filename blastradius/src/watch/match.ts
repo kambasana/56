@@ -6,7 +6,7 @@
 import { parsePurl, type AssetExposure, type Inventory } from '../core/types.js';
 import { describeReach } from '../report/reach.js';
 import { buildDependencyGraph, inboundExposure } from '../scoring/blast.js';
-import { compareVersions } from '../enrich/npm/packument.js';
+import { coversAllVersions, inRanges } from '../core/osv-range.js';
 import { packMalware } from '../pack/load.js';
 import type { KnowledgePack } from '../pack/types.js';
 
@@ -40,35 +40,7 @@ export interface ExposureHit {
   reachText: string;
 }
 
-/**
- * OSV SEMVER/ECOSYSTEM ranges: affected from an "introduced" event up to (not including) the next
- * "fixed", or up to and including a "last_affected". Range-only advisories (no explicit version
- * list, e.g. GHSA-97m3-w2cp-4xx6 for node-ipc) are common.
- */
-export function inRanges(version: string, ranges: NonNullable<NonNullable<AdvisoryLike['affected']>[number]['ranges']>): boolean {
-  for (const r of ranges) {
-    let open: string | null = null;
-    for (const e of r.events ?? []) {
-      if (e.introduced !== undefined) open = e.introduced;
-      else if (open !== null && e.fixed !== undefined) {
-        if ((open === '0' || compareVersions(version, open) >= 0) && compareVersions(version, e.fixed) < 0) return true;
-        open = null;
-      } else if (open !== null && e.last_affected !== undefined) {
-        if ((open === '0' || compareVersions(version, open) >= 0) && compareVersions(version, e.last_affected) <= 0) return true;
-        open = null;
-      }
-    }
-    if (open !== null && (open === '0' || compareVersions(version, open) >= 0)) return true;
-  }
-  return false;
-}
-
-function allVersions(a: NonNullable<AdvisoryLike['affected']>[number]): boolean {
-  return (a.ranges ?? []).some((r) => {
-    const ev = r.events ?? [];
-    return ev.some((e) => e.introduced === '0') && !ev.some((e) => 'fixed' in e || 'last_affected' in e || 'limit' in e);
-  });
-}
+const allVersions = (a: NonNullable<AdvisoryLike['affected']>[number]): boolean => coversAllVersions(a.ranges ?? []);
 
 /** True when the advisory names this npm package version (explicit version, or every version). */
 export function advisoryAffects(adv: AdvisoryLike, name: string, version: string | undefined): boolean {

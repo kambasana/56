@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
+import { inRanges } from '../core/osv-range.js';
 import { PACK_SCHEMA, type KnowledgePack, type PackMalwareRef } from './types.js';
 
 export interface LoadedPack {
@@ -27,5 +28,6 @@ export async function loadPack(path: string, expectSha256?: string): Promise<Loa
 export function packMalware(pack: KnowledgePack, name: string, version: string | undefined): PackMalwareRef[] {
   const whole = pack.malware.packages[name] ?? [];
   const exact = version !== undefined ? (pack.malware.versions[name]?.[version] ?? []) : [];
-  return [...whole, ...exact];
+  const ranged = version !== undefined ? (pack.malware.ranges[name] ?? []).filter((x) => inRanges(version, x.ranges)).map((x) => x.ref) : [];
+  return [...whole, ...exact, ...ranged];
 }
