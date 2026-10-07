@@ -1,0 +1,68 @@
+# Blastradius knowledge pack: one-off bootstrap (docs/DATA-ML.md).
+#
+# Copy into the PRIVATE repo (kambasana/blastradius-hammer) as .github/workflows/pack.yml.
+# Downloads the OSV npm export and tstromberg/supplychain-attack-data, builds pack.json.gz with
+# `npm run pack:build`, and publishes it as a release asset (tag pack-<date>) with its SHA-256.
+# Scans use it with `--pack pack.json.gz` or BLASTRADIUS_PACK=/path/pack.json.gz.
+name: pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Blastradius branch, tag or commit in kambasana/56
+        default: docs/blast-radius-plan
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out Blastradius (public)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kambasana/56
+          ref: ${{ inputs.ref }}
+          path: src
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install
+        working-directory: src/blastradius
+        run: npm ci --ignore-scripts
+
+      - name: Download sources
+        run: |
+          mkdir -p "$RUNNER_TEMP/osv/mal"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/osv/npm-all.zip" https://storage.googleapis.com/osv-vulnerabilities/npm/all.zip
+          unzip -q "$RUNNER_TEMP/osv/npm-all.zip" 'MAL-*' 'GHSA-*' -d "$RUNNER_TEMP/osv/mal"
+          git clone -q --depth 1 https://github.com/tstromberg/supplychain-attack-data.git "$RUNNER_TEMP/sad"
+          echo "SAD_COMMIT=$(git -C "$RUNNER_TEMP/sad" rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build pack
+        working-directory: src/blastradius
+        run: |
+          npm run -s pack:build -- --osv-dir "$RUNNER_TEMP/osv/mal" --attack-data "$RUNNER_TEMP/sad" --out "$RUNNER_TEMP/pack.json.gz" | tee "$RUNNER_TEMP/pack-summary.json"
+          {
+            echo "## Knowledge pack"
+            echo '```json'
+            cat "$RUNNER_TEMP/pack-summary.json"
+            echo '```'
+            echo "supplychain-attack-data commit: $SAD_COMMIT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="pack-$(date -u +%Y%m%d-%H%M)"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "Knowledge pack $tag" \
+            --notes-file "$RUNNER_TEMP/pack-summary.json" \
+            "$RUNNER_TEMP/pack.json.gz" "$RUNNER_TEMP/pack.json.gz.sha256"

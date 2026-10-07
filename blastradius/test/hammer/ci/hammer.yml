@@ -74,6 +74,20 @@ jobs:
           npm run build
           npx playwright install --with-deps chromium
 
+      - name: Use the newest knowledge pack, if one was built (pack workflow)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("pack-"))][0].tagName // empty')
+          if [ -n "$tag" ]; then
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'pack.json.gz*' -D "$RUNNER_TEMP/pack"
+            (cd "$RUNNER_TEMP/pack" && sha256sum -c pack.json.gz.sha256)
+            echo "BLASTRADIUS_PACK=$RUNNER_TEMP/pack/pack.json.gz" >> "$GITHUB_ENV"
+            echo "Knowledge pack: $tag"
+          else
+            echo "No knowledge pack release yet (run the pack workflow); scanning without one."
+          fi
+
       - name: Scan real scenarios (CLI + web API), keep servers up
         working-directory: src/blastradius
         env:

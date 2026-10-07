@@ -103,6 +103,15 @@ These come from our incident KB plus entity resolution and need ongoing curation
 
 **Base-rate warning:** account-takeover compromises of legitimate npm packages number in the low hundreds to about 1,000 (2018–2026) and are clustered in campaigns such as Shai-Hulud and chalk/debug. Splits are grouped by campaign and time, so one worm cannot leak across folds.
 
+## Status (2026-10-07)
+
+- **Pack v1 (known-bad layer) built.** `npm run pack:build` (src/pack/) reads the OSV npm export and supplychain-attack-data and writes `pack.json.gz` (about 3 MB, gzipped JSON, sorted so the same inputs give the same bytes, with a `.sha256`). First build: 207,509 malicious-in-every-version packages, 27,262 bad releases of 14,587 otherwise legitimate packages, 84 curated npm incidents (imported as `alleged`).
+- **Finding:** the classic compromises (event-stream, ua-parser-js, node-ipc) are not `MAL-*` records; they are GitHub advisories tagged **CWE-506** (embedded malicious code), so the pack includes those too. Protestware (colors, faker, peacenotwar) is in neither and stays covered by our own incident KB.
+- **Scan time:** `blastradius scan --pack pack.json.gz` or `BLASTRADIUS_PACK=…` (the server reads the same variable). The pack enricher runs after OSV and only adds what live OSV did not already report, so offline and blocked-network scans still flag known malware.
+- **Bootstrap job:** `test/hammer/ci/pack.yml` (copy into the private repo) builds the pack and publishes it as a release asset; the hammer workflow uses the newest one.
+- **Noise rule and reach in words:** shipped (health list and "Upkeep signals" tab; `describeReach`).
+- **Next:** maintainer → org → funder graph (npm packuments, GitHub `fundingLinks`, Open Collective), features and the model with its backtest gate.
+
 ## 5. Deliverables
 
 - **Bootstrap scripts:** `blastradius/pack/` (collect, normalise, resolve, features, label, train in Python, export, backtest) and a `pack` workflow for the private repo.

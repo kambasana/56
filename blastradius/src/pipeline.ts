@@ -24,6 +24,8 @@ import { createGithubEnricher } from './enrich/github/index.js';
 import { incidentsFromMalwareFacts, loadIncidents, validateKbDir } from './incidents/index.js';
 import { applyReviewState, buildEntityGraph, loadReviewState, resolveEntities, type EntityGraphData } from './entities/index.js';
 import { buildScanResult, scoreInventory } from './scoring/index.js';
+import { createPackEnricher } from './pack/enricher.js';
+import { loadPack, type LoadedPack } from './pack/load.js';
 import { REPORT_FILENAMES, renderReport, type ReportFormat } from './report/index.js';
 
 export type OutputFormat = ReportFormat;
@@ -49,6 +51,8 @@ export interface ScanOptions {
   now?: Date;
   /** Incident KB directory (default: the bundled kb/incidents). */
   kbDir?: string;
+  /** Knowledge pack file (docs/DATA-ML.md); default $BLASTRADIUS_PACK. Adds its known-bad list. */
+  packFile?: string;
   /** Entity-link review decisions (JSON). Optional. */
   reviewFile?: string;
   /** Import a Syft SBOM when syft is on PATH. */
@@ -72,6 +76,18 @@ export interface ScanOutput {
   entities: EntityGraphData;
   /** Paths of report files written (empty when outDir is unset). */
   files: string[];
+}
+
+const packCache = new Map<string, Promise<LoadedPack>>();
+/** The server scans many times with the same pack: parse it once per path. */
+function cachedPack(path: string): Promise<LoadedPack> {
+  let p = packCache.get(path);
+  if (!p) {
+    p = loadPack(path);
+    p.catch(() => packCache.delete(path));
+    packCache.set(path, p);
+  }
+  return p;
 }
 
 /** Default enricher set; github reads repo facts collected by the earlier enrichers. */
@@ -143,6 +159,12 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   const ctx: EnrichContext = { http, now, offline: opts.offline || http.offline, warn, historical };
   const facts: Fact[] = [];
   const enrichers = (opts.enrichers ?? defaultEnrichers)(() => facts);
+  const packFile = opts.packFile ?? process.env.BLASTRADIUS_PACK;
+  if (packFile) {
+    const loaded = await cachedPack(packFile);
+    log(`knowledge pack ${loaded.path} (built ${loaded.pack.builtAt.slice(0, 10)}, ${loaded.pack.counts.compromisedVersions} bad releases, ${loaded.pack.counts.malwarePackages} malicious packages)`);
+    enrichers.push(createPackEnricher(loaded, () => facts));
+  }
   // Independent enrichers (OSV, deps.dev, npm) talk to different hosts, so they run concurrently;
   // one that reads earlier facts (GitHub) waits for them. Facts and warnings are still appended
   // in the declared enricher order, so the result is the same as running them one by one.

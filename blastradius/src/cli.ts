@@ -47,6 +47,7 @@ interface ScanCliOptions {
   asOf?: Date;
   kb: string;
   review?: string;
+  pack?: string;
   syft: boolean;
   failOn?: RiskLevel;
   top: string;
@@ -80,6 +81,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     )
     .option('--as-of <date>', 'reference time for decay and registry history (backtests), ISO date', parseAsOf)
     .option('--kb <dir>', 'incident knowledge base directory', DEFAULT_KB_DIR)
+    .option('--pack <file>', 'knowledge pack (pack.json.gz) with the known-bad list; default $BLASTRADIUS_PACK')
     .option('--review <file>', 'entity-link review decisions (JSON)')
     .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
     .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
@@ -99,6 +101,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
       if (!o.cache) opts.cacheDir = false;
       if (o.asOf) opts.now = o.asOf;
       if (o.review) opts.reviewFile = o.review;
+      if (o.pack) opts.packFile = o.pack;
       const { result, files } = await scan(opts);
       const top = Math.max(0, Math.min(100, Number.parseInt(o.top, 10) || 5));
       out(formatSummary(result, { top, files }));
