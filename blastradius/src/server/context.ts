@@ -4,6 +4,7 @@
  * Checks always run in this order so cross-org data is never confirmed to exist:
  *   1. signed in (401) → 2. resource exists in the caller's org (404) → 3. permission (403).
  */
+import type { AlertWatcher } from './watch.js';
 import type { Context } from 'hono';
 import type { MeResponse, Permission, User } from './api-types.js';
 import { can, type PagePermission } from './permissions.js';
@@ -54,6 +55,8 @@ export interface ServerDeps {
   /** Concurrent password verifications (scrypt is CPU and memory heavy). */
   loginGate: ConcurrencyGate;
   scanLimiter: RateLimiter;
+  /** Alerts from the knowledge pack after scans and on a timer, plus webhook notifications. */
+  watcher: AlertWatcher;
 }
 
 export interface Session {

@@ -2,6 +2,7 @@
  * `blastradius serve`: open the store, wire the job runner, optionally seed dev data, and
  * listen with @hono/node-server. Default host is 127.0.0.1 (loopback only).
  */
+import { AlertWatcher, type AlertWatcherOptions } from './watch.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { serve as nodeServe } from '@hono/node-server';
@@ -74,6 +75,8 @@ export interface CreateServerOptions {
   loginIpRateLimit?: number;
   /** Scans per user per hour (default 60). */
   scanRateLimit?: number;
+  /** Knowledge-pack alerts and webhook (defaults from BLASTRADIUS_PACK / BLASTRADIUS_ALERT_WEBHOOK). */
+  alerts?: AlertWatcherOptions;
 }
 
 export function defaultLocalRoots(env: NodeJS.ProcessEnv = process.env): string[] {
@@ -95,7 +98,9 @@ export function createServer(opts: CreateServerOptions = {}) {
     ...(opts.secureCookies ? { secureCookies: opts.secureCookies } : {}),
     ...(opts.trustProxy && opts.trustProxy.length > 0 ? { trustProxy: [...opts.trustProxy] } : {}),
   };
+  const watcher = new AlertWatcher(store, { log, ...(opts.alerts ?? {}) });
   const jobs = new ScanJobs({
+    onScanSucceeded: (projectId) => watcher.afterScan(projectId),
     store,
     localRoots: () => config.localRoots,
     offline: config.offline,
@@ -116,6 +121,7 @@ export function createServer(opts: CreateServerOptions = {}) {
     loginIpLimiter: new RateLimiter(opts.loginIpRateLimit ?? 50, 15 * 60_000),
     loginGate: new ConcurrencyGate(4, 32),
     scanLimiter: new RateLimiter(opts.scanRateLimit ?? 60, 60 * 60_000),
+    watcher,
   };
   return { app: createApp(deps), deps, store, jobs, config };
 }
@@ -222,10 +228,17 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
   log(`blastradius serve: listening on ${url}`);
   const sessionSweep = setInterval(() => deleteExpiredSessions(store), 15 * 60_000);
   sessionSweep.unref();
+  // Knowledge-pack sweep: every BLASTRADIUS_WATCH_MINUTES (default 60) when a pack is configured.
+  const watchMinutes = Number(process.env.BLASTRADIUS_WATCH_MINUTES ?? 60);
+  if (deps.watcher.enabled && watchMinutes > 0) {
+    deps.watcher.start(watchMinutes);
+    log(`alerts: checking all projects against the knowledge pack every ${watchMinutes} min`);
+  }
   return {
     url,
     close: async () => {
       clearInterval(sessionSweep);
+      deps.watcher.stop();
       jobs.stop();
       await jobs.drain();
       await new Promise<void>((resolve) => server.close(() => resolve()));

@@ -76,9 +76,9 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 - node-ipc 10.1.x: the same maintainer, with no install script.
 - debug 4.4.2: the same publisher.
 
+7. **Automatic alerts.** The server re-checks all orgs when the pack refreshes, on a timer and after every scan. New alerts go once to a Slack-compatible webhook (see [WEB-API.md](WEB-API.md)).
+
 **Not yet done:**
-- A scheduled watch, which would run `alerts/check` automatically when the pack refreshes. Today it's an API call.
-- A Slack webhook.
 - A "new dependency in a patch release" signal, which would catch flatmap-stream and peacenotwar.
 
 ## Out of scope for this round

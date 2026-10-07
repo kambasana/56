@@ -4,13 +4,12 @@
  */
 import type { Hono } from 'hono';
 import { z } from 'zod';
-import { loadPack, type LoadedPack } from '../../pack/load.js';
-import { matchAdvisories, matchPack, searchExposure } from '../../watch/match.js';
+import { searchExposure } from '../../watch/match.js';
 import type { CheckAlertsResponse, ListAlertsResponse, SearchExposureResponse } from '../api-types.js';
 import { deps, requireOrgPerm, visibleProjects, type AppEnv } from '../context.js';
 import { badRequest } from '../errors.js';
 import { parseBody, queryInt, queryString } from '../request.js';
-import { latestInventories, listAlerts, recordAlerts, type AlertRow } from '../store/index.js';
+import { latestInventories, listAlerts, type AlertRow } from '../store/index.js';
 
 const Affected = z.object({
   package: z.object({ name: z.string().max(214), ecosystem: z.string().max(40) }).optional(),
@@ -29,14 +28,6 @@ export function parseExposureQuery(q: string): { name: string; version?: string 
   const m = /^(@?[^@\s]+)(?:@([^@\s]+))?$/.exec(q.trim());
   if (!m) return null;
   return m[2] ? { name: m[1]!, version: m[2] } : { name: m[1]! };
-}
-
-let packCache: { path: string; p: Promise<LoadedPack> } | null = null;
-function currentPack(): Promise<LoadedPack> | null {
-  const path = process.env.BLASTRADIUS_PACK;
-  if (!path) return null;
-  if (packCache?.path !== path) packCache = { path, p: loadPack(path) };
-  return packCache.p;
 }
 
 const toItem = (a: AlertRow) => ({ ...a });
@@ -61,21 +52,10 @@ export function registerAlertRoutes(app: Hono<AppEnv>): void {
   app.post('/api/alerts/check', async (c) => {
     const { orgId } = requireOrgPerm(c, 'manage_projects');
     const body = await parseBody(c, CheckBody);
-    const store = deps(c).store;
+    const { watcher } = deps(c);
+    if (!body.advisories && !watcher.enabled) throw badRequest('No advisories given and no knowledge pack configured (BLASTRADIUS_PACK)', ['advisories']);
     const started = performance.now();
-    const inventories = latestInventories(store, orgId);
-    let source: CheckAlertsResponse['source'];
-    let hits;
-    if (body.advisories) {
-      source = 'advisories';
-      hits = matchAdvisories(inventories, body.advisories);
-    } else {
-      const pack = currentPack();
-      if (!pack) throw badRequest('No advisories given and no knowledge pack configured (BLASTRADIUS_PACK)', ['advisories']);
-      source = 'pack';
-      hits = matchPack(inventories, (await pack).pack);
-    }
-    const created = recordAlerts(store, orgId, hits).map(toItem);
-    return c.json<CheckAlertsResponse>({ source, projectsChecked: inventories.length, ms: Math.round(performance.now() - started), created });
+    const r = await watcher.checkOrg(orgId, body.advisories ? { advisories: body.advisories } : {});
+    return c.json<CheckAlertsResponse>({ source: r.source, projectsChecked: r.projectsChecked, ms: Math.round(performance.now() - started), created: r.created.map(toItem) });
   });
 }
