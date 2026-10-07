@@ -88,6 +88,13 @@ export interface HttpClientOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
+/** For a 400/422 the server's own reason (e.g. a GraphQL error) is the only clue; keep a short, single-line excerpt. */
+function statusError(url: string, res: { status: number; body: string }): HttpError {
+  if (res.status !== 400 && res.status !== 422) return new HttpError(url, res.status);
+  const excerpt = res.body.replace(/\s+/g, ' ').trim().slice(0, 300);
+  return new HttpError(url, res.status, `HTTP ${res.status} for ${url}${excerpt ? `: ${excerpt}` : ''}`);
+}
+
 export class HttpError extends Error {
   constructor(
     readonly url: string,
@@ -146,7 +153,8 @@ export class SkippedHosts {
  * raw.githubusercontent.com are CDNs built for npm install / git-raw request rates, so the npm
  * packument and FUNDING.yml lookups are not throttled to 10 requests per second.
  */
-export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25 };
+// Open Collective's public GraphQL API answers 429 to bursts (seen in the live hammer run): one request a second.
+export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25, 'api.opencollective.com': 1000 };
 
 export class OfflineMissError extends Error {
   constructor(
@@ -296,7 +304,7 @@ export class HttpClient {
   /** GET/POST and parse JSON. Throws HttpError on non-2xx, OfflineMissError offline. */
   async fetchJson<T = unknown>(url: string, opts: RequestOptions = {}): Promise<T> {
     const res = await this.request(url, opts);
-    if (res.status < 200 || res.status >= 300) throw new HttpError(url, res.status);
+    if (res.status < 200 || res.status >= 300) throw statusError(url, res);
     return parseJson<T>(url, res.body);
   }
 
@@ -304,7 +312,7 @@ export class HttpClient {
   async fetchJsonOrNull<T = unknown>(url: string, opts: RequestOptions = {}): Promise<T | null> {
     const res = await this.request(url, opts);
     if (res.status === 404) return null;
-    if (res.status < 200 || res.status >= 300) throw new HttpError(url, res.status);
+    if (res.status < 200 || res.status >= 300) throw statusError(url, res);
     return parseJson<T>(url, res.body);
   }
 

@@ -20,9 +20,12 @@ function levelOk(want: string, got: string | null): boolean {
 }
 
 async function uiLevel(page: Page, e: ScenarioExpect): Promise<string | null> {
-  await page.getByRole('searchbox').first().fill(e.purl);
-  // Wait for the filtered count to settle before reading rows.
   const count = page.getByTestId('datatable-count').first();
+  const before = await count.innerText();
+  await page.getByRole('searchbox').first().fill(e.purl);
+  // The search is debounced: wait for the count to change from the unfiltered one (up to 5 s),
+  // then for it to settle, before reading rows.
+  for (let i = 0; i < 25 && (await count.innerText()) === before; i++) await page.waitForTimeout(200);
   let last = '';
   for (let i = 0; i < 20; i++) {
     await page.waitForTimeout(150);

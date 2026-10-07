@@ -152,8 +152,10 @@ export function webBuildMtimeMs(): number | null {
 
 /** Scenarios this server is expected to hold (all of them unless run-all.mjs named a reference date). */
 export function scenariosForServer(all: Scenario[]): Scenario[] {
-  if (!SERVER_AS_OF) return all;
-  return all.filter((s) => (s.asOf ?? 'now') === SERVER_AS_OF);
+  // Quick mode: the runner is started with --skip-scale, so scale-* and hostile-* are not scanned.
+  const wanted = FULL ? all : all.filter((s) => !s.id.startsWith('scale-') && !s.id.startsWith('hostile-'));
+  if (!SERVER_AS_OF) return wanted;
+  return wanted.filter((s) => (s.asOf ?? 'now') === SERVER_AS_OF);
 }
 
 export function readState(): HammerState {

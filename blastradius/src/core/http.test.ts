@@ -358,3 +358,13 @@ describe('per-host circuit breaker', () => {
     expect(c.unavailableHosts()).toEqual([]);
   });
 });
+
+describe('HTTP 400 errors', () => {
+  it('carry a short excerpt of the server reason (e.g. a GraphQL error)', async () => {
+    const c = new HttpClient({ transport: fakeTransport({ 'https://x.test/gql': { status: 400, body: { errors: [{ message: 'Cannot query field "x"' }] } } }), cacheDir: false, offline: false, minIntervalMs: 0 });
+    await expect(c.fetchJsonOrNull('https://x.test/gql')).rejects.toThrow(/HTTP 400 for https:\/\/x\.test\/gql: .*Cannot query field/);
+  });
+  it('spaces Open Collective requests a second apart by default', () => {
+    expect(DEFAULT_HOST_INTERVALS['api.opencollective.com']).toBe(1000);
+  });
+});

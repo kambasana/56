@@ -46,6 +46,17 @@ async function footerCount(page: Page): Promise<{ shown: number; of: number } | 
   return m ? { shown: Number(m[1]!.replace(/,/g, '')), of: Number(m[2]!.replace(/,/g, '')) } : null;
 }
 
+/** The URL updates before the debounced filter re-renders the table: poll the footer until it matches, up to 5 s. */
+async function footerCountWhen(page: Page, ok: (f: { shown: number; of: number }) => boolean): Promise<{ shown: number; of: number } | null> {
+  let f: { shown: number; of: number } | null = null;
+  for (let i = 0; i < 25; i++) {
+    f = await footerCount(page);
+    if (f && ok(f)) return f;
+    await page.waitForTimeout(200);
+  }
+  return f;
+}
+
 function largest(): HammerProject {
   const p = scannedProjects()[0];
   if (!p) throw new Error('No project with a succeeded scan on the server');
@@ -143,7 +154,7 @@ test.describe('findings at scale', () => {
       await page.getByRole('searchbox').first().fill(target.purl);
       await expect(page).toHaveURL(/[?&]q=/);
       const want = rows.filter((r) => [r.purl, r.name, r.version].some((s) => s.toLowerCase().includes(target.purl.toLowerCase()))).length;
-      const f = await footerCount(page);
+      const f = await footerCountWhen(page, (x) => x.shown >= 1 && x.shown <= Math.max(want, 1) + 2);
       if (!f || f.shown < 1) c.fail(`filtering by ${target.purl} shows no rows`);
       else if (f.shown > Math.max(want, 1) + 2) c.fail(`filtering by ${target.purl} shows ${f.shown} rows`);
       await expect(rowsLoc(page).first()).toContainText(target.name);
@@ -156,7 +167,7 @@ test.describe('findings at scale', () => {
       await page.getByRole('option', { name: /Critical/ }).click();
       await page.keyboard.press('Escape');
       await expect(page).toHaveURL(/[?&]level=critical/);
-      const f = await footerCount(page);
+      const f = await footerCountWhen(page, (x) => x.shown === crit);
       if (!f) throw new Error('no footer count');
       if (f.shown !== crit) c.fail(`Critical filter shows ${f.shown} rows, API has ${crit} critical findings`);
       const levels = await rowsLoc(page).locator('td:first-child').allInnerTexts();
