@@ -8,13 +8,15 @@ import type { OpenCollectiveFundingValue, OpenCollectiveResponse } from './types
 export const OPEN_COLLECTIVE_API = 'https://api.opencollective.com/graphql/v2';
 export const OC_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,99}$/i;
 
+// MemberRole has no SPONSOR value (the live API rejected the whole query with GRAPHQL_VALIDATION_FAILED,
+// so every funding lookup failed): sponsors and backers are both BACKER.
 export const OPEN_COLLECTIVE_QUERY = `query BlastradiusCollective($slug: String!, $limit: Int!) {
   account(slug: $slug) {
     slug
     name
     type
     ... on AccountWithHost { host { slug name } }
-    members(role: [BACKER, SPONSOR], limit: $limit) {
+    members(role: [BACKER], limit: $limit) {
       totalCount
       nodes {
         role

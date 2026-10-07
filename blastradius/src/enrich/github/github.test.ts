@@ -347,3 +347,11 @@ describe('createGithubEnricher (online transport)', () => {
     expect(oc).toEqual(['col-a']);
   });
 });
+
+describe('Open Collective query', () => {
+  it('asks only for member roles the API defines (SPONSOR is not one; it failed every lookup)', async () => {
+    const { OPEN_COLLECTIVE_QUERY } = await import('./opencollective.js');
+    expect(OPEN_COLLECTIVE_QUERY).toContain('members(role: [BACKER]');
+    expect(OPEN_COLLECTIVE_QUERY).not.toMatch(/\bSPONSOR\b/);
+  });
+});
