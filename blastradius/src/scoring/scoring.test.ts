@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { makeFact, npmPurl, type Asset, type Component, type EntityLink, type Fact, type Incident, type Inventory } from '../core/types.js';
+import { makeFact, npmPurl, type Asset, type Component, type EntityLink, type Fact, type Incident, type Inventory, type Reason } from '../core/types.js';
 import {
+  isPostureReason,
   ageDecay,
   buildScanResult,
   createLinkPathProvider,
@@ -414,11 +415,26 @@ describe('inbound blast radius', () => {
     const r1 = scoreInventory(inv, facts, { now: NOW });
     const r2 = scoreInventory(shuffled, [...facts].reverse(), { now: NOW });
     expect(JSON.stringify(r2)).toBe(JSON.stringify(r1));
-    expect(r1.findings.map((f) => f.purl)).toEqual([bad.purl, a.purl, b.purl]);
+    // Noise rule: single-maintainer only is a health signal, not a finding.
+    expect(r1.findings.map((f) => f.purl)).toEqual([bad.purl]);
+    expect(r1.health.map((h) => h.purl)).toEqual([a.purl, b.purl]);
+    const legacy = scoreInventory(inv, facts, { now: NOW, noiseRule: false });
+    expect(legacy.findings.map((f) => f.purl)).toEqual([bad.purl, a.purl, b.purl]);
+    expect(legacy.health).toEqual([]);
     const result = buildScanResult({ target: '.', inventory: inv, score: r1, generatedAt: NOW });
     expect(result.schemaVersion).toBe('1');
     expect(result.inventory.components).toBe(3);
     expect(result.generatedAt).toBe(NOW.toISOString());
+    expect(result.health?.map((h) => h.purl)).toEqual([a.purl, b.purl]);
+  });
+});
+
+describe('noise rule', () => {
+  it('treats posture factors and undated repo moves as health, everything else as a signal', () => {
+    for (const factor of ['weak_posture', 'no_provenance', 'single_maintainer', 'abandoned']) expect(isPostureReason({ factor, value: 1, weight: 0.2, detail: '' } as Reason)).toBe(true);
+    expect(isPostureReason({ factor: 'repo_transfer', value: 0.2, weight: 0.5, detail: '' } as Reason)).toBe(true);
+    expect(isPostureReason({ factor: 'repo_transfer', value: 0.9, weight: 0.5, detail: '' } as Reason)).toBe(false);
+    for (const factor of ['malware', 'vuln', 'maintainer_change', 'publisher_change', 'install_script', 'entity_incident', 'incident_affected']) expect(isPostureReason({ factor, value: 1, weight: 0.5, detail: '' } as Reason)).toBe(false);
   });
 });
 

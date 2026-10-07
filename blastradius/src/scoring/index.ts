@@ -8,16 +8,18 @@ import {
   type EntityLink,
   type Fact,
   type Finding,
+  type HealthEntry,
   type Incident,
   type Inventory,
   type OutboundFinding,
+  type Reason,
   type ScanResult,
 } from '../core/types.js';
 import { scoreIntrinsic } from './intrinsic.js';
 import { createLinkPathProvider, scoreEntityRisk, type EntityPathProvider } from './entity.js';
 import { buildDependencyGraph, inboundExposure, type PathLimits } from './blast.js';
 import { scoreOutbound, type WorkflowRiskInput } from './outbound.js';
-import { PATH_LIMITS, type FactorWeights } from './weights.js';
+import { PATH_LIMITS, REPO_TRANSFER_UNDATED_VALUE, type FactorWeights } from './weights.js';
 import { clamp01, cmpStr, round, sortReasons } from './util.js';
 
 export interface ScoreOptions {
@@ -37,10 +39,26 @@ export interface ScoreOptions {
   /** Only report findings with score > minScore (0–100). Default 0. */
   minScore?: number;
   pathLimits?: Partial<PathLimits>;
+  /**
+   * Noise rule (default true): a component whose only reasons are posture signals goes to
+   * `health`, not `findings`. false keeps the old behaviour (every scored component is a finding).
+   */
+  noiseRule?: boolean;
+}
+
+/** Weak signals that describe a package's upkeep, not something that happened to it. */
+export const POSTURE_FACTORS: ReadonlySet<string> = new Set(['weak_posture', 'no_provenance', 'single_maintainer', 'abandoned']);
+
+/** True when a reason is a posture signal (an undated repo move counts: renames years ago look the same). */
+export function isPostureReason(r: Reason): boolean {
+  if (POSTURE_FACTORS.has(r.factor)) return true;
+  return r.factor === 'repo_transfer' && r.value <= REPO_TRANSFER_UNDATED_VALUE;
 }
 
 export interface ScoreOutput {
   findings: Finding[];
+  /** Posture-only components (noise rule). */
+  health: HealthEntry[];
   outbound: OutboundFinding[];
   warnings: string[];
 }
@@ -55,6 +73,8 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
   const graph = buildDependencyGraph(inv);
   const minScore = opts.minScore ?? 0;
   const findings: Finding[] = [];
+  const health: HealthEntry[] = [];
+  const noiseRule = opts.noiseRule ?? true;
   const truncated: string[] = [];
 
   const components = [...inv.components].sort((a, b) => cmpStr(a.purl, b.purl));
@@ -69,6 +89,11 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
     if (!(score > minScore)) continue;
 
     const entityReasons = ent.reasons.map((r, i) => ({ ...r, contribution: i === 0 ? round((1 - intr.intrinsic) * ent.risk) : 0 }));
+    const reasons = sortReasons([...intr.reasons, ...entityReasons]);
+    if (noiseRule && reasons.every((r) => isPostureReason(r) || !(r.value > 0))) {
+      health.push({ purl: c.purl, score, reasons });
+      continue;
+    }
     const hasInstallScript = intr.reasons.some((r) => r.factor === 'install_script');
     const inbound = inboundExposure(graph, c.purl, { hasInstallScript, ...(opts.pathLimits ? { limits: opts.pathLimits } : {}) });
     for (const t of inbound.truncated) truncated.push(`${t.assetId} → ${t.purl}`);
@@ -77,12 +102,13 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
       purl: c.purl,
       score,
       level: levelForScore(score),
-      reasons: sortReasons([...intr.reasons, ...entityReasons]),
+      reasons,
       blastRadius: { assets: inbound.assets, score: round(risk * inbound.weightedExposure, 3) },
       entityChain: ent.chain,
     });
   }
   findings.sort(compareFindings);
+  health.sort((a, b) => b.score - a.score || cmpStr(a.purl, b.purl));
 
   const warnings: string[] = [];
   if (truncated.length > 0) {
@@ -92,7 +118,7 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
     );
   }
   const outbound = opts.workflows ? scoreOutbound(opts.workflows, opts.outboundDependents ? { dependents: opts.outboundDependents } : {}) : [];
-  return { findings, outbound, warnings };
+  return { findings, health, outbound, warnings };
 }
 
 /** Assemble a ScanResult (schemaVersion '1') from an inventory and scoring output. */
@@ -113,6 +139,7 @@ export function buildScanResult(args: {
     findings: [...args.score.findings].sort(compareFindings),
   };
   if (args.score.outbound.length > 0) result.outbound = args.score.outbound;
+  if (args.score.health && args.score.health.length > 0) result.health = args.score.health;
   if (warnings.length > 0) result.warnings = warnings;
   return result;
 }

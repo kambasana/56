@@ -749,6 +749,20 @@ export interface ScanResult {
   /** Sorted by score descending. */
   findings: Finding[];
   outbound?: OutboundFinding[];
+  /**
+   * Components whose only reasons are weak posture signals (no provenance, single maintainer,
+   * weak Scorecard posture, abandoned, an undated repo move). Not findings: shown as a health
+   * column so real problems are not buried (docs/DATA-ML.md, noise rule). Sorted like findings.
+   */
+  health?: HealthEntry[];
   /** Non-fatal problems (enricher failures, missing fixtures in offline mode). */
   warnings?: string[];
+}
+
+/** A component with posture signals only (see ScanResult.health). */
+export interface HealthEntry {
+  purl: PurlString;
+  /** What the combined posture signals would have scored (0–100), for sorting. */
+  score: number;
+  reasons: Reason[];
 }

@@ -142,6 +142,7 @@ ${LEVELS.map((l) => `<div class="tile">${levelBadge(l)}<strong>${h(counts[l])}</
 </div>
 <p class="muted">Scores combine intrinsic signals and recorded incidents linked through reviewed public evidence. They describe risk signals, not judgements about any person or organisation.</p>
 <h2>Top ${h(top.length)} of ${h(result.findings.length)} findings</h2>
+${result.health?.length ? `<p class="muted">${h(result.health.length)} more component(s) have upkeep signals only (no provenance, single maintainer, weak posture, unmaintained). They are listed in the JSON report under <code>health</code>, not counted as findings.</p>` : ''}
 ${summaryTable}
 ${top.map((f, i) => findingCard(f, i, cardOpts)).join('\n')}
 ${outboundSection(result.outbound ?? [])}
