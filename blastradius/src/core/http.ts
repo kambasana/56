@@ -8,10 +8,11 @@
  *   (in-memory map and/or a fixtures directory), then from the cache (even if
  *   stale), and otherwise throws OfflineMissError naming the missing key.
  * - Retries 429/5xx and network errors with exponential backoff.
- * - Per-host circuit breaker: after `breakerThreshold` consecutive network failures (no response at
- *   all: DNS, refused, proxy-denied, timeout) a host is treated as unreachable for
- *   `breakerCooldownMs`, so the rest of the scan fails fast (HostUnavailableError) instead of
- *   queueing and retrying thousands of doomed requests. Any HTTP response, even a 5xx, closes it.
+ * - Per-host circuit breaker: after `breakerThreshold` consecutive failures that say the host is not
+ *   usable from here (no response at all: DNS, refused, timeout; or an access-denied 401/403/407,
+ *   e.g. an egress proxy's "host not in allowlist") the host is skipped for `breakerCooldownMs`, so
+ *   the rest of the scan fails fast (HostUnavailableError) instead of queueing and retrying
+ *   thousands of doomed requests. Any other HTTP response (2xx, 404, even 5xx) resets the count.
  *
  * Responses are untrusted data: size-capped while streaming and parsed with JSON.parse only.
  */
@@ -77,7 +78,7 @@ export interface HttpClientOptions {
   maxRetries?: number;
   /** Max response size in bytes (default 25 MB). */
   maxBytes?: number;
-  /** Consecutive network failures (no HTTP response) after which a host is skipped (default 4; 0 disables). */
+  /** Consecutive network failures or access-denied responses after which a host is skipped (default 5; 0 disables). */
   breakerThreshold?: number;
   /** How long an unreachable host is skipped before one request may probe it again (default 10 min). */
   breakerCooldownMs?: number;
@@ -113,7 +114,7 @@ export class HostUnavailableError extends Error {
     readonly host: string,
     lastError?: unknown,
   ) {
-    super(`${host} is unreachable (${lastError instanceof Error ? lastError.message : 'repeated network errors'}); skipping its requests for this scan`);
+    super(`${host} is unreachable or refusing requests (${lastError instanceof Error ? lastError.message : 'repeated failures'}); skipping its requests for now`);
     this.name = 'HostUnavailableError';
   }
 }
@@ -134,17 +135,18 @@ export class SkippedHosts {
   /** One warning per skipped host, then reset. */
   flush(source: string, warn: ((m: string) => void) | undefined): void {
     for (const [host, { n }] of [...this.counts].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
-      warn?.(`${source}: ${host} is unreachable (repeated network errors); ${n} request(s) skipped`);
+      warn?.(`${source}: ${host} is unreachable or refusing requests (repeated network errors or HTTP 401/403/407); ${n} request(s) skipped`);
     }
     this.counts.clear();
   }
 }
 
 /**
- * Default minimum interval between requests per host. registry.npmjs.org is a CDN built for
- * npm install's request rates, so the npm enricher is not throttled to 10 requests per second.
+ * Default minimum interval between requests per host. registry.npmjs.org and
+ * raw.githubusercontent.com are CDNs built for npm install / git-raw request rates, so the npm
+ * packument and FUNDING.yml lookups are not throttled to 10 requests per second.
  */
-export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20 };
+export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25 };
 
 export class OfflineMissError extends Error {
   constructor(
@@ -160,6 +162,8 @@ export class OfflineMissError extends Error {
 }
 
 const DAY = 24 * 60 * 60 * 1000;
+/** Responses that mean "you may not use this host" (auth required, forbidden, proxy auth / egress denied). */
+const DENIED_STATUSES = new Set([401, 403, 407]);
 /** Tolerated clock skew for cache timestamps written by another process. */
 const CACHE_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
@@ -272,7 +276,7 @@ export class HttpClient {
     this.hostIntervals = { ...DEFAULT_HOST_INTERVALS, ...opts.hostIntervals };
     this.maxRetries = opts.maxRetries ?? 2;
     this.maxBytes = opts.maxBytes ?? 25 * 1024 * 1024;
-    this.breakerThreshold = Math.max(0, opts.breakerThreshold ?? 4);
+    this.breakerThreshold = Math.max(0, opts.breakerThreshold ?? 5);
     this.breakerCooldownMs = Math.max(0, opts.breakerCooldownMs ?? 10 * 60 * 1000);
     this.userAgent = opts.userAgent ?? 'blastradius/0.1 (+supply-chain auditor)';
     this.now = opts.now ?? Date.now;
@@ -380,9 +384,11 @@ export class HttpClient {
         if (e instanceof ResponseTooLargeError) throw e; // retrying would download it again
         err = e;
       }
-      // Any HTTP response means the host is reachable; only "no response at all" counts.
-      if (res !== undefined) this.breakers.delete(host);
-      else this.noteFailure(host, err);
+      // No response, or "access denied" (401/403/407): the host is not usable from here. Any other
+      // response means it is reachable and answering.
+      if (res === undefined) this.noteFailure(host, err);
+      else if (DENIED_STATUSES.has(res.status)) this.noteFailure(host, new Error(`HTTP ${res.status} from ${host}`));
+      else this.breakers.delete(host);
       const retryable = err !== undefined || (res !== undefined && (res.status === 429 || res.status >= 500));
       if (!retryable && res) return res;
       if (attempt >= this.maxRetries) {

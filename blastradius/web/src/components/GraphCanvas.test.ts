@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GraphResponse } from '@server/api-types';
-import { displayLabel, layoutOptions, separateBoxes, toElements, type Box } from './GraphCanvas';
+import { displayLabel, labelWidth, layeredPositions, layoutOptions, separateBoxes, toElements, type Box } from './GraphCanvas';
 
 const overlap = (a: Box, b: Box) => Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1) > 0 && Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1) > 0;
 const moved = (b: Box, o: { dx: number; dy: number }): Box => ({ x1: b.x1 + o.dx, x2: b.x2 + o.dx, y1: b.y1 + o.dy, y2: b.y2 + o.dy });
@@ -33,7 +33,33 @@ describe('GraphCanvas helpers', () => {
     ]);
   });
 
-  it('spaces every layout by label size', () => {
-    for (const l of ['breadthfirst', 'cose', 'concentric'] as const) expect(layoutOptions(l, 'c')).toMatchObject({ nodeDimensionsIncludeLabels: true });
+  it('layered layout wraps a wide layer into rows that fit the canvas, centre on top', () => {
+    const kids = Array.from({ length: 30 }, (_, i) => `dependent-package-${i}@1.0.0`);
+    const ids = ['c', ...kids, 'asset'];
+    const edges = [...kids.map((k) => [k, 'c'] as const), ['asset', kids[0]!] as const];
+    const pos = layeredPositions(ids, edges, 'c', { width: 860, nodeWidth: (id) => Math.max(28, labelWidth(id)) });
+    expect(pos.c).toEqual({ x: 0, y: 0 });
+    const rows = new Map<number, string[]>();
+    for (const k of kids) rows.set(pos[k]!.y, [...(rows.get(pos[k]!.y) ?? []), k]);
+    expect(rows.size).toBeGreaterThan(1); // wrapped, not one 30-label strip
+    for (const [, row] of rows) {
+      const xs = row.map((k) => pos[k]!.x);
+      expect(Math.max(...xs) - Math.min(...xs) + labelWidth(row[0]!)).toBeLessThanOrEqual(860);
+    }
+    expect(pos.asset!.y).toBeGreaterThan(Math.max(...kids.map((k) => pos[k]!.y)));
+    // Same-row label boxes never overlap.
+    const boxes: Box[] = ids.map((id) => ({ x1: pos[id]!.x - labelWidth(id) / 2, x2: pos[id]!.x + labelWidth(id) / 2, y1: pos[id]!.y, y2: pos[id]!.y + 30 }));
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(overlap(boxes[i]!, boxes[j]!), `${ids[i]}/${ids[j]}`).toBe(false);
+  });
+
+  it('puts nodes not connected to the centre in a last layer and copes with a missing centre', () => {
+    const pos = layeredPositions(['a', 'b', 'lonely'], [['a', 'b']], 'a', { width: 800, nodeWidth: () => 40 });
+    expect(pos.lonely!.y).toBeGreaterThan(pos.b!.y);
+    expect(Object.keys(layeredPositions(['x', 'y'], [], 'missing', { width: 800, nodeWidth: () => 40 }))).toEqual(['x', 'y']);
+  });
+
+  it('uses the layered preset for "breadthfirst" and no animation anywhere', () => {
+    expect(layoutOptions('breadthfirst', 'c')).toMatchObject({ name: 'preset', fit: true });
+    for (const l of ['breadthfirst', 'cose', 'concentric'] as const) expect(layoutOptions(l, 'c')).toMatchObject({ animate: false });
   });
 });

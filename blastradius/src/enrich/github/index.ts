@@ -68,7 +68,7 @@ export interface GithubEnricherOptions {
   maxBackers?: number;
   /** Max distinct repos looked up per scan (default 300; unauthenticated API allows 60/hour). */
   maxRepos?: number;
-  /** Parallel repo lookups (default 4). */
+  /** Parallel repo lookups (default 8). */
   concurrency?: number;
 }
 
@@ -108,9 +108,12 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
       const facts: Fact[] = [];
       const state = { apiBlocked: false, offlineMisses: 0 };
       const skipped = new SkippedHosts();
+      // FUNDING.yml lookups by URL for this run: the owner-wide .github repo is shared by every repo
+      // of that owner, and concurrent lookups would otherwise fetch it once per repo.
+      const rawRequests = new Map<string, Promise<{ status: number; body: string }>>();
       const meta = (evidence: string[]) => ({ source: SOURCE, fetchedAt: ctx.now, evidence: [...new Set(evidence)] });
 
-      await mapLimit(repoKeys, Math.max(1, opts.concurrency ?? 4), async (key) => {
+      await mapLimit(repoKeys, Math.max(1, opts.concurrency ?? 8), async (key) => {
         const group = byRepo.get(key)!;
         const { owner, repo } = group[0]!;
         const info = await fetchRepo(owner, repo);
@@ -212,7 +215,9 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           const url = `${rawBase}/${c.owner}/${c.repo}/HEAD/${c.path}`;
           let res: { status: number; body: string };
           try {
-            res = await ctx.http.request(url, { headers: { accept: 'text/plain' } });
+            let pending = rawRequests.get(url);
+            if (!pending) rawRequests.set(url, (pending = ctx.http.request(url, { headers: { accept: 'text/plain' } })));
+            res = await pending;
           } catch (err) {
             if (skipped.add(err)) return undefined;
             if (err instanceof OfflineMissError) state.offlineMisses++;

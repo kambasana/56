@@ -11,7 +11,7 @@
  * --level-*), resolved to opaque rgb() (Cytoscape cannot parse oklch()), and are re-read whenever
  * <html>'s class or style changes so the canvas follows light/dark mode.
  *
- * Labels never overlap: layouts size nodes with their labels, long labels end in an ellipsis,
+ * Labels never overlap: the layered layout wraps wide layers into rows, long labels end in an ellipsis,
  * and after the layout a separation pass (separateBoxes) pushes apart any node + label boxes
  * that still collide. Percent-escapes in labels (purls such as %40scope/name) are decoded for display.
  *
@@ -135,7 +135,14 @@ function separateLabels(cy: Core): void {
     });
   });
   cy.fit(undefined, GRAPH_PADDING);
+  // A small graph fitted to the canvas would be blown up to giant labels: cap the initial zoom.
+  if (cy.zoom() > MAX_INITIAL_ZOOM) {
+    cy.zoom(MAX_INITIAL_ZOOM);
+    cy.center();
+  }
 }
+
+const MAX_INITIAL_ZOOM = 1.5;
 
 export function toElements(graph: GraphResponse): ElementDefinition[] {
   const ids = new Set(graph.nodes.map((n) => n.id));
@@ -178,7 +185,7 @@ export function themeStyles(): StylesheetJson {
         // Long names end in an ellipsis instead of running into neighbours; the full name is in
         // the side panel. Labels too small to read when zoomed out are not drawn.
         'text-wrap': 'ellipsis',
-        'text-max-width': '160px',
+        'text-max-width': `${LABEL_MAX_WIDTH}px`,
         'min-zoomed-font-size': 5,
         'background-color': card,
         'border-width': 1.5,
@@ -208,12 +215,116 @@ export function themeStyles(): StylesheetJson {
   ] as StylesheetJson;
 }
 
-/** Every layout spaces nodes by their label size (nodeDimensionsIncludeLabels). */
-export function layoutOptions(layout: GraphLayout, centre: string): cytoscape.LayoutOptions {
-  const common = { padding: GRAPH_PADDING, nodeDimensionsIncludeLabels: true, animate: false };
-  if (layout === 'breadthfirst') return { ...common, name: 'breadthfirst', directed: true, roots: [centre].filter(Boolean), spacingFactor: 1.1, avoidOverlap: true } as cytoscape.LayoutOptions;
-  if (layout === 'concentric') return { ...common, name: 'concentric', avoidOverlap: true, minNodeSpacing: 16 } as cytoscape.LayoutOptions;
-  return { ...common, name: 'cose', nodeRepulsion: () => 12_000, idealEdgeLength: () => 80, nodeOverlap: 20, componentSpacing: 80 } as cytoscape.LayoutOptions;
+/** Rendered label width estimate: 11px monospace (~0.6em per character), capped by text-max-width. */
+export const LABEL_MAX_WIDTH = 160;
+export function labelWidth(label: string): number {
+  return Math.min(LABEL_MAX_WIDTH, Math.ceil(label.length * 6.6));
+}
+
+export interface LayeredOptions {
+  /** Width to pack rows into (the canvas width at zoom 1). */
+  width: number;
+  /** Width a node needs (its label, or its shape when wider). */
+  nodeWidth: (id: string) => number;
+  /** Height of one row: node, label below it, and breathing room. */
+  rowHeight?: number;
+  /** Extra space between layers. */
+  layerGap?: number;
+  /** Horizontal space between neighbours. */
+  gap?: number;
+}
+
+/**
+ * "Layered" layout: the centre on top, then nodes by hop distance from it (edges taken both ways),
+ * each layer wrapped into as many rows as the width needs. Cytoscape's breadthfirst puts a whole
+ * layer on one line, so a component with 30 dependents became a strip 30 labels wide that only
+ * fitted at an unreadable zoom, with labels overlapping. Nodes keep their input order (the API's
+ * priority order); nodes not connected to the centre form the last layer.
+ */
+export function layeredPositions(
+  nodeIds: readonly string[],
+  edges: readonly (readonly [string, string])[],
+  centre: string,
+  { width, nodeWidth, rowHeight = 56, layerGap = 20, gap = 16 }: LayeredOptions,
+): Record<string, { x: number; y: number }> {
+  const adj = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
+  for (const [a, b] of edges) {
+    if (!adj.has(a) || !adj.has(b) || a === b) continue;
+    adj.get(a)!.push(b);
+    adj.get(b)!.push(a);
+  }
+  const depth = new Map<string, number>();
+  const root = adj.has(centre) ? centre : nodeIds[0];
+  if (root !== undefined) {
+    depth.set(root, 0);
+    const queue = [root];
+    for (let i = 0; i < queue.length; i++) {
+      const id = queue[i]!;
+      for (const n of adj.get(id)!) {
+        if (depth.has(n)) continue;
+        depth.set(n, depth.get(id)! + 1);
+        queue.push(n);
+      }
+    }
+  }
+  const maxDepth = Math.max(0, ...depth.values());
+  const layers: string[][] = Array.from({ length: maxDepth + 2 }, () => []);
+  for (const id of nodeIds) layers[depth.get(id) ?? maxDepth + 1]!.push(id);
+
+  const avail = Math.max(200, width);
+  const pos: Record<string, { x: number; y: number }> = {};
+  let y = 0;
+  for (const layer of layers) {
+    if (layer.length === 0) continue;
+    // Greedy rows: as many nodes as fit in the width.
+    const rows: string[][] = [[]];
+    let used = 0;
+    for (const id of layer) {
+      const w = nodeWidth(id);
+      const row = rows[rows.length - 1]!;
+      if (row.length > 0 && used + gap + w > avail) {
+        rows.push([id]);
+        used = w;
+      } else {
+        used += (row.length > 0 ? gap : 0) + w;
+        row.push(id);
+      }
+    }
+    for (const row of rows) {
+      const total = row.reduce((sum, id) => sum + nodeWidth(id), 0) + gap * (row.length - 1);
+      let x = -total / 2;
+      for (const id of row) {
+        const w = nodeWidth(id);
+        pos[id] = { x: x + w / 2, y };
+        x += w + gap;
+      }
+      y += rowHeight;
+    }
+    y += layerGap;
+  }
+  return pos;
+}
+
+/**
+ * Layout options. 'breadthfirst' ("Layered") is a preset of layeredPositions(), sized to the
+ * canvas when `cy` is given. Force and concentric space nodes by their own size and leave label
+ * collisions to the separation pass that follows every layout.
+ */
+export function layoutOptions(layout: GraphLayout, centre: string, cy?: Core): cytoscape.LayoutOptions {
+  const common = { padding: GRAPH_PADDING, animate: false };
+  if (layout === 'breadthfirst') {
+    const positions = cy
+      ? layeredPositions(
+          cy.nodes().map((n) => n.id()),
+          cy.edges().map((e) => [e.source().id(), e.target().id()] as const),
+          centre,
+          { width: (cy.width() || 800) - 2 * GRAPH_PADDING, nodeWidth: (id) => Math.max(28, labelWidth(String(cy.getElementById(id).data('label') ?? ''))) },
+        )
+      : {};
+    return { ...common, name: 'preset', positions: (n: cytoscape.NodeSingular) => positions[n.id()] ?? { x: 0, y: 0 }, fit: true } as cytoscape.LayoutOptions;
+  }
+  if (layout === 'concentric') return { ...common, name: 'concentric', avoidOverlap: true, minNodeSpacing: 24 } as cytoscape.LayoutOptions;
+  return { ...common, name: 'cose', nodeRepulsion: () => 8_000, idealEdgeLength: () => 60, nodeOverlap: 20, componentSpacing: 60 } as cytoscape.LayoutOptions;
 }
 
 export function GraphCanvas({ graph, layout = 'breadthfirst', selectedId, onNodeClick, controlsRef, height = 480, label = 'Scoped graph', className }: GraphCanvasProps) {
@@ -256,7 +367,7 @@ export function GraphCanvas({ graph, layout = 'breadthfirst', selectedId, onNode
     cy.on('tap', 'node', (evt) => clickRef.current?.(evt.target.id()));
     cyRef.current = cy;
     let alive = true;
-    const run = cy.layout(layoutOptions(layout, graph.centre));
+    const run = cy.layout(layoutOptions(layout, graph.centre, cy));
     run.one('layoutstop', () => {
       if (!alive) return;
       try {

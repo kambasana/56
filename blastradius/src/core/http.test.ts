@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { DEFAULT_HOST_INTERVALS, fixtureKey, HostUnavailableError, HttpClient, HttpError, OfflineMissError, readBodyLimited, ResponseTooLargeError, type Transport } from './http.js';
+import { DEFAULT_HOST_INTERVALS, fixtureKey, HostUnavailableError, HttpClient, HttpError, OfflineMissError, readBodyLimited, ResponseTooLargeError, SkippedHosts, type Transport } from './http.js';
 
 let dir: string;
 beforeEach(async () => {
@@ -317,6 +317,28 @@ describe('per-host circuit breaker', () => {
     expect(await c.fetchJson('https://h.test/f')).toBe(1);
     expect(c.isHostUnavailable('h.test')).toBe(false);
     expect(await c.fetchJson('https://h.test/g')).toBe(1);
+  });
+
+  it('treats an egress proxy that answers 403 "host not in allowlist" as unreachable', async () => {
+    const transport = vi.fn<Transport>(async () => ({ status: 403, body: 'Host not in allowlist: api.deps.dev.' }));
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, breakerThreshold: 5, sleep: noSleep });
+    // Below the threshold the 403 is returned as usual (fetchJson -> HttpError).
+    for (let i = 0; i < 5; i++) await expect(c.fetchJson(`https://api.deps.dev/v3/x/${i}`)).rejects.toBeInstanceOf(HttpError);
+    await expect(c.fetchJson('https://api.deps.dev/v3/x/next')).rejects.toBeInstanceOf(HostUnavailableError);
+    expect(transport).toHaveBeenCalledTimes(5);
+    expect(c.unavailableHosts()).toEqual(['api.deps.dev']);
+  });
+
+  it('rolls skipped requests up into one warning per host', async () => {
+    const transport = vi.fn<Transport>(async () => ({ status: 403, body: '' }));
+    const c = new HttpClient({ transport, cacheDir: false, offline: false, minIntervalMs: 0, breakerThreshold: 1, sleep: noSleep });
+    const skipped = new SkippedHosts();
+    await c.request('https://x.test/0');
+    for (let i = 1; i < 30; i++) await c.request(`https://x.test/${i}`).catch((e) => expect(skipped.add(e)).toBe(true));
+    expect(skipped.add(new Error('other'))).toBe(false);
+    const warnings: string[] = [];
+    skipped.flush('depsdev', (m) => warnings.push(m));
+    expect(warnings).toEqual(['depsdev: x.test is unreachable or refusing requests (repeated network errors or HTTP 401/403/407); 29 request(s) skipped']);
   });
 
   it('can be disabled', async () => {
