@@ -65,6 +65,14 @@ FAMILIES = [
     ("miasma-2026", re.compile(r"miasma", re.I), ""),
     ("shai-hulud-2025-09", re.compile(r"shai-hulud", re.I), "2025-09"),
 ]
+# Text in a source record that says an existing package was compromised (as opposed to an automated
+# "this package is malicious" verdict, which also fits a package the attacker owned all along).
+COMPROMISE_EVIDENCE = re.compile(r"compromis|worm|hijack|take-?over|stolen|account|maintainer|shai-hulud|sha1-hulud|teampcp|miasma|canister|phish|legitimate", re.I)
+# Without such text, a positive needs at least this many clean earlier releases and the bad release
+# must be unpublished (npm acted on it); otherwise it is dropped as possibly attacker-owned.
+NO_EVIDENCE_MIN_PRIOR = 10
+# Version jump that marks dependency confusion / name squatting (e.g. 0.x -> 99.99.99).
+CONFUSION_MAJOR_JUMP = 5
 # Named campaigns with positives this close are one wave (e.g. the 2025-09-08 phishing wave hit
 # chalk/debug, duckdb and prebid within hours; sources file them separately).
 NAMED_MERGE_HOURS = 12.0
@@ -417,6 +425,36 @@ def main() -> int:
             dropped.append({"name": r["name"], "version": r["version"], "source": r["sources"], "reason": f"stream of {len(rs)} bad versions, {sum(x['manifest'] for x in rs)} still live on npm (package-level classification, not discrete compromised releases)"})
     positives = [r for r in positives if r["name"] not in stream]
 
+    # Attacker-owned packages that slipped past the history rule (dependency confusion, squats, spam
+    # packages with a few benign uploads first). Curated sources (attack data, KB, replay) are trusted.
+    def major(v: str):
+        m = re.match(r"^v?(\d+)\.", v)
+        return int(m.group(1)) if m else None
+
+    kept = []
+    for r in positives:
+        curated = any(c.source in ("sad", "kb", "replay") for c in r["_claims"])
+        if curated:
+            kept.append(r)
+            continue
+        time = packuments[r["name"]].get("time") or {}
+        prior_majors = [major(u) for u, t in time.items() if u not in ("created", "modified", "unpublished") and isinstance(t, str) and t < r["firstBadAt"] and major(u) is not None]
+        m = major(r["version"])
+        top = max(prior_majors) if prior_majors else None
+        reason = None
+        if m is not None and top is not None and top < 1990 and m > top + CONFUSION_MAJOR_JUMP:
+            reason = f"version jumps from major {top} to {m} (dependency-confusion / squatting pattern; package likely attacker-owned)"
+        elif not any(COMPROMISE_EVIDENCE.search(c.text or "") for c in r["_claims"]):
+            if r["cleanPriorReleases"] < NO_EVIDENCE_MIN_PRIOR:
+                reason = f"only automated or terse records, no text describing a compromise, and {r['cleanPriorReleases']} clean earlier releases (need {NO_EVIDENCE_MIN_PRIOR}; may be attacker-owned)"
+            elif r["manifest"]:
+                reason = "only automated or terse records, no text describing a compromise, and npm still serves the release (unconfirmed verdict)"
+        if reason:
+            dropped.append({"name": r["name"], "version": r["version"], "source": r["sources"], "reason": reason})
+        else:
+            kept.append(r)
+    positives = kept
+
     # --- campaigns -----------------------------------------------------------------------------
     uf = UF()
     sad_text = {c.ref: c.text for c in sad}
@@ -433,6 +471,13 @@ def main() -> int:
         r["_key"] = keys[0]
         for k in keys[1:]:
             uf.union(keys[0], k)
+    # An OSV record whose text names a campaign marker joins that family (e.g. the 2026-03-20
+    # CanisterWorm wave is TeamPCP), so one actor's waves are one group.
+    for r in positives:
+        for fam, rx, when in FAMILIES:
+            if r["publishedAt"].startswith(when) and any(c.source == "osv" and rx.search(c.text or "") for c in r["_claims"]):
+                uf.union(f"family:{fam}", r["_key"])
+                break
     named = sorted((parse_t(r["publishedAt"]), uf.find(r["_key"])) for r in positives if not uf.find(r["_key"]).startswith("osv:"))
     for (t1, k1), (t2, k2) in zip(named, named[1:]):
         if t2 - t1 <= NAMED_MERGE_HOURS * 3600:
