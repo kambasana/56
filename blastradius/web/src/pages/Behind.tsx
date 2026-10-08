@@ -10,7 +10,7 @@ import { Link, useSearchParams } from 'react-router';
 import type { PackageBehindResponse } from '@server/api-types-incidents';
 import { incidentsApi } from '@/api-incidents';
 import { useAuth } from '@/auth';
-import { behindPath, packagePath } from '@/nav';
+import { accountPathForEntity, behindPath, packagePath } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { StateBlock, useUpdateParams } from '@/components/br';
 import { EntityChain } from '@/components/viz/EntityChain';
@@ -84,7 +84,8 @@ function LinkTable({ links }: { links: readonly BehindLink[] }) {
               <td className="px-3 py-2">{entityLabel(l.from)}</td>
               <td className="px-2 py-2">{relationText(l.relation)}</td>
               <td className="px-2 py-2">
-                {entityLabel(l.entityId)} <span className="text-caption text-muted-foreground">({KIND_LABEL[entityKind(l.entityId)].toLowerCase()})</span>
+                {accountPathForEntity(l.entityId) ? <Link to={accountPathForEntity(l.entityId)!}>{entityLabel(l.entityId)}</Link> : entityLabel(l.entityId)}{' '}
+                <span className="text-caption text-muted-foreground">({KIND_LABEL[entityKind(l.entityId)].toLowerCase()})</span>
               </td>
               <td className="px-2 py-2">
                 {confidenceWord(l.confidence)} · {l.method === 'deterministic' ? 'deterministic' : 'probable'}
@@ -158,6 +159,7 @@ function Rail({ data, id, rootId }: { data: PackageBehindResponse; id: string; r
           <Sources urls={link.evidence} />
         </div>
       )}
+      {accountPathForEntity(id) && <Link to={accountPathForEntity(id)!}>What {entityLabel(id)} can publish, and mark it as compromised</Link>}
     </>
   );
 }

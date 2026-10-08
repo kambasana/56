@@ -325,6 +325,8 @@ export const WEB_ROUTES: readonly WebRoute[] = [
   { path: '/incidents/:incidentId', page: 'findings', label: 'Incident' },
   { path: '/packages/behind', page: 'exposure', label: "Who's behind it" },
   { path: '/exposure', page: 'exposure', label: 'Exposure' },
+  // Account index: who an npm account can publish for, "mark as compromised".
+  { path: '/accounts/:registry/:name', page: 'exposure', label: 'Account' },
   { path: '/login', page: null, label: 'Sign in' },
   { path: '/accept-invite', page: null, label: 'Accept invite' },
 ];

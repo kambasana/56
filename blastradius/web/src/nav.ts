@@ -68,6 +68,18 @@ export function behindPath(name: string): string {
   return `/packages/behind?${new URLSearchParams({ name })}`;
 }
 
+/** One publishing account ("npm", "qix"); github/gitlab for repository owners. */
+export function accountPath(registry: string, name: string): string {
+  return `/accounts/${enc(registry)}/${enc(name)}`;
+}
+
+/** The account page for an entity id from "Who's behind it" ("account:npm/qix", "org:github/chalk"), else null. */
+export function accountPathForEntity(entityId: string): string | null {
+  const m = /^(account|org):(npm|github|gitlab)\/(.+)$/.exec(entityId);
+  if (!m || (m[1] === 'org' && m[2] === 'npm')) return null;
+  return accountPath(m[2]!, m[3]!);
+}
+
 /** The org-wide exposure matrix, optionally scoped to some projects. */
 export function exposurePath(projectIds: readonly string[] = []): string {
   return projectIds.length ? `/exposure?${new URLSearchParams({ projects: projectIds.join(',') })}` : '/exposure';
@@ -130,6 +142,7 @@ export function activeNavId(pathname: string): NavId | null {
       return 'findings';
     case 'incidents':
     case 'packages':
+    case 'accounts':
       return 'incidents';
     case 'exposure':
       return 'overview';

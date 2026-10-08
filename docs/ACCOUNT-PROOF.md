@@ -19,6 +19,17 @@ hours before the per-package advisories finish, and they need no re-scan. The bu
 earn a standalone alert: routine monorepo and prolific-maintainer releases look the same as a worm.
 At most it is a low-weight input to combine with other signals, which was not tested here.
 
+## In the product
+
+The account index and the compromised-account query are built into the server and web app
+(docs/WEB-API.md, "Accounts"): an Account page with "Mark as compromised", account incidents, and
+publishing-account concentration on Exposure. The burst rule is not an alert; the Account page shows
+recent publishes as context only. `test/replay/account/product-parity.test.ts` replays this
+document's chalk/debug data through the product's own index and API and must name the same 204
+exposures (21 by advisories, precision 1.0) and all 19 bad packages. One difference is pinned there:
+with qix's listing as recorded today the product names 18 of 19 (chalk-template changed owner after
+the incident); with the listing reconstructed for T0 from recorded maintainers it names all 19.
+
 ## Caveats (read before quoting the numbers)
 
 - **Deleted versions lose their publisher.** npm removed the bad versions; their `_npmUser` is gone.

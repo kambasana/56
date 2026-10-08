@@ -30,7 +30,7 @@ export function LifecycleStrip({ phases, label = 'Lifecycle' }: { phases: readon
   );
 }
 
-export type TimelineKind = 'release' | 'publisher' | 'install-script' | 'advisory' | 'alert' | 'check' | 'notified' | 'status';
+export type TimelineKind = 'release' | 'publisher' | 'install-script' | 'advisory' | 'alert' | 'check' | 'notified' | 'status' | 'account';
 
 /** A glyph per event type (never colour alone; the title says it too). */
 const ICON: Record<TimelineKind, string> = {
@@ -42,6 +42,7 @@ const ICON: Record<TimelineKind, string> = {
   check: '✓',
   notified: '→',
   status: '›',
+  account: '⚑',
 };
 
 export interface TimelineEvent {

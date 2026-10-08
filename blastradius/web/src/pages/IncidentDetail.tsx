@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import type { IncidentDetail as Detail, IncidentStatus } from '@server/api-types-incidents';
 import { incidentsApi } from '@/api-incidents';
 import { useAuth } from '@/auth';
-import { behindPath, incidentPath, packagePath, projectPath } from '@/nav';
+import { accountPath, behindPath, incidentPath, packagePath, projectPath } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { INCIDENT_STEPS, NotAllowedHint, ReachTag, SeverityBadge, StateBlock, StatusTrack } from '@/components/br';
 import { Button } from '@/components/ui/button';
@@ -209,6 +209,14 @@ function Body({ d, setData }: { d: Detail; setData: (d: Detail) => void }) {
             <h2 id="pkgs" className="m-0 text-heading font-semibold">
               Packages
             </h2>
+            {d.account && (
+              <p className="m-0 text-text-secondary">
+                Every package below can be published by {d.account.name}.{' '}
+                <Link to={accountPath(d.account.registry, d.account.name)} className="underline underline-offset-2">
+                  Open the account to update the exposure
+                </Link>
+              </p>
+            )}
             <ul className="m-0 flex list-none flex-col gap-1 p-0">
               {d.packages.map((p) => (
                 <li key={p.purl} className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -231,20 +239,37 @@ function Body({ d, setData }: { d: Detail; setData: (d: Detail) => void }) {
             )}
           />
           <dl className="m-0 grid grid-cols-[96px_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 border-t pt-3 text-label">
-            <dt className="text-muted-foreground">Advisory</dt>
-            <dd className="m-0 font-mono">
-              {safeHref(`https://osv.dev/vulnerability/${encodeURIComponent(d.advisoryId)}`) ? (
-                <a href={`https://osv.dev/vulnerability/${encodeURIComponent(d.advisoryId)}`} target="_blank" rel="noreferrer noopener">
-                  {d.advisoryId}
-                </a>
-              ) : (
-                d.advisoryId
-              )}
-            </dd>
-            <dt className="text-muted-foreground">Published</dt>
-            <dd className="m-0">{d.advisoryPublished ? fmtTime(d.advisoryPublished) : 'Not stated'}</dd>
-            <dt className="text-muted-foreground">First seen here</dt>
-            <dd className="m-0">{fmtTime(d.openedAt)}</dd>
+            {d.account ? (
+              <>
+                <dt className="text-muted-foreground">Account</dt>
+                <dd className="m-0">
+                  <Link to={accountPath(d.account.registry, d.account.name)}>
+                    {d.account.registry} · {d.account.name}
+                  </Link>
+                </dd>
+                <dt className="text-muted-foreground">Since</dt>
+                <dd className="m-0">{d.account.since ? fmtTime(d.account.since) : 'Not given'}</dd>
+                <dt className="text-muted-foreground">First seen here</dt>
+                <dd className="m-0">{fmtTime(d.openedAt)}</dd>
+              </>
+            ) : (
+              <>
+                <dt className="text-muted-foreground">Advisory</dt>
+                <dd className="m-0 font-mono">
+                  {safeHref(`https://osv.dev/vulnerability/${encodeURIComponent(d.advisoryId)}`) ? (
+                    <a href={`https://osv.dev/vulnerability/${encodeURIComponent(d.advisoryId)}`} target="_blank" rel="noreferrer noopener">
+                      {d.advisoryId}
+                    </a>
+                  ) : (
+                    d.advisoryId
+                  )}
+                </dd>
+                <dt className="text-muted-foreground">Published</dt>
+                <dd className="m-0">{d.advisoryPublished ? fmtTime(d.advisoryPublished) : 'Not stated'}</dd>
+                <dt className="text-muted-foreground">First seen here</dt>
+                <dd className="m-0">{fmtTime(d.openedAt)}</dd>
+              </>
+            )}
           </dl>
         </aside>
       </div>

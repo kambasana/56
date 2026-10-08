@@ -42,7 +42,8 @@ const QUICK: QuickFilter[] = [
   { label: 'Closed', key: 'status', value: 'closed' },
 ];
 
-export function incidentTitle(r: Pick<IncidentRow, 'packages' | 'advisoryId'>): string {
+export function incidentTitle(r: Pick<IncidentRow, 'packages' | 'advisoryId' | 'account'>): string {
+  if (r.account) return `${r.account.registry} account ${r.account.name}`;
   const first = r.packages[0];
   if (!first) return r.advisoryId;
   const name = first.version ? `${first.name}@${first.version}` : first.name;

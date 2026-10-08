@@ -37,6 +37,7 @@ export const PAGES: Record<string, Page> = {
   '/incidents/:incidentId': lazy(() => import('./pages/IncidentDetail')),
   '/packages/behind': lazy(() => import('./pages/Behind')),
   '/exposure': lazy(() => import('./pages/Exposure')),
+  '/accounts/:registry/:name': lazy(() => import('./pages/Account')),
 };
 
 /** The project Exposure matrix is the org-wide one, scoped to that project. */

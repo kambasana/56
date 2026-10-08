@@ -3,13 +3,17 @@
  * packages matrix, production rows first and the most shared packages left; every cell has a
  * glyph and a letter, an empty one "–". A cell opens that finding, a column header the package's
  * reach. Table/Heatmap toggle (the table is the accessible view), CSV export, and the top 40
- * columns unless asked for all. Data: GET /api/exposure (org-wide axis).
+ * columns unless asked for all. Below it, which npm accounts can publish the largest share of the
+ * production dependencies in scope (H3, docs/ACCOUNT-PROOF.md), with its own Chart/Table toggle.
+ * Data: GET /api/exposure (org-wide axis), GET /api/accounts/concentration.
  */
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ChevronDown, Download } from 'lucide-react';
 import type { RiskLevel } from '@server/api-types';
 import { api } from '@/api';
+import { accountsApi } from '@/api-accounts';
+import { ConcentrationSection } from '@/components/viz/Concentration';
 import { useAuth } from '@/auth';
 import { useProject } from '@/project';
 import { exposurePath, packagePath, projectPath } from '@/nav';
@@ -87,6 +91,8 @@ export default function Exposure() {
   const minLevel: RiskLevel = minRaw && (LEVELS as string[]).includes(minRaw) ? (minRaw as RiskLevel) : 'medium';
   const showAll = sp.get('cols') === 'all';
   const { data, error, loading, reload } = useApi((s) => api.exposure({ minLevel, limit: 200 }, s), [minLevel]);
+  const scopeKey = scope.projects.join(',');
+  const conc = useApi((s) => accountsApi.concentration(scopeKey ? { projects: scopeKey } : {}, s), [scopeKey]);
   const model = useMemo(() => (data ? buildMatrix(data, { projects: scope.projects, env: scope.env, showAll }) : null), [data, scope.projects, scope.env, showAll]);
   const crumbs = [
     { label: me?.org?.name ?? 'Organization', to: '/' },
@@ -165,6 +171,13 @@ export default function Exposure() {
             <span className="ml-auto text-caption text-text-secondary">Choose a cell to open that finding, or a column to see how far the package spreads.</span>
           </div>
         )}
+        {conc.loading && !conc.data ? (
+          <StateBlock kind="loading" label="Loading publishing accounts" rows={3} columns={3} />
+        ) : conc.error && !conc.data ? (
+          <StateBlock kind="error" title="Could not load publishing accounts" cause={conc.error.message} onRetry={conc.reload} />
+        ) : conc.data ? (
+          <ConcentrationSection data={conc.data} />
+        ) : null}
       </div>
     </>
   );
