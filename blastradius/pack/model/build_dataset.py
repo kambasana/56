@@ -9,11 +9,16 @@
 * Positives: labels.jsonl from labels.py (compromised releases of established packages, with
   campaign). Most were unpublished by npm, so they have a `time` entry but no manifest: the CLI
   describes them from the history before them and leaves the manifest features NaN (row
-  `manifest: false`). The replay overlay supplies the 16 manifests rebuilt from advisories.
+  `manifest: false`). The replay overlay's manifests rebuilt from advisories are NOT used
+  (`--no-reconstructed`): advisories rarely state publisher, maintainers, scripts or dependencies,
+  so those values would be guesses (nx 21.5.0's rebuilt manifest has no postinstall, the real one
+  had one). Those releases are described like any other unpublished release.
 * Negatives: every other release, in the positives' time range, of (a) the negative package lists
   (--negatives: the dependency walk from the Acme lockfiles and the hammer control repos' lockfiles)
   and (b) the positive packages themselves, minus every version any source lists as bad
-  (known_bad.json) and minus whole-package malware. The Acme lockfile packages (--controls) are the
+  (known_bad.json) and minus whole-package malware. An unpublished release of a positive package
+  within AMBIGUOUS_DAYS of one of its positives is dropped too: no source lists it, but npm removed
+  it during the attack, so it may well be an unlisted bad version. The Acme lockfile packages (--controls) are the
   gate's noise set and are never trained on, except positive packages.
 * External features: downloads are historical (api.npmjs.org range API, window before the release).
   Scorecard, deps.dev dependents and typosquat distance have no as-of history here, so they are not
@@ -36,6 +41,7 @@ import subprocess
 import sys
 
 OFFSET_MS = 3_600_000
+AMBIGUOUS_DAYS = 7
 
 
 def load_packument(cache: str, name: str):
@@ -87,6 +93,10 @@ def main() -> int:
     neg_pkgs = sorted({n for ns in neg_lists.values() for n in ns} - controls - whole - set(pos_pkgs))
     dropped_pkgs: dict[str, str] = {}
 
+    pos_times = collections.defaultdict(list)
+    for r in positives:
+        pos_times[r["name"]].append(parse_t(r["publishedAt"]))
+    ambiguous = 0
     requests = []
     for name in sorted(set(pos_pkgs) | set(neg_pkgs)):
         p = load_packument(a.cache, name)
@@ -109,6 +119,9 @@ def main() -> int:
             if not (t_lo <= ts <= t_hi):
                 continue
             has_manifest = isinstance(versions.get(v), dict)
+            if not has_manifest and any(abs((ts - pt).total_seconds()) <= AMBIGUOUS_DAYS * 86400 for pt in pos_times.get(name, ())):
+                ambiguous += 1
+                continue
             requests.append({"name": name, "version": v, "releasedAt": t, "label": 0, "campaign": None, "source": "negative" if name in neg_pkgs else "positive-package", "manifest": has_manifest})
     # Sample negatives: at most N per package and year, chosen by a hash of name@version, so the
     # same inputs give the same rows and fast-releasing packages do not dominate.
@@ -132,7 +145,7 @@ def main() -> int:
         print(json.dumps({"requests": len(requests), "positive": sum(r["label"] for r in requests), "packages": len({r["name"] for r in requests}), "negativeWithoutManifest": unpublished_neg, "droppedPackages": len(dropped_pkgs), "negativesBeforeSampling": before_sampling}))
         return 0
     schema = json.loads(subprocess.run(["npx", "tsx", "src/features/cli.ts", "schema"], cwd=root, check=True, capture_output=True, text=True).stdout)
-    cmd = ["npx", "tsx", "src/features/cli.ts", "rows", "--cache", os.path.abspath(a.cache), "--overlay", overlay, "--allow-missing-manifest", "--requests", os.path.abspath(req_path)]
+    cmd = ["npx", "tsx", "src/features/cli.ts", "rows", "--cache", os.path.abspath(a.cache), "--overlay", overlay, "--no-reconstructed", "--allow-missing-manifest", "--requests", os.path.abspath(req_path)]
     if a.downloads:
         cmd += ["--downloads", os.path.abspath(a.downloads)]
     cutoff = parse_t(a.cutoff)
@@ -188,7 +201,7 @@ def main() -> int:
         "timeRange": [t_lo.isoformat(), t_hi.isoformat()],
         "cutoff": a.cutoff,
         "packages": {"positive": len(pos_pkgs), "negativeLists": {k: len(v) for k, v in neg_lists.items()}, "negative": len(neg_pkgs), "controlsExcluded": len(controls), "dropped": dropped_pkgs},
-        "sampling": {"maxPerPackageYear": a.max_per_package_year, "negativeCandidates": before_sampling, "negativeRequests": sum(1 for r in requests if r["label"] == 0)},
+        "sampling": {"ambiguousUnpublishedDropped": ambiguous, "ambiguousDays": AMBIGUOUS_DAYS, "maxPerPackageYear": a.max_per_package_year, "negativeCandidates": before_sampling, "negativeRequests": sum(1 for r in requests if r["label"] == 0)},
         "rows": {"positive": n_pos, "negative": n_neg, "negativeWithoutManifest": sum(v for (s, l, m), v in counts.items() if l == 0 and not m), "positiveWithoutManifest": sum(v for (s, l, m), v in counts.items() if l == 1 and not m)},
         "split": {f"{s}/{'pos' if l else 'neg'}/{'manifest' if m else 'no-manifest'}": v for (s, l, m), v in sorted(counts.items())},
         "byYear": {y: {"neg": c[0], "pos": c[1]} for y, c in sorted(by_year.items())},
