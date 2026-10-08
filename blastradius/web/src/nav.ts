@@ -58,6 +58,21 @@ export function packagePath(name: string, version?: string | null): string {
   return `/packages?${q}`;
 }
 
+/** One incident (an advisory that hit a project); `id` is the advisory id. */
+export function incidentPath(id: string): string {
+  return `/incidents/${enc(id)}`;
+}
+
+/** Who is behind a package (any version). */
+export function behindPath(name: string): string {
+  return `/packages/behind?${new URLSearchParams({ name })}`;
+}
+
+/** The org-wide exposure matrix, optionally scoped to some projects. */
+export function exposurePath(projectIds: readonly string[] = []): string {
+  return projectIds.length ? `/exposure?${new URLSearchParams({ projects: projectIds.join(',') })}` : '/exposure';
+}
+
 /** True when `me` holds `page` at org scope or in `projectId`. */
 const has = (me: MeResponse | null, page: PagePermission, projectId: string | null) => meCan(me, page) || (projectId !== null && meCan(me, page, projectId));
 
@@ -116,6 +131,8 @@ export function activeNavId(pathname: string): NavId | null {
     case 'incidents':
     case 'packages':
       return 'incidents';
+    case 'exposure':
+      return 'overview';
     case 'alerts':
       return 'alerts';
     case 'reports':

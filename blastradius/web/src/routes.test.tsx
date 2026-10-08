@@ -63,7 +63,10 @@ describe('routes', () => {
     const screens: [string, string][] = [
       ['/projects/p1/changes', 'Changes'],
       ['/projects/p1/findings/f1', 'Finding'],
-      ['/projects/p1/exposure', 'Exposure matrix'],
+      ['/projects/p1/exposure', 'Exposure'],
+      ['/exposure', 'Exposure'],
+      ['/incidents/GHSA-1', 'GHSA-1'],
+      ['/packages/behind?name=chalk', "Who's behind chalk"],
       ['/projects/p1/investigate', 'Investigate'],
       ['/projects/p1/scans', 'Scans'],
       ['/integrations', 'Integrations'],
@@ -78,6 +81,12 @@ describe('routes', () => {
       expect(await screen.findByRole('heading', { name: title, level: 1 })).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it('sends a project Exposure matrix to the org-wide one, scoped to that project', async () => {
+    renderAt('/projects/p1/exposure?min=high', meFor('org_admin'));
+    expect(await screen.findByRole('heading', { name: 'Exposure', level: 1 })).toBeInTheDocument();
+    expect(screen.getByTestId('where')).toHaveTextContent('/exposure?min=high&projects=p1');
   });
 
   it('sends /findings to the current project, keeping the query', async () => {

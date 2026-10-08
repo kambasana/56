@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeNavId, buildNav, landingPath, packagePath, projectCrumb, projectIdFromPath, projectLandingPath, projectNav, settingsNav } from './nav';
+import { activeNavId, buildNav, landingPath, packagePath, projectCrumb, projectIdFromPath, projectLandingPath, projectNav, settingsNav, incidentPath, behindPath, exposurePath } from './nav';
 import { meCan } from './auth';
 import { meFor, reportsOnly } from './test/fixtures';
 
@@ -78,6 +78,10 @@ describe('sub-navs and links', () => {
   it('builds package and crumb links', () => {
     expect(packagePath('@scope/pkg', '1.0.0')).toBe('/packages?name=%40scope%2Fpkg&version=1.0.0');
     expect(packagePath('lodash')).toBe('/packages?name=lodash');
+    expect(incidentPath('GHSA-1/x')).toBe('/incidents/GHSA-1%2Fx');
+    expect(behindPath('@a/b')).toBe('/packages/behind?name=%40a%2Fb');
+    expect(exposurePath(['p1', 'p2'])).toBe('/exposure?projects=p1%2Cp2');
+    expect(exposurePath()).toBe('/exposure');
     expect(projectCrumb({ id: 'p 1', name: 'web' })).toEqual({ label: 'web', to: '/projects/p%201' });
     expect(projectCrumb(null)).toEqual({ label: 'Project', to: '/projects' });
   });
@@ -101,6 +105,8 @@ describe('routing helpers', () => {
     expect(activeNavId('/projects/p1/exposure')).toBe('projects');
     expect(activeNavId('/projects')).toBe('projects');
     expect(activeNavId('/packages')).toBe('incidents');
+    expect(activeNavId('/incidents/GHSA-1')).toBe('incidents');
+    expect(activeNavId('/exposure')).toBe('overview');
     expect(activeNavId('/incidents')).toBe('incidents');
     expect(activeNavId('/alerts')).toBe('alerts');
     expect(activeNavId('/settings')).toBe('settings');

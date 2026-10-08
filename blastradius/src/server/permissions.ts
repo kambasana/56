@@ -321,6 +321,10 @@ export const WEB_ROUTES: readonly WebRoute[] = [
   { path: '/projects', page: 'projects', label: 'Projects' },
   { path: '/projects/:id', page: null, label: 'Project' },
   { path: '/packages', page: 'exposure', label: 'Package' },
+  // Stage 2B: one incident, who is behind a package, and the org-wide exposure matrix.
+  { path: '/incidents/:incidentId', page: 'findings', label: 'Incident' },
+  { path: '/packages/behind', page: 'exposure', label: "Who's behind it" },
+  { path: '/exposure', page: 'exposure', label: 'Exposure' },
   { path: '/login', page: null, label: 'Sign in' },
   { path: '/accept-invite', page: null, label: 'Accept invite' },
 ];

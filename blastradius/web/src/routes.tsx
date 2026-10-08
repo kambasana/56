@@ -23,7 +23,7 @@ export const PAGES: Record<string, Page> = {
   '/projects/:id/changes': lazy(() => import('./pages/Changes')),
   '/projects/:id/findings': lazy(() => import('./pages/Findings')),
   '/projects/:id/findings/:fid': lazy(() => import('./pages/FindingDetail')),
-  '/projects/:id/exposure': lazy(() => import('./pages/Exposure')),
+  '/projects/:id/exposure': lazy(() => Promise.resolve({ default: ProjectExposure })),
   '/projects/:id/investigate': lazy(() => import('./pages/Investigate')),
   '/projects/:id/scans': lazy(() => import('./pages/Scans')),
   '/reports': lazy(() => import('./pages/Reports')),
@@ -34,7 +34,19 @@ export const PAGES: Record<string, Page> = {
   '/alerts': lazy(() => import('./pages/Alerts')),
   '/projects': lazy(() => import('./pages/Projects')),
   '/packages': lazy(() => import('./pages/Package')),
+  '/incidents/:incidentId': lazy(() => import('./pages/IncidentDetail')),
+  '/packages/behind': lazy(() => import('./pages/Behind')),
+  '/exposure': lazy(() => import('./pages/Exposure')),
 };
+
+/** The project Exposure matrix is the org-wide one, scoped to that project. */
+export function ProjectExposure() {
+  const id = useParams().id ?? '';
+  const { search } = useLocation();
+  const keep = new URLSearchParams(search);
+  keep.set('projects', id);
+  return <Navigate to={`/exposure?${keep}`} replace />;
+}
 
 /**
  * /findings: the current project's findings until stage 2 builds the org-wide list. Keeps the
