@@ -98,11 +98,13 @@
   "maxSpanDays": 30.0,
   "maxLiveStream": 10
  },
- "featureSchema": "blastradius-features/v2",
+ "featureSchema": "blastradius-features/v3",
  "sampling": {
+  "ambiguousUnpublishedDropped": 458,
+  "ambiguousDays": 7,
   "maxPerPackageYear": 12,
-  "negativeCandidates": 638515,
-  "negativeRequests": 138700
+  "negativeCandidates": 633582,
+  "negativeRequests": 138014
  },
  "timeRange": [
   "2016-02-25T14:12:57.309000+00:00",
