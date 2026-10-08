@@ -291,7 +291,7 @@ export default function FindingDetail() {
             </ol>
           </Section>
 
-          <Section id="who" title="Who's behind it" action={<Link to={behindPath(data.name, data.version)} className="text-label">Open the graph →</Link>}>
+          <Section id="who" title="Who's behind it" action={<Link to={behindPath(data.name)} className="text-label">Open the graph →</Link>}>
             <BehindIt chain={data.entityChain} ownership={data.ownership} />
           </Section>
 

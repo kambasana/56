@@ -61,6 +61,18 @@ describe('<OrgHome> (Overview)', () => {
     await waitFor(() => expect(api.calls.find((c) => c.url.pathname === '/api/overview')!.url.searchParams.get('env')).toBe('prod'));
   });
 
+  it('links the severity panel to the org-wide Exposure matrix, keeping the project scope', async () => {
+    fakeApi([['GET', /^\/api\/overview$/, () => OVERVIEW]]);
+    renderPage(<OrgHome />, at('/'));
+    expect(await screen.findByRole('link', { name: /exposure matrix/ })).toHaveAttribute('href', '/exposure');
+  });
+
+  it('narrows the Exposure link to the projects the Overview is scoped to', async () => {
+    fakeApi([['GET', /^\/api\/overview$/, () => OVERVIEW]]);
+    renderPage(<OrgHome />, at('/?projects=p1,p2'));
+    expect(await screen.findByRole('link', { name: /exposure matrix/ })).toHaveAttribute('href', '/exposure?projects=p1%2Cp2');
+  });
+
   it('shows no banner without an incident, and an all-clear without open findings', async () => {
     fakeApi([['GET', /^\/api\/overview$/, () => ({ ...OVERVIEW, incident: null, topPackages: [] })]]);
     renderPage(<OrgHome />, at());

@@ -19,7 +19,7 @@ import { useApi } from '@/lib/useApi';
 import { fmtNum } from '@/lib/cn';
 import { cn } from '@/lib/utils';
 import { CreateProjectDialog } from './d-parts/CreateProjectDialog';
-import { incidentPath, reachPath } from './a-parts/links';
+import { exposurePath, incidentPath, reachPath } from './a-parts/links';
 import { relTime } from './a-parts/triage';
 
 export { homeFromProjects, PROJECT_COLUMNS } from './a-parts/projectsTable';
@@ -172,7 +172,9 @@ export default function OrgHome() {
   const { data, error, loading, reload } = useApi((s) => api.overview(q, s), [q.projects, q.env, q.range]);
 
   const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: 'Overview', to: '/' }];
-  const exposureTo = projectId && can('exposure', projectId) ? projectPath(projectId, 'exposure') : null;
+  // The org-wide Exposure matrix, narrowed to the Overview's project scope when there is one. A viewer
+  // with exposure in one project only lands on that project's slice.
+  const exposureTo = can('exposure') ? exposurePath(scope.projects) : projectId && can('exposure', projectId) ? exposurePath(scope.projects.length ? scope.projects : [projectId]) : null;
 
   let body;
   if (loading && !data) body = <StateBlock kind="loading" label="Loading overview" rows={4} columns={4} />;

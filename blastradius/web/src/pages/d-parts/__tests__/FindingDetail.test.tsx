@@ -42,7 +42,7 @@ describe('<FindingDetail>', () => {
     expect(screen.queryByRole('tab')).toBeNull();
     expect(screen.getByRole('list', { name: 'Paths to assets' })).toHaveTextContent('payments-api → event-stream@3.3.6 → pkg-1@1.0.1');
     expect(screen.getByRole('link', { name: 'See the full reach and every path →' })).toHaveAttribute('href', '/packages?name=flatmap-stream&version=0.1.1');
-    expect(screen.getByRole('link', { name: 'Open the graph →' })).toHaveAttribute('href', '/packages/behind?name=flatmap-stream&version=0.1.1');
+    expect(screen.getByRole('link', { name: 'Open the graph →' })).toHaveAttribute('href', '/packages/behind?name=flatmap-stream');
     expect(screen.getByRole('link', { name: 'Open in graph' })).toHaveAttribute('href', '/projects/p1/investigate?finding=f1');
     expect(screen.getByRole('region', { name: 'What to do' })).toHaveTextContent('It comes in through event-stream');
     expect(screen.getByRole('list', { name: 'Timeline' })).toHaveTextContent('GHSA-mh6f-8j2x-4483');

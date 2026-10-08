@@ -1,24 +1,28 @@
 /**
- * Links from these screens to pages owned elsewhere (package reach, who's behind it, incidents).
+ * Links from these screens to pages owned elsewhere (package reach, who's behind it, incidents,
+ * exposure). They delegate to the route helpers in nav.ts so the paths and params always match.
  * Kept in one place so a route rename is a one-line change.
  */
-import { packagePath } from '@/nav';
+import { behindPath as navBehindPath, exposurePath as navExposurePath, incidentPath as navIncidentPath, packagePath } from '@/nav';
 
-/** The package reach page (every project and path). */
+/** The package reach page (every project and path): /packages?name=&version=. */
 export function reachPath(name: string, version?: string | null): string {
   return packagePath(name, version);
 }
 
-/** Who's behind a package (entity chain page). */
-export function behindPath(name: string, version?: string | null): string {
-  const q = new URLSearchParams({ name });
-  if (version) q.set('version', version);
-  return `/packages/behind?${q}`;
+/** Who's behind a package (entity chain page). /packages/behind reads `name` only: links are per package, not per version. */
+export function behindPath(name: string): string {
+  return navBehindPath(name);
 }
 
-/** One incident: an advisory that hit a package. */
+/** One incident. Its id is the advisory id exactly as the alert stored it (GET /api/incidents/:id). */
 export function incidentPath(advisoryId: string): string {
-  return `/incidents/${encodeURIComponent(advisoryId)}`;
+  return navIncidentPath(advisoryId);
+}
+
+/** The org-wide Exposure matrix, optionally narrowed to some projects (?projects=a,b). */
+export function exposurePath(projectIds: readonly string[] = []): string {
+  return navExposurePath(projectIds);
 }
 
 /** "GHSA-…", "CVE-…", "MAL-…", "INC-…" ids in text or URLs, first seen first. */

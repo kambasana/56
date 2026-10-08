@@ -57,6 +57,38 @@ test.describe('incidents and visual views', () => {
     await expect(page).toHaveURL(/\/packages\?name=/);
   });
 
+  test('cross-links: Overview banner opens the incident, Overview opens Exposure, a Finding opens reach and who is behind it', async ({ page }) => {
+    // Overview banner → the incident page (incident id = advisory id).
+    await page.goto('/');
+    const banner = page.getByRole('link', { name: /Active incident/ });
+    await expect(banner).toContainText(ID);
+    await banner.click();
+    await expect(page).toHaveURL(new RegExp(`/incidents/${ID}$`));
+    await expect(page.getByRole('table', { name: 'Where it is' })).toContainText('event-stream@3.3.6');
+    await expect(page.getByText('Could not load this incident')).toHaveCount(0);
+
+    // Overview → the org-wide Exposure matrix.
+    await page.goto('/');
+    await page.getByRole('link', { name: /exposure matrix/ }).click();
+    await expect(page).toHaveURL(/\/exposure$/);
+    await expect(page.getByRole('table', { name: /Exposure heatmap/ })).toContainText('payments-platform');
+
+    // Finding → who's behind it, and → package reach.
+    await page.goto('/findings?group=project');
+    await page.getByRole('table', { name: 'Findings' }).getByText('event-stream@3.3.6', { exact: true }).click();
+    await page.getByRole('dialog').getByRole('link', { name: 'Open full page' }).click();
+    await expect(page.getByRole('heading', { name: 'event-stream@3.3.6', level: 1 })).toBeVisible();
+    const finding = page.url();
+    await page.getByRole('link', { name: 'Open the graph →' }).click();
+    await expect(page).toHaveURL(/\/packages\/behind\?name=event-stream$/);
+    await expect(page.getByText('Focused on event-stream')).toBeVisible();
+    await page.goto(finding);
+    await page.getByRole('link', { name: 'See the full reach and every path →' }).click();
+    await expect(page).toHaveURL(/\/packages\?name=event-stream&version=3\.3\.6$/);
+    await expect(page.getByRole('heading', { name: 'event-stream@3.3.6', level: 1 })).toBeVisible();
+    await expect(page.getByRole('group', { name: /reaches 1 project/ })).toBeVisible();
+  });
+
   test('package reach: Sankey, table, path tree and the selected path', async ({ page }) => {
     await page.goto('/packages?name=flatmap-stream&version=0.1.1');
     await expect(page.getByRole('heading', { name: 'flatmap-stream@0.1.1', level: 1 })).toBeVisible();
