@@ -241,6 +241,29 @@ CREATE TABLE alert (
 CREATE INDEX alert_org_created ON alert (org_id, created_at DESC);
 `,
   },
+  {
+    version: 6,
+    name: 'finding triage: fixing, resolved, owner, risk expiry',
+    sql: `
+-- Finding life cycle (docs/UX.md §5): adds fixing and resolved, the owner a finding is assigned
+-- to, and when an accepted risk runs out. SQLite cannot change a CHECK, so the table is rebuilt.
+CREATE TABLE finding_state_v6 (
+  project_id       TEXT NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+  purl             TEXT NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('new', 'reviewed', 'fixing', 'resolved', 'accepted_risk')),
+  owner_id         TEXT REFERENCES app_user(id) ON DELETE SET NULL,
+  risk_expires_at  TEXT,
+  updated_at       TEXT NOT NULL,
+  updated_by       TEXT NOT NULL,
+  PRIMARY KEY (project_id, purl)
+);
+INSERT INTO finding_state_v6 (project_id, purl, status, updated_at, updated_by)
+  SELECT project_id, purl, status, updated_at, updated_by FROM finding_state;
+DROP TABLE finding_state;
+ALTER TABLE finding_state_v6 RENAME TO finding_state;
+CREATE INDEX finding_state_owner ON finding_state(owner_id);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

@@ -19,6 +19,7 @@ import type {
   InvestigateSearchResponse,
   ListAuditResponse,
   ListFindingsResponse,
+  ListOrgFindingsResponse,
   ListReportsResponse,
   MeResponse,
   OrgHomeResponse,
@@ -316,7 +317,11 @@ describe('seeded fixture scan and read endpoints', () => {
     expect(findings.items.every((f) => f.level === 'critical')).toBe(true);
     expect((await call('GET', `/api/findings?project=${seededProjectId}&sort=bogus`, { as: 'appsec' })).status).toBe(400);
     expect((await call('GET', `/api/findings?project=${seededProjectId}&level=bogus`, { as: 'appsec' })).status).toBe(400);
-    expect((await call('GET', '/api/findings', { as: 'appsec' })).status).toBe(400);
+    // Without a project the list is org-wide (every project the caller may read findings in).
+    const org = (await (await call('GET', '/api/findings?level=critical', { as: 'appsec' })).json()) as ListOrgFindingsResponse;
+    expect(org.items.map((f) => f.name)).toEqual(expect.arrayContaining(['event-stream', 'flatmap-stream']));
+    expect(org.items[0]).toMatchObject({ projectName: 'payments-platform', owner: null, spread: { projects: 1 } });
+    expect(org.items.find((f) => f.name === 'flatmap-stream')!.introducedBy.via).toContain('event-stream');
   });
 
   it('returns finding detail, graph and investigate data', async () => {

@@ -93,8 +93,13 @@ Permissions are data (`permissions.ts`):
 | POST | `/api/projects/:id/scans` | manage_projects | `CreateScanRequest` | `CreateScanResponse` 202 |
 | GET | `/api/scans/:id` | scans | — | `GetScanResponse` |
 | GET | `/api/findings?project=&scan=&level=&status=&q=&sort=` | findings | `ListFindingsQuery` | `ListFindingsResponse` |
-| GET | `/api/findings/:id` | findings | — | `GetFindingResponse` |
-| PATCH | `/api/findings/:id` | review (and accept_risk for `accepted_risk`) | `UpdateFindingStatusRequest` | `UpdateFindingStatusResponse` |
+| GET | `/api/findings?projects=&env=&level=&status=&owner=&since=&q=&sort=` (no `project`) | findings (org or per project) | `ListOrgFindingsQuery` | `ListOrgFindingsResponse` (see Triage) |
+| GET | `/api/findings/packages?…same filters…` | findings (org or per project) | `ListOrgFindingsQuery` | `ListPackageFindingsResponse` |
+| GET | `/api/findings/:id` | findings | — | `GetFindingResponse` (adds `projectName`, `introducedBy`, `alerts`, `spread`) |
+| PATCH | `/api/findings/:id` | review (and accept_risk into or out of `accepted_risk`) | `UpdateFindingStatusRequest` | `UpdateFindingStatusResponse` |
+| POST | `/api/findings/bulk` | review / accept_risk in every finding's project | `BulkUpdateFindingsRequest` | `BulkUpdateFindingsResponse` |
+| GET | `/api/assignees` | findings (org or per project) | — | `ListAssigneesResponse` |
+| GET | `/api/overview?projects=&env=&range=` | findings (org or per project) | `OverviewQuery` | `OverviewResponse` |
 | GET | `/api/exposure?project=&minLevel=&limit=` | exposure | `ExposureQuery` | `ExposureMatrixResponse` |
 | GET | `/api/changes?project=&from=&to=` | changes | `ChangesQuery` | `ChangesResponse` |
 | GET | `/api/graph?finding=` or `?project=&node=` | investigate (or findings for `finding=`) | — | `GraphResponse` |
@@ -139,6 +144,43 @@ Permissions are data (`permissions.ts`):
 - **Graphs:** always scoped to a finding or a node. Nodes are capped at the project tier's `graphNodeCap`, and anything over the cap collapses into `group` nodes with `truncated: true`.
 - **Deferred in 4a:** send_to_destinations, build_reports (custom report builder and signing), review_entity_links and manage_integrations. They exist in the catalogue and in role editing, but no endpoint uses them yet.
 
+## Triage (findings across projects)
+
+- **Statuses:** `new` (shown as Open) → `reviewed` (Triaged) → `fixing` → `resolved`, plus `accepted_risk`.
+  "Open" in counts and tiles means `new`, `reviewed` or `fixing`. Status and owner are stored per
+  (project, package version), so they carry over to later scans (migration 6 added `fixing`,
+  `resolved`, `owner_id` and `risk_expires_at`).
+- **Org-wide list:** `GET /api/findings` without `project` reads the newest succeeded scan of every
+  project where the caller holds `findings` (org scope, or per project). `projects=` narrows it;
+  ids the caller cannot see are ignored, never an error. Every filter is a comma-separated list:
+  values within one filter are OR, filters are AND. `env=prod` keeps findings that reach a
+  production asset, `env=dev` the rest. `owner=` takes member ids or `none`. `since=` is an ISO
+  time compared with first seen. Sorts: `-score` (default: worst level, then score), `score`,
+  `name`, `reach`, `-firstSeen`, `firstSeen`. Rows add `projectName`, `introducedBy` (direct, and
+  the direct dependencies that pull it in, from the dependency paths) and `spread` (how many of the
+  listed projects have this same package version, and how many reach production).
+- **By package:** `GET /api/findings/packages` takes the same filters and returns one row per
+  package version with every matching finding (production first). Paging counts packages.
+- **Owner:** `PATCH /api/findings/:id { ownerId }` assigns a member (anyone with a user binding in
+  the org) or unassigns with `null`; it needs `review` in the finding's project and is audited as
+  `finding.owner`. `GET /api/assignees` lists the members a finding can be assigned to.
+- **Accepted risk:** `expiresAt` (a future date) is kept as `riskExpiresAt` while the status is
+  `accepted_risk`. `POST /api/findings/bulk` requires both `note` (the reason) and `expiresAt`;
+  the single `PATCH` keeps them optional for older clients. The history note reads
+  "<reason> (until <date>)".
+- **Bulk:** `POST /api/findings/bulk { ids (1–500), status?, note?, expiresAt?, ownerId? }` is all or
+  nothing. Every id must be in the caller's org (else 404, checked first), and the caller needs the
+  permission in each finding's project (else 403 and nothing changes): `accept_risk` when moving
+  into or out of `accepted_risk`, otherwise `review`.
+- **Overview:** `GET /api/overview` reads the same latest scans. `attention` counts open critical
+  findings (and how many reach production), open high findings with no owner (and the oldest
+  first-seen time), open findings first seen in the last 7 days (and in how many projects), and
+  "sources to check": projects whose newest scan failed (with the error) or that never had a
+  successful scan. `bySeverity` gives open findings per level and how many were first seen inside
+  `range` (`null` for `all`): earlier per-day counts are not stored, so no line is drawn.
+  `topPackages` lists the open packages found in the most projects. `incident` is the newest
+  alert inside the range (with its project and production counts), for the banner.
+
 ## Web routes
 
 Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). Each route needs its page permission (`WEB_ROUTES` in `permissions.ts`).
@@ -147,10 +189,11 @@ Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). E
 |---|---|---|
 | `/login` | none | Sign in, plus the dev user switcher hint |
 | `/accept-invite` | none | Accept a member invite (token from the link's `#token=` fragment, or pasted) and sign in |
-| `/` | home | Org home: totals and the project table |
+| `/` | home | Overview: incident banner, "Needs attention" tiles, open findings by severity, packages in the most projects |
+| `/findings` | findings | Findings across every project the user can see (one table, by package or by project) |
 | `/projects/:id/changes` | changes | Changes between the last two scans |
-| `/projects/:id/findings` | findings | Findings table with a side panel |
-| `/projects/:id/findings/:fid` | findings | Finding detail: reasons, evidence, paths, entity chain |
+| `/projects/:id/findings` | findings | The Findings list scoped to one project, plus its Maintenance view |
+| `/projects/:id/findings/:fid` | findings | Finding detail: status track, stacked sections (reach, what to do, who's behind it, evidence, timeline) and a rail of editable fields |
 | `/projects/:id/exposure` | exposure | Exposure matrix (assets × components) |
 | `/projects/:id/investigate` | investigate | Search, then a scoped graph |
 | `/projects/:id/scans` | scans | Scan list, plus "Run scan" when the user has manage_projects |

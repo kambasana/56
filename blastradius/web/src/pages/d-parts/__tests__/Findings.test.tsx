@@ -74,7 +74,7 @@ describe('<Findings>', () => {
     const trigger = screen.getByRole('combobox', { name: 'Filter by status' });
     expect(trigger).toHaveTextContent('All statuses');
     await user.click(trigger);
-    await user.click(await screen.findByRole('option', { name: 'Reviewed' }));
+    await user.click(await screen.findByRole('option', { name: 'Triaged' }));
     expect(screen.getByTestId('where')).toHaveTextContent('status=reviewed');
     expect(bodyRows()).toHaveLength(1);
     expect(within(bodyRows()[0]!).getByText('pkg-1')).toBeInTheDocument();
@@ -155,10 +155,10 @@ describe('<Findings>', () => {
     await user.click(await screen.findByText('pkg-1'));
     const panel = await screen.findByRole('complementary', { name: 'Finding details' });
     await user.click(within(panel).getByLabelText('Status'));
-    await user.click(await screen.findByRole('option', { name: 'Reviewed' }));
+    await user.click(await screen.findByRole('option', { name: 'Triaged' }));
     await user.click(within(panel).getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(within(bodyRows()[0]!).getByText('Reviewed')).toBeInTheDocument());
-    expect(await screen.findByText('Marked reviewed')).toBeInTheDocument();
+    await waitFor(() => expect(within(bodyRows()[0]!).getByText('Triaged')).toBeInTheDocument());
+    expect(await screen.findByText('Marked triaged')).toBeInTheDocument();
     const patch = api.calls.find((c) => c.method === 'PATCH')!;
     expect(patch.body).toEqual({ status: 'reviewed' });
     expect(patch.headers['X-Requested-With']).toBe('blastradius');
@@ -172,7 +172,7 @@ describe('<Findings>', () => {
     await user.click(await screen.findByLabelText('Status'));
     const listbox = await screen.findByRole('listbox');
     expect(within(listbox).queryByRole('option', { name: 'Accepted risk' })).toBeNull();
-    expect(within(listbox).getByRole('option', { name: 'Reviewed' })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: 'Triaged' })).toBeInTheDocument();
   });
 
   it('loads 5,000 rows across pages and renders only a virtual window', async () => {
