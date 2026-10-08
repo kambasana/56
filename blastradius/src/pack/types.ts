@@ -23,6 +23,23 @@ export interface PackMalwareRef {
   aliases?: string[];
   /** When the advisory was first published (ISO); as-of replays ignore later ones. */
   published?: string;
+  /** Set for refs that are not OSV records: "kb" (our incident KB) or "datadog" (dataset manifest). */
+  source?: 'kb' | 'datadog';
+  /** Link for non-OSV refs (OSV refs link to osv.dev). */
+  url?: string;
+}
+
+/**
+ * A claim a higher-precedence source contradicts (feeds sync, docs/FEEDS-AND-DETECTORS.md §2.2):
+ * e.g. a dataset says "every version" while the KB or a reviewed advisory names exact versions.
+ * Kept and flagged; it does not enter the match index.
+ */
+export interface PackConflict {
+  name: string;
+  ref: PackMalwareRef;
+  claim: 'every-version';
+  /** Ids of the higher-precedence records that name specific versions or ranges. */
+  contradictedBy: string[];
 }
 
 export interface PackIncident {
@@ -55,5 +72,12 @@ export interface KnowledgePack {
     ranges: Record<string, { ref: PackMalwareRef; ranges: { events?: Record<string, string>[] }[] }[]>;
   };
   incidents: PackIncident[];
+  /** Feeds sync only: contradicted claims, kept for review (never matched). */
+  conflicts?: PackConflict[];
+  /**
+   * Feeds sync only: lower-confidence labels by package name, e.g. "bkc" = named in Backstabber's
+   * Knife Collection (names only, no versions). Evidence for people, never a match on its own.
+   */
+  labels?: Record<string, string[]>;
   counts: { malwarePackages: number; compromisedPackages: number; compromisedVersions: number; rangeAdvisories: number; incidents: number };
 }

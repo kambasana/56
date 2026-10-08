@@ -10,7 +10,7 @@ import { parse as parseYaml } from 'yaml';
 import { coversAllVersions, type OsvRange } from '../core/osv-range.js';
 import { PACK_SCHEMA, type KnowledgePack, type PackIncident, type PackMalwareRef, type PackSource } from './types.js';
 
-interface OsvRecord {
+export interface OsvRecord {
   id?: unknown;
   published?: unknown;
   aliases?: unknown;
@@ -37,7 +37,7 @@ function addRef(list: PackMalwareRef[], ref: PackMalwareRef): void {
   if (!list.some((r) => r.id === ref.id)) list.push(ref);
 }
 
-export function addOsvRecord(pack: KnowledgePack['malware'], rec: OsvRecord): boolean {
+export function addOsvRecord(pack: KnowledgePack['malware'], rec: OsvRecord, ecosystem = 'npm'): boolean {
   if (!str(rec.id) || rec.withdrawn || !isMalwareAdvisory(rec)) return false;
   const ref: PackMalwareRef = { id: rec.id };
   const aliases = Array.isArray(rec.aliases) ? rec.aliases.filter(str) : [];
@@ -46,7 +46,7 @@ export function addOsvRecord(pack: KnowledgePack['malware'], rec: OsvRecord): bo
   let used = false;
   for (const a of rec.affected ?? []) {
     const name = a.package?.name;
-    if (!str(name) || a.package?.ecosystem !== 'npm') continue;
+    if (!str(name) || a.package?.ecosystem !== ecosystem) continue;
     const versions = Array.isArray(a.versions) ? a.versions.filter(str) : [];
     const ranges = Array.isArray(a.ranges) ? a.ranges : [];
     if (coversAllVersions(ranges as OsvRange[]) || (versions.length === 0 && ranges.length === 0)) {

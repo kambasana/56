@@ -26,11 +26,13 @@ export function createPackEnricher(loaded: LoadedPack, getFacts: () => readonly 
         if (p.type !== 'npm') continue;
         const name = p.namespace ? `${p.namespace}/${p.name}` : p.name;
         for (const ref of packMalware(loaded.pack, name, p.version)) {
+          // KB refs: the scan reads the incident KB itself; the pack carries them for org alerts.
+          if (ref.source === 'kb') continue;
           const ids = [ref.id, ...(ref.aliases ?? [])];
           if (ids.some((id) => seen.has(`${c.purl}\u0000${id}`))) continue;
           seen.add(`${c.purl}\u0000${ref.id}`);
-          const url = `https://osv.dev/vulnerability/${encodeURIComponent(ref.id)}`;
-          const value: MalwareValue = { id: ref.id, origin: 'osv', url, summary: `known-bad list in the knowledge pack built ${loaded.pack.builtAt.slice(0, 10)}` };
+          const url = ref.url ?? `https://osv.dev/vulnerability/${encodeURIComponent(ref.id)}`;
+          const value: MalwareValue = { id: ref.id, origin: ref.source === 'datadog' ? 'other' : 'osv', url, summary: `known-bad list in the knowledge pack built ${loaded.pack.builtAt.slice(0, 10)}` };
           if (ref.published) value.published = ref.published;
           facts.push(makeFact('malware', c.purl, value, { source: 'pack', fetchedAt: now, evidence: [url] }));
         }
