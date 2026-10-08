@@ -4,7 +4,10 @@
 
 Design: [Blastradius UX redesign](https://claude.ai/artifact/9nJNMZVhxDirSnnnaFfuPV), 10 linked screens (Overview, Findings, Finding, ⌘K, Incident, Connect, Import, Sources, Alerts, States) sharing one sidebar.
 
-Visual base: the Claude Design System (shadcn new-york-v4, 28px controls, DM Sans and JetBrains Mono, tokens only, light and dark).
+Visual base: the [Blastradius Design System](https://claude.ai/artifact/DToocoexEfjkPhoG88ggrK). It builds on the Claude Design System (shadcn new-york-v4, 28px controls, DM Sans and JetBrains Mono, light and dark) and adds:
+
+- **Tokens:** severity (`sev-*`, which pass contrast checks in both themes), reach, graph nodes and edges, and focus path.
+- **14 components:** SeverityBadge, ReachTag, StatusTrack, ScopeBar, FilterChips, BulkBar, PeekSheet, Verdict, PathTree, BlastSankey, EntityChain, ExposureMatrix, Timeline and StateBlock.
 
 ## 1. Who and what for
 
@@ -79,3 +82,24 @@ One column, labels above fields, required (*) and optional both marked [B22, B23
 ## 9. Default roles
 
 AppSec gets triage, accept-risk and alert-rule permissions. Developer gets triage on the projects they own. Auditor is read-only plus reports. The 2026-10-08 inventory found AppSec and Developer had no actions at all; this fixes that.
+
+## 10. Seeing it: visual views
+
+The visual forms come from Mobbin research. No security product's graph screens are on Mobbin, so the references are the nearest analogues.
+
+| Question | View | Reference |
+|---|---|---|
+| How does it get in? | **Path tree**: production lane first, top 3 of N paths, the selected path drawn as a chain | Sentry trace waterfall, Amplitude paths |
+| How far does it spread? | **Blast Sankey**: package → brought in by → projects → environment; width = assets reached | Monarch, Profound flow charts |
+| Who's behind it? | **Entity chain**: package → accounts → org → funders. Link line style matches confidence (solid, dashed, dotted), with sources on every link. Opens with one hop shown, behind a focus bar. | Workable/Deel org charts, Twingate access graph |
+| Where does risk sit? | **Exposure matrix**: projects × packages; every cell has a glyph and letter, and an empty cell shows "–" | Gorgias, Zoho heatmaps |
+| When did it happen? | **Lifecycle strip** (released → first warning → advisory → fixed) and a **timeline**, with publisher changes shown as from → to | incident.io, Better Stack |
+
+Rules shared by all of them:
+- Shape says the type of thing, and colour means severity only.
+- Production vs dev is shown by position and weight.
+- Every graph has a Table view, which is the accessible version.
+- Graphs never show more than 50 nodes.
+- Graphs open focused on one hop, with "+N" to expand.
+
+Canvas screens 11–13: Package reach, Who's behind it, Exposure.
