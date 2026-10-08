@@ -284,3 +284,72 @@ describe('the watcher honours stored rules', () => {
     expect(purlLabel('pkg:npm/%40scope/x@1.0.0')).toBe('@scope/x@1.0.0');
   });
 });
+
+describe('notify owners through the webhook', () => {
+  const posts: { text: string; channel?: string }[] = [];
+  const hook = createHttpServer((req: IncomingMessage, res) => {
+    let body = '';
+    req.on('data', (d) => (body += d));
+    req.on('end', () => {
+      posts.push(JSON.parse(body) as { text: string; channel?: string });
+      res.end('ok');
+    });
+  });
+  let app2: App;
+  const jar: Record<string, string> = {};
+  const call2 = (method: string, path: string, as: string, body?: unknown) =>
+    app2.app.request(path, {
+      method,
+      headers: { ...(method !== 'GET' ? XRW : {}), Cookie: `br_session=${jar[as]}`, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+
+  beforeAll(async () => {
+    await new Promise<void>((r) => hook.listen(0, '127.0.0.1', r));
+    app2 = createServer({
+      devMode: true,
+      localRoots: [],
+      offline: true,
+      fixturesDir: FIXTURES_DIR,
+      asOf: FIXTURE_AS_OF,
+      webDir: null,
+      scanOptions: {
+        http: new HttpClient({ offline: true, fixturesDir: FIXTURES_DIR, cacheDir: false, minIntervalMs: 0, transport: async () => Promise.reject(new Error('no network')) }),
+        cacheDir: false,
+      },
+      alerts: { webhookUrl: `http://127.0.0.1:${(hook.address() as AddressInfo).port}/hook` },
+      log: () => {},
+    });
+    const seed = await seedDevData(app2.deps);
+    await app2.jobs.waitFor(seed.scanId!);
+    for (const u of ['admin', 'appsec', 'developer']) {
+      const res = await app2.app.request('/api/auth/login', { method: 'POST', headers: { ...XRW, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: `${u}@local`, password: 'blastradius-dev' }) });
+      jar[u] = /br_session=([^;]+)/.exec(res.headers.get('set-cookie') ?? '')![1]!;
+    }
+  }, 60_000);
+  afterAll(async () => {
+    app2.jobs.stop();
+    await new Promise<void>((r) => hook.close(() => r()));
+  });
+
+  it('posts the default rule once, then the owners on request, both on the timeline', async () => {
+    expect((await call2('POST', '/api/alerts/check', 'admin', { advisories: [advisory] })).status).toBe(200);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.channel).toBeUndefined();
+    const before = await json<IncidentDetail>(call2('GET', `/api/incidents/${ID}`, 'appsec'));
+    expect(before.actions.notify).toEqual({ available: true, reason: null });
+    expect(before.owners.length).toBeGreaterThan(0);
+    expect(before.timeline.map((e) => e.title)).toContain('Slack notified');
+    expect((await call2('POST', `/api/incidents/${ID}/notify`, 'developer')).status).toBe(403);
+    const r = await json<{ sent: boolean; owners: string[]; detail: IncidentDetail }>(call2('POST', `/api/incidents/${ID}/notify`, 'appsec'));
+    expect(r.sent).toBe(true);
+    expect(posts).toHaveLength(2);
+    expect(posts[1]!.text).toMatch(new RegExp(`Blastradius incident in .*${ID}`));
+    expect(posts[1]!.text).toContain(before.owners[0]!);
+    expect(r.detail.timeline.at(-1)!.title).toMatch(/notified the owners$/);
+    expect((await call2('POST', '/api/alert-rules/test', 'appsec', { channel: 'security' })).status).toBe(200);
+    expect(posts[2]).toMatchObject({ channel: '#security' });
+    const rules = await json<ListAlertRulesResponse>(call2('GET', '/api/alert-rules', 'appsec'));
+    expect(rules.webhook.configured).toBe(true);
+  });
+});
