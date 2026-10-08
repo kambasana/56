@@ -103,7 +103,7 @@ These come from our incident KB plus entity resolution and need ongoing curation
 
 **Base-rate warning:** account-takeover compromises of legitimate npm packages number in the low hundreds to about 1,000 (2018–2026) and are clustered in campaigns such as Shai-Hulud and chalk/debug. Splits are grouped by campaign and time, so one worm cannot leak across folds.
 
-## Status (2026-10-07)
+## Status (2026-10-08)
 
 - **Pack v2 (known-bad layer) built.** v2 keeps 806 range-only advisories as ranges; v1 misread them as "every version" (live hammer run #4: fsevents 2.3.3 flagged by MAL-2023-462, which only covers 1.0.0–1.2.10). v1 packs are rejected. `npm run pack:build` (src/pack/) reads the OSV npm export and supplychain-attack-data and writes `pack.json.gz` (about 3 MB, gzipped JSON, sorted so the same inputs give the same bytes, with a `.sha256`). First build: 207,509 malicious-in-every-version packages, 27,262 bad releases of 14,587 otherwise legitimate packages, 84 curated npm incidents (imported as `alleged`).
 - **Finding:** the classic compromises (event-stream, ua-parser-js, node-ipc) are not `MAL-*` records; they are GitHub advisories tagged **CWE-506** (embedded malicious code), so the pack includes those too. Protestware (colors, faker, peacenotwar) is in neither and stays covered by our own incident KB.
@@ -180,10 +180,40 @@ Report: `blastradius/pack/model/reports/2026-10-08-dataset.md`. Manifest (labels
   - **Remaining skew.** `prev_*` and `*_share_prior` read only earlier releases whose manifest survives, so a release that follows an unpublished bad one is compared with an older release than scan time would use.
   - **Residual label noise.** OSV-only positives within 2 days of a named campaign join it even if unrelated (a grouping error, not a label error). Automated MAL verdicts with compromise wording are still trusted.
 
+### Model trained and gated on that dataset (2026-10-08): FAIL, not shipped
+
+Report: `blastradius/pack/model/reports/2026-10-08-gate.md`. Machine-readable results: `2026-10-08-gate.json`.
+
+- **Training** (`train.py --variants`):
+  - history-only (the 18 manifest features masked on every row);
+  - GroupKFold by campaign;
+  - variant chosen on out-of-fold average precision only: history + downloads with a class weight, beating per-year weighting and no downloads;
+  - isotonic calibration on out-of-fold predictions, and an F2 threshold of 0.111.
+- **Parity** with LightGBM: max difference 2.2e-16 on 25,949 rows.
+- **Model quality on the 2026 test split:** ROC AUC 0.923, AP 0.718, recall 49.9% at a 2.7% false-positive rate. Within the positive packages, ROC AUC is 0.896. That is up from 0.33 on 2026-10-07, but the recall is inflated:
+  - most test positives are the second or later release of a worm burst, minutes after the first;
+  - first bad release per package: 35.5%;
+  - where npm still serves the manifest: 26.8%.
+- **Top features by gain:** releases in the past year, days since the previous release, downloads trend, package age and weekly downloads. These are cadence and popularity, not the attack itself.
+- **Gate** (`npm run model:gate`, now with the dataset test split, download history, the hammer controls at their pinned commits and `--no-reconstructed`):
+
+  | Measure | Model | Noisy-OR |
+  |---|---|---|
+  | Held-out recall, 100 releases both can score | 16% | 27% |
+  | Noise per Acme repo, at release | 14.5 | 95.2 |
+  | Noise per Acme repo, scan day | 14.5 | 2.17 |
+  | Noise per hammer control, at release | 22.5 | 86.0 |
+  | Noise per hammer control, scan day | 22.5 | 11.0 |
+
+  **FAIL** on recall and on scan-day noise. The other two variants fail as well (informational). **Scoring keeps the hand-set weights. The model is not wired in.**
+- **Why it fails.** The publisher, install-hook and dependency evidence for the positives was unpublished by npm. With only history features, the model finds worm bursts but not single hijacked releases. It also flags quiet, low-download packages in healthy repos with no time-decay.
+- **Caveat.** 495 of the 1,184 control packages were training negatives, so the model's control noise is optimistic. The Acme packages were never trained on.
+
 **Still needed:**
-- **Model step.** Adapt `train.py` to the history-only variant and to campaign-grouped folds (`campaign`). Then rerun the gate. Only a passing run publishes a model.
+- **Manifests for unpublished bad releases** (registry mirror or the replicate.npmjs.com changes feed). This is the main blocker for the model.
+- **Train and evaluate on the first bad release per package,** so worm bursts do not dominate. Sample negatives matched to the positives' popularity and year.
+- **Choose the threshold with a noise objective** on held-out healthy repos.
 - **As-of history for Scorecard and dependents.** For example, deps.dev BigQuery snapshots. Until then, those features stay NaN.
-- **More manifests for unpublished positives**, from a registry mirror or the replicate.npmjs.com changes feed, so the publisher, install-script and dependency features can be trained.
 
 ## 5. Deliverables
 
