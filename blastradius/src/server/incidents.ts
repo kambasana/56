@@ -185,7 +185,7 @@ export function getIncident(ctx: IncidentContext, advisoryId: string, caps: Inci
     timeline.push({
       at,
       kind: 'alert',
-      title: `Advisory matched ${plural(projects.length, 'project')}`,
+      title: `${row.account ? 'Exposure' : 'Advisory'} matched ${plural(projects.length, 'project')}`,
       detail: `${[...new Set(list.map((a) => purlLabel(a.purl)))].join(', ')} in ${projects.map((p) => (prod.has(p) ? `${p} (production)` : p)).join(', ')}`,
     });
   }
@@ -210,7 +210,9 @@ export function getIncident(ctx: IncidentContext, advisoryId: string, caps: Inci
     checked: { projects: check?.projectsChecked ?? invs.size, at: check?.at ?? null, source: check?.source ?? null },
     owners: ownerList,
     actions: {
-      recheck: caps.packConfigured
+      recheck: row.account
+        ? { available: false, reason: 'An account incident is updated from the account page ("Update the incident"), not from the knowledge pack.' }
+        : caps.packConfigured
         ? { available: true, reason: null }
         : { available: false, reason: 'No knowledge pack is configured (BLASTRADIUS_PACK), so there is nothing to re-check against. Fixed counts update with every new scan.' },
       notify: !caps.webhookConfigured

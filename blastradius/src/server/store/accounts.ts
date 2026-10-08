@@ -269,11 +269,13 @@ export function accountIncidentFor(s: Store, orgId: string, registry: AccountReg
   return get<AccountIncidentRow>(s, `SELECT ${incidentCols} FROM account_incident WHERE org_id = ? AND account_registry = ? AND account = ?`, orgId, registry, account) ?? null;
 }
 
+const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
+
 /** Open or update the org's incident for a compromised account; writes a timeline event and an audit entry. */
 export function markAccountCompromised(
   s: Store,
   orgId: string,
-  input: { registry: AccountRegistry; account: string; since: string | null; exposures: number; production: number; packages: number },
+  input: { registry: AccountRegistry; account: string; since: string | null; exposures: number; projects: number; production: number; packages: number },
   actor: { id: string; name: string },
 ): { incidentId: string; created: boolean } {
   const incidentId = accountIncidentId(input.registry, input.account);
@@ -292,7 +294,7 @@ export function markAccountCompromised(
       at,
       actor.id,
     );
-    const window = input.since ? ` since ${input.since}` : '';
+    const window = input.since ? ` since ${input.since.slice(0, 16).replace('T', ' ')} UTC` : '';
     run(
       s,
       `INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title, detail) VALUES (?, ?, ?, ?, 'account', ?, ?)`,
@@ -301,7 +303,7 @@ export function markAccountCompromised(
       at,
       actor.id,
       prev ? `${actor.name} updated the exposure of ${input.account}` : `${actor.name} marked ${input.account} as compromised`,
-      `${input.registry} account ${input.account}${window}: ${input.exposures} exposures in your projects (${input.production} in production), ${input.packages} packages it can publish`,
+      `${input.registry} account ${input.account}${window}: ${plural(input.exposures, 'exposure')} in ${plural(input.projects, 'project')} (${input.production} in production), ${plural(input.packages, 'package')} it can publish`,
     );
     writeAudit(s, { orgId, actor: actor.id, action: 'account.compromised', target: `${input.registry}:${input.account}`, detail: { incidentId, since: input.since, exposures: input.exposures } });
     return { incidentId, created: !prev };

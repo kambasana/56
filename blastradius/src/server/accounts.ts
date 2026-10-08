@@ -173,7 +173,9 @@ export class AccountIndexer {
    * `listingCap`), so its sibling packages are known. Waits for the result.
    */
   refreshAccount(account: string, mode: FetchMode = this.defaultMode): Promise<void> {
-    return this.enqueue(async () => {
+    // Not queued behind a sweep (which can take minutes live): someone is waiting for this one. A
+    // packument already being fetched by the sweep is shared (fetchPackument dedupes in-flight requests).
+    return this.track(async () => {
       if (!isAccountName(account)) return;
       const prev = accountListing(this.store, account);
       const stale = !prev || Date.parse(prev.fetchedAt) < this.store.now().getTime() - this.ttlMs;
@@ -203,9 +205,23 @@ export class AccountIndexer {
     this.timer = null;
   }
 
-  /** Wait for queued refreshes (tests, shutdown). */
-  idle(): Promise<unknown> {
-    return this.running;
+  /** Wait for queued and on-demand refreshes (tests, shutdown). */
+  async idle(): Promise<void> {
+    while (true) {
+      const pending = [this.running, ...this.inflight];
+      await Promise.all(pending.map((p) => p.catch(() => undefined)));
+      if (pending.length === 1 + this.inflight.size && this.running === pending[0]) return;
+    }
+  }
+
+  private readonly inflight = new Set<Promise<unknown>>();
+
+  private track<T>(fn: () => Promise<T>): Promise<T> {
+    const p = fn();
+    this.inflight.add(p);
+    const done = () => this.inflight.delete(p);
+    p.then(done, done);
+    return p;
   }
 
   /** Refreshes run one at a time, so two never fetch the same packument at once. */
@@ -270,6 +286,28 @@ function indexInventories(invs: readonly StoredInventory[]): InvIndex[] {
     const graph = buildDependencyGraph(inv.inventory);
     return { inv, graph, prod: productionPurls(graph) };
   });
+}
+
+/**
+ * Versions `account` published within [from, to], oldest first, in one pass per package. Same rule
+ * as AccountIndex.publisherOf: `_npmUser`, or for a deleted version the sole maintainer of the
+ * latest earlier version that lists maintainers.
+ */
+export function publishesBy(pkgs: Iterable<StoredPackage>, account: string, from: number, to: number): { name: string; version: string; at: number; attribution: 'npmUser' | 'sole-maintainer' }[] {
+  const out: { name: string; version: string; at: number; attribution: 'npmUser' | 'sole-maintainer' }[] = [];
+  for (const p of pkgs) {
+    if (p.status !== 'ok') continue;
+    let lastM: string[] | undefined;
+    for (const e of p.versions) {
+      const at = Date.parse(e.t);
+      if (at >= from && at <= to) {
+        if (e.u === account) out.push({ name: p.name, version: e.v, at, attribution: 'npmUser' });
+        else if (!e.u && lastM?.length === 1 && lastM[0] === account) out.push({ name: p.name, version: e.v, at, attribution: 'sole-maintainer' });
+      }
+      if (e.m) lastM = e.m;
+    }
+  }
+  return out.sort((a, b) => a.at - b.at || a.name.localeCompare(b.name));
 }
 
 const CONF_RANK: Record<LinkConfidence, number> = { high: 3, medium: 2, low: 1 };
@@ -380,8 +418,7 @@ export function accountExposure(ctx: IncidentContext, registry: AccountRegistry,
   // Versions the account published within [since, asOf].
   const published = new Map<string, AccountPublish>();
   if (sinceMs !== null && registry === 'npm') {
-    for (const e of u.index.publishEvents(sinceMs, asOfMs).events) {
-      if (e.account !== name) continue;
+    for (const e of publishesBy(u.pkgs.values(), name, sinceMs, asOfMs)) {
       published.set(`${e.name}@${e.version}`, { name: e.name, version: e.version, at: new Date(e.at).toISOString(), attribution: e.attribution, projects: 0 });
     }
   }
@@ -454,7 +491,7 @@ export function accountDetail(ctx: IncidentContext, registry: AccountRegistry, n
   const locked = new Map<string, number>();
   for (const { inv } of u.invs) for (const c of inv.inventory.components) if (c.ecosystem === 'npm') locked.set(`${c.name}@${c.version}`, (locked.get(`${c.name}@${c.version}`) ?? 0) + 1);
   // Every attributable publish the index knows (any age); the counts are relative to now.
-  const events = registry === 'npm' ? u.index.publishEvents(0, nowMs).events.filter((e) => e.account === name) : [];
+  const events = registry === 'npm' ? publishesBy(u.pkgs.values(), name, 0, nowMs) : [];
   const recentPublishes: AccountPublish[] = events
     .slice(-25)
     .reverse()
@@ -548,7 +585,7 @@ export function concentration(ctx: IncidentContext, opts: { limit?: number } = {
 /** Exposure rows as incident alerts (one per project × package version). */
 export function compromiseHits(ctx: IncidentContext, incidentId: string, exposure: AccountExposureResponse): ExposureHit[] {
   const scans = new Map(latestInventories(ctx.store, ctx.orgId, ctx.projectIds).map((i) => [i.projectId, i.scanId] as const));
-  const what = `${exposure.account.registry} account ${exposure.account.name} marked as compromised${exposure.since ? ` (publishes since ${exposure.since})` : ''}`;
+  const what = `Account marked as compromised${exposure.since ? `; versions it published since ${exposure.since.slice(0, 16).replace('T', ' ')} UTC are critical` : ''}`;
   return exposure.exposures.map((e) => {
     const via = e.direct ? (e.broughtInBy.length ? `Direct dependency, also brought in by ${e.broughtInBy.slice(0, 2).join(', ')}` : 'Direct dependency') : `Brought in by ${e.broughtInBy.slice(0, 2).join(', ') || 'another package'}`;
     const scanId = scans.get(e.projectId);

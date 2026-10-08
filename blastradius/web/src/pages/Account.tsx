@@ -27,6 +27,8 @@ import { fmtTime } from '@/lib/cn';
 import { safeHref } from '@/lib/safe-href';
 import { STATUS_LABEL } from './Incidents';
 
+const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
+
 const DISCLAIMER = 'Public registry data with sources. Not a finding of wrongdoing.';
 
 const RELATION_TEXT: Record<AccountLinkSource['relation'], string> = {
@@ -97,7 +99,7 @@ function CompromiseDialog({ open, onOpenChange, d, onDone }: { open: boolean; on
     try {
       const r = await accountsApi.markCompromised(d.account.registry, d.account.name, since ? { since: new Date(`${since}:00Z`).toISOString() } : {});
       onOpenChange(false);
-      if (r.incidentId) toast.success(r.created ? 'Incident opened' : 'Incident updated', { description: `${r.exposure.counts.exposures} exposures in ${r.exposure.counts.projects} projects${r.added ? `, ${r.added} new` : ''}` });
+      if (r.incidentId) toast.success(r.created ? 'Incident opened' : 'Incident updated', { description: `${plural(r.exposure.counts.exposures, 'exposure')} in ${plural(r.exposure.counts.projects, 'project')}${r.added ? `, ${r.added} new` : ''}` });
       else toast.info('Nothing to open', { description: `No project you have uses a package ${d.account.name} can publish.` });
       onDone(r.incidentId);
     } catch (e) {
@@ -182,7 +184,7 @@ function ExposureTable({ x }: { x: AccountExposureResponse }) {
               <td className="px-2 py-2">
                 <ReachTag reach={e.production ? 'production' : 'dev'} />
               </td>
-              <td className="px-2 py-2 font-mono text-[12px]">
+              <td className="px-2 py-2 font-mono text-[12px] whitespace-nowrap">
                 <Link to={packagePath(e.name, e.version)}>
                   {e.name}@{e.version}
                 </Link>
@@ -261,7 +263,7 @@ function Body({ d, x, xError, reload }: { d: AccountDetail; x: AccountExposureRe
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Tile label="Packages it can publish" value={d.packages.length} note={`${inUse.length} in your projects`} />
             <Tile label="Projects exposed" value={x?.counts.projects ?? '…'} note={x ? `${x.counts.production} in production` : 'loading'} />
-            <Tile label="Production dependencies" value={pct(d.concentration.share)} note={`${d.concentration.packages} of ${d.concentration.of}`} />
+            <Tile label="Share of production dependencies" value={pct(d.concentration.share)} note={`${d.concentration.packages} of ${d.concentration.of}`} />
           </div>
 
           <section aria-labelledby="exposure" className="flex flex-col gap-2">

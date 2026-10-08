@@ -20,7 +20,8 @@ import { isValidNpmName, packumentUrl } from '../../../src/enrich/npm/registry.j
 import { userPackagesUrl } from '../../../src/accounts/registry.js';
 import { scan } from '../../../src/pipeline.js';
 import { createServer } from '../../../src/server/serve.js';
-import { AccountIndexer } from '../../../src/server/accounts.js';
+import { AccountIndexer, publishesBy } from '../../../src/server/accounts.js';
+import { registryPackages } from '../../../src/server/store/index.js';
 import { completeScan, createProject, enqueueScan, markScanRunning, seedDev } from '../../../src/server/store/index.js';
 import { makeResult } from '../../../src/server/store/testing.js';
 import type { AccountExposureResponse, MarkCompromisedResponse } from '../../../src/server/api-types-accounts.js';
@@ -213,6 +214,22 @@ describe('G1: the product names what the account-level proof named (qix, chalk/d
     const flagged = w.exposures.filter((e) => e.reasons.includes('published_since'));
     for (const e of flagged) expect(bad.get(e.name)?.has(e.version)).toBe(true);
     expect(flagged.every((e) => e.publishedBy?.account === 'qix')).toBe(true);
+  });
+
+  it("attributes publishes exactly like the proof's rule (npmUser, else a sole previous maintainer)", () => {
+    const from = Date.parse('2025-06-01T00:00:00Z');
+    const to = Date.parse('2025-12-31T23:59:59Z');
+    const names = timelines.filter((t) => isValidNpmName(t.name)).map((t) => t.name);
+    const stored = registryPackages(srv.store, names);
+    for (const acct of ['qix', 'sindresorhus', 'ljharb']) {
+      const product = publishesBy(stored.values(), acct, from, to).map((e) => `${e.name}@${e.version} ${e.attribution}`).sort();
+      const proof = proofIndex
+        .publishEvents(from, to, [...stored.keys()])
+        .events.filter((e) => e.account === acct)
+        .map((e) => `${e.name}@${e.version} ${e.attribution}`)
+        .sort();
+      expect(product).toEqual(proof);
+    }
   });
 
   it('"Mark as compromised" opens an incident listing every exposure it names now', async () => {

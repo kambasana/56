@@ -95,7 +95,7 @@ export function registerAccountRoutes(app: Hono<AppEnv>): void {
     const marked = markAccountCompromised(
       store,
       orgId,
-      { registry, account: name, since: since ?? null, exposures: exposure.counts.exposures, production: exposure.counts.production, packages: exposure.counts.packages },
+      { registry, account: name, since: since ?? null, exposures: exposure.counts.exposures, projects: exposure.counts.projects, production: exposure.counts.production, packages: exposure.counts.packages },
       { id: session.user.id, name: session.user.name },
     );
     return c.json<MarkCompromisedResponse>({ incidentId: marked.incidentId, created: marked.created, added: created.length, exposure: accountExposure(ctx, registry, name, since ? { since } : {}) }, marked.created ? 201 : 200);
