@@ -1,0 +1,3285 @@
+{
+ "gate": {
+  "generatedAt": "2026-10-08T01:17:54.062Z",
+  "cutoff": "2026-01-01T00:00:00Z",
+  "threshold": 0.111111111111,
+  "variant": "history+downloads/global",
+  "options": {
+   "downloads": true,
+   "dataset": true,
+   "controls": [
+    "microsoft/TypeScript",
+    "mochajs/mocha"
+   ],
+   "dropReconstructed": true
+  },
+  "recall": {
+   "heldOut": {
+    "releases": 100,
+    "model": 0.16,
+    "baseline": 0.27,
+    "baselineMediumPlus": 0.2,
+    "modelOnly": 8,
+    "baselineOnly": 19,
+    "both": 8
+   },
+   "inSample": {
+    "releases": 0,
+    "model": null,
+    "baseline": null,
+    "baselineMediumPlus": null
+   },
+   "perCampaignHeldOut": [
+    {
+     "campaign": "miasma-2026",
+     "releases": 39,
+     "model": 1,
+     "baseline": 1
+    },
+    {
+     "campaign": "teampcp-2026",
+     "releases": 21,
+     "model": 5,
+     "baseline": 9
+    },
+    {
+     "campaign": "2026-07-24",
+     "releases": 10,
+     "model": 3,
+     "baseline": 2
+    },
+    {
+     "campaign": "ironworm-npm",
+     "releases": 6,
+     "model": 4,
+     "baseline": 4
+    },
+    {
+     "campaign": "react-native-country-select",
+     "releases": 5,
+     "model": 0,
+     "baseline": 2
+    },
+    {
+     "campaign": "joyfill",
+     "releases": 4,
+     "model": 0,
+     "baseline": 0
+    },
+    {
+     "campaign": "node-ipc-2026",
+     "releases": 3,
+     "model": 0,
+     "baseline": 3
+    },
+    {
+     "campaign": "2026-07-16",
+     "releases": 2,
+     "model": 0,
+     "baseline": 2
+    },
+    {
+     "campaign": "2026-09-23",
+     "releases": 2,
+     "model": 0,
+     "baseline": 2
+    },
+    {
+     "campaign": "cline",
+     "releases": 2,
+     "model": 0,
+     "baseline": 2
+    },
+    {
+     "campaign": "tiledesk",
+     "releases": 2,
+     "model": 1,
+     "baseline": 0
+    },
+    {
+     "campaign": "2026-06-20",
+     "releases": 1,
+     "model": 1,
+     "baseline": 0
+    },
+    {
+     "campaign": "2026-07-18",
+     "releases": 1,
+     "model": 0,
+     "baseline": 0
+    },
+    {
+     "campaign": "2026-09-05",
+     "releases": 1,
+     "model": 1,
+     "baseline": 0
+    },
+    {
+     "campaign": "injective-sdk-ts",
+     "releases": 1,
+     "model": 0,
+     "baseline": 0
+    }
+   ],
+   "rows": [
+    {
+     "incident": "2026-07-24",
+     "release": "@0l00000l/auth@1.1.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.24269005847953215,
+      "detail": "p=0.2427"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@0l00000l/auth@1.1.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-bigquery@0.0.5",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-bigquery@0.0.6",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0031277150304083404,
+      "detail": "p=0.0031"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-contacts@0.4.7",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-contacts@0.4.8",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-forms@0.5.5",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-forms@0.5.6",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0031277150304083404,
+      "detail": "p=0.0031"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@activepieces/piece-google-forms@0.5.7",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0031277150304083404,
+      "detail": "p=0.0031"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@aster110/cc2wechat@5.1.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.04282868525896414,
+      "detail": "p=0.0428"
+     }
+    },
+    {
+     "incident": "2026-07-18",
+     "release": "@atom8n/inspector@0.17.32",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.021479713603818614,
+      "detail": "p=0.0215"
+     }
+    },
+    {
+     "incident": "2026-09-23",
+     "release": "@chatunity/baileys@3.2.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "2026-09-23",
+     "release": "@chatunity/baileys@3.2.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.024806201550387597,
+      "detail": "p=0.0248"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@depup/astro@7.1.3-depup.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0007015855834185259,
+      "detail": "p=0.0007"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@depup/astro@7.2.0-depup.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0012410570886260768,
+      "detail": "p=0.0012"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@devmikets/hyperliquid-sdk@1.9.6",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/commission-sdk@1.0.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.024806201550387597,
+      "detail": "p=0.0248"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/document-uploader@0.0.10",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.8545454545454545,
+      "detail": "p=0.8545"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/docxtemplater-util@1.1.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.27941176470588236,
+      "detail": "p=0.2794"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/numbergenerator-sdk-node@1.3.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/partner-portal-sdk@1.1.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/task-sdk@1.0.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/task-sdk-node@1.0.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "@emilgroup/task-sdk-node@1.0.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.024806201550387597,
+      "detail": "p=0.0248"
+     }
+    },
+    {
+     "incident": "injective-sdk-ts",
+     "release": "@injectivelabs/sdk-ts@1.20.21",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.06501182033096928,
+      "detail": "p=0.0650"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@kolbo/mcp@1.57.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "joyfill",
+     "release": "@love-moon/conductor-cli@0.7.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "joyfill",
+     "release": "@love-moon/conductor-cli@0.7.5",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.024806201550387597,
+      "detail": "p=0.0248"
+     }
+    },
+    {
+     "incident": "joyfill",
+     "release": "@love-moon/conductor-cli@0.7.6",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "joyfill",
+     "release": "@love-moon/conductor-cli@0.8.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@polymarkets/clob-client-v2@1.0.6",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "2026-09-05",
+     "release": "@sanzoffc/baileys@3.0.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "@trackunit/iris-app-sdk-vite@1.2.10-alpha-d785aff3531.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0007015855834185259,
+      "detail": "p=0.0007"
+     }
+    },
+    {
+     "incident": "ironworm-npm",
+     "release": "arjson@0.1.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "autotel@2.26.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.019421487603305785,
+      "detail": "p=0.0194"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "autotel@3.4.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "autotel-adapters@0.3.5",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "autotel-aws@0.13.10",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.019421487603305785,
+      "detail": "p=0.0194"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "autotel-edge@3.16.13",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "2026-07-16",
+     "release": "bvm-core@1.1.42",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.00927643784786642,
+      "detail": "p=0.0093"
+     }
+    },
+    {
+     "incident": "2026-07-16",
+     "release": "bvm-core@1.1.43",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.06222222222222222,
+      "detail": "p=0.0622"
+     }
+    },
+    {
+     "incident": "node-ipc-2026",
+     "release": "claude-all-config@3.8.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "node-ipc-2026",
+     "release": "claude-all-config@3.8.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.019421487603305785,
+      "detail": "p=0.0194"
+     }
+    },
+    {
+     "incident": "node-ipc-2026",
+     "release": "claude-all-config@3.9.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "clawtrl-wallet@1.5.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.024806201550387597,
+      "detail": "p=0.0248"
+     }
+    },
+    {
+     "incident": "cline",
+     "release": "cline@2.3.0",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "provenance_dropped, maintainer_change, install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "cline",
+     "release": "cline@2.4.0-nightly.1771417043",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "maintainer_change"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "ironworm-npm",
+     "release": "cwao@0.5.6",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.6105263157894737,
+      "detail": "p=0.6105"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "echarts-for-react@3.0.7",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-awaitly@0.17.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-awaitly@1.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-executable-stories-jest@1.2.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-executable-stories-jest@2.1.8",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008492569002123142,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-executable-stories-playwright@1.2.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-executable-stories-vitest@1.2.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "eslint-plugin-executable-stories-vitest@2.1.8",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008492569002123142,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-cypress@3.1.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-cypress@4.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-cypress@5.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-cypress@6.1.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-cypress@7.0.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-cypress@8.3.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-formatters@0.11.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-jest@3.1.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-jest@4.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-jest@5.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-jest@6.1.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-jest@7.0.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-jest@8.3.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-playwright@3.1.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-playwright@7.0.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-playwright@8.4.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-vitest@4.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-vitest@7.0.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "executable-stories-vitest@8.3.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "2026-06-20",
+     "release": "gmail-changer@2.0.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "tiledesk",
+     "release": "ionic-insta-api-wrapper@1.1.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "tiledesk",
+     "release": "ionic-insta-api-wrapper@1.1.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "jest-canvas-mock@2.5.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "jest-date-mock@1.0.11",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "ironworm-npm",
+     "release": "muaddib-scanner@2.11.41",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.019421487603305785,
+      "detail": "p=0.0194"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "netspeedutil@1.0.13",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "publisher_change, install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver@6.5.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver-aws@9.1.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver-aws@10.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver-aws@11.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver-aws@12.0.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.008542627712284298,
+      "detail": "p=0.0085"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver-nextjs@7.4.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "miasma-2026",
+     "release": "node-env-resolver-vite@2.4.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.019421487603305785,
+      "detail": "p=0.0194"
+     }
+    },
+    {
+     "incident": "ironworm-npm",
+     "release": "raise-common-lib@0.0.249",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "react-native-country-select",
+     "release": "react-native-country-select@0.4.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0031277150304083404,
+      "detail": "p=0.0031"
+     }
+    },
+    {
+     "incident": "react-native-country-select",
+     "release": "react-native-country-select@0.4.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.0031277150304083404,
+      "detail": "p=0.0031"
+     }
+    },
+    {
+     "incident": "react-native-country-select",
+     "release": "react-native-international-phone-number@0.12.1",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "react-native-country-select",
+     "release": "react-native-international-phone-number@0.12.2",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.004404987801572242,
+      "detail": "p=0.0044"
+     }
+    },
+    {
+     "incident": "react-native-country-select",
+     "release": "react-native-international-phone-number@0.12.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.018217306441119057,
+      "detail": "p=0.0182"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "size-sensor@1.0.4",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": false,
+      "mediumPlus": false,
+      "detail": ""
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.019421487603305785,
+      "detail": "p=0.0194"
+     }
+    },
+    {
+     "incident": "2026-07-24",
+     "release": "stretchshop@0.7.5",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": false,
+      "mediumPlus": false,
+      "calibrated": 0.06501182033096928,
+      "detail": "p=0.0650"
+     }
+    },
+    {
+     "incident": "ironworm-npm",
+     "release": "weavedb-sdk@0.45.3",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.6105263157894737,
+      "detail": "p=0.6105"
+     }
+    },
+    {
+     "incident": "teampcp-2026",
+     "release": "ynastore-baileys@1.0.21",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": false,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    },
+    {
+     "incident": "ironworm-npm",
+     "release": "zkjson@0.8.5",
+     "heldOut": true,
+     "source": "dataset",
+     "baseline": {
+      "flagged": true,
+      "mediumPlus": true,
+      "detail": "install_script"
+     },
+     "model": {
+      "flagged": true,
+      "mediumPlus": true,
+      "calibrated": 0.117729502452698,
+      "detail": "p=0.1177"
+     }
+    }
+   ]
+  },
+  "dataset": {
+   "testRows": 23649,
+   "notScorable": 0,
+   "modelAllRows": {
+    "tp": 1771,
+    "fn": 1781,
+    "fp": 536,
+    "tn": 19561
+   },
+   "comparableRows": {
+    "model": {
+     "tp": 16,
+     "fn": 84,
+     "fp": 509,
+     "tn": 19510
+    },
+    "baseline": {
+     "tp": 27,
+     "fn": 73,
+     "fp": 6007,
+     "tn": 14012
+    }
+   },
+   "perCampaign": [
+    {
+     "campaign": "teampcp-2026",
+     "positives": 2945,
+     "modelFlagged": 1659,
+     "comparable": 21,
+     "modelComparable": 5,
+     "baselineComparable": 9
+    },
+    {
+     "campaign": "miasma-2026",
+     "positives": 372,
+     "modelFlagged": 41,
+     "comparable": 39,
+     "modelComparable": 1,
+     "baselineComparable": 1
+    },
+    {
+     "campaign": "mastra",
+     "positives": 80,
+     "modelFlagged": 8,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "ironworm-npm",
+     "positives": 42,
+     "modelFlagged": 39,
+     "comparable": 6,
+     "modelComparable": 4,
+     "baselineComparable": 4
+    },
+    {
+     "campaign": "2026-07-24",
+     "positives": 20,
+     "modelFlagged": 5,
+     "comparable": 10,
+     "modelComparable": 3,
+     "baselineComparable": 2
+    },
+    {
+     "campaign": "tiledesk",
+     "positives": 19,
+     "modelFlagged": 5,
+     "comparable": 2,
+     "modelComparable": 1,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-08-28",
+     "positives": 10,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "jscrambler",
+     "positives": 9,
+     "modelFlagged": 6,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "react-native-country-select",
+     "positives": 7,
+     "modelFlagged": 0,
+     "comparable": 5,
+     "modelComparable": 0,
+     "baselineComparable": 2
+    },
+    {
+     "campaign": "joyfill",
+     "positives": 6,
+     "modelFlagged": 0,
+     "comparable": 4,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "node-ipc-2026",
+     "positives": 6,
+     "modelFlagged": 2,
+     "comparable": 3,
+     "modelComparable": 0,
+     "baselineComparable": 3
+    },
+    {
+     "campaign": "2026-08-26",
+     "positives": 5,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-09-23",
+     "positives": 5,
+     "modelFlagged": 0,
+     "comparable": 2,
+     "modelComparable": 0,
+     "baselineComparable": 2
+    },
+    {
+     "campaign": "pgserve",
+     "positives": 4,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "axios",
+     "positives": 3,
+     "modelFlagged": 1,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "injective-sdk-ts",
+     "positives": 3,
+     "modelFlagged": 2,
+     "comparable": 1,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-07-16",
+     "positives": 2,
+     "modelFlagged": 0,
+     "comparable": 2,
+     "modelComparable": 0,
+     "baselineComparable": 2
+    },
+    {
+     "campaign": "cline",
+     "positives": 2,
+     "modelFlagged": 0,
+     "comparable": 2,
+     "modelComparable": 0,
+     "baselineComparable": 2
+    },
+    {
+     "campaign": "2026-01-28",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-04-18",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-05-09",
+     "positives": 1,
+     "modelFlagged": 1,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-06-08",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-06-12",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-06-20",
+     "positives": 1,
+     "modelFlagged": 1,
+     "comparable": 1,
+     "modelComparable": 1,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-07-18",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 1,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-09-05",
+     "positives": 1,
+     "modelFlagged": 1,
+     "comparable": 1,
+     "modelComparable": 1,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-09-21",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "2026-10-05",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "miso-client",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    },
+    {
+     "campaign": "velora-dex-sdk",
+     "positives": 1,
+     "modelFlagged": 0,
+     "comparable": 0,
+     "modelComparable": 0,
+     "baselineComparable": 0
+    }
+   ]
+  },
+  "noise": {
+   "repos": [
+    {
+     "repo": "Esger/Pentominos2",
+     "components": 1090,
+     "baselineAtRelease": 206,
+     "baselineMediumAtRelease": 190,
+     "modelAtRelease": 33,
+     "baselineScanDay": 3,
+     "baselineMediumScanDay": 1,
+     "modelScanDay": 33,
+     "examples": {
+      "baseline": [
+       "core-js@2.6.12 (install_script)",
+       "fsevents@1.2.13 (install_script)",
+       "fsevents@2.3.2 (install_script)"
+      ],
+      "model": [
+       "arr-filter@1.1.2 (p=0.1724)",
+       "arr-map@2.0.2 (p=0.1177)",
+       "array-each@1.0.1 (p=0.1177)",
+       "aurelia-http-client@1.3.1 (p=0.2427)",
+       "aurelia-logging-console@1.1.1 (p=0.1111)"
+      ]
+     }
+    },
+    {
+     "repo": "Esri/a11y-map",
+     "components": 289,
+     "baselineAtRelease": 44,
+     "baselineMediumAtRelease": 41,
+     "modelAtRelease": 4,
+     "baselineScanDay": 1,
+     "baselineMediumScanDay": 0,
+     "modelScanDay": 4,
+     "examples": {
+      "baseline": [
+       "phantomjs-prebuilt@2.1.16 (install_script)"
+      ],
+      "model": [
+       "grunt-tslint@5.0.2 (p=0.1332)",
+       "is-date-object@1.0.1 (p=0.1332)",
+       "string-template@0.2.1 (p=0.1177)",
+       "unicode-5.2.0@0.7.5 (p=0.2427)"
+      ]
+     }
+    },
+    {
+     "repo": "FinnLeh/vs-code-obsidian",
+     "components": 381,
+     "baselineAtRelease": 52,
+     "baselineMediumAtRelease": 47,
+     "modelAtRelease": 10,
+     "baselineScanDay": 2,
+     "baselineMediumScanDay": 0,
+     "modelScanDay": 10,
+     "examples": {
+      "baseline": [
+       "esbuild@0.25.9 (install_script)",
+       "fsevents@2.3.3 (install_script)"
+      ],
+      "model": [
+       "brace-expansion@1.1.12 (p=0.1538)",
+       "brace-expansion@2.0.2 (p=0.2427)",
+       "braces@3.0.3 (p=0.1177)",
+       "core-util-is@1.0.3 (p=0.1177)",
+       "cross-spawn@6.0.6 (p=0.1177)"
+      ]
+     }
+    },
+    {
+     "repo": "davglass/registry-static",
+     "components": 308,
+     "baselineAtRelease": 47,
+     "baselineMediumAtRelease": 41,
+     "modelAtRelease": 9,
+     "baselineScanDay": 1,
+     "baselineMediumScanDay": 0,
+     "modelScanDay": 9,
+     "examples": {
+      "baseline": [
+       "phantomjs-prebuilt@2.1.16 (install_script)"
+      ],
+      "model": [
+       "dnscache@0.0.4 (p=0.1177)",
+       "from2-array@0.0.4 (p=0.1177)",
+       "fs-blob-store@5.2.1 (p=0.2427)",
+       "marked-man@0.1.6 (p=0.1724)",
+       "mime@1.3.4 (p=0.1177)"
+      ]
+     }
+    },
+    {
+     "repo": "project-qwerty/project-qwerty",
+     "components": 922,
+     "baselineAtRelease": 160,
+     "baselineMediumAtRelease": 141,
+     "modelAtRelease": 27,
+     "baselineScanDay": 6,
+     "baselineMediumScanDay": 0,
+     "modelScanDay": 27,
+     "examples": {
+      "baseline": [
+       "@fortawesome/fontawesome-common-types@0.3.0 (install_script)",
+       "@fortawesome/fontawesome-svg-core@1.3.0 (install_script)",
+       "@fortawesome/free-solid-svg-icons@6.0.0 (install_script)",
+       "ejs@2.7.4 (install_script)",
+       "fsevents@1.2.13 (install_script)"
+      ],
+      "model": [
+       "accepts@1.3.8 (p=0.1177)",
+       "asn1@0.2.6 (p=0.1177)",
+       "copy-descriptor@0.1.1 (p=0.3953)",
+       "core-util-is@1.0.3 (p=0.1177)",
+       "cyclist@1.0.1 (p=0.1177)"
+      ]
+     }
+    },
+    {
+     "repo": "telefonicaid/logops",
+     "components": 412,
+     "baselineAtRelease": 62,
+     "baselineMediumAtRelease": 53,
+     "modelAtRelease": 4,
+     "baselineScanDay": 0,
+     "baselineMediumScanDay": 0,
+     "modelScanDay": 4,
+     "examples": {
+      "baseline": [],
+      "model": [
+       "asn1@0.2.6 (p=0.1177)",
+       "deep-is@0.1.4 (p=0.1177)",
+       "has-bigints@1.0.1 (p=0.1332)",
+       "inherits@2.0.4 (p=0.1177)"
+      ]
+     }
+    }
+   ],
+   "controls": [
+    {
+     "repo": "microsoft/TypeScript",
+     "components": 238,
+     "baselineAtRelease": 57,
+     "baselineMediumAtRelease": 50,
+     "modelAtRelease": 6,
+     "baselineScanDay": 13,
+     "baselineMediumScanDay": 2,
+     "modelScanDay": 6,
+     "examples": {
+      "baseline": [
+       "@azure/abort-controller@2.2.0 (maintainer_change)",
+       "@azure/core-auth@1.11.0 (maintainer_change)",
+       "@azure/core-tracing@1.4.0 (maintainer_change)",
+       "@azure/core-util@1.14.0 (maintainer_change)",
+       "@azure/logger@1.4.0 (maintainer_change)"
+      ],
+      "model": [
+       "@types/node@22.20.1 (p=0.1177)",
+       "default-browser-id@5.0.1 (p=0.1177)",
+       "function-bind@1.1.2 (p=0.1177)",
+       "is-wsl@3.1.1 (p=0.1177)",
+       "jwa@2.0.1 (p=0.1177)"
+      ]
+     }
+    },
+    {
+     "repo": "mochajs/mocha",
+     "components": 1169,
+     "baselineAtRelease": 115,
+     "baselineMediumAtRelease": 101,
+     "modelAtRelease": 39,
+     "baselineScanDay": 9,
+     "baselineMediumScanDay": 2,
+     "modelScanDay": 39,
+     "examples": {
+      "baseline": [
+       "@playwright/test@1.63.0 (maintainer_change)",
+       "core-js@2.6.12 (install_script)",
+       "esbuild@0.28.1 (install_script)",
+       "esbuild@0.28.2 (install_script)",
+       "fast-uri@3.1.7 (maintainer_change)"
+      ],
+      "model": [
+       "@emmetio/css-parser@0.4.1 (p=0.1177)",
+       "@types/katex@0.16.8 (p=0.1177)",
+       "ansi-regex@6.2.2 (p=0.1332)",
+       "ansi-styles@6.2.3 (p=0.1177)",
+       "array-changes-async@3.0.1 (p=0.1332)"
+      ]
+     }
+    }
+   ],
+   "meanPerRepo": {
+    "modelAtRelease": 14.5,
+    "baselineAtRelease": 95.16666666666667,
+    "baselineMediumAtRelease": 85.5,
+    "modelScanDay": 14.5,
+    "baselineScanDay": 2.1666666666666665,
+    "baselineMediumScanDay": 0.16666666666666666
+   },
+   "meanPerControl": {
+    "modelAtRelease": 22.5,
+    "baselineAtRelease": 86,
+    "modelScanDay": 22.5,
+    "baselineScanDay": 11,
+    "baselineMediumScanDay": 2
+   },
+   "componentsWithoutData": 6
+  },
+  "dropped": [
+   "event-stream@3.3.6: no manifest",
+   "flatmap-stream@0.1.1: no manifest",
+   "ua-parser-js@0.7.29: no manifest",
+   "ua-parser-js@0.8.0: no manifest",
+   "ua-parser-js@1.0.0: no manifest",
+   "coa@2.0.3: no manifest",
+   "rc@1.2.9: no manifest",
+   "node-ipc@10.1.1: no manifest",
+   "node-ipc@10.1.2: no manifest",
+   "node-ipc@9.2.2: no manifest",
+   "chalk@5.6.1: no manifest",
+   "debug@4.4.2: no manifest",
+   "eslint-config-prettier@8.10.1: no manifest",
+   "eslint-config-prettier@10.1.6: no manifest",
+   "nx@21.5.0: no manifest",
+   "nx@20.9.0: no manifest"
+  ],
+  "gate": {
+   "pass": false,
+   "paretoBetter": false,
+   "reasons": [
+    "recall (held-out): model 0.160 vs baseline 0.270 \u2192 worse",
+    "noise per Acme repo, at release: model 14.500 vs baseline 95.167 \u2192 better",
+    "noise per Acme repo, scan day: model 14.500 vs baseline 2.167 \u2192 worse",
+    "noise per hammer control repo, at release: model 22.500 vs baseline 86.000 \u2192 better",
+    "noise per hammer control repo, scan day: model 22.500 vs baseline 11.000 \u2192 worse"
+   ]
+  }
+ },
+ "training": {
+  "featureSchema": "blastradius-features/v3",
+  "cutoff": "2026-01-01T00:00:00Z",
+  "params": {
+   "objective": "binary",
+   "learning_rate": 0.05,
+   "num_leaves": 7,
+   "max_depth": 3,
+   "min_data_in_leaf": 3,
+   "min_sum_hessian_in_leaf": 0.001,
+   "feature_fraction": 0.8,
+   "lambda_l2": 1.0,
+   "deterministic": true,
+   "num_threads": 1,
+   "seed": 7,
+   "verbose": -1,
+   "feature_pre_filter": false,
+   "rounds": 150,
+   "monotone": null
+  },
+  "maskedFeatures": [
+   "publisher_prior_releases",
+   "publisher_first_release",
+   "publisher_tenure_days",
+   "publisher_differs_prev",
+   "days_since_new_publisher",
+   "trusted_publisher",
+   "has_provenance",
+   "maintainers_count",
+   "maintainers_added_vs_prev",
+   "maintainers_removed_vs_prev",
+   "days_since_maintainer_change",
+   "install_hooks",
+   "new_install_hooks",
+   "install_flags_risky",
+   "deps_count",
+   "deps_added",
+   "deps_removed",
+   "young_deps_added"
+  ],
+  "variant": {
+   "chosen": "history+downloads/global",
+   "drop": [],
+   "weighting": "global"
+  },
+  "variants": {
+   "history+downloads/global": {
+    "outOfFold": {
+     "averagePrecision": 0.4787317300001876,
+     "rocAuc": 0.9217884104064638
+    }
+   },
+   "history+downloads/year": {
+    "outOfFold": {
+     "averagePrecision": 0.2469393577347924,
+     "rocAuc": 0.9030840275812905
+    },
+    "test": {
+     "rows": 23649,
+     "positives": 3552,
+     "averagePrecision": 0.8056195420759045,
+     "rocAuc": 0.9472468508028852,
+     "precisionAt10": 1.0,
+     "precisionAt50": 1.0,
+     "precisionAt100": 0.99,
+     "recallAtThreshold": 0.40653153153153154,
+     "flaggedNegatives": 123,
+     "flaggedNegativeRate": 0.0061203164651440515
+    },
+    "threshold": 0.099547511312
+   },
+   "history/year": {
+    "outOfFold": {
+     "averagePrecision": 0.13974331163544737,
+     "rocAuc": 0.8822677276080941
+    },
+    "test": {
+     "rows": 23649,
+     "positives": 3552,
+     "averagePrecision": 0.7255182884577082,
+     "rocAuc": 0.9192338610442059,
+     "precisionAt10": 1.0,
+     "precisionAt50": 0.98,
+     "precisionAt100": 0.94,
+     "recallAtThreshold": 0.45382882882882886,
+     "flaggedNegatives": 299,
+     "flaggedNegativeRate": 0.01487784246404936
+    },
+    "threshold": 0.066612510154
+   }
+  },
+  "threshold": 0.111111111111,
+  "calibrationPoints": 88,
+  "outOfFold": {
+   "rows": 119501,
+   "positives": 1584,
+   "averagePrecision": 0.4787317300001876,
+   "rocAuc": 0.9217884104064638,
+   "precisionAt10": 1.0,
+   "precisionAt50": 0.96,
+   "precisionAt100": 0.98,
+   "recallAtThreshold": 0.5953282828282829,
+   "flaggedNegatives": 2306,
+   "flaggedNegativeRate": 0.019556128463241094
+  },
+  "train": {
+   "rows": 119501,
+   "positives": 1584,
+   "averagePrecision": 0.6512783869468611,
+   "rocAuc": 0.9777357171835386,
+   "precisionAt10": 1.0,
+   "precisionAt50": 1.0,
+   "precisionAt100": 0.98,
+   "recallAtThreshold": 0.7922979797979798,
+   "flaggedNegatives": 2607,
+   "flaggedNegativeRate": 0.022108771423967707
+  },
+  "test": {
+   "rows": 23649,
+   "positives": 3552,
+   "averagePrecision": 0.7182962090583794,
+   "rocAuc": 0.9229640102484931,
+   "precisionAt10": 1.0,
+   "precisionAt50": 1.0,
+   "precisionAt100": 0.96,
+   "recallAtThreshold": 0.49859234234234234,
+   "flaggedNegatives": 536,
+   "flaggedNegativeRate": 0.026670647360302533
+  },
+  "testWithinPositivePackages": {
+   "rows": 10021,
+   "positives": 3552,
+   "rocAuc": 0.8955865308421731
+  },
+  "testPerCampaign": [
+   {
+    "campaign": "teampcp-2026",
+    "positives": 2945,
+    "flagged": 1659
+   },
+   {
+    "campaign": "miasma-2026",
+    "positives": 372,
+    "flagged": 41
+   },
+   {
+    "campaign": "mastra",
+    "positives": 80,
+    "flagged": 8
+   },
+   {
+    "campaign": "ironworm-npm",
+    "positives": 42,
+    "flagged": 39
+   },
+   {
+    "campaign": "2026-07-24",
+    "positives": 20,
+    "flagged": 5
+   },
+   {
+    "campaign": "tiledesk",
+    "positives": 19,
+    "flagged": 5
+   },
+   {
+    "campaign": "2026-08-28",
+    "positives": 10,
+    "flagged": 0
+   },
+   {
+    "campaign": "jscrambler",
+    "positives": 9,
+    "flagged": 6
+   },
+   {
+    "campaign": "react-native-country-select",
+    "positives": 7,
+    "flagged": 0
+   },
+   {
+    "campaign": "joyfill",
+    "positives": 6,
+    "flagged": 0
+   },
+   {
+    "campaign": "node-ipc-2026",
+    "positives": 6,
+    "flagged": 2
+   },
+   {
+    "campaign": "2026-08-26",
+    "positives": 5,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-09-23",
+    "positives": 5,
+    "flagged": 0
+   },
+   {
+    "campaign": "pgserve",
+    "positives": 4,
+    "flagged": 0
+   },
+   {
+    "campaign": "injective-sdk-ts",
+    "positives": 3,
+    "flagged": 2
+   },
+   {
+    "campaign": "axios",
+    "positives": 3,
+    "flagged": 1
+   },
+   {
+    "campaign": "cline",
+    "positives": 2,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-07-16",
+    "positives": 2,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-01-28",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "velora-dex-sdk",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-06-12",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-06-20",
+    "positives": 1,
+    "flagged": 1
+   },
+   {
+    "campaign": "2026-04-18",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-07-18",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-05-09",
+    "positives": 1,
+    "flagged": 1
+   },
+   {
+    "campaign": "2026-06-08",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-09-21",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "miso-client",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-10-05",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2026-09-05",
+    "positives": 1,
+    "flagged": 1
+   }
+  ],
+  "outOfFoldPerCampaign": [
+   {
+    "campaign": "sha1-hulud-second-coming-2025-11",
+    "positives": 891,
+    "flagged": 659
+   },
+   {
+    "campaign": "shai-hulud-2025-09",
+    "positives": 498,
+    "flagged": 250
+   },
+   {
+    "campaign": "npnjs-phishing-2025-07",
+    "positives": 46,
+    "flagged": 5
+   },
+   {
+    "campaign": "npmjs-help-phishing-2025-09",
+    "positives": 27,
+    "flagged": 2
+   },
+   {
+    "campaign": "nx-build",
+    "positives": 19,
+    "flagged": 0
+   },
+   {
+    "campaign": "gluestack-ui",
+    "positives": 18,
+    "flagged": 2
+   },
+   {
+    "campaign": "2018-05-13",
+    "positives": 13,
+    "flagged": 11
+   },
+   {
+    "campaign": "rspack",
+    "positives": 12,
+    "flagged": 0
+   },
+   {
+    "campaign": "coa",
+    "positives": 9,
+    "flagged": 0
+   },
+   {
+    "campaign": "xrpl-js",
+    "positives": 5,
+    "flagged": 0
+   },
+   {
+    "campaign": "2016-02-25",
+    "positives": 5,
+    "flagged": 4
+   },
+   {
+    "campaign": "node-ipc",
+    "positives": 5,
+    "flagged": 0
+   },
+   {
+    "campaign": "purescript-npm-installer",
+    "positives": 4,
+    "flagged": 3
+   },
+   {
+    "campaign": "2022-09-23",
+    "positives": 4,
+    "flagged": 4
+   },
+   {
+    "campaign": "INC-2022-0001",
+    "positives": 4,
+    "flagged": 0
+   },
+   {
+    "campaign": "lottie-player",
+    "positives": 3,
+    "flagged": 1
+   },
+   {
+    "campaign": "uaparser-js",
+    "positives": 3,
+    "flagged": 0
+   },
+   {
+    "campaign": "2018-05-19",
+    "positives": 3,
+    "flagged": 1
+   },
+   {
+    "campaign": "rand-user-agent",
+    "positives": 3,
+    "flagged": 0
+   },
+   {
+    "campaign": "ledger-connect-kit",
+    "positives": 3,
+    "flagged": 0
+   },
+   {
+    "campaign": "eslint",
+    "positives": 3,
+    "flagged": 0
+   },
+   {
+    "campaign": "solana-web3-js",
+    "positives": 2,
+    "flagged": 0
+   },
+   {
+    "campaign": "2018-05-24",
+    "positives": 2,
+    "flagged": 0
+   },
+   {
+    "campaign": "event-stream",
+    "positives": 1,
+    "flagged": 0
+   },
+   {
+    "campaign": "2018-03-25",
+    "positives": 1,
+    "flagged": 1
+   }
+  ],
+  "importance": [
+   {
+    "feature": "releases_prior_365d",
+    "gain": 982007.7731208801,
+    "splits": 100
+   },
+   {
+    "feature": "days_since_prev_release",
+    "gain": 556759.8373880386,
+    "splits": 85
+   },
+   {
+    "feature": "downloads_trend",
+    "gain": 321213.0812673569,
+    "splits": 88
+   },
+   {
+    "feature": "package_age_days",
+    "gain": 307658.7298002243,
+    "splits": 174
+   },
+   {
+    "feature": "downloads_weekly_log10",
+    "gain": 295029.756023407,
+    "splits": 132
+   },
+   {
+    "feature": "gap_ratio",
+    "gain": 267072.2467328906,
+    "splits": 54
+   },
+   {
+    "feature": "is_prerelease",
+    "gain": 196376.65851593018,
+    "splits": 26
+   },
+   {
+    "feature": "bump_kind",
+    "gain": 133052.6620941162,
+    "splits": 75
+   },
+   {
+    "feature": "prior_releases",
+    "gain": 67883.54250586033,
+    "splits": 58
+   },
+   {
+    "feature": "median_gap_days_prior",
+    "gain": 24915.879931539297,
+    "splits": 49
+   },
+   {
+    "feature": "distinct_publishers_prior",
+    "gain": 11735.220649719238,
+    "splits": 27
+   },
+   {
+    "feature": "provenance_share_prior",
+    "gain": 5797.604034423828,
+    "splits": 10
+   },
+   {
+    "feature": "releases_prev_24h",
+    "gain": 3771.9229888916016,
+    "splits": 13
+   },
+   {
+    "feature": "is_backport",
+    "gain": 2631.0279846191406,
+    "splits": 4
+   },
+   {
+    "feature": "prev_install_hooks",
+    "gain": 275.0369873046875,
+    "splits": 1
+   },
+   {
+    "feature": "majors_released_24h",
+    "gain": 274.19500732421875,
+    "splits": 1
+   },
+   {
+    "feature": "trusted_share_prior",
+    "gain": 41.78300094604492,
+    "splits": 1
+   },
+   {
+    "feature": "prev_trusted_publisher",
+    "gain": 32.53340148925781,
+    "splits": 1
+   }
+  ],
+  "parity": {
+   "rows": 25949,
+   "maxAbsDiffRaw": 0,
+   "maxAbsDiffProb": 2.220446049250313e-16,
+   "tolerance": 1e-06,
+   "failures": 0,
+   "ok": true
+  }
+ },
+ "firstBadRelease": {
+  "firstBadPackages": 1142,
+  "firstBadRecall": 0.35464098073555167,
+  "laterBad": 2410,
+  "laterBadRecall": 0.566804979253112,
+  "firstBadByManifest": {
+   "True": [
+    15,
+    56
+   ],
+   "False": [
+    390,
+    1086
+   ]
+  }
+ },
+ "otherVariantsInformational": {
+  "history+downloads/year": {
+   "gate": {
+    "pass": false,
+    "paretoBetter": false,
+    "reasons": [
+     "recall (held-out): model 0.100 vs baseline 0.270 \u2192 worse",
+     "noise per Acme repo, at release: model 15.500 vs baseline 95.167 \u2192 better",
+     "noise per Acme repo, scan day: model 15.500 vs baseline 2.167 \u2192 worse",
+     "noise per hammer control repo, at release: model 3.000 vs baseline 86.000 \u2192 better",
+     "noise per hammer control repo, scan day: model 3.000 vs baseline 11.000 \u2192 better"
+    ]
+   },
+   "recall": {
+    "releases": 100,
+    "model": 0.1,
+    "baseline": 0.27
+   },
+   "noise": {
+    "modelAtRelease": 15.5,
+    "baselineAtRelease": 95.16666666666667,
+    "baselineMediumAtRelease": 85.5,
+    "modelScanDay": 15.5,
+    "baselineScanDay": 2.1666666666666665,
+    "baselineMediumScanDay": 0.16666666666666666
+   },
+   "controls": {
+    "modelAtRelease": 3,
+    "baselineAtRelease": 86,
+    "modelScanDay": 3,
+    "baselineScanDay": 11,
+    "baselineMediumScanDay": 2
+   },
+   "dataset": {
+    "modelAllRows": {
+     "tp": 1444,
+     "fn": 2108,
+     "fp": 123,
+     "tn": 19974
+    },
+    "comparableRows": {
+     "model": {
+      "tp": 10,
+      "fn": 90,
+      "fp": 122,
+      "tn": 19897
+     },
+     "baseline": {
+      "tp": 27,
+      "fn": 73,
+      "fp": 6007,
+      "tn": 14012
+     }
+    }
+   }
+  },
+  "history/year": {
+   "gate": {
+    "pass": false,
+    "paretoBetter": false,
+    "reasons": [
+     "recall (held-out): model 0.160 vs baseline 0.270 \u2192 worse",
+     "noise per Acme repo, at release: model 124.500 vs baseline 95.167 \u2192 worse",
+     "noise per Acme repo, scan day: model 124.500 vs baseline 2.167 \u2192 worse",
+     "noise per hammer control repo, at release: model 94.500 vs baseline 86.000 \u2192 worse",
+     "noise per hammer control repo, scan day: model 94.500 vs baseline 11.000 \u2192 worse"
+    ]
+   },
+   "recall": {
+    "releases": 100,
+    "model": 0.16,
+    "baseline": 0.27
+   },
+   "noise": {
+    "modelAtRelease": 124.5,
+    "baselineAtRelease": 95.16666666666667,
+    "baselineMediumAtRelease": 85.5,
+    "modelScanDay": 124.5,
+    "baselineScanDay": 2.1666666666666665,
+    "baselineMediumScanDay": 0.16666666666666666
+   },
+   "controls": {
+    "modelAtRelease": 94.5,
+    "baselineAtRelease": 86,
+    "modelScanDay": 94.5,
+    "baselineScanDay": 11,
+    "baselineMediumScanDay": 2
+   },
+   "dataset": {
+    "modelAllRows": {
+     "tp": 1612,
+     "fn": 1940,
+     "fp": 299,
+     "tn": 19798
+    },
+    "comparableRows": {
+     "model": {
+      "tp": 16,
+      "fn": 84,
+      "fp": 298,
+      "tn": 19721
+     },
+     "baseline": {
+      "tp": 27,
+      "fn": 73,
+      "fp": 6007,
+      "tn": 14012
+     }
+    }
+   }
+  }
+ },
+ "reconstructedManifestsInformational": {
+  "recall": {
+   "heldOut": {
+    "releases": 0,
+    "model": null,
+    "baseline": null,
+    "baselineMediumPlus": null,
+    "modelOnly": 0,
+    "baselineOnly": 0,
+    "both": 0
+   },
+   "inSample": {
+    "releases": 16,
+    "model": 0.4375,
+    "baseline": 0.6875,
+    "baselineMediumPlus": 0.625
+   },
+   "perCampaignHeldOut": []
+  },
+  "rows": [
+   {
+    "incident": "event-stream-2018",
+    "release": "event-stream@3.3.6",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "publisher_change, dependency_added"
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.018217306441119057,
+     "detail": "p=0.0182"
+    }
+   },
+   {
+    "incident": "event-stream-2018",
+    "release": "flatmap-stream@0.1.1",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": false,
+     "mediumPlus": false,
+     "detail": ""
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.0007015855834185259,
+     "detail": "p=0.0007"
+    }
+   },
+   {
+    "incident": "ua-parser-js-2021",
+    "release": "ua-parser-js@0.7.29",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.018217306441119057,
+     "detail": "p=0.0182"
+    }
+   },
+   {
+    "incident": "ua-parser-js-2021",
+    "release": "ua-parser-js@0.8.0",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.05357142857142857,
+     "detail": "p=0.0536"
+    }
+   },
+   {
+    "incident": "ua-parser-js-2021",
+    "release": "ua-parser-js@1.0.0",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.053097345132743355,
+     "detail": "p=0.0531"
+    }
+   },
+   {
+    "incident": "coa-rc-2021",
+    "release": "coa@2.0.3",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.117729502452698,
+     "detail": "p=0.1177"
+    }
+   },
+   {
+    "incident": "coa-rc-2021",
+    "release": "rc@1.2.9",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.117729502452698,
+     "detail": "p=0.1177"
+    }
+   },
+   {
+    "incident": "node-ipc-2022",
+    "release": "node-ipc@10.1.1",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": false,
+     "mediumPlus": false,
+     "detail": ""
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.117729502452698,
+     "detail": "p=0.1177"
+    }
+   },
+   {
+    "incident": "node-ipc-2022",
+    "release": "node-ipc@10.1.2",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": false,
+     "mediumPlus": false,
+     "detail": ""
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.00927643784786642,
+     "detail": "p=0.0093"
+    }
+   },
+   {
+    "incident": "node-ipc-2022",
+    "release": "node-ipc@9.2.2",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "dependency_added"
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.117729502452698,
+     "detail": "p=0.1177"
+    }
+   },
+   {
+    "incident": "chalk-debug-2025",
+    "release": "chalk@5.6.1",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": false,
+     "mediumPlus": false,
+     "detail": ""
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.019421487603305785,
+     "detail": "p=0.0194"
+    }
+   },
+   {
+    "incident": "chalk-debug-2025",
+    "release": "debug@4.4.2",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": false,
+     "mediumPlus": false,
+     "detail": ""
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.019421487603305785,
+     "detail": "p=0.0194"
+    }
+   },
+   {
+    "incident": "eslint-config-prettier-2025",
+    "release": "eslint-config-prettier@8.10.1",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.117729502452698,
+     "detail": "p=0.1177"
+    }
+   },
+   {
+    "incident": "eslint-config-prettier-2025",
+    "release": "eslint-config-prettier@10.1.6",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": false,
+     "detail": "install_script"
+    },
+    "model": {
+     "flagged": false,
+     "mediumPlus": false,
+     "calibrated": 0.053097345132743355,
+     "detail": "p=0.0531"
+    }
+   },
+   {
+    "incident": "nx-2025",
+    "release": "nx@21.5.0",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "provenance_dropped"
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.117729502452698,
+     "detail": "p=0.1177"
+    }
+   },
+   {
+    "incident": "nx-2025",
+    "release": "nx@20.9.0",
+    "heldOut": false,
+    "source": "replay",
+    "baseline": {
+     "flagged": true,
+     "mediumPlus": true,
+     "detail": "provenance_dropped"
+    },
+    "model": {
+     "flagged": true,
+     "mediumPlus": true,
+     "calibrated": 0.24269005847953215,
+     "detail": "p=0.2427"
+    }
+   }
+  ],
+  "noise": {
+   "modelAtRelease": 14.5,
+   "baselineAtRelease": 95.16666666666667,
+   "baselineMediumAtRelease": 85.5,
+   "modelScanDay": 14.5,
+   "baselineScanDay": 2.1666666666666665,
+   "baselineMediumScanDay": 0.16666666666666666
+  },
+  "gate": {
+   "pass": false,
+   "paretoBetter": false,
+   "reasons": [
+    "recall (held-out): model NaN vs baseline NaN \u2192 tie",
+    "noise per Acme repo, at release: model 14.500 vs baseline 95.167 \u2192 better",
+    "noise per Acme repo, scan day: model 14.500 vs baseline 2.167 \u2192 worse"
+   ]
+  }
+ }
+}
