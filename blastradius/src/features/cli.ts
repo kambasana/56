@@ -12,6 +12,8 @@
  * Both take --downloads DIR (daily series per package, see downloads.ts) for the download features.
  * --allow-missing-manifest describes releases npm has unpublished from their `time` entry and
  * earlier history (MANIFEST_FEATURES are NaN; the row says `manifest: false`).
+ * --no-reconstructed ignores overlay manifests rebuilt from advisories (`_replay.reconstructed`);
+ * their `time` entries are kept, so such a release is described like any unpublished one.
  *
  * Rows are JSONL: {name, version, releasedAt, asOf, origin, manifest, features: [...]} with null
  * for NaN. Packuments and download series come from disk only; nothing here touches the network.
@@ -72,7 +74,7 @@ export async function main(argv: string[], out: (line: string) => void, err: (li
     err('need --cache DIR and/or --overlay DIR');
     return 2;
   }
-  const store = openStore({ ...(cacheDir ? { cacheDir } : {}), ...(overlayDir ? { overlayDir } : {}) });
+  const store = openStore({ ...(cacheDir ? { cacheDir } : {}), ...(overlayDir ? { overlayDir } : {}), ...(args.includes('--no-reconstructed') ? { dropReconstructed: true } : {}) });
   const downloadsDir = arg(args, '--downloads');
   const opts: RowOptions = { ...(downloadsDir ? { downloadsDir } : {}), ...(args.includes('--allow-missing-manifest') ? { allowMissingManifest: true } : {}) };
   let missing = 0;

@@ -11,7 +11,11 @@
  *     `time.modified`, `readme`) are never read: per-version manifests are used instead.
  *   - Manifest fields that npm or the author can change after publishing (`deprecated`) and the
  *     registry's own `hasInstallScript` flag are never read; neither are replay notes (`_replay`).
- *   - Whether a version still has a manifest today (npm unpublishes malware) is never used.
+ *   - Whether a version still has a manifest today (npm unpublishes malware) is not a feature, and
+ *     version-only features (cadence, bump kind, backports) count every release in the `time` map.
+ *     Known limit: the prev_* and *_share_prior features can only read earlier releases whose
+ *     manifest survives, so for a release that follows an unpublished one they describe an older
+ *     release than scan time would (a train/scan skew, documented in docs/DATA-ML.md).
  * Unknown values are NaN (LightGBM routes them with the split's learnt default direction).
  */
 import { isObject } from '../enrich/npm/registry.js';
@@ -21,7 +25,7 @@ import type { NpmVersionManifest, Packument } from '../enrich/npm/types.js';
 import { RISKY_INSTALL_SCRIPT_FLAGS } from '../core/install-flags.js';
 
 /** Bump when a feature's meaning or order changes; a model trained on another version is rejected. */
-export const FEATURE_SCHEMA = 'blastradius-features/v2';
+export const FEATURE_SCHEMA = 'blastradius-features/v3';
 
 /** Feature order is part of the contract with the exported model. Append only. */
 export const FEATURE_NAMES = [
@@ -255,6 +259,9 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
   const priorKnown = prior.filter((r) => r.manifest);
   // The release this one follows: newest earlier, semver-lower release with a manifest.
   const prev = [...priorKnown].reverse().find((r) => compareVersions(r.version, version) < 0);
+  // Version-only comparisons use every earlier release in the `time` map, with or without a manifest
+  // today: which releases npm later unpublished (mostly the bad ones) is hindsight (v3).
+  const prevVersion = [...prior].reverse().find((r) => compareVersions(r.version, version) < 0)?.version;
   const m = cur.manifest;
   const f = Object.fromEntries(FEATURE_NAMES.map((n) => [n, NaN])) as FeatureVector;
 
@@ -273,7 +280,7 @@ export function featuresAsOf(p: Packument, name: string, version: string, asOf: 
   f.releases_prev_24h = day.length;
   f.majors_released_24h = new Set([...day, cur].map((r) => major(r.version)).filter(Number.isFinite)).size;
   f.is_backport = prior.some((r) => !r.version.includes('-') && compareVersions(r.version, version) > 0) ? 1 : 0;
-  f.bump_kind = bumpKind(prev?.version, version);
+  f.bump_kind = bumpKind(prevVersion, version);
   f.is_prerelease = version.includes('-') ? 1 : 0;
 
   // --- Publisher --------------------------------------------------------------------------

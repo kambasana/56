@@ -26,6 +26,18 @@ describe('feature store', () => {
     expect(m.time!['1.0.0']).toBe('2020-01-01T00:00:00Z');
   });
 
+  it('can leave out manifests rebuilt from advisories, keeping their time entries', () => {
+    const live = { name: 'x', time: { '1.0.0': '2020-01-01T00:00:00Z' }, versions: { '1.0.0': { version: '1.0.0' } } };
+    const overlay = { name: 'x', time: { '1.0.1': '2020-02-01T00:00:00Z' }, versions: { '1.0.1': { version: '1.0.1', _replay: { reconstructed: true } } } };
+    expect(mergeOverlay(live, overlay)!.versions!['1.0.1']).toBeDefined();
+    const m = mergeOverlay(live, overlay, { dropReconstructed: true })!;
+    expect(m.versions!['1.0.1']).toBeUndefined();
+    expect(m.time!['1.0.1']).toBe('2020-02-01T00:00:00Z');
+    const only = mergeOverlay(undefined, overlay, { dropReconstructed: true })!;
+    expect(only.versions!['1.0.1']).toBeUndefined();
+    expect(only.time!['1.0.1']).toBe('2020-02-01T00:00:00Z');
+  });
+
   it('first release as of a date, null before it, undefined when unknown', () => {
     const s = openStore({ overlayDir: OVERLAY });
     const first = s.firstPublished('peacenotwar', Date.parse('2030-01-01'))!;

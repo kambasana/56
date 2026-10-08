@@ -31,26 +31,38 @@ function readJson(file: string): Packument | undefined {
   }
 }
 
-/** Live packument plus overlay releases missing from it. Overlay `time` entries fill gaps only. */
-export function mergeOverlay(live: Packument | undefined, overlay: Packument | undefined): Packument | undefined {
+/** A manifest the replay dataset rebuilt from an advisory (not recorded from the registry). */
+export function isReconstructed(m: unknown): boolean {
+  return isObject(m) && isObject(m._replay) && m._replay.reconstructed === true;
+}
+
+/**
+ * Live packument plus overlay releases missing from it. Overlay `time` entries fill gaps only.
+ * With `dropReconstructed`, a manifest rebuilt from an advisory is not used (its `time` entry still
+ * is): advisories rarely state the publisher, maintainers, scripts or dependencies, so those fields
+ * are partly guesses and must not become training features.
+ */
+export function mergeOverlay(live: Packument | undefined, overlay: Packument | undefined, opts: { dropReconstructed?: boolean } = {}): Packument | undefined {
   if (!overlay) return live;
-  if (!live) return overlay;
-  const versions = { ...(isObject(live.versions) ? live.versions : {}) };
-  const time = { ...(isObject(live.time) ? live.time : {}) };
+  const versions = { ...(live && isObject(live.versions) ? live.versions : {}) };
+  const time = { ...(live && isObject(live.time) ? live.time : {}) };
   const ov = isObject(overlay.versions) ? overlay.versions : {};
   const ot = isObject(overlay.time) ? overlay.time : {};
+  if (!live && !opts.dropReconstructed) return overlay;
+  if (!live) Object.assign(time, ot);
   for (const [v, m] of Object.entries(ov)) {
     if (Object.hasOwn(versions, v)) continue;
-    versions[v] = m;
     if (!Object.hasOwn(time, v) && Object.hasOwn(ot, v)) time[v] = ot[v];
+    if (opts.dropReconstructed && isReconstructed(m)) continue;
+    versions[v] = m;
   }
-  return { ...live, versions, time };
+  return { ...(live ?? overlay), versions, time };
 }
 
 /** Packuments kept in memory at once (least recently used are dropped; a dataset run reads tens of thousands). */
 const MEMO_MAX = 4000;
 
-export function openStore(opts: { cacheDir?: string; overlayDir?: string }): PackumentStore {
+export function openStore(opts: { cacheDir?: string; overlayDir?: string; dropReconstructed?: boolean }): PackumentStore {
   const memo = new Map<string, { p: Packument | undefined; origin?: string }>();
   const load = (name: string) => {
     let hit = memo.get(name);
@@ -61,7 +73,7 @@ export function openStore(opts: { cacheDir?: string; overlayDir?: string }): Pac
       if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value!);
       const live = opts.cacheDir ? readJson(packumentFile(opts.cacheDir, name)) : undefined;
       const over = opts.overlayDir ? readJson(packumentFile(opts.overlayDir, name)) : undefined;
-      const p = mergeOverlay(live, over);
+      const p = mergeOverlay(live, over, { dropReconstructed: opts.dropReconstructed === true });
       hit = { p, ...(p ? { origin: live && over ? 'cache+overlay' : live ? 'cache' : 'overlay' } : {}) };
       memo.set(name, hit);
     }
