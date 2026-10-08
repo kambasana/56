@@ -8,14 +8,13 @@
  */
 import { open, readdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { DEFAULT_MAX_DEPTH, inventoryFileKind, isDockerfileName, SKIP_DIRS } from './select.js';
+
+export { DEFAULT_MAX_DEPTH, isDockerfileName };
 
 export const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024; // manifests, workflows, Dockerfiles
 export const DEFAULT_MAX_LOCKFILE_BYTES = 64 * 1024 * 1024;
 export const DEFAULT_MAX_FILES = 200_000;
-export const DEFAULT_MAX_DEPTH = 40;
-
-/** Directories never descended into. */
-const SKIP_DIRS = new Set(['node_modules', '.git', '.hg', '.svn', 'bower_components', '.yarn', '.pnpm-store']);
 
 export interface WalkOptions {
   maxFiles?: number;
@@ -51,11 +50,6 @@ export function toPosix(p: string): string {
 export function isInside(root: string, child: string): boolean {
   const rel = path.relative(root, child);
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-}
-
-export function isDockerfileName(base: string): boolean {
-  const b = base.toLowerCase();
-  return b === 'dockerfile' || b === 'containerfile' || b.startsWith('dockerfile.') || b.endsWith('.dockerfile');
 }
 
 /** Walk `root` and collect the files ingest cares about. `root` must be a real (resolved) directory path. */
@@ -114,7 +108,7 @@ export async function walkTarget(root: string, opts: WalkOptions = {}): Promise<
           continue;
         }
         out.visited++;
-        classify(out, rel, ent.name, depth === 0);
+        classify(out, rel);
         continue;
       }
       if (ent.isDirectory()) {
@@ -125,20 +119,36 @@ export async function walkTarget(root: string, opts: WalkOptions = {}): Promise<
       }
       if (!ent.isFile()) continue;
       out.visited++;
-      classify(out, rel, ent.name, depth === 0);
+      classify(out, rel);
     }
   }
   return out;
 }
 
-function classify(out: FoundFiles, rel: string, base: string, atRoot: boolean): void {
-  if (base === 'package.json') out.packageJsons.push(rel);
-  else if (base === 'package-lock.json' || base === 'npm-shrinkwrap.json') out.lockfiles.push(rel);
-  else if (base === 'yarn.lock' || base === 'pnpm-lock.yaml') out.unsupportedLockfiles.push(rel);
-  // GitHub only runs workflows from the repository root's .github/workflows (not subdirectories).
-  else if (/^\.github\/workflows\/[^/]+\.ya?ml$/i.test(rel)) out.workflows.push(rel);
-  else if (isDockerfileName(base)) out.dockerfiles.push(rel);
-  else if (atRoot && (base === '.blastradius.yml' || base === '.blastradius.yaml')) out.config = rel;
+/** Same rules as remote tree listings (select.ts), so a fetch-only scan sees the same files. */
+function classify(out: FoundFiles, rel: string): void {
+  switch (inventoryFileKind(rel)) {
+    case 'package_json':
+      out.packageJsons.push(rel);
+      break;
+    case 'lockfile':
+      out.lockfiles.push(rel);
+      break;
+    case 'unsupported_lockfile':
+      out.unsupportedLockfiles.push(rel);
+      break;
+    case 'workflow':
+      out.workflows.push(rel);
+      break;
+    case 'dockerfile':
+      out.dockerfiles.push(rel);
+      break;
+    case 'config':
+      out.config = rel;
+      break;
+    case null:
+      break;
+  }
 }
 
 export class FileTooLargeError extends Error {
