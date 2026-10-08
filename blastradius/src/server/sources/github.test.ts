@@ -146,6 +146,19 @@ describe('GitHubAdapter on a fake GitHub', () => {
     }
   });
 
+  it('gives concurrent operations on one installation their own tokens (found by the GitHub simulator)', async () => {
+    const gh = new FakeGitHub();
+    gh.addRepo('acme/api', FILES);
+    gh.addRepo('acme/docs', { 'README.md': '# docs' });
+    gh.addInstallation(12, 'acme', ['acme/api', 'acme/docs']);
+    const a = new GitHubAdapter(gh.config);
+    // Discovery inspects repos two at a time: a shared token would be revoked by the first to finish.
+    const out = await Promise.all([a.findLockfiles('12', 'acme/api', 'main'), a.findLockfiles('12', 'acme/docs', 'main'), a.listRepos('12')]);
+    expect(out[2].length).toBe(2);
+    expect(gh.tokensMinted).toBe(3);
+    expect(gh.tokensRevoked).toBe(3);
+  });
+
   it('materialises only the inventory files and ingests them like a checkout', async () => {
     const gh = new FakeGitHub();
     gh.addRepo('acme/api', FILES);

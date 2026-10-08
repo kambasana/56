@@ -3,8 +3,9 @@
  *
  * - App credentials (id, private key, webhook secret, OAuth client) come from the environment and
  *   are never logged, stored or returned by the API.
- * - Installation tokens are minted per use: every operation builds a fresh App (so no token is
- *   cached between operations) and revokes its token when done. Tokens last an hour at most.
+ * - Installation tokens are minted per use: every operation asks GitHub for its own token (App
+ *   JWT → POST /app/installations/{id}/access_tokens) and revokes it when done, so no token is
+ *   cached or shared between operations. Tokens last an hour at most.
  * - Webhooks: HMAC-SHA256 of the raw body against X-Hub-Signature-256, compared in constant time.
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -169,14 +170,18 @@ export class GitHubAdapter implements SourceAdapter {
     return Boolean(this.config.clientId && this.config.clientSecret);
   }
 
-  /** Run `fn` with a freshly minted installation token, revoked afterwards. */
+  /**
+   * Run `fn` with a freshly minted installation token, revoked afterwards. The token is minted
+   * here, not through @octokit/auth-app's installation auth: that shares one in-flight token
+   * request between concurrent callers (a module-wide map), so two operations started together
+   * would get the same token and the first to finish would revoke it under the other.
+   */
   async withInstallation<T>(scope: string, fn: (kit: Kit) => Promise<T>): Promise<T> {
     if (!/^\d{1,15}$/.test(scope)) throw new SourceAccessError('Invalid installation id', 'scope');
-    const app = this.newApp();
     let kit: Kit;
     try {
-      kit = (await app.getInstallationOctokit(Number(scope))) as unknown as Kit;
-      await kit.auth({ type: 'installation' });
+      const { data } = await this.appClient.octokit.request('POST /app/installations/{installation_id}/access_tokens', { installation_id: Number(scope) });
+      kit = new this.OctokitWithDefaults({ auth: data.token });
     } catch (err) {
       const status = statusOf(err);
       if (status === 401 || status === 403 || status === 404) throw new SourceAccessError(`GitHub refused an installation token (${status})`, 'scope', status);
