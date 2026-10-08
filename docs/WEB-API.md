@@ -65,7 +65,7 @@ Permissions are data (`permissions.ts`):
   - `can(roles, permission)` then evaluates the union of those roles.
   - Project-scoped endpoints (anything taking `project=`, `:id` of a project, or a scan or finding of a project) evaluate with that `projectId`.
 - **Every handler checks exactly the permission in the table below.**
-- **Audit log:** each role, binding, project, scan or finding-status change writes an audit entry.
+- **Audit log:** each role, binding, project, scan, finding-status, source and source-repo change writes an audit entry.
 
 ## Endpoints
 
@@ -177,3 +177,47 @@ Answered from the stored inventory of each project's newest succeeded scan; noth
 | `POST /api/alerts/check` `{ advisories?: OSV[] }` | `manage_projects` | Match advisories (OSV records), or the knowledge pack (`BLASTRADIUS_PACK`) when none are given, against all projects. Each (project, component, advisory) becomes an alert once. Returns the new alerts and the time taken. |
 
 **Automatic alerts.** With `BLASTRADIUS_PACK` set, the server re-checks every org's latest inventories against the pack on start and every `BLASTRADIUS_WATCH_MINUTES` (default 60). When the pack file changes on disk it is reloaded. Each finished scan is checked straight away. New alerts are posted once to `BLASTRADIUS_ALERT_WEBHOOK` as Slack-compatible JSON (`{ "text": … }`). The URL must be https, or http to localhost; credentials in the URL are refused. `BLASTRADIUS_PUBLIC_URL`, if set, adds an "Open Blastradius" link. A failed post is logged, and the alert stays in `GET /api/alerts`.
+
+## Sources (repo connectors)
+
+Connect a code host once and its repos are watched from then on (docs/CONNECTORS.md). GitHub App
+first. Types: `Source`, `SourceRepo` and friends in `api-types.ts`. Every route below except the
+callback and the webhook needs **`manage_projects`** at org scope; another org's source is 404.
+
+| Method | Path | Perm | Request | Response |
+|---|---|---|---|---|
+| GET | `/api/sources` | manage_projects | — | `ListSourcesResponse` (`configured.github`, sources with health and repo counts, `webhooks.rejected`) |
+| POST | `/api/sources` | manage_projects | `StartSourceInstallRequest` `{ host: "github", autoWatch? }` | `StartSourceInstallResponse` 201: `installUrl` (GitHub's install page with a signed, single-use `state`, valid 30 min) and the pending source. 400 when the App is not configured |
+| GET | `/api/sources/github/callback?installation_id=&setup_action=&state=&code=` | — (see below) | — | 302 to `/sources?install=connected&source=…`, `install=failed&reason=…`, `install=updated` or `install=requested` |
+| GET | `/api/sources/:id` | manage_projects | — | `GetSourceResponse` |
+| PATCH | `/api/sources/:id` | manage_projects | `UpdateSourceRequest` `{ autoWatch }` | `GetSourceResponse` |
+| DELETE | `/api/sources/:id` | manage_projects | — | `OkResponse`. Disconnects: status `disconnected`, repos `not_watched`; projects and history stay. Revoke on GitHub by uninstalling the App |
+| POST | `/api/sources/:id/check` | manage_projects | — | `GetSourceResponse`. Asks GitHub now: restores a source whose access came back (and rediscovers), or marks it `access_lost` |
+| GET | `/api/sources/:id/repos` | manage_projects | — | `ListSourceReposResponse`: each repo's status, lockfiles, the exact files read, linked `projectId`, last commit, delivery and scan |
+| PATCH | `/api/sources/:id/repos/:repoId` | manage_projects | `UpdateSourceRepoRequest` `{ watching }` | `UpdateSourceRepoResponse`. Turning watching on re-reads the tree and scans; 400 for a removed or unreadable repo |
+| POST | `/api/hooks/github` | signature | GitHub delivery | `WebhookAcceptedResponse` 202 (`outcome`), 200 `{ duplicate: true }` for a delivery id already seen, 401 for a missing or bad signature |
+
+**Notes for implementers**
+
+- **Install.** `POST /api/sources` stores a pending source with the SHA-256 of a random state secret.
+  GitHub sends the browser back to the callback after the install. The session cookie is
+  `SameSite=Strict`, so this cross-site redirect carries no session. The callback is trusted
+  through three checks instead:
+  - The state carries an HMAC whose key is derived from the webhook secret. It is single use and unexpired.
+  - Its creator still holds `manage_projects`.
+  - GitHub's OAuth `code` belongs to a GitHub user who can see `installation_id`. The server checks this through `GET /user/installations`, then revokes that user token.
+
+  The `installation_id` in the setup URL can be forged, and these checks make that useless. An installation already connected to another org is refused (409 inside the redirect reason).
+- **Repos become projects.** Discovery lists the installation's repos and reads each tree at its default branch. A repo with a manifest, lockfile or workflow becomes a project named `owner/repo`, with target `https://github.com/owner/repo`, tier Standard and owner `GitHub · <account>`, and a scan is queued. Findings, alerts, exposure, blast radius and reports then work unchanged. With `autoWatch: false` every repo is still listed with its lockfiles and files to read (status `not_watched`), and nothing is scanned until `PATCH …/repos/:repoId { watching: true }`. Statuses: `discovering`, `watching`, `scanning`, `no_lockfile` (nothing to scan, no project), `unsupported` (only yarn.lock / pnpm-lock.yaml: package.json pins and workflows are still scanned; or a tree too large for the API: not scanned), `access_lost`, `removed`, `not_watched`.
+- **Fetch-only scans.** A project linked to a repo is never cloned. The scan lists the tree at the ref and fetches only `package.json`, `package-lock.json` / `npm-shrinkwrap.json` (every workspace root), `.github/workflows/*`, Dockerfiles and `.blastradius.yml` at that commit, through the API. These are written to a temp dir and the usual ingest runs on them, so the inventory is the same as a clone of that commit. `POST /api/projects/:id/scans` (with optional `ref`) works the same way for linked projects; `offline` is refused for them.
+- **Webhook.**
+  - The server computes an HMAC-SHA256 of the raw body and compares it with `X-Hub-Signature-256` in constant time. Unsigned or badly signed deliveries are dropped and counted (`webhooks.rejected`), and never stored.
+  - Signed deliveries are deduplicated by `X-GitHub-Delivery`; records are kept 30 days.
+  - `installation` events: `deleted` or `suspend` mark the source and its repos `access_lost`. `unsuspend`, `created` and `new_permissions_accepted` re-check the source.
+  - `installation_repositories` adds repos (discovered and scanned when the source auto-watches) and removes them (`removed`; the project and its history stay).
+  - `push` re-scans only for the default branch, and only when the commits touch an inventory file. GitHub lists at most 20 commits, so a push with more commits than that, or a forced push, counts as touching. Other pushes are recorded as `skipped_*`. A push during a running scan queues one more scan after it.
+- **Health.** If GitHub refuses an installation token (revoked or suspended install, 401), the source becomes `access_lost` with a reason in `health`, and its repos become `access_lost` too. A 404 for a single repo marks only that repo. Scans fail with a safe message. Nothing is deleted.
+- **Secrets.** These come from the environment: `BLASTRADIUS_GITHUB_APP_ID`, `BLASTRADIUS_GITHUB_PRIVATE_KEY` or `_PRIVATE_KEY_FILE`, `BLASTRADIUS_GITHUB_WEBHOOK_SECRET` (at least 16 characters), `BLASTRADIUS_GITHUB_CLIENT_ID` and `BLASTRADIUS_GITHUB_CLIENT_SECRET`. GitHub Enterprise Server adds `BLASTRADIUS_GITHUB_API_URL` and `BLASTRADIUS_GITHUB_WEB_URL`.
+  - A partial configuration stops `serve` with an error that names the missing variables, never their values.
+  - No GitHub token is stored. Each operation mints an installation token (one hour at most) and revokes it when done.
+  - Audit actions: `source.install_start`, `source.connect`, `source.update`, `source.disconnect`, `source.access_lost`, `source.access_restored`, `source_repo.add`, `source_repo.remove`, `source_repo.rename`, `source_repo.watch`, `source_repo.unwatch` and `source_repo.access_lost`. Changes made on GitHub's behalf use the actor `github-app`.
