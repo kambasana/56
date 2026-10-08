@@ -3,8 +3,19 @@
     python pack/model/train.py --root . --dataset out/dataset --out out/model
 
 * Small-depth LightGBM, class weights for the imbalance, deterministic (one thread, fixed seed).
-* Calibration: isotonic on out-of-fold predictions from the training split, folds grouped by
-  incident (positives) and package (negatives), so no campaign is calibrated on itself.
+* History-only by default: the manifest features (report.json `manifestFeatures`) are masked to
+  NaN on every row, because npm unpublished 98% of the positives' manifests and "manifest missing"
+  would otherwise be the label (docs/DATA-ML.md, dataset warnings). `manifest`/`origin` are never
+  inputs. Masked columns are constant, so the trees never split on them.
+* Weighting (`--weighting year`, default): positives and negatives get equal total weight within
+  each calendar year, and years without a training positive get no negative weight, so release
+  year (and features that proxy it, such as package age) cannot separate the classes.
+* Folds: GroupKFold over `group` (campaign for positives, package for negatives), so a campaign is
+  never in the fold that is scored on it. The split hint already keeps each campaign wholly on
+  one side of the time cutoff.
+* Variant choice (`--variants`): each candidate feature set / weighting is scored on the
+  out-of-fold predictions only (average precision); the best one is trained and exported. The
+  test split never chooses anything; its metrics for every variant are reported for information.
 * Threshold: the calibrated value that maximises F2 on those out-of-fold predictions (recall
   counts more than precision). Chosen on training data only; the test split never tunes anything.
 * Export: model.json (bundle: LightGBM dump_model trees + calibration + threshold + feature
@@ -73,18 +84,40 @@ def load(dataset_dir: str):
     report = json.load(open(os.path.join(dataset_dir, "report.json")))
     names = report["featureNames"]
     X = np.array([[np.nan if v is None else float(v) for v in r["features"]] for r in rows], dtype=np.float64)
-    meta = pd.DataFrame([{k: r[k] for k in ("name", "version", "releasedAt", "label", "incident", "group", "split")} for r in rows])
+    meta = pd.DataFrame([{"name": r["name"], "version": r["version"], "releasedAt": r["releasedAt"], "label": r["label"], "incident": r.get("campaign") or r.get("incident"), "group": r["group"], "split": r["split"], "manifest": bool(r.get("manifest"))} for r in rows])
     return X, meta, names, report
 
 
-def fit(X, y, names, monotone=False):
+def weights(y: np.ndarray, years: np.ndarray, mode: str) -> np.ndarray | None:
+    """Sample weights. "global": class weight only (as scale_pos_weight). "year": per calendar
+    year, negatives share the weight of that year's positives; years without positives get 0."""
+    if mode == "global":
+        return None
+    w = np.ones(len(y), dtype=np.float64)
+    for yr in np.unique(years):
+        m = years == yr
+        p = int((y[m] == 1).sum())
+        n = int((y[m] == 0).sum())
+        w[m & (y == 0)] = (p / n) if (p and n) else 0.0
+    return w
+
+
+def fit(X, y, names, monotone=False, w=None):
     pos = max(1, int(y.sum()))
-    params = dict(PARAMS, scale_pos_weight=float((len(y) - pos) / pos))
+    params = dict(PARAMS) if w is not None else dict(PARAMS, scale_pos_weight=float((len(y) - pos) / pos))
     if monotone:
         params["monotone_constraints"] = [MONOTONE.get(n, 0) for n in names]
         params["monotone_constraints_method"] = "advanced"
-    ds = lgb.Dataset(X, label=y, feature_name=names, free_raw_data=False)
+    ds = lgb.Dataset(X, label=y, weight=w, feature_name=names, free_raw_data=False)
     return lgb.train(params, ds, num_boost_round=ROUNDS)
+
+
+# Candidate variants for --variants. Chosen on out-of-fold average precision (training split only).
+VARIANTS = {
+    "history+downloads/year": {"drop": [], "weighting": "year"},
+    "history/year": {"drop": ["downloads_weekly_log10", "downloads_trend"], "weighting": "year"},
+    "history+downloads/global": {"drop": [], "weighting": "global"},
+}
 
 
 def f_beta_threshold(p: np.ndarray, y: np.ndarray, beta: float = 2.0) -> float:
@@ -127,54 +160,119 @@ def split_metrics(p_cal: np.ndarray, p_raw: np.ndarray, y: np.ndarray, thr: floa
     return out
 
 
+def oof_predict(X, y, groups, names, w, monotone):
+    n_pos_groups = len(set(groups[y == 1]))
+    folds = GroupKFold(n_splits=min(5, n_pos_groups))
+    oof = np.zeros(len(y))
+    for fit_idx, val_idx in folds.split(X, y, groups):
+        if y[fit_idx].sum() == 0:
+            continue
+        oof[val_idx] = fit(X[fit_idx], y[fit_idx], names, monotone, None if w is None else w[fit_idx]).predict(X[val_idx])
+    return oof
+
+
+def per_campaign(p_cal: np.ndarray, y: np.ndarray, thr: float, meta: pd.DataFrame) -> list[dict]:
+    out = []
+    pos = meta[y == 1]
+    flagged = p_cal[y == 1] >= thr
+    for camp in sorted(set(pos["incident"]), key=lambda c: -int((pos["incident"] == c).sum())):
+        m = (pos["incident"] == camp).to_numpy()
+        out.append({"campaign": camp, "positives": int(m.sum()), "flagged": int(flagged[m].sum())})
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".")
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--monotone", action="store_true", help="apply MONOTONE constraints")
+    ap.add_argument("--keep-manifest", action="store_true", help="do not mask the manifest features (not recommended)")
+    ap.add_argument("--variants", action="store_true", help="choose among VARIANTS by out-of-fold average precision")
+    ap.add_argument("--variant", default="history+downloads/year", choices=sorted(VARIANTS))
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     X, meta, names, report = load(a.dataset)
+    masked = [] if a.keep_manifest else list(report.get("manifestFeatures", []))
     y = meta["label"].to_numpy(dtype=np.int64)
     tr = (meta["split"] == "train").to_numpy()
     te = ~tr
     if y[tr].sum() < 2:
         print("fewer than two training positives: nothing to learn", file=sys.stderr)
         return 1
+    years = meta["releasedAt"].str.slice(0, 4).to_numpy()
+    groups = meta["group"].to_numpy()
 
-    # Out-of-fold predictions on the training split, grouped by incident / package.
-    groups = meta["group"].to_numpy()[tr]
-    n_pos_groups = len(set(meta[tr & (y == 1)]["group"]))
-    folds = GroupKFold(n_splits=min(5, n_pos_groups))
-    oof = np.zeros(int(tr.sum()))
-    for fit_idx, val_idx in folds.split(X[tr], y[tr], groups):
-        if y[tr][fit_idx].sum() == 0:
-            oof[val_idx] = 0.0
-            continue
-        oof[val_idx] = fit(X[tr][fit_idx], y[tr][fit_idx], names, a.monotone).predict(X[tr][val_idx])
+    def design(variant: str) -> np.ndarray:
+        Xv = X.copy()
+        for n in masked + VARIANTS[variant]["drop"]:
+            Xv[:, names.index(n)] = np.nan
+        return Xv
+
+    candidates = sorted(VARIANTS) if a.variants else [a.variant]
+    trials: dict = {}
+    for v in candidates:
+        Xv = design(v)
+        w = weights(y[tr], years[tr], VARIANTS[v]["weighting"])
+        oof = oof_predict(Xv[tr], y[tr], groups[tr], names, w, a.monotone)
+        trials[v] = {"oof": oof, "averagePrecision": float(average_precision_score(y[tr], oof)), "rocAuc": float(roc_auc_score(y[tr], oof))}
+        print(f"variant {v}: out-of-fold AP {trials[v]['averagePrecision']:.4f}, ROC AUC {trials[v]['rocAuc']:.4f}", file=sys.stderr)
+    chosen = max(candidates, key=lambda v: (trials[v]["averagePrecision"], v))
+    Xc = design(chosen)
+    w_tr = weights(y[tr], years[tr], VARIANTS[chosen]["weighting"])
+    oof = trials[chosen]["oof"]
     iso = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0, increasing=True).fit(oof, y[tr])
     oof_cal = iso.predict(oof)
     threshold = f_beta_threshold(oof_cal, y[tr])
 
-    booster = fit(X[tr], y[tr], names, a.monotone)
-    p_tr = booster.predict(X[tr])
-    p_te = booster.predict(X[te]) if te.any() else np.array([])
+    booster = fit(Xc[tr], y[tr], names, a.monotone, w_tr)
+    p_tr = booster.predict(Xc[tr])
+    p_te = booster.predict(Xc[te]) if te.any() else np.array([])
     cal_tr = iso.predict(p_tr)
     cal_te = iso.predict(p_te) if te.any() else np.array([])
 
+    # Every variant's test metrics, for information only (never used to choose).
+    others = {}
+    for v in candidates:
+        if v == chosen:
+            continue
+        Xv = design(v)
+        wv = weights(y[tr], years[tr], VARIANTS[v]["weighting"])
+        iso_v = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0, increasing=True).fit(trials[v]["oof"], y[tr])
+        thr_v = f_beta_threshold(iso_v.predict(trials[v]["oof"]), y[tr])
+        b = fit(Xv[tr], y[tr], names, a.monotone, wv)
+        pt = b.predict(Xv[te])
+        mt = split_metrics(iso_v.predict(pt), pt, y[te], thr_v, meta[te].reset_index(drop=True))
+        mt.pop("positiveScores")
+        others[v] = {"threshold": thr_v, "test": mt}
+
     dump = booster.dump_model()
     gain = booster.feature_importance(importance_type="gain")
+    splits = booster.feature_importance(importance_type="split")
+    te_meta = meta[te].reset_index(drop=True)
+    within = None
+    if te.any():
+        # Within-package check: test positives against the same packages' clean releases.
+        pos_pkgs = set(te_meta[y[te] == 1]["name"])
+        m = te_meta["name"].isin(pos_pkgs).to_numpy()
+        if 0 < y[te][m].sum() < m.sum():
+            within = {"rows": int(m.sum()), "positives": int(y[te][m].sum()), "rocAuc": float(roc_auc_score(y[te][m], p_te[m]))}
     metrics = {
         "featureSchema": report["featureSchema"],
         "cutoff": report["cutoff"],
         "params": dict(PARAMS, rounds=ROUNDS, monotone=MONOTONE if a.monotone else None),
+        "maskedFeatures": masked,
+        "variant": {"chosen": chosen, **VARIANTS[chosen]},
+        "variants": {v: {"outOfFold": {"averagePrecision": t["averagePrecision"], "rocAuc": t["rocAuc"]}, **({"test": others[v]["test"], "threshold": others[v]["threshold"]} if v in others else {})} for v, t in trials.items()},
         "threshold": threshold,
         "calibrationPoints": int(len(iso.X_thresholds_)),
         "outOfFold": split_metrics(oof_cal, oof, y[tr], threshold, meta[tr].reset_index(drop=True)),
         "train": split_metrics(cal_tr, p_tr, y[tr], threshold, meta[tr].reset_index(drop=True)),
-        "test": split_metrics(cal_te, p_te, y[te], threshold, meta[te].reset_index(drop=True)) if te.any() else None,
-        "topFeatures": sorted(({"feature": n, "gain": float(g)} for n, g in zip(names, gain) if g > 0), key=lambda d: -d["gain"])[:15],
+        "test": split_metrics(cal_te, p_te, y[te], threshold, te_meta) if te.any() else None,
+        "testWithinPositivePackages": within,
+        "testPerCampaign": per_campaign(cal_te, y[te], threshold, te_meta) if te.any() else None,
+        "outOfFoldPerCampaign": per_campaign(oof_cal, y[tr], threshold, meta[tr].reset_index(drop=True)),
+        "importance": sorted(({"feature": n, "gain": float(g), "splits": int(s)} for n, g, s in zip(names, gain, splits) if g > 0), key=lambda d: -d["gain"]),
     }
     bundle = {
         "schema": "blastradius-model/v1",
@@ -183,12 +281,13 @@ def main() -> int:
         "lightgbm": dump,
         "calibration": {"x": [float(v) for v in iso.X_thresholds_], "y": [float(v) for v in iso.y_thresholds_]},
         "threshold": threshold,
-        "meta": {"cutoff": report["cutoff"], "rows": report["rows"], "lightgbm": lgb.__version__},
+        "meta": {"cutoff": report["cutoff"], "rows": report["rows"], "lightgbm": lgb.__version__, "variant": chosen, "maskedFeatures": masked},
     }
     with open(os.path.join(a.out, "model.json"), "w") as f:
         json.dump(bundle, f)
     with open(os.path.join(a.out, "lightgbm.json"), "w") as f:
         json.dump(dump, f)
+    X = Xc  # parity on the inputs the model was trained with, plus synthetic rows
 
     # Parity: TS evaluator vs LightGBM on test rows + training sample + synthetic rows with NaNs.
     rng = np.random.default_rng(7)
