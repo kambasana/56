@@ -335,6 +335,89 @@ CREATE TABLE alert_rule (
 );
 `,
   },
+  {
+    version: 9,
+    name: 'account index and compromised accounts',
+    sql: `
+-- Account index (docs/ACCOUNT-PROOF.md): public registry data, shared by every org. One row per
+-- package whose packument was fetched: current maintainers, the repository owner, and every
+-- version's publish time, publisher (_npmUser) and maintainers, so "who could publish it at T" is
+-- answerable for any T. versions_json: { sets: string[][], v: [version, time, publisher, setIndex, gone][] }.
+CREATE TABLE registry_package (
+  registry         TEXT NOT NULL CHECK (registry IN ('npm')),
+  name             TEXT NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('ok', 'missing', 'unavailable')),
+  detail           TEXT,
+  fetched_at       TEXT NOT NULL,
+  maintainers_json TEXT NOT NULL DEFAULT '[]',
+  repo_host        TEXT,
+  repo_owner       TEXT,
+  repo_url         TEXT,
+  versions_json    TEXT NOT NULL DEFAULT '{"sets":[],"v":[]}',
+  PRIMARY KEY (registry, name)
+);
+
+-- Packages an account can publish according to the registry's own listing (npm: /-/user/<u>/package).
+CREATE TABLE registry_account (
+  registry      TEXT NOT NULL CHECK (registry IN ('npm')),
+  name          TEXT NOT NULL,
+  status        TEXT NOT NULL CHECK (status IN ('ok', 'unavailable')),
+  detail        TEXT,
+  fetched_at    TEXT NOT NULL,
+  packages_json TEXT NOT NULL DEFAULT '[]',
+  PRIMARY KEY (registry, name)
+);
+
+-- Who can publish what (package level, public data), derived from registry_package and
+-- registry_account: maintainer (packument maintainers), repo_owner (owner of the declared
+-- repository), listed (the account's own package listing). Who published a locked version
+-- (_npmUser) is read per org from registry_package.versions_json, never stored per org here.
+CREATE TABLE account_link (
+  account_registry TEXT NOT NULL CHECK (account_registry IN ('npm', 'github', 'gitlab')),
+  account          TEXT NOT NULL,
+  package          TEXT NOT NULL,
+  relation         TEXT NOT NULL CHECK (relation IN ('maintainer', 'repo_owner', 'listed')),
+  source           TEXT NOT NULL,
+  confidence       TEXT NOT NULL CHECK (confidence IN ('high', 'medium', 'low')),
+  evidence         TEXT NOT NULL,
+  updated_at       TEXT NOT NULL,
+  PRIMARY KEY (account_registry, account, package, relation)
+);
+CREATE INDEX account_link_package ON account_link (package);
+
+-- "Account X is compromised" in one org: the incident it opened (alerts use incident_id as their
+-- advisory id) and the window it covers.
+CREATE TABLE account_incident (
+  org_id           TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  incident_id      TEXT NOT NULL,
+  account_registry TEXT NOT NULL,
+  account          TEXT NOT NULL,
+  since            TEXT,
+  marked_at        TEXT NOT NULL,
+  marked_by        TEXT NOT NULL,
+  PRIMARY KEY (org_id, incident_id)
+);
+
+-- Incident timelines gain 'account' events (an account marked compromised, its exposure updated).
+CREATE TABLE incident_event_v9 (
+  seq         INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  advisory_id TEXT NOT NULL,
+  at          TEXT NOT NULL,
+  actor       TEXT NOT NULL,
+  kind        TEXT NOT NULL CHECK (kind IN ('status', 'notified', 'account')),
+  title       TEXT NOT NULL,
+  detail      TEXT NOT NULL DEFAULT '',
+  from_value  TEXT,
+  to_value    TEXT
+);
+INSERT INTO incident_event_v9 (seq, org_id, advisory_id, at, actor, kind, title, detail, from_value, to_value)
+  SELECT seq, org_id, advisory_id, at, actor, kind, title, detail, from_value, to_value FROM incident_event;
+DROP TABLE incident_event;
+ALTER TABLE incident_event_v9 RENAME TO incident_event;
+CREATE INDEX incident_event_advisory ON incident_event (org_id, advisory_id, seq);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

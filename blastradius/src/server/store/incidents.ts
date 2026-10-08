@@ -91,7 +91,7 @@ export function recordNotified(s: Store, orgId: string, advisoryIds: readonly st
 
 /** Status changes and notifications, oldest first. */
 export function incidentEvents(s: Store, orgId: string, advisoryId: string): IncidentEvent[] {
-  return all<{ at: string; kind: 'status' | 'notified'; title: string; detail: string; from_value: string | null; to_value: string | null }>(
+  return all<{ at: string; kind: 'status' | 'notified' | 'account'; title: string; detail: string; from_value: string | null; to_value: string | null }>(
     s,
     'SELECT at, kind, title, detail, from_value, to_value FROM incident_event WHERE org_id = ? AND advisory_id = ? ORDER BY seq',
     orgId,

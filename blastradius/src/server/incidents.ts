@@ -20,6 +20,7 @@ import type {
 } from './api-types-incidents.js';
 import { npmNameVersion, pathsTo, purlLabel, viaOf } from './reach.js';
 import {
+  accountIncidents,
   alertChecks,
   all,
   closedAt,
@@ -72,7 +73,15 @@ function groups(alerts: readonly AlertRow[]): Group[] {
   return [...map.entries()].map(([advisoryId, list]) => ({ advisoryId, alerts: list }));
 }
 
-function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventory>, status: IncidentStatus): IncidentRow {
+type AccountOf = (advisoryId: string) => IncidentRow['account'] | undefined;
+
+/** Account incidents of the org, by incident id. */
+function accountLookup(ctx: IncidentContext, ids: readonly string[]): AccountOf {
+  const map = new Map(accountIncidents(ctx.store, ctx.orgId, ids.filter((id) => id.startsWith('ACCOUNT-'))).map((r) => [r.incidentId, { registry: r.registry, name: r.account, since: r.since }] as const));
+  return (id) => map.get(id);
+}
+
+function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventory>, status: IncidentStatus, accountOf: AccountOf = () => undefined): IncidentRow {
   const pkgs = new Map<string, IncidentRow['packages'][number]>();
   const projects = new Map<string, { name: string; production: boolean; fixed: boolean }>();
   for (const a of g.alerts) {
@@ -86,6 +95,7 @@ function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventor
   const list = [...projects.values()].sort((x, y) => Number(y.production) - Number(x.production) || x.name.localeCompare(y.name));
   const first = g.alerts.reduce((m, a) => (a.createdAt < m ? a.createdAt : m), g.alerts[0]!.createdAt);
   const published = g.alerts.map((a) => a.advisoryPublished).filter((x): x is string => !!x).sort()[0] ?? null;
+  const account = accountOf(g.advisoryId);
   return {
     id: g.advisoryId,
     advisoryId: g.advisoryId,
@@ -100,6 +110,7 @@ function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventor
     production: list.filter((p) => p.production).length,
     fixed: list.filter((p) => p.fixed).length,
     projects: list.map((p) => p.name),
+    ...(account ? { account } : {}),
   };
 }
 
@@ -113,8 +124,9 @@ export function listIncidents(ctx: IncidentContext): IncidentRow[] {
   const gs = groups(alerts);
   const states = incidentStates(ctx.store, ctx.orgId, gs.map((g) => g.advisoryId));
   const invs = inventoriesById(ctx);
+  const accountOf = accountLookup(ctx, gs.map((g) => g.advisoryId));
   return gs
-    .map((g) => rowFor(ctx, g, invs, states.get(g.advisoryId)?.status ?? 'investigating'))
+    .map((g) => rowFor(ctx, g, invs, states.get(g.advisoryId)?.status ?? 'investigating', accountOf))
     .sort(
       (a, b) =>
         Number(a.status === 'closed') - Number(b.status === 'closed') ||
@@ -135,7 +147,7 @@ export function getIncident(ctx: IncidentContext, advisoryId: string, caps: Inci
   if (alerts.length === 0) return null;
   const status = incidentStates(ctx.store, ctx.orgId, [advisoryId]).get(advisoryId)?.status ?? 'investigating';
   const invs = inventoriesById(ctx);
-  const row = rowFor(ctx, { advisoryId, alerts }, invs, status);
+  const row = rowFor(ctx, { advisoryId, alerts }, invs, status, accountLookup(ctx, [advisoryId]));
   const owners = new Map(listProjects(ctx.store, ctx.orgId, [...new Set(alerts.map((a) => a.projectId))]).map((p) => [p.id, p.owner] as const));
 
   const hits: IncidentHit[] = alerts.map((a) => {
@@ -186,7 +198,7 @@ export function getIncident(ctx: IncidentContext, advisoryId: string, caps: Inci
     });
   }
   timeline.push(...incidentEvents(ctx.store, ctx.orgId, advisoryId));
-  const order: Record<IncidentEvent['kind'], number> = { alert: 0, check: 1, notified: 2, status: 3 };
+  const order: Record<IncidentEvent['kind'], number> = { alert: 0, account: 1, check: 2, notified: 3, status: 4 };
   timeline.sort((a, b) => a.at.localeCompare(b.at) || order[a.kind] - order[b.kind]);
 
   const ownerList = [...new Set(hits.filter((h) => !h.fixed && h.owner).map((h) => h.owner!))].sort();

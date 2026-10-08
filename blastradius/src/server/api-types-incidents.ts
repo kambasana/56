@@ -43,6 +43,8 @@ export interface IncidentRow {
   fixed: number;
   /** Affected project names, production first. */
   projects: string[];
+  /** Set when the incident is "account X is compromised" (opened from the Account page). */
+  account?: { registry: 'npm' | 'github' | 'gitlab'; name: string; since: IsoTime | null };
 }
 
 /** GET /api/incidents */
@@ -73,7 +75,7 @@ export interface IncidentHit {
   alertedAt: IsoTime;
 }
 
-export type IncidentEventKind = 'alert' | 'check' | 'status' | 'notified';
+export type IncidentEventKind = 'alert' | 'check' | 'status' | 'notified' | 'account';
 
 export interface IncidentEvent {
   at: IsoTime;
