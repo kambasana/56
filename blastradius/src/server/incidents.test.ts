@@ -18,6 +18,7 @@ import type {
   PackageReachResponse,
   PreviewAlertRuleResponse,
 } from './api-types-incidents.js';
+import type { ExposureMatrixResponse } from './api-types.js';
 import { createServer, FIXTURE_AS_OF, FIXTURES_DIR, seedDevData } from './serve.js';
 import { createUser } from './store/auth.js';
 import { openStore } from './store/db.js';
@@ -150,6 +151,14 @@ describe('package reach and who is behind it', () => {
     const none = await json<PackageReachResponse>(call('GET', '/api/packages/reach?name=left-pad', { as: 'admin' }));
     expect(none).toMatchObject({ projects: [], flows: [], paths: [], level: null, advisories: [], lifecycle: { advisory: null, fixed: null } });
     expect((await call('GET', '/api/packages/reach', { as: 'admin' })).status).toBe(400);
+  });
+
+  it('org-wide exposure cells carry their own finding, level and reach', async () => {
+    const m = (await json(call('GET', '/api/exposure?minLevel=high', { as: 'auditor' }))) as ExposureMatrixResponse;
+    expect(m.axis).toBe('project');
+    expect(m.rows[0]!.production).toBe(true);
+    const cell = m.cells.find((x) => m.columns[x.col]!.name === 'event-stream')!;
+    expect(cell).toMatchObject({ findingId: m.columns[cell.col]!.findingId, level: 'critical', production: true });
   });
 
   it('merges documented links for a package, without the incident hop', async () => {
