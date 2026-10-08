@@ -2,9 +2,11 @@
 #
 # Copy into the PRIVATE repo (kambasana/blastradius-hammer) as .github/workflows/train.yml.
 # Not wired up: run it by hand (workflow_dispatch). It
-#   1. fetches npm packuments for the package universe (Acme org lockfiles = noise set, incident
-#      packages, and training negatives found by walking dependencies out from the controls),
-#   2. builds the dataset with the shared TS feature module (src/features/cli.ts),
+#   1. labels compromised releases (pack/model/labels.py: OSV MAL-*/CWE-506, supplychain-attack-data,
+#      incident KB) and fetches packuments for them and the committed negative package lists
+#      (pack/model/manifest: dependency walk from the Acme lockfiles, hammer control repos),
+#   2. builds the dataset with the shared TS feature module (src/features/cli.ts) and as-of
+#      download history (api.npmjs.org),
 #   3. trains LightGBM + isotonic calibration and checks TS/LightGBM parity to 1e-6,
 #   4. runs the backtest gate against the hand-weighted noisy-OR,
 #   5. publishes the model as a release asset ONLY when the gate passes (tag model-<date>).
@@ -20,11 +22,7 @@ on:
         required: true
       cutoff:
         description: Time split; releases before this train, the rest test
-        default: '2023-01-01T00:00:00Z'
-        required: true
-      rounds:
-        description: Dependency-walk rounds for training negatives
-        default: '8'
+        default: '2026-01-01T00:00:00Z'
         required: true
 
 permissions:
@@ -56,33 +54,27 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/pip" install --quiet -r pack/model/requirements.txt
 
-      - name: Known-bad releases (OSV npm export)
+      - name: Labels (OSV npm export, supplychain-attack-data, incident KB)
         run: |
           mkdir -p "$RUNNER_TEMP/osv"
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/osv/npm-all.zip" https://storage.googleapis.com/osv-vulnerabilities/npm/all.zip
-          unzip -q "$RUNNER_TEMP/osv/npm-all.zip" 'MAL-*' 'GHSA-*' -d "$RUNNER_TEMP/osv/recs"
-          python3 pack/model/known_bad.py --osv-dir "$RUNNER_TEMP/osv/recs" --out "$RUNNER_TEMP/known-bad.json"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/osv/npm-all.zip" https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip
+          git clone -q https://github.com/tstromberg/supplychain-attack-data "$RUNNER_TEMP/sad"
+          C="$RUNNER_TEMP/packuments"; L="$RUNNER_TEMP/labels"
+          "$RUNNER_TEMP/venv/bin/python" pack/model/labels.py names --osv-zip "$RUNNER_TEMP/osv/npm-all.zip" --attack-data "$RUNNER_TEMP/sad" --root . --out "$L"
+          cat "$L/candidates.txt" pack/model/manifest/universe-negatives.txt pack/model/manifest/universe-hammer.txt > "$RUNNER_TEMP/fetch.txt"
+          python3 pack/model/fetch_packuments.py --names "$RUNNER_TEMP/fetch.txt" --cache "$C"
+          "$RUNNER_TEMP/venv/bin/python" pack/model/labels.py labels --osv-zip "$RUNNER_TEMP/osv/npm-all.zip" --attack-data "$RUNNER_TEMP/sad" --root . --cache "$C" --out "$L"
 
-      - name: Fetch packuments (registry.npmjs.org)
-        env:
-          ROUNDS: ${{ inputs.rounds }}
-        run: |
-          C="$RUNNER_TEMP/packuments"; U="$RUNNER_TEMP/universe"
-          python3 pack/model/universe.py --replay test/replay --cache "$C" --out "$U" --max-negatives 20000
-          cat "$U/incidents.txt" "$U/controls.txt" > "$U/first.txt"
-          python3 pack/model/fetch_packuments.py --names "$U/first.txt" --cache "$C"
-          for i in $(seq 1 "$ROUNDS"); do
-            python3 pack/model/universe.py --replay test/replay --cache "$C" --out "$U" --max-negatives 20000
-            python3 pack/model/fetch_packuments.py --names "$U/negatives.txt" --cache "$C"
-          done
-          python3 pack/model/universe.py --replay test/replay --cache "$C" --out "$U" --max-negatives 20000
-
-      - name: Build dataset (shared TS feature module)
+      - name: Build dataset (shared TS feature module, as-of downloads)
         env:
           CUTOFF: ${{ inputs.cutoff }}
         run: |
-          python3 pack/model/build_dataset.py --root . --cache "$RUNNER_TEMP/packuments" --universe "$RUNNER_TEMP/universe" \
-            --out "$RUNNER_TEMP/dataset" --cutoff "$CUTOFF" --known-bad "$RUNNER_TEMP/known-bad.json"
+          M=pack/model/manifest
+          args=(--root . --cache "$RUNNER_TEMP/packuments" --labels "$RUNNER_TEMP/labels" --negatives $M/universe-negatives.txt \
+            --negatives $M/universe-hammer.txt --controls $M/universe-controls.txt --out "$RUNNER_TEMP/dataset" --cutoff "$CUTOFF")
+          python3 pack/model/build_dataset.py "${args[@]}" --requests-only
+          python3 pack/model/fetch_downloads.py --requests "$RUNNER_TEMP/dataset/requests.jsonl" --out "$RUNNER_TEMP/downloads"
+          python3 pack/model/build_dataset.py "${args[@]}" --downloads "$RUNNER_TEMP/downloads"
 
       - name: Train, calibrate, parity check
         run: |

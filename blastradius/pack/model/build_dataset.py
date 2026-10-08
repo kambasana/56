@@ -64,7 +64,7 @@ def main() -> int:
     ap.add_argument("--negatives", action="append", default=[], help="file of package names (repeatable)")
     ap.add_argument("--controls", help="Acme lockfile packages: never trained on")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--cutoff", default="2025-09-01T00:00:00Z")
+    ap.add_argument("--cutoff", default="2026-01-01T00:00:00Z")
     ap.add_argument("--max-per-package-year", type=int, default=12, help="negatives sampled per package and calendar year (deterministic, by hash)")
     ap.add_argument("--requests-only", action="store_true", help="write requests.jsonl (for fetch_downloads.py) and stop")
     a = ap.parse_args()

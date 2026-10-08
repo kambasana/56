@@ -135,7 +135,12 @@ class Claim:
 def osv_claims(zip_path: str) -> tuple[list[Claim], dict]:
     z = zipfile.ZipFile(zip_path)
     out: list[Claim] = []
-    snap = max((i.date_time for i in z.infolist()), default=None)
+    import hashlib
+    h = hashlib.sha256()
+    with open(zip_path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    mtime = dt.datetime.fromtimestamp(os.path.getmtime(zip_path), dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     n = 0
     for f in z.namelist():
         if not f.endswith(".json") or not (f.startswith("MAL-") or f.startswith("GHSA-")):
@@ -155,7 +160,7 @@ def osv_claims(zip_path: str) -> tuple[list[Claim], dict]:
             vs = [v for v in a.get("versions") or [] if isinstance(v, str)]
             rng = a.get("ranges") or []
             out.append(Claim("osv", r["id"], p["name"], vs, rng, whole_package(rng), None, ((r.get("summary") or "") + " " + (r.get("details") or ""))[:4000]))
-    return out, {"records": n, "snapshot": "%04d-%02d-%02d" % snap[:3] if snap else None}
+    return out, {"records": n, "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip", "downloaded": mtime, "sha256": h.hexdigest()}
 
 
 def sad_claims(root: str) -> tuple[list[Claim], dict]:
@@ -224,6 +229,23 @@ def load_packument(cache: str, name: str):
         return None
 
 
+def merge_overlay(live: dict | None, over: dict | None) -> dict | None:
+    """Same rule as src/features/store.ts mergeOverlay: overlay releases fill gaps, live data wins."""
+    if over is None:
+        return live
+    if live is None:
+        return over
+    versions = dict(live.get("versions") or {})
+    time = dict(live.get("time") or {})
+    for v, m in (over.get("versions") or {}).items():
+        if v in versions:
+            continue
+        versions[v] = m
+        if v not in time and v in (over.get("time") or {}):
+            time[v] = over["time"][v]
+    return {**live, "versions": versions, "time": time}
+
+
 def parse_t(s) -> float | None:
     if not isinstance(s, str):
         return None
@@ -268,7 +290,7 @@ def main() -> int:
     ap.add_argument("--root", default=".", help="the blastradius/ directory")
     ap.add_argument("--cache")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--min-prior", type=int, default=2)
+    ap.add_argument("--min-prior", type=int, default=1)
     ap.add_argument("--min-history-days", type=float, default=90.0)
     ap.add_argument("--max-span-days", type=float, default=30.0)
     ap.add_argument("--max-live-stream", type=int, default=10)
@@ -299,7 +321,8 @@ def main() -> int:
         if c.whole:
             continue
         if c.name not in packuments:
-            packuments[c.name] = load_packument(a.cache, c.name)
+            # The replay overlay holds manifests rebuilt from advisories for unpublished releases.
+            packuments[c.name] = merge_overlay(load_packument(a.cache, c.name), load_packument(os.path.join(root, "test", "replay", "data", "registry"), c.name))
         p = packuments[c.name]
         vs = set(c.versions)
         if c.ranges and p is not None:
@@ -350,9 +373,13 @@ def main() -> int:
                 dropped.append({"name": name, "version": v, "source": srcs(v), "reason": "package removed from npm entirely (time.unpublished): no release history left"})
             continue
         if name in whole:
+            # A curated source (attack data, KB, replay) outranks an OSV record that marks every version.
             for v in sorted(bad[name]):
-                dropped.append({"name": name, "version": v, "source": srcs(v), "reason": "another record marks every version of the package malicious"})
-            continue
+                if not any(c.source in ("sad", "kb", "replay") for c in bad[name][v]):
+                    dropped.append({"name": name, "version": v, "source": srcs(v), "reason": "another record marks every version of the package malicious"})
+                    del bad[name][v]
+            if not bad[name]:
+                continue
         rel = {v: parse_t(t) for v, t in time.items() if v not in ("created", "modified", "unpublished")}
         rel = {v: t for v, t in rel.items() if t is not None}
         badset = set(bad[name])

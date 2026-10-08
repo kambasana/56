@@ -10,7 +10,8 @@ is stored as {"name", "from": "YYYY-01-01", "counts": [...]} with null for every
 not covered (the API starts on 2015-01-10). The API's history is historical, so a value for 2019
 is what npm counted in 2019, not today's.
 
-Polite: one request at a time, at least --interval seconds apart, backoff on 429/5xx. Existing
+Polite: at most --workers requests in flight, request starts at least --interval seconds apart
+across workers, backoff on 429/5xx. Existing
 years are kept (cache file per package plus <out>/_years.json listing fetched years). Failures go
 to <out>/_failures.json.
 """
@@ -18,10 +19,12 @@ from __future__ import annotations
 
 import argparse
 import collections
+import concurrent.futures as cf
 import datetime as dt
 import json
 import os
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -39,10 +42,12 @@ def series_file(out: str, name: str) -> str:
 def get(url: str, interval: float, state: dict, retries: int = 5):
     delay = 4.0
     for attempt in range(retries):
-        wait = state.get("next", 0.0) - time.monotonic()
-        if wait > 0:
-            time.sleep(wait)
-        state["next"] = time.monotonic() + interval
+        with state["lock"]:
+            now = time.monotonic()
+            at = max(now, state.get("next", 0.0))
+            state["next"] = at + interval
+        if at > now:
+            time.sleep(at - now)
         try:
             req = urllib.request.Request(url, headers={"accept": "application/json", "user-agent": "blastradius-bootstrap"})
             with urllib.request.urlopen(req, timeout=120) as r:
@@ -91,6 +96,7 @@ def main() -> int:
     ap.add_argument("--requests", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--interval", type=float, default=0.25)
+    ap.add_argument("--workers", type=int, default=3)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     today = dt.datetime.now(dt.timezone.utc).date()
@@ -114,7 +120,8 @@ def main() -> int:
     failures: dict[str, str] = json.load(open(fail_path)) if os.path.exists(fail_path) else {}
     todo = {n: sorted(ys - set(have.get(n, []))) for n, ys in need.items()}
     todo = {n: ys for n, ys in todo.items() if ys}
-    state: dict = {}
+    state: dict = {"lock": threading.Lock()}
+    merge_lock = threading.Lock()
     done = 0
 
     def span(y: int) -> str:
@@ -154,24 +161,33 @@ def main() -> int:
             if done % 20 == 0:
                 print(f"bulk {done}", file=sys.stderr)
                 json.dump(have, open(years_path, "w"))
-    # Scoped: one by one.
-    for n, ys in sorted(todo.items()):
-        if not n.startswith("@"):
-            continue
+    # Scoped: one by one (a package's years in one task, so its file is written by one thread).
+    def one(n: str, ys: list[int]):
+        res = []
         for y in ys:
             data, err = get(API + span(y) + "/" + urllib.parse.quote(n, safe="@"), a.interval, state)
-            if err:
-                failures[f"{n}@{y}"] = err
-                if err != "404":
-                    continue
-            elif isinstance(data, dict):
+            if not err and isinstance(data, dict):
                 merge(a.out, n, y, data.get("downloads") or [])
-                failures.pop(f"{n}@{y}", None)
-            mark(n, y)
-            done += 1
-            if done % 200 == 0:
-                print(f"single {done}", file=sys.stderr)
-                json.dump(have, open(years_path, "w"))
+            res.append((y, err))
+        return n, res
+
+    scoped = sorted((n, ys) for n, ys in todo.items() if n.startswith("@"))
+    with cf.ThreadPoolExecutor(a.workers) as ex:
+        for fut in cf.as_completed([ex.submit(one, n, ys) for n, ys in scoped]):
+            n, res = fut.result()
+            with merge_lock:
+                for y, err in res:
+                    if err:
+                        failures[f"{n}@{y}"] = err
+                        if err != "404":
+                            continue
+                    else:
+                        failures.pop(f"{n}@{y}", None)
+                    mark(n, y)
+                done += 1
+                if done % 200 == 0:
+                    print(f"single {done}/{len(scoped)}", file=sys.stderr)
+                    json.dump(have, open(years_path, "w"))
     json.dump(have, open(years_path, "w"))
     with open(fail_path, "w") as f:
         json.dump(failures, f, indent=1, sort_keys=True)
