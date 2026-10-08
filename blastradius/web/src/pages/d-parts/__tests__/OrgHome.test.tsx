@@ -151,7 +151,7 @@ describe('<OrgHome>', () => {
     fakeApi([['GET', /^\/api\/home$/, () => ({ status: 500, body: { error: { code: 'internal', message: 'Boom' } } })]]);
     renderPage(<OrgHome />, at(meFor('developer', { permissions: ['home'] })));
     expect(await screen.findByRole('alert')).toHaveTextContent('Boom');
-    expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
   });
 
   it('falls back to /api/projects for a user without the home page', async () => {

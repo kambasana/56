@@ -299,7 +299,10 @@ export interface WebRoute {
   label: string;
 }
 
-/** Route map from docs/WEB-API.md. `page: null` means no permission (login). */
+/**
+ * Route map from docs/WEB-API.md plus the redesign shell. `page: null` means the route checks
+ * nothing itself (sign-in pages; /projects/:id redirects to the first project page allowed).
+ */
 export const WEB_ROUTES: readonly WebRoute[] = [
   { path: '/', page: 'home', label: 'Home' },
   { path: '/projects/:id/changes', page: 'changes', label: 'Changes' },
@@ -311,6 +314,13 @@ export const WEB_ROUTES: readonly WebRoute[] = [
   { path: '/reports', page: 'reports', label: 'Reports' },
   { path: '/integrations', page: 'integrations', label: 'Integrations' },
   { path: '/settings', page: 'settings', label: 'Settings' },
+  // Redesign shell (docs/UX.md §2): one-level sidebar pages and the package verdict page.
+  { path: '/findings', page: 'findings', label: 'Findings' },
+  { path: '/incidents', page: 'findings', label: 'Incidents' },
+  { path: '/alerts', page: 'findings', label: 'Alerts' },
+  { path: '/projects', page: 'projects', label: 'Projects' },
+  { path: '/projects/:id', page: null, label: 'Project' },
+  { path: '/packages', page: 'exposure', label: 'Package' },
   { path: '/login', page: null, label: 'Sign in' },
   { path: '/accept-invite', page: null, label: 'Accept invite' },
 ];

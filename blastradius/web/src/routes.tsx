@@ -9,7 +9,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { WEB_ROUTES, type PagePermission } from '@server/permissions';
 import { useAuth } from './auth';
 import { useProject } from './project';
-import { landingPath } from './nav';
+import { landingPath, projectLandingPath, projectPath } from './nav';
 import { AppShell } from './components/AppShell';
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from './components/EmptyState';
 import Login from './pages/Login';
@@ -29,7 +29,35 @@ export const PAGES: Record<string, Page> = {
   '/reports': lazy(() => import('./pages/Reports')),
   '/integrations': lazy(() => import('./pages/Integrations')),
   '/settings': lazy(() => import('./pages/Settings')),
+  '/findings': lazy(() => Promise.resolve({ default: FindingsHome })),
+  '/incidents': lazy(() => import('./pages/Incidents')),
+  '/alerts': lazy(() => import('./pages/Alerts')),
+  '/projects': lazy(() => import('./pages/Projects')),
+  '/packages': lazy(() => import('./pages/Package')),
 };
+
+/**
+ * /findings: the current project's findings until stage 2 builds the org-wide list. Keeps the
+ * query string (scope and filters) on the way.
+ */
+export function FindingsHome() {
+  const { projectId, loading } = useProject();
+  const { can } = useAuth();
+  const { search } = useLocation();
+  if (loading && !projectId) return <LoadingState />;
+  if (projectId && can('findings', projectId)) return <Navigate to={`${projectPath(projectId, 'findings')}${search}`} replace />;
+  return <EmptyState title="No project to show findings for" description="Findings belong to a project. Open Projects and add one, or ask an admin to give you access to one." />;
+}
+
+/** /projects/:id: the first project page the viewer may open. */
+export function ProjectHome() {
+  const { me } = useAuth();
+  const params = useParams();
+  const id = params.id ?? '';
+  const to = projectLandingPath(me, id);
+  if (to) return <Navigate to={to} replace />;
+  return <ForbiddenState page="findings" />;
+}
 
 /** Signed-in gate: no session → /login?next=<path>. */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -52,7 +80,8 @@ export function RequirePage({ page, path, children }: { page: PagePermission; pa
   const { me, can } = useAuth();
   const { projectId } = useProject();
   const params = useParams();
-  const scope = params.id ?? null;
+  // /findings follows the current project, so a project-scope binding is enough there.
+  const scope = params.id ?? (path === '/findings' ? projectId : null);
   if (path === '/') {
     if (can('home') || can('projects')) return <>{children}</>;
     const to = landingPath(me, projectId);
@@ -147,6 +176,7 @@ export function AppRoutes() {
             />
           );
         })}
+        <Route path="/projects/:id" element={<ProjectHome />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

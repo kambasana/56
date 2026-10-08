@@ -1,5 +1,5 @@
 /**
- * Org home: totals, the projects table (size tier, last scan, counts by level, trend, to
+ * Overview (org home; stage 2 redesigns it on the Overview template): totals, the projects table (size tier, last scan, counts by level, trend, to
  * review) and the risky components shared across projects (from the org-wide exposure matrix).
  */
 import { useMemo, useState } from 'react';
@@ -52,7 +52,8 @@ function Trend({ points }: { points: number[] }) {
   );
 }
 
-const COLUMNS: ColumnDef<ProjectRow, any>[] = [
+/** Columns of the projects table (Overview and the Projects page). */
+export const PROJECT_COLUMNS: ColumnDef<ProjectRow, any>[] = [
   {
     id: 'name',
     header: 'Project',
@@ -202,7 +203,7 @@ export default function OrgHome() {
   const canCreate = can('manage_projects');
   const names = useMemo(() => new Map((data?.projects ?? []).map((p) => [p.id, p.name])), [data]);
 
-  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: 'Home' }];
+  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: 'Overview', to: '/' }];
   const t = data?.totals;
   const meta = t ? `${fmtNum(t.projects)} projects · ${fmtNum(t.assets)} assets · ${fmtNum(t.components)} components` : undefined;
 
@@ -244,7 +245,7 @@ export default function OrgHome() {
             <DataTable<ProjectRow>
               label="Projects"
               data={data.projects}
-              columns={COLUMNS}
+              columns={PROJECT_COLUMNS}
               getRowId={(r) => r.id}
               filterPlaceholder="Filter projects…"
               initialSorting={[{ id: 'counts', desc: true }]}
@@ -286,7 +287,7 @@ export default function OrgHome() {
     <>
       <PageHeader
         crumbs={crumbs}
-        title="Home"
+        title="Overview"
         meta={meta}
         actions={
           <>
