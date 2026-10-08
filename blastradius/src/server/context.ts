@@ -5,6 +5,7 @@
  *   1. signed in (401) → 2. resource exists in the caller's org (404) → 3. permission (403).
  */
 import type { AlertWatcher } from './watch.js';
+import type { SourceService } from './sources/service.js';
 import type { Context } from 'hono';
 import type { MeResponse, Permission, User } from './api-types.js';
 import { can, type PagePermission } from './permissions.js';
@@ -57,6 +58,8 @@ export interface ServerDeps {
   scanLimiter: RateLimiter;
   /** Alerts from the knowledge pack after scans and on a timer, plus webhook notifications. */
   watcher: AlertWatcher;
+  /** Connected code hosts (GitHub App): install, discovery, webhooks, fetch-only scans. */
+  sources: SourceService;
 }
 
 export interface Session {

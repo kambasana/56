@@ -159,6 +159,11 @@ export class GitHubAdapter implements SourceAdapter {
     });
   }
 
+  /** A key derived from the webhook secret for `label` (signs install states; survives restarts). */
+  deriveKey(label: string): Buffer {
+    return createHmac('sha256', this.config.webhookSecret).update(`blastradius:${label}`).digest();
+  }
+
   /** True when the OAuth client is configured (needed to finish an install). */
   get canVerifyInstaller(): boolean {
     return Boolean(this.config.clientId && this.config.clientSecret);

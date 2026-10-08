@@ -43,9 +43,22 @@ export interface ScanJobsOptions {
   gitRunner?: GitRunner;
   /** Called after a scan succeeds (org-wide alert check). Must not throw. */
   onScanSucceeded?: (projectId: string) => void;
+  /** Called after every scan, succeeded or failed (connected-repo bookkeeping). Must not throw. */
+  onScanFinished?: (projectId: string, scanId: string, ok: boolean) => void;
+  /**
+   * Fetch-only scans for projects linked to a connected repo (sources): the inventory files at
+   * the ref, written to a temp dir. Null means the project is not connected: use its target.
+   */
+  materialise?: (projectId: string, ref: string | undefined) => Promise<FetchedTarget | null>;
   /** Clone timeout (ms). */
   cloneTimeoutMs?: number;
   log?: (m: string) => void;
+}
+
+export interface FetchedTarget {
+  dir: string;
+  commit: string | null;
+  cleanup: () => Promise<void>;
 }
 
 export interface FixtureReplay {
@@ -145,26 +158,42 @@ export class ScanJobs {
     const log = this.opts.log ?? (() => {});
     const o = this.overrides.get(scanId) ?? {};
     let cleanup: (() => Promise<void>) | undefined;
+    let projectId: string | undefined;
+    let ok = false;
     try {
       const s = markScanRunning(store, scanId);
-      const target = checkTarget(s.target, this.opts.localRoots());
-      const replay = target.kind === 'local' ? fixtureReplayFor(this.opts.fixtureReplay, target.path) : undefined;
-      const fixturesDir = o.fixturesDir ?? (this.opts.offline ? this.opts.fixturesDir : undefined) ?? replay?.fixturesDir;
-      const offline = o.offline === true || s.offline || this.opts.offline === true || o.fixturesDir !== undefined || replay !== undefined;
+      projectId = s.projectId;
       let dir: string;
       let commit: string | null = null;
-      if (target.kind === 'git') {
+      let offline: boolean;
+      let fixturesDir: string | undefined;
+      let replay: FixtureReplay | undefined;
+      const fetched = this.opts.materialise ? await this.opts.materialise(s.projectId, o.ref) : null;
+      if (fetched) {
+        // A connected repo: only its manifests, lockfiles and workflows, read through the host API.
+        cleanup = fetched.cleanup;
+        offline = o.offline === true || s.offline || this.opts.offline === true || o.fixturesDir !== undefined;
         if (offline) throw new SafeScanError('Offline scans need a local target');
-        const cloned = await cloneTarget(target.url, {
-          ...(o.ref !== undefined ? { ref: o.ref } : {}),
-          ...(this.opts.gitRunner ? { runner: this.opts.gitRunner } : {}),
-          ...(this.opts.cloneTimeoutMs !== undefined ? { timeoutMs: this.opts.cloneTimeoutMs } : {}),
-        });
-        cleanup = cloned.cleanup;
-        dir = cloned.dir;
-        commit = cloned.commit;
+        dir = fetched.dir;
+        commit = fetched.commit;
       } else {
-        dir = target.path;
+        const target = checkTarget(s.target, this.opts.localRoots());
+        replay = target.kind === 'local' ? fixtureReplayFor(this.opts.fixtureReplay, target.path) : undefined;
+        fixturesDir = o.fixturesDir ?? (this.opts.offline ? this.opts.fixturesDir : undefined) ?? replay?.fixturesDir;
+        offline = o.offline === true || s.offline || this.opts.offline === true || o.fixturesDir !== undefined || replay !== undefined;
+        if (target.kind === 'git') {
+          if (offline) throw new SafeScanError('Offline scans need a local target');
+          const cloned = await cloneTarget(target.url, {
+            ...(o.ref !== undefined ? { ref: o.ref } : {}),
+            ...(this.opts.gitRunner ? { runner: this.opts.gitRunner } : {}),
+            ...(this.opts.cloneTimeoutMs !== undefined ? { timeoutMs: this.opts.cloneTimeoutMs } : {}),
+          });
+          cleanup = cloned.cleanup;
+          dir = cloned.dir;
+          commit = cloned.commit;
+        } else {
+          dir = target.path;
+        }
       }
       log(`scan ${scanId}: started`);
       const asOf = o.asOf ?? this.opts.asOf ?? replay?.asOf;
@@ -179,6 +208,7 @@ export class ScanJobs {
       const result = { ...out.result, target: s.target };
       completeScan(store, scanId, { result, inventory: out.inventory, commit });
       log(`scan ${scanId}: succeeded (${result.findings.length} findings)`);
+      ok = true;
       this.opts.onScanSucceeded?.(s.projectId);
     } catch (err) {
       log(`scan ${scanId}: failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -189,6 +219,13 @@ export class ScanJobs {
       }
     } finally {
       if (cleanup) await cleanup().catch(() => {});
+      if (projectId !== undefined) {
+        try {
+          this.opts.onScanFinished?.(projectId, scanId, ok);
+        } catch {
+          // bookkeeping only
+        }
+      }
     }
   }
 }

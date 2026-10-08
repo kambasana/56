@@ -13,6 +13,8 @@ import { createApp } from './app.js';
 import type { ServerConfig, ServerDeps } from './context.js';
 import { ScanJobs, type FixtureReplay } from './jobs.js';
 import { ConcurrencyGate, RateLimiter } from './ratelimit.js';
+import { GitHubAdapter, githubConfigFromEnv, type GitHubAppConfig } from './sources/github.js';
+import { SourceService } from './sources/service.js';
 import { DEFAULT_WEB_DIR } from './static.js';
 import {
   closeStore,
@@ -77,6 +79,8 @@ export interface CreateServerOptions {
   scanRateLimit?: number;
   /** Knowledge-pack alerts and webhook (defaults from BLASTRADIUS_PACK / BLASTRADIUS_ALERT_WEBHOOK). */
   alerts?: AlertWatcherOptions;
+  /** GitHub App connector; default from BLASTRADIUS_GITHUB_* (null: not configured). */
+  github?: GitHubAppConfig | null;
 }
 
 export function defaultLocalRoots(env: NodeJS.ProcessEnv = process.env): string[] {
@@ -99,8 +103,13 @@ export function createServer(opts: CreateServerOptions = {}) {
     ...(opts.trustProxy && opts.trustProxy.length > 0 ? { trustProxy: [...opts.trustProxy] } : {}),
   };
   const watcher = new AlertWatcher(store, { log, ...(opts.alerts ?? {}) });
+  const githubConfig = opts.github === undefined ? githubConfigFromEnv() : opts.github;
+  // Late-bound: the scan runner asks the sources for fetch-only checkouts of connected repos.
+  let sources: SourceService | undefined;
   const jobs = new ScanJobs({
     onScanSucceeded: (projectId) => watcher.afterScan(projectId),
+    onScanFinished: (projectId, scanId, ok) => sources?.onScanFinished(projectId, scanId, ok),
+    materialise: (projectId, ref) => (sources ? sources.materialiseForProject(projectId, ref) : Promise.resolve(null)),
     store,
     localRoots: () => config.localRoots,
     offline: config.offline,
@@ -112,9 +121,11 @@ export function createServer(opts: CreateServerOptions = {}) {
     ...(opts.gitRunner ? { gitRunner: opts.gitRunner } : {}),
     log,
   });
+  sources = new SourceService({ store, jobs, github: githubConfig ? new GitHubAdapter(githubConfig) : null, log });
   const deps: ServerDeps = {
     store,
     jobs,
+    sources,
     config,
     log,
     loginLimiter: new RateLimiter(10, 15 * 60_000),
@@ -216,6 +227,7 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
     log(`dev mode: users ${seed.users.join(', ')} — password: ${seed.password}`);
     if (seed.scanId) log(`dev mode: queued fixture scan ${seed.scanId} for ${DEV_PROJECT_NAME}`);
   }
+  if (deps.sources.github) log('sources: GitHub App connector configured (webhooks at /api/hooks/github)');
   if (!deps.config.webDir) log('web/dist not found: serving the API only (build the web app with `npm --prefix web run build`)');
   const port = opts.port ?? 8000;
   const server = await new Promise<ReturnType<typeof nodeServe>>((resolve, reject) => {
@@ -240,6 +252,7 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
       clearInterval(sessionSweep);
       deps.watcher.stop();
       jobs.stop();
+      await deps.sources.idle();
       await jobs.drain();
       await new Promise<void>((resolve) => server.close(() => resolve()));
       if (!opts.store) closeStore(store);

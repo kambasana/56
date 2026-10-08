@@ -13,6 +13,7 @@ import { registerFindingRoutes } from './routes/findings.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerReportRoutes } from './routes/reports.js';
 import { registerSettingsRoutes } from './routes/settings.js';
+import { registerSourceRoutes } from './routes/sources.js';
 import { resolveStatic, SPA_CSP, staticBody } from './static.js';
 import { getSession, setSessionOrg } from './store/index.js';
 
@@ -53,6 +54,9 @@ export function createApp(deps: ServerDeps): Hono<AppEnv> {
   });
 
   app.use('/api/*', async (c, next) => {
+    // Host webhooks carry no cookie and no X-Requested-With; they are authenticated by signature
+    // (routes/sources.ts) and never see a session.
+    if (new URL(c.req.url).pathname.startsWith('/api/hooks/')) return next();
     const problem = csrfProblem(c.req.method, c.req.raw.headers, c.req.url);
     if (problem) return errorResponse(c, 'csrf', problem);
     const token = getCookie(c, SESSION_COOKIE);
@@ -72,6 +76,7 @@ export function createApp(deps: ServerDeps): Hono<AppEnv> {
   registerAlertRoutes(app);
   registerReportRoutes(app);
   registerSettingsRoutes(app);
+  registerSourceRoutes(app);
 
   app.all('/api/*', (c) => errorResponse(c, 'not_found', 'No such API endpoint'));
   app.all('/api', (c) => errorResponse(c, 'not_found', 'No such API endpoint'));

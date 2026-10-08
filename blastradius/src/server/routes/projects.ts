@@ -43,6 +43,7 @@ import {
   orgHome,
   rolesForUser,
   setSessionOrg,
+  sourceRepoForProject,
   updateProject,
   writeAudit,
 } from '../store/index.js';
@@ -209,6 +210,15 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
     const body = await parseBody(c, CreateScanBody);
     const { store, jobs, config, scanLimiter } = deps(c);
     const ref = body.ref !== undefined ? checkGitRef(body.ref) : undefined;
+    if (sourceRepoForProject(store, id)) {
+      // A connected repo: scanned fetch-only through its source (never offline, never cloned).
+      if (config.offline || body.offline === true) throw badRequest('Offline scans need a local target', ['offline']);
+      if (!scanLimiter.hit(session.user.id)) throw new ApiHttpError('rate_limited', 'Too many scans requested. Try again later.');
+      const scan = enqueueScan(store, orgId, id, { requestedBy: session.user.id });
+      if (ref !== undefined) jobs.setOverrides(scan.id, { ref });
+      jobs.kick();
+      return c.json<CreateScanResponse>(scan, 202);
+    }
     // Re-check the stored target against today's rules before queueing.
     const target = checkTarget(project.target, config.localRoots);
     // Fixture-repo projects under --dev-seed always replay recorded responses (see jobs.ts).

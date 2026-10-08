@@ -11,10 +11,15 @@ export const MAX_BODY_BYTES = 256 * 1024;
  * as soon as the cap is passed, so a chunked body without Content-Length is never buffered whole.
  */
 export async function readBodyText(c: Ctx, maxBytes = MAX_BODY_BYTES): Promise<string> {
+  return new TextDecoder('utf-8', { fatal: false }).decode(await readBodyBytes(c, maxBytes));
+}
+
+/** The raw body bytes, exactly as sent (webhook signatures are computed over these), capped. */
+export async function readBodyBytes(c: Ctx, maxBytes = MAX_BODY_BYTES): Promise<Buffer> {
   const declared = c.req.header('content-length');
   if (declared !== undefined && Number(declared) > maxBytes) throw badRequest('Request body too large');
   const stream = c.req.raw.body;
-  if (!stream) return '';
+  if (!stream) return Buffer.alloc(0);
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -28,7 +33,7 @@ export async function readBodyText(c: Ctx, maxBytes = MAX_BODY_BYTES): Promise<s
     }
     chunks.push(value);
   }
-  return new TextDecoder('utf-8', { fatal: false }).decode(Buffer.concat(chunks, total));
+  return Buffer.concat(chunks, total);
 }
 
 export async function readJson(c: Ctx): Promise<unknown> {
