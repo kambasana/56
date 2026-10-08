@@ -107,6 +107,11 @@ export function PeekSheet({ open, onClose, title, description, fullPageHref, foo
       <SheetContent
         side="right"
         data-slot="peek-sheet"
+        // Focus the sheet itself, not its first control: a focused Select would swallow J / K.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement | null)?.focus();
+        }}
         className={cn('w-full gap-3 bg-popover p-5 shadow-elev-2 duration-150 data-[state=closed]:duration-150 data-[state=open]:duration-150 sm:max-w-[var(--sheet-w)]', className)}
       >
         <SheetHeader className="gap-1 p-0 pr-8">
