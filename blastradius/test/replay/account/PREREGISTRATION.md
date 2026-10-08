@@ -84,6 +84,19 @@ the wave-1 Shai-Hulud accounts that have ≥ 5 bad packages, and (c) the primary
 ≤ 0.1 episodes per control account-month. If (c) fails the rule is reported as too noisy to use as
 a standalone alert, whatever the lead times.
 
+### Addendum (2026-10-08, still before any H2 number was computed)
+
+Prompted by a report that the Shai-Hulud worm throttled itself to under about one publish per
+token per hour, one more rule variant is registered and reported next to the primary rule:
+
+- **H2-24h**: the same rule with W = 24 h (≥ 5 distinct packages within 24 h). Same lead,
+  episode and false-alarm definitions; passes on the same (a)/(b)/(c) criteria. The primary rule
+  stays W = 6 h; both are reported whatever they show.
+- Extra control accounts for legitimate bursts: the `_npmUser` of the last `@babel/core` release
+  and of the last `@aws-sdk/client-s3` release published in the control period (monorepo release
+  accounts), added to the control set with the same sampling rule. Bot or trusted-publishing
+  accounts among the controls are labelled as such in the report.
+
 ## H3 Concentration (descriptive, no pass/fail)
 
 Per project (Acme replay org, the new 2025 exposure repos, and the two control repos): number of
