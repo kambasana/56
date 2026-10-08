@@ -75,6 +75,8 @@ export function registerSourceRoutes(app: Hono<AppEnv>): void {
     const installationId = q('installation_id');
     const back = (params: Record<string, string>) => c.redirect(`/sources?${new URLSearchParams(params).toString()}`, 302);
     if (q('setup_action') === 'request') return back({ install: 'requested' });
+    // Repo selection changed in GitHub's settings: the installation_repositories webhook carries it.
+    if (q('setup_action') === 'update' && !state) return back({ install: 'updated' });
     if (!state || !installationId) return back({ install: 'failed', reason: 'GitHub did not send the installation back' });
     try {
       const source = await sources.completeInstall({ state, installationId, code: q('code') });

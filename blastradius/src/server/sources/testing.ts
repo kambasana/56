@@ -74,6 +74,7 @@ export class FakeGitHub {
   readonly log: FakeRequestLog[] = [];
   tokensMinted = 0;
   tokensRevoked = 0;
+  userTokensRevoked = 0;
   private nextRepoId = 1000;
 
   get config() {
@@ -171,6 +172,18 @@ export class FakeGitHub {
     }
     if (url.origin !== BASE) return notFound();
     const path = url.pathname;
+
+    // ---- OAuth app (client id and secret) ----------------------------------------
+    const appToken = /^\/applications\/([^/]+)\/token$/.exec(path);
+    if (appToken && method === 'DELETE') {
+      this.log.push({ method, path, auth: 'none' });
+      const expected = `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`;
+      if (authz !== expected || decodeURIComponent(appToken[1]!) !== this.clientId) return json(401, { message: 'Bad credentials' });
+      const body = (await req.json()) as { access_token?: string };
+      if (!body.access_token || !this.userTokens.delete(body.access_token)) return notFound();
+      this.userTokensRevoked++;
+      return new Response(null, { status: 204 });
+    }
 
     // ---- App (JWT) -----------------------------------------------------------
     if (/^bearer ey/i.test(authz)) {

@@ -237,12 +237,22 @@ export class GitHubAdapter implements SourceAdapter {
     const token = typeof body?.access_token === 'string' ? body.access_token : null;
     if (!token) return false;
     const user = new this.OctokitWithDefaults({ auth: token });
-    for (let page = 1; page <= 20; page++) {
-      const { data } = await user.request('GET /user/installations', { per_page: 100, page });
-      if (data.installations.some((i) => String(i.id) === installationId)) return true;
-      if (data.installations.length < 100) break;
+    try {
+      for (let page = 1; page <= 20; page++) {
+        const { data } = await user.request('GET /user/installations', { per_page: 100, page });
+        if (data.installations.some((i) => String(i.id) === installationId)) return true;
+        if (data.installations.length < 100) break;
+      }
+      return false;
+    } finally {
+      // The user token was only needed for this check: revoke it (best effort).
+      const basic = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString('base64');
+      await doFetch(`${this.config.apiUrl ?? 'https://api.github.com'}/applications/${encodeURIComponent(this.config.clientId)}/token`, {
+        method: 'DELETE',
+        headers: { authorization: `Basic ${basic}`, accept: 'application/vnd.github+json', 'content-type': 'application/json' },
+        body: JSON.stringify({ access_token: token }),
+      }).catch(() => {});
     }
-    return false;
   }
 
   async listRepos(scope: string): Promise<SourceRepoInfo[]> {

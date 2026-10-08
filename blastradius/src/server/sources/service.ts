@@ -171,7 +171,7 @@ export class SourceService {
     for (const row of listSourceRepos(this.store, current.id)) {
       if (!seen.has(row.repoId)) markSourceRepoRemoved(this.store, row, actor);
     }
-    const queue = listSourceRepos(this.store, current.id).filter((r) => r.watching && r.status !== 'removed');
+    const queue = listSourceRepos(this.store, current.id).filter((r) => r.status !== 'removed');
     const worker = async (): Promise<void> => {
       for (let r = queue.shift(); r; r = queue.shift()) await this.inspect(r.id, actor);
     };
@@ -185,7 +185,7 @@ export class SourceService {
   async inspect(repoRowId: string, actor: string, reason = 'discovery'): Promise<void> {
     const repo = getSourceRepoById(this.store, repoRowId);
     const source = repo ? getSourceById(this.store, repo.sourceId) : null;
-    if (!repo || !source || !this.github || !source.installationId || source.status !== 'connected' || !repo.watching) return;
+    if (!repo || !source || !this.github || !source.installationId || source.status !== 'connected' || repo.status === 'removed') return;
     let listing;
     let branch = repo.defaultBranch;
     try {
@@ -198,6 +198,11 @@ export class SourceService {
     const lockfiles = listing.files.filter((f) => f.kind === 'lockfile' || f.kind === 'unsupported_lockfile').map((f) => f.path);
     const filesRead = listing.files.filter((f) => f.kind !== 'unsupported_lockfile').map((f) => f.path);
     const base = { lockfiles, filesRead, lastCommit: listing.commit, defaultBranch: branch };
+    if (!repo.watching) {
+      // Listed for the person choosing repos (screen 3); nothing is scanned until it is watched.
+      patchSourceRepo(this.store, repo.id, { ...base, status: 'not_watched' });
+      return;
+    }
     if (listing.truncated) {
       patchSourceRepo(this.store, repo.id, { ...base, status: 'unsupported', statusDetail: 'Repository tree is too large to list through the API' });
       return;
@@ -397,7 +402,7 @@ export class SourceService {
       if ((typeof r.id !== 'number' && typeof r.id !== 'string') || typeof r.full_name !== 'string') continue;
       const { repo } = upsertSourceRepo(this.store, fresh, { repoId: String(r.id), fullName: r.full_name, private: r.private !== false, htmlUrl: null }, GITHUB_ACTOR);
       added++;
-      if (repo.watching && fresh.status === 'connected') this.spawn(`inspect ${repo.id}`, () => this.inspect(repo.id, GITHUB_ACTOR, 'added to installation'));
+      if (fresh.status === 'connected') this.spawn(`inspect ${repo.id}`, () => this.inspect(repo.id, GITHUB_ACTOR, 'added to installation'));
     }
     for (const r of list('repositories_removed')) {
       const row = getSourceRepoByHostId(this.store, source.id, String(r.id ?? ''));

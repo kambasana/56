@@ -90,8 +90,8 @@ function pushPayload(repo: string, paths: string[], extra: Record<string, unknow
 }
 
 /** Start an install as `who` and come back through the callback; returns the callback redirect. */
-async function install(who: string, installationId: number, codeFor: number[] | null): Promise<{ location: string; start: StartSourceInstallResponse }> {
-  const res = await call('POST', '/api/sources', { as: who, body: { host: 'github' } });
+async function install(who: string, installationId: number, codeFor: number[] | null, autoWatch?: boolean): Promise<{ location: string; start: StartSourceInstallResponse }> {
+  const res = await call('POST', '/api/sources', { as: who, body: { host: 'github', ...(autoWatch !== undefined ? { autoWatch } : {}) } });
   expect(res.status).toBe(201);
   const start = (await res.json()) as StartSourceInstallResponse;
   const state = new URL(start.installUrl).searchParams.get('state')!;
@@ -162,6 +162,9 @@ describe('install', () => {
     const forged = await install('admin', 88, [77]);
     expect(forged.location).toMatch(/install=failed/);
     expect(reason(forged.location)).toMatch(/did not confirm/);
+    // Repo selection changed later on GitHub: nothing to claim, the webhook carries the change.
+    const update = await srv.app.request('/api/sources/github/callback?installation_id=77&setup_action=update');
+    expect(update.headers.get('location')).toBe('/sources?install=updated');
   });
 
   it('connects with a signed, single-use state and discovers the repos', async () => {
@@ -222,6 +225,23 @@ describe('install', () => {
     expect((await call('GET', `/api/sources/${sourceId}`, { as: 'boss' })).status).toBe(404);
     expect((await call('GET', `/api/sources/${sourceId}/repos`, { as: 'boss' })).status).toBe(404);
   });
+
+  it('without auto-watch lists repos and their lockfiles but scans nothing until a repo is watched', async () => {
+    const { location, start } = await install('boss', 88, [88], false);
+    expect(location).toMatch(/install=connected/);
+    await settle();
+    const res = await call('GET', `/api/sources/${start.source.id}/repos`, { as: 'boss' });
+    const [secret] = ((await res.json()) as ListSourceReposResponse).items;
+    expect(secret).toMatchObject({ fullName: 'other/secret', watching: false, status: 'not_watched', lockfiles: ['package-lock.json'], projectId: null, lastScanId: null });
+    const on = await call('PATCH', `/api/sources/${start.source.id}/repos/${secret!.id}`, { as: 'boss', body: { watching: true } });
+    expect(on.status).toBe(200);
+    await settle();
+    const after = ((await (await call('GET', `/api/sources/${start.source.id}/repos`, { as: 'boss' })).json()) as ListSourceReposResponse).items[0]!;
+    expect(after).toMatchObject({ watching: true, status: 'watching' });
+    expect(after.projectId).toMatch(/^prj_/);
+    const scan = (await (await call('GET', `/api/scans/${after.lastScanId}`, { as: 'boss' })).json()) as Scan;
+    expect(scan.status).toBe('succeeded');
+  });
 });
 
 describe('webhooks', () => {
@@ -278,7 +298,7 @@ describe('webhooks', () => {
   });
 
   it('ignores deliveries for installations nobody connected', async () => {
-    const res = await hook('push', { ...pushPayload('other/secret', ['package-lock.json']), installation: { id: 88 } });
+    const res = await hook('push', { ...pushPayload('other/secret', ['package-lock.json']), installation: { id: 999 } });
     expect(await res.json()).toMatchObject({ outcome: 'unknown_installation' });
   });
 });

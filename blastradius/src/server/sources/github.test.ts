@@ -217,5 +217,6 @@ describe('GitHubAdapter on a fake GitHub', () => {
     const code = gh.issueCode([11]);
     expect(await a.installerCanSee(code, '11')).toBe(true);
     expect(await a.installerCanSee(code, '11')).toBe(false); // codes are single-use
+    expect(gh.userTokensRevoked).toBe(3); // every user token obtained was revoked after the check
   });
 });
