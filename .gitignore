@@ -44,3 +44,7 @@ secrets/
 .env
 .env.*
 blastradius/test/replay/out/
+
+# Recorded test fixtures are gzipped on purpose (offline tests read them)
+!blastradius/test/fixtures/sources/*.json.gz
+!blastradius/test/github-sim/data/*.json.gz
