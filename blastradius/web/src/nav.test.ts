@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { activeNavId, buildNav, landingPath, projectIdFromPath } from './nav';
 import { meCan } from './auth';
-import { meFor } from './test/fixtures';
+import { meFor, reportsOnly } from './test/fixtures';
 
 const ids = (items: { id: string }[]) => items.map((i) => i.id);
 
@@ -23,14 +23,14 @@ describe('buildNav (filtered by can())', () => {
   });
 
   it('auditor sees reports only, and no project group', () => {
-    const nav = buildNav(meFor('auditor'), 'p1');
+    const nav = buildNav(reportsOnly(), 'p1');
     expect(ids(nav.org)).toEqual(['reports']);
     expect(nav.project).toEqual([]);
     expect(nav.knowledge).toEqual([]);
   });
 
   it('adds project-scope permissions only for that project', () => {
-    const me = meFor('auditor', { projectPermissions: { p2: ['findings', 'changes'] } });
+    const me = reportsOnly({ projectPermissions: { p2: ['findings', 'changes'] } });
     expect(ids(buildNav(me, 'p2').project)).toEqual(['changes', 'findings']);
     expect(buildNav(me, 'p1').project).toEqual([]);
     expect(meCan(me, 'findings')).toBe(false);
@@ -55,11 +55,11 @@ describe('buildNav (filtered by can())', () => {
 describe('routing helpers', () => {
   it('lands users on the first allowed page', () => {
     expect(landingPath(meFor('org_admin'), null)).toBe('/');
-    expect(landingPath(meFor('auditor'), null)).toBe('/reports');
+    expect(landingPath(reportsOnly(), null)).toBe('/reports');
     expect(landingPath(null, null)).toBe('/login');
-    const projOnly = meFor('auditor', { permissions: [], projectPermissions: { p9: ['findings'] } });
+    const projOnly = reportsOnly({ permissions: [], projectPermissions: { p9: ['findings'] } });
     expect(landingPath(projOnly, null)).toBe('/projects/p9/findings');
-    expect(landingPath(meFor('auditor', { permissions: [] }), null)).toBeNull();
+    expect(landingPath(reportsOnly({ permissions: [] }), null)).toBeNull();
   });
 
   it('finds the active item and project id', () => {

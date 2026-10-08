@@ -48,7 +48,7 @@ describe('<Nav>', () => {
   });
 
   it('shows only Reports for an Auditor', () => {
-    renderNav('auditor', '/reports');
+    renderNav('auditor', '/reports', { permissions: ['reports'] });
     expect(linkNames()).toEqual(['Reports']);
     expect(screen.queryByText(/Project ·/)).not.toBeInTheDocument();
     expect(screen.queryByText('Knowledge')).not.toBeInTheDocument();

@@ -16,12 +16,14 @@ import { ConcurrencyGate, RateLimiter } from './ratelimit.js';
 import { DEFAULT_WEB_DIR } from './static.js';
 import {
   closeStore,
+  createBinding,
   createProject,
   deleteExpiredSessions,
   deleteUserSessions,
   enqueueScan,
   failInterruptedScans,
   latestSucceededScan,
+  listBindingRecords,
   listDevUsers,
   listProjects,
   openStore,
@@ -152,6 +154,15 @@ export async function seedDevData(deps: Pick<ServerDeps, 'store' | 'jobs' | 'con
       { name: DEV_PROJECT_NAME, tier: 'Standard', target: E2E_REPO_DIR, owner: 'Payments · fixture repo' },
       admin.id,
     );
+  // The seeded Developer is also bound to this project, so they can triage its findings
+  // (Developer's project-scope grant, docs/UX.md §9).
+  const developer = seeded.users.find((u) => u.role === 'developer');
+  const bound = listBindingRecords(store, seeded.org.id, { projectId: project.id }).some(
+    (b) => b.roleId === 'developer' && b.scope.kind === 'project' && b.subject.kind === 'user' && b.subject.userId === developer?.id,
+  );
+  if (developer && !bound) {
+    createBinding(store, seeded.org.id, { roleId: 'developer', subject: { kind: 'user', userId: developer.id }, scope: { kind: 'project', projectId: project.id } }, admin.id);
+  }
   let scanId: string | null = null;
   if (!latestSucceededScan(store, project.id)) {
     const scan = enqueueScan(store, seeded.org.id, project.id, { requestedBy: admin.id, offline: true });

@@ -84,7 +84,7 @@ describe('rbac helpers', () => {
     d = toggle(d, 'auditor', 'reports', false);
     expect(changes(roles, d).map((c) => [c.id, c.permissions.includes('review'), c.permissions.length])).toEqual([
       ['developer', true, 10],
-      ['auditor', false, 0],
+      ['auditor', false, 8],
     ]);
     d = toggle(d, 'developer', 'review', false);
     expect(changes(roles, d).map((c) => c.id)).toEqual(['auditor']);

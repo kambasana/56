@@ -7,7 +7,7 @@ import { AuthProvider } from './auth';
 import { ProjectProvider } from './project';
 import { AppRoutes, PAGES, RouteErrorBoundary, isChunkLoadError } from './routes';
 import { safeNext } from './pages/Login';
-import { meFor } from './test/fixtures';
+import { meFor, reportsOnly } from './test/fixtures';
 import type { MeResponse } from '@server/api-types';
 
 function Where() {
@@ -42,7 +42,7 @@ describe('routes', () => {
   });
 
   it('lands an Auditor on /reports', async () => {
-    renderAt('/', meFor('auditor'));
+    renderAt('/', reportsOnly());
     expect(await screen.findByRole('heading', { name: 'Reports' })).toBeInTheDocument();
     expect(screen.getByTestId('where')).toHaveTextContent('/reports');
   });
@@ -50,12 +50,12 @@ describe('routes', () => {
   it('shows a 403 state for a page outside the role', async () => {
     renderAt('/settings', meFor('developer'));
     expect(await screen.findByText("You don't have access to this page")).toBeInTheDocument();
-    renderAt('/projects/p1/findings', meFor('auditor'));
+    renderAt('/projects/p1/findings', reportsOnly());
     expect(await screen.findAllByText("You don't have access to this page")).toHaveLength(2);
   });
 
   it('allows a project page through a project-scope binding', async () => {
-    renderAt('/projects/p1/findings', meFor('auditor', { projectPermissions: { p1: ['findings'] } }));
+    renderAt('/projects/p1/findings', reportsOnly({ projectPermissions: { p1: ['findings'] } }));
     expect(await screen.findByRole('heading', { name: 'Findings' })).toBeInTheDocument();
   });
 

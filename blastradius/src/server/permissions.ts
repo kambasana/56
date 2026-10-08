@@ -36,6 +36,7 @@ export const ACTION_PERMISSIONS = [
   'build_reports',
   'accept_risk',
   'review_entity_links',
+  'manage_alert_rules',
   'manage_projects',
   'manage_integrations',
   'manage_members',
@@ -63,6 +64,7 @@ export const PERMISSION_LABELS: Readonly<Record<Permission, string>> = {
   build_reports: 'Build and sign reports',
   accept_risk: 'Accept risk',
   review_entity_links: 'Review entity links',
+  manage_alert_rules: 'Manage alert rules',
   manage_projects: 'Manage projects, tiers and scans',
   manage_integrations: 'Manage integrations',
   manage_members: 'Manage members and roles',
@@ -103,10 +105,16 @@ export interface RoleTemplate {
 }
 
 const PAGES_EXCEPT_SETTINGS = PAGE_PERMISSIONS.filter((p) => p !== 'settings');
+/** Read-only pages for the Auditor: everything except Settings and Integrations (tokens, hosts). */
+const AUDIT_PAGES = PAGE_PERMISSIONS.filter((p) => p !== 'settings' && p !== 'integrations');
 
 /**
- * Default templates, exactly as PLAN §12. AppSec and Developer get every page except Settings
- * and no action permissions; customers add actions per role. Auditor gets Reports only.
+ * Default templates (docs/UX.md §9). Every role can act on what it sees:
+ *
+ * - AppSec: every page except Settings, plus triage (review), accept risk and alert rules.
+ * - Developer: every page except Settings; triage only in projects they are bound to
+ *   (see PROJECT_SCOPED_GRANTS).
+ * - Auditor: read-only on every page except Settings and Integrations, plus building reports.
  */
 export const ROLE_TEMPLATES: Readonly<Record<BuiltinRoleId, RoleTemplate>> = {
   org_admin: {
@@ -118,21 +126,30 @@ export const ROLE_TEMPLATES: Readonly<Record<BuiltinRoleId, RoleTemplate>> = {
   appsec: {
     id: 'appsec',
     name: 'AppSec',
-    description: 'Every page except Settings. Actions are set by the customer.',
-    permissions: PAGES_EXCEPT_SETTINGS,
+    description: 'Every page except Settings. Triages findings, accepts risk and manages alert rules.',
+    permissions: [...PAGES_EXCEPT_SETTINGS, 'review', 'accept_risk', 'manage_alert_rules'],
   },
   developer: {
     id: 'developer',
     name: 'Developer',
-    description: 'Every page except Settings. Actions are set by the customer.',
+    description: 'Every page except Settings. Triages findings in the projects they are bound to.',
     permissions: PAGES_EXCEPT_SETTINGS,
   },
   auditor: {
     id: 'auditor',
     name: 'Auditor',
-    description: 'Reports only.',
-    permissions: ['reports'],
+    description: 'Read-only on every page except Settings and Integrations. Builds reports.',
+    permissions: [...AUDIT_PAGES, 'build_reports'],
   },
+};
+
+/**
+ * Permissions a built-in role grants only through a project-scope binding, on top of its stored
+ * list. A Developer bound to project P can triage findings in P; a Developer bound at org scope
+ * cannot triage anywhere until an admin binds them to a project (or edits the role).
+ */
+export const PROJECT_SCOPED_GRANTS: Readonly<Partial<Record<BuiltinRoleId, readonly Permission[]>>> = {
+  developer: ['review'],
 };
 
 export function isBuiltinRoleId(id: unknown): id is BuiltinRoleId {
@@ -230,7 +247,8 @@ function subjectMatches(s: BindingSubject, who: Principal): boolean {
 /**
  * Roles that apply to `who`. With no `projectId`, only org-scope bindings count. With a
  * `projectId`, org-scope bindings plus that project's bindings count (union). Bindings whose
- * role id is unknown are ignored.
+ * role id is unknown are ignored. A built-in role bound at project scope also carries its
+ * PROJECT_SCOPED_GRANTS.
  */
 export function rolesInScope<R extends RoleLike>(
   bindings: readonly BindingLike[],
@@ -245,7 +263,14 @@ export function rolesInScope<R extends RoleLike>(
     const inScope = b.scope.kind === 'org' || (projectId !== undefined && b.scope.projectId === projectId);
     if (!inScope) continue;
     const role = byId.get(b.roleId);
-    if (role) out.set(role.id, role);
+    if (!role) continue;
+    const extra = b.scope.kind === 'project' && isBuiltinRoleId(role.id) ? PROJECT_SCOPED_GRANTS[role.id] : undefined;
+    if (extra && extra.some((p) => !role.permissions.includes(p))) {
+      // Same role, widened for this project only (the stored role is left untouched).
+      out.set(role.id, { ...role, permissions: ALL_PERMISSIONS.filter((p) => role.permissions.includes(p) || extra.includes(p)) });
+    } else if (!out.has(role.id)) {
+      out.set(role.id, role);
+    }
   }
   return [...out.values()];
 }
