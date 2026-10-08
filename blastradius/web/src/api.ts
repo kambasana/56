@@ -7,6 +7,14 @@
  * and the session cookie travels with `credentials: 'same-origin'`.
  */
 import type {
+  BulkUpdateFindingsRequest,
+  BulkUpdateFindingsResponse,
+  ListAssigneesResponse,
+  ListOrgFindingsQuery,
+  ListOrgFindingsResponse,
+  ListPackageFindingsResponse,
+  OverviewQuery,
+  OverviewResponse,
   ListAlertsResponse,
   SearchExposureResponse,
   ProjectHealthResponse,
@@ -186,6 +194,13 @@ export const api = {
   findings: (q: ListFindingsQuery, signal?: AbortSignal) => get<ListFindingsResponse>('/api/findings', q, signal),
   finding: (id: Id, signal?: AbortSignal) => get<GetFindingResponse>(`/api/findings/${enc(id)}`, undefined, signal),
   updateFindingStatus: (id: Id, body: UpdateFindingStatusRequest) => patch<UpdateFindingStatusResponse>(`/api/findings/${enc(id)}`, body),
+  /** Org-wide findings (GET /api/findings without a project). */
+  orgFindings: (q: ListOrgFindingsQuery, signal?: AbortSignal) => get<ListOrgFindingsResponse>('/api/findings', q, signal),
+  /** The same list, one row per package version. */
+  packageFindings: (q: ListOrgFindingsQuery, signal?: AbortSignal) => get<ListPackageFindingsResponse>('/api/findings/packages', q, signal),
+  bulkUpdateFindings: (body: BulkUpdateFindingsRequest) => post<BulkUpdateFindingsResponse>('/api/findings/bulk', body),
+  assignees: (signal?: AbortSignal) => get<ListAssigneesResponse>('/api/assignees', undefined, signal),
+  overview: (q: OverviewQuery, signal?: AbortSignal) => get<OverviewResponse>('/api/overview', q, signal),
 
   exposure: (q: ExposureQuery, signal?: AbortSignal) => get<ExposureMatrixResponse>('/api/exposure', q, signal),
   changes: (q: ChangesQuery, signal?: AbortSignal) => get<ChangesResponse>('/api/changes', q, signal),

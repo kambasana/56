@@ -9,7 +9,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { WEB_ROUTES, type PagePermission } from '@server/permissions';
 import { useAuth } from './auth';
 import { useProject } from './project';
-import { landingPath, projectLandingPath, projectPath } from './nav';
+import { landingPath, projectLandingPath } from './nav';
 import { AppShell } from './components/AppShell';
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from './components/EmptyState';
 import Login from './pages/Login';
@@ -29,25 +29,12 @@ export const PAGES: Record<string, Page> = {
   '/reports': lazy(() => import('./pages/Reports')),
   '/integrations': lazy(() => import('./pages/Integrations')),
   '/settings': lazy(() => import('./pages/Settings')),
-  '/findings': lazy(() => Promise.resolve({ default: FindingsHome })),
+  '/findings': lazy(() => import('./pages/Findings')),
   '/incidents': lazy(() => import('./pages/Incidents')),
   '/alerts': lazy(() => import('./pages/Alerts')),
   '/projects': lazy(() => import('./pages/Projects')),
   '/packages': lazy(() => import('./pages/Package')),
 };
-
-/**
- * /findings: the current project's findings until stage 2 builds the org-wide list. Keeps the
- * query string (scope and filters) on the way.
- */
-export function FindingsHome() {
-  const { projectId, loading } = useProject();
-  const { can } = useAuth();
-  const { search } = useLocation();
-  if (loading && !projectId) return <LoadingState />;
-  if (projectId && can('findings', projectId)) return <Navigate to={`${projectPath(projectId, 'findings')}${search}`} replace />;
-  return <EmptyState title="No project to show findings for" description="Findings belong to a project. Open Projects and add one, or ask an admin to give you access to one." />;
-}
 
 /** /projects/:id: the first project page the viewer may open. */
 export function ProjectHome() {

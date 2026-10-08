@@ -91,6 +91,8 @@ export interface ScopeBarProps {
   projects: readonly ProjectRef[];
   /** Hide the time control on pages where time does not apply. */
   showRange?: boolean;
+  /** Hide the projects control on pages already scoped to one project. */
+  showProjects?: boolean;
   className?: string;
 }
 
@@ -105,7 +107,7 @@ function Trigger({ label, name }: { label: string; name: string }) {
   );
 }
 
-export function ScopeBar({ projects, showRange = true, className }: ScopeBarProps) {
+export function ScopeBar({ projects, showRange = true, showProjects = true, className }: ScopeBarProps) {
   const [scope, setScope] = useScope();
   const toggleProject = (id: string, on: boolean) => {
     const next = on ? [...scope.projects, id] : scope.projects.filter((p) => p !== id);
@@ -113,6 +115,7 @@ export function ScopeBar({ projects, showRange = true, className }: ScopeBarProp
   };
   return (
     <div role="group" aria-label="Scope" data-slot="scope-bar" className={cn('flex flex-wrap items-center gap-1.5', className)}>
+      {showProjects && (
       <DropdownMenu>
         <Trigger name="Projects" label={projectsLabel(scope.projects, projects)} />
         <DropdownMenuContent align="start" className="max-h-80 min-w-56">
@@ -133,6 +136,7 @@ export function ScopeBar({ projects, showRange = true, className }: ScopeBarProp
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      )}
       <DropdownMenu>
         <Trigger name="Environment" label={ENV_LABEL[scope.env]} />
         <DropdownMenuContent align="start">
