@@ -1,0 +1,42 @@
+{
+ "schema_version": "1.7.3",
+ "id": "MAL-2025-6983",
+ "published": "2025-08-14T18:52:04Z",
+ "modified": "2025-08-14T18:52:04Z",
+ "summary": "Malicious code in 1337qq-js (npm)",
+ "details": "The package 1337qq-js was found to contain malicious code.",
+ "affected": [
+  {
+   "package": {
+    "name": "1337qq-js",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/1337qq-js"
+   },
+   "ranges": [
+    {
+     "type": "SEMVER",
+     "events": [
+      {
+       "introduced": "0"
+      }
+     ]
+    }
+   ],
+   "database_specific": {
+    "source": "https://github.com/ossf/malicious-packages/blob/main/osv/malicious/npm/1337qq-js/MAL-2025-6983.json"
+   }
+  }
+ ],
+ "database_specific": {
+  "malicious-packages-origins": null
+ },
+ "credits": [
+  {
+   "name": "Amazon Inspector",
+   "contact": [
+    "redacted@example.invalid"
+   ],
+   "type": "FINDER"
+  }
+ ]
+}
