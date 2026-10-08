@@ -2,7 +2,7 @@
 
 **Decision (2026-10-08).** Users connect a code host once, pick an org or group and its repos, and Blastradius watches them from then on. Today each project is a git URL or path typed by hand. Connecting replaces that and keeps it as a fallback. This is the established pattern used by Dependabot, Renovate, Snyk and Socket; we reuse it rather than invent one.
 
-Design: [Blastradius repo connectors](https://claude.ai/artifact/FovYACwCpEHLLv2y4EKkPV), 4 screens built with the Claude Design System (shadcn new-york-v4 at 28px density, the same base as the web app):
+Design: superseded by the full redesign in [UX.md](UX.md) (screens 6–8: Connect, Import, Sources). First draft, kept for history: [Blastradius repo connectors](https://claude.ai/artifact/FovYACwCpEHLLv2y4EKkPV), 4 screens built with the Claude Design System (shadcn new-york-v4 at 28px density, the same base as the web app):
 
 1. **Sources.** Connected hosts with their health, then a table of watched repos (lockfiles, last scan, status).
 2. **Connect GitLab.** Instance URL, OAuth or group token, and what is requested, read and never done.
