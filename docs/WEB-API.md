@@ -174,6 +174,23 @@ Answered from the stored inventory of each project's newest succeeded scan; noth
 |---|---|---|
 | `GET /api/search/exposure?q=name[@version]` | `exposure` (org or per project) | "Is X anywhere?": every visible project that contains the package, with production/dev and reach in words |
 | `GET /api/alerts?limit=` | `findings` or `exposure` | Alerts, newest first |
-| `POST /api/alerts/check` `{ advisories?: OSV[] }` | `manage_projects` | Match advisories (OSV records), or the knowledge pack (`BLASTRADIUS_PACK`) when none are given, against all projects. Each (project, component, advisory) becomes an alert once. Returns the new alerts and the time taken. |
+| `POST /api/alerts/check` `{ advisories?: OSV[] }` | `manage_projects` or `manage_alert_rules` | Match advisories (OSV records), or the knowledge pack (`BLASTRADIUS_PACK`) when none are given, against all projects. Each (project, component, advisory) becomes an alert once. Returns the new alerts and the time taken. |
 
 **Automatic alerts.** With `BLASTRADIUS_PACK` set, the server re-checks every org's latest inventories against the pack on start and every `BLASTRADIUS_WATCH_MINUTES` (default 60). When the pack file changes on disk it is reloaded. Each finished scan is checked straight away. New alerts are posted once to `BLASTRADIUS_ALERT_WEBHOOK` as Slack-compatible JSON (`{ "text": … }`). The URL must be https, or http to localhost; credentials in the URL are refused. `BLASTRADIUS_PUBLIC_URL`, if set, adds an "Open Blastradius" link. A failed post is logged, and the alert stays in `GET /api/alerts`.
+
+**Incidents, package reach and alert rules** (types in `src/server/api-types-incidents.ts`). An incident is one advisory with at least one alert; its id is the advisory id. An advisory's own rating (`database_specific.severity`), summary and first fixed version are kept on each alert; knowledge-pack entries are Critical.
+
+| Route | Permission | What |
+|---|---|---|
+| `GET /api/incidents` | `findings` or `exposure` | Incidents the caller can see: affected, production and fixed counts, status, open first |
+| `GET /api/incidents/:id` | `findings` or `exposure` | Where it is (production first, brought in by, owner, finding), the last org-wide check, a typed timeline (alert, check, status, notified) and which actions are available, with the reason when not |
+| `PATCH /api/incidents/:id` `{ status }` | `review` (org) | Investigating › Fixing › Monitoring › Closed; recorded on the timeline and in the audit log |
+| `POST /api/incidents/:id/notify` | `send_to_destinations` or `manage_alert_rules` | Posts the affected projects and their owners to the Slack webhook (400 when none is configured or no project has an owner) |
+| `GET /api/packages/reach?name=&version=` | `exposure` | Projects, Sankey flows (package → brought in by → project → environment) and dependency paths with edge scopes; lifecycle phases the stored data knows |
+| `GET /api/packages/behind?name=` | `exposure` | Documented links (maintainers, repo owner, orgs, funders) merged from the newest findings, with confidence, method, review state and sources |
+| `GET /api/alert-rules` | `findings` or `exposure` | Team rules with "would have sent N in the last 30 days", whether the default rule applies, and whether a webhook is configured |
+| `POST /api/alert-rules`, `PATCH`/`DELETE /api/alert-rules/:id` | `manage_alert_rules` | WHEN severity ≥ `minLevel` [and it reaches production] THEN post to the webhook naming `channel` |
+| `POST /api/alert-rules/preview` `{ minLevel, productionOnly? }` | `findings` or `exposure` | How many of the last 30 days' alerts a rule would have sent |
+| `POST /api/alert-rules/test` `{ channel }` | `manage_alert_rules` | One test message through the webhook (400 without one) |
+
+With no stored rule every new alert is posted (the default rule). Once rules exist, each enabled rule posts the alerts it matches, with `channel` in the payload; an alert whose severity is unknown matches every rule. Each accepted post is recorded on the incidents' timelines. Email to owners needs an email sender, which does not exist yet, so the option is shown but off.

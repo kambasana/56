@@ -823,6 +823,11 @@ export interface AlertItem {
   production: boolean;
   reachText: string;
   createdAt: string;
+  /** The advisory's rating, else the finding's level; null when neither is known. */
+  level?: RiskLevel | null;
+  summary?: string | null;
+  /** First fixed version the advisory names. */
+  fixedIn?: string | null;
 }
 /** GET /api/alerts */
 export interface ListAlertsResponse {
