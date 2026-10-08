@@ -17,6 +17,7 @@ import { ArrowRight, FileSearch, GitCompareArrows, Info, Network } from 'lucide-
 import { ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { projectCrumb } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { SidePanel } from '@/components/SidePanel';
 import { useApi } from '@/lib/useApi';
@@ -99,7 +100,7 @@ const COLUMNS: ColumnDef<ChangeRow, any>[] = [
     sortDescFirst: true,
   },
   { id: 'effect', header: 'Risk effect', accessorFn: effectRank, cell: (c) => <RiskEffect row={c.row.original} />, size: 190, sortDescFirst: true },
-  { id: 'purl', header: 'Purl', accessorFn: (r) => r.purl },
+  { id: 'purl', header: 'Package ID', accessorFn: (r) => r.purl },
 ];
 
 function ChangePanel({ row, projectId, onClose }: { row: ChangeRow; projectId: string; onClose: () => void }) {
@@ -154,7 +155,7 @@ function ChangePanel({ row, projectId, onClose }: { row: ChangeRow; projectId: s
             items={[
               ['Reach', `${fmtNum(row.reach.assets)} asset${row.reach.assets === 1 ? '' : 's'}, ${fmtNum(row.reach.prodAssets)} in production`],
               ['Package', <span className="break-all font-mono text-xs">{purlLabel(row.purl)}</span>],
-              ['Purl', <span className="break-all font-mono text-xs text-muted-foreground">{row.purl}</span>],
+              ['Package ID', <span className="break-all font-mono text-xs text-muted-foreground">{row.purl}</span>],
             ]}
           />
         </Section>
@@ -184,7 +185,7 @@ export default function Changes() {
       { replace: true },
     );
 
-  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: project?.name ?? 'Project' }, { label: 'Changes' }];
+  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, projectCrumb(project), { label: 'Changes' }];
   const meta = data?.toScan
     ? data.fromScan
       ? `${fmtTime(data.fromScan.finishedAt ?? data.fromScan.createdAt)} → ${fmtTime(data.toScan.finishedAt ?? data.toScan.createdAt)}`

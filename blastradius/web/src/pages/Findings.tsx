@@ -16,6 +16,7 @@ import { EmptyState, ErrorState } from '@/components/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileSearch, GitCompareArrows, TriangleAlert } from 'lucide-react';
+import { projectCrumb } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api } from '@/api';
@@ -39,10 +40,10 @@ const FINDING_COLUMNS: ColumnDef<FindingRow, any>[] = [
     enableHiding: false,
   },
   { id: 'score', header: 'Risk', accessorFn: (r) => r.score, cell: (c) => Math.round(c.getValue<number>()), meta: { align: 'right' }, size: 64, sortDescFirst: true },
-  { id: 'blast', header: 'Blast', accessorFn: (r) => r.blastScore, cell: (c) => fmtBlast(c.getValue<number>()), meta: { align: 'right' }, size: 72, sortDescFirst: true },
+  { id: 'blast', header: 'Spread', accessorFn: (r) => r.blastScore, cell: (c) => fmtBlast(c.getValue<number>()), meta: { align: 'right' }, size: 72, sortDescFirst: true },
   {
     id: 'component',
-    header: 'Component',
+    header: 'Package',
     accessorFn: (r) => r.name,
     cell: (c) => (
       <span className="flex min-w-0 flex-col">
@@ -112,7 +113,7 @@ const FINDING_COLUMNS: ColumnDef<FindingRow, any>[] = [
   { id: 'status', header: 'Status', accessorFn: (r) => STATUS_LABELS[r.status], cell: (c) => <StatusBadge status={c.row.original.status} />, size: 110 },
   { id: 'firstSeen', header: 'First seen', accessorFn: (r) => r.firstSeenAt, cell: (c) => <span className="font-mono text-xs">{fmtDate(c.getValue<string>())}</span>, size: 104 },
   // Hidden by default; kept so the text filter also matches the full purl.
-  { id: 'purl', header: 'Purl', accessorFn: (r) => r.purl, cell: (c) => <span className="font-mono text-xs">{c.getValue<string>()}</span> },
+  { id: 'purl', header: 'Package ID', accessorFn: (r) => r.purl, cell: (c) => <span className="font-mono text-xs">{c.getValue<string>()}</span> },
 ];
 
 /** Radix Select needs a non-empty value for "no filter". */
@@ -162,7 +163,7 @@ export default function Findings() {
 
   const onUpdated = useCallback((row: FindingRow) => setOverrides((o) => ({ ...o, [row.id]: row })), []);
 
-  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: project?.name ?? 'Project' }, { label: 'Findings' }];
+  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, projectCrumb(project), { label: 'Findings' }];
   const scanTime = data?.scan ? fmtTime(data.scan.finishedAt ?? data.scan.createdAt) : null;
   const meta = data ? `${fmtNum(data.total)} findings${scanTime ? ` · scan ${scanTime}` : ''}` : undefined;
 
@@ -175,9 +176,9 @@ export default function Findings() {
       getRowId={(r) => r.id}
       globalFilter={q}
       onGlobalFilterChange={(v) => update({ q: v })}
-      filterPlaceholder="Filter by name, purl or reason…"
+      filterPlaceholder="Filter by package or reason…"
       initialSorting={[{ id: 'score', desc: true }]}
-      initialColumnVisibility={{ purl: false }}
+      initialColumnVisibility={{ purl: false, blast: false }}
       selectedId={selected}
       onSelectedIdChange={(sel) => update({ f: sel })}
       total={all.length}
@@ -232,8 +233,8 @@ export default function Findings() {
       <div className="border-b px-4 pt-2">
         <TabsList>
           <TabsTrigger value="findings">Findings{data ? ` (${fmtNum(data.total)})` : ''}</TabsTrigger>
-          <TabsTrigger value="health" title="Upkeep signals only (no provenance, single maintainer, weak posture, unmaintained). Not counted as risk.">
-            Upkeep signals{health.data ? ` (${fmtNum(healthCount)})` : ''}
+          <TabsTrigger value="health" title="Maintenance signals only (no provenance, single maintainer, weak posture, unmaintained). Not counted as risk.">
+            Maintenance{health.data ? ` (${fmtNum(healthCount)})` : ''}
           </TabsTrigger>
         </TabsList>
       </div>

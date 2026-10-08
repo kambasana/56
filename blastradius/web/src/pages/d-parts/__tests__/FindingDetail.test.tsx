@@ -75,12 +75,16 @@ describe('<FindingDetail>', () => {
     await waitFor(() => expect(screen.getAllByText('Accepted risk').length).toBeGreaterThan(1));
   });
 
-  it('hides graph and status actions for a read-only user', async () => {
+  it('hides the graph link and shows the status control disabled, with why, for a read-only user', async () => {
     fakeApi([['GET', /^\/api\/findings\/f1$/, () => findingDetail(findingRow(1))]]);
     renderPage(<FindingDetail />, at(meFor('developer', { permissions: ['findings'] })));
     await screen.findByText('Flagged as malware by the registry');
     expect(screen.queryByRole('link', { name: 'Open in graph' })).toBeNull();
-    expect(screen.queryByRole('form', { name: 'Finding status' })).toBeNull();
+    const form = screen.getByRole('form', { name: 'Finding status' });
+    const status = within(form).getByRole('combobox', { name: 'Status' });
+    expect(status).toBeDisabled();
+    expect(status).toHaveAccessibleDescription('Needs the Triage permission: ask an admin.');
+    expect(within(form).queryByRole('button', { name: 'Save' })).toBeNull();
   });
 
   it('shows not found', async () => {

@@ -14,6 +14,7 @@ import { useAuth } from '@/auth';
 import { RiskBadge, levelLabel } from '@/components/Badge';
 import { ButtonLink } from '@/components/Button';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { projectCrumb } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -75,7 +76,7 @@ export default function Exposure() {
 
   const crumbs = [
     { label: me?.org?.name ?? 'Organization', to: '/' },
-    { label: project?.name ?? 'Project', to: projectId ? `/projects/${encodeURIComponent(projectId)}/findings` : undefined },
+    projectCrumb(project),
     { label: 'Exposure matrix' },
   ];
 
@@ -118,7 +119,7 @@ export default function Exposure() {
           value={sort}
           onValueChange={(v) => v && setSort(v as ExposureSort)}
         >
-          <ToggleGroupItem value="blast">Blast score</ToggleGroupItem>
+          <ToggleGroupItem value="blast">Spread</ToggleGroupItem>
           <ToggleGroupItem value="env">Environment</ToggleGroupItem>
           <ToggleGroupItem value="name">Name</ToggleGroupItem>
         </ToggleGroup>
@@ -363,7 +364,7 @@ export function Matrix({ data, order, canFindings, canInvestigate, loading }: {
                 </TableHead>
               ))}
               <TableHead scope="col" className="sticky top-0 z-20 h-auto min-w-[96px] border-b border-l bg-muted px-3 py-2 text-right align-bottom text-xs">
-                Blast score
+                Spread
               </TableHead>
             </TableRow>
           </TableHeader>

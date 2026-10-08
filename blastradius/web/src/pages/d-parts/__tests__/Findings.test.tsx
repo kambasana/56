@@ -133,7 +133,7 @@ describe('<Findings>', () => {
     expect(screen.queryByRole('complementary', { name: 'Finding details' })).toBeNull();
   });
 
-  it('hides graph link and status control without the permissions', async () => {
+  it('hides the graph link and disables the status control, with why, without the permissions', async () => {
     const user = userEvent.setup();
     serveFindings([findingRow(1)]);
     const me = meFor('developer', { permissions: ['findings'] });
@@ -142,7 +142,9 @@ describe('<Findings>', () => {
     const panel = await screen.findByRole('complementary', { name: 'Finding details' });
     await within(panel).findByText('Flagged as malware by the registry');
     expect(within(panel).queryByRole('link', { name: 'Open graph' })).toBeNull();
-    expect(within(panel).queryByRole('form', { name: 'Finding status' })).toBeNull();
+    const form = within(panel).getByRole('form', { name: 'Finding status' });
+    expect(within(form).getByRole('combobox', { name: 'Status' })).toBeDisabled();
+    expect(form).toHaveTextContent('Needs the Triage permission: ask an admin.');
   });
 
   it('changes status with PATCH and updates the row', async () => {

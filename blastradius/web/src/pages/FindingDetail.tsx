@@ -13,6 +13,7 @@ import { useProject } from '@/project';
 import { RiskBadge, levelLabel } from '@/components/Badge';
 import { ButtonLink } from '@/components/Button';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { projectCrumb } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,7 +46,7 @@ export default function FindingDetail() {
   const [tab, setTab] = useState('paths');
   const findingsPath = `/projects/${encodeURIComponent(id)}/findings`;
   const title = data ? `${data.name}@${data.version}` : 'Finding';
-  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: project?.name ?? 'Project' }, { label: 'Findings', to: findingsPath }, { label: title }];
+  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, projectCrumb(project), { label: 'Findings', to: findingsPath }, { label: title }];
 
   if (loading && !data) {
     return (
@@ -117,7 +118,7 @@ export default function FindingDetail() {
         </Card>
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <div className="flex min-w-0 flex-col gap-4">
-            <SectionCard id="why" title={`Why it scored ${Math.round(data.score)}`} description="Each factor's contribution, combined with noisy-OR">
+            <SectionCard id="why" title={`Why it scored ${Math.round(data.score)}`} description="Each reason and how much it adds to the score">
               <ReasonsList reasons={data.reasons} />
             </SectionCard>
             <SectionCard id="behind" title="Who's behind it" description="Each link shows its confidence. Unreviewed links below 0.80 are not scored.">

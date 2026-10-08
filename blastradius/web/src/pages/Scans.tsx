@@ -14,6 +14,7 @@ import { useProject } from '@/project';
 import { Button, ButtonAnchor, ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { ErrorState } from '@/components/EmptyState';
+import { projectCrumb } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { SidePanel } from '@/components/SidePanel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -230,7 +231,7 @@ export default function Scans() {
     }
   };
 
-  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: project?.name ?? 'Project' }, { label: 'Scans' }];
+  const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, projectCrumb(project), { label: 'Scans' }];
   const firstLoad = list.loading && list.items.length === 0;
   const failed = list.error && list.items.length === 0 && !list.loading;
   const meta = !firstLoad && !failed ? `${fmtNum(list.total)} scan${list.total === 1 ? '' : 's'}${active ? ' · 1 in progress' : ''}` : undefined;

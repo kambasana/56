@@ -87,7 +87,7 @@ describe('<Exposure>', () => {
     const grid = await screen.findByRole('grid', { name: 'Exposure matrix' });
     expect(calls[0]!.url.searchParams.get('project')).toBe('p1');
     expect(calls[0]!.url.searchParams.get('minLevel')).toBe('medium');
-    expect(within(grid).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Asset', 'comp-0Critical 95', 'comp-1Medium 40', 'comp-2Medium 40', 'Blast score']);
+    expect(within(grid).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Asset', 'comp-0Critical 95', 'comp-1Medium 40', 'comp-2Medium 40', 'Spread']);
     // Sorted by blast score: asset-1 first.
     expect(within(grid).getAllByRole('rowheader')[0]).toHaveTextContent('asset-1');
     // The strongest cell is preselected.
@@ -133,7 +133,7 @@ describe('<Exposure>', () => {
     renderPage(<Exposure />, { path, at, me: meFor('org_admin') });
     const grid = await screen.findByRole('grid');
     const sort = screen.getByRole('radiogroup', { name: 'Sort rows' });
-    expect(within(sort).getByRole('radio', { name: 'Blast score' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(sort).getByRole('radio', { name: 'Spread' })).toHaveAttribute('aria-checked', 'true');
     await userEvent.click(within(sort).getByRole('radio', { name: 'Name' }));
     expect(within(grid).getAllByRole('rowheader')[0]).toHaveTextContent('asset-0');
     // Header cells are sticky.
