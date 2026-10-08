@@ -3,6 +3,7 @@
  * listen with @hono/node-server. Default host is 127.0.0.1 (loopback only).
  */
 import { AlertWatcher, type AlertWatcherOptions } from './watch.js';
+import { PackPoller } from './pack-poll.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { serve as nodeServe } from '@hono/node-server';
@@ -234,11 +235,22 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
     deps.watcher.start(watchMinutes);
     log(`alerts: checking all projects against the knowledge pack every ${watchMinutes} min`);
   }
+  // Pack polling: fetch newer packs from a feeds listing.json, verify, swap; then re-check every org.
+  const listingUrl = process.env.BLASTRADIUS_PACK_LISTING_URL;
+  const packPath = opts.alerts?.packPath ?? process.env.BLASTRADIUS_PACK;
+  let poller: PackPoller | null = null;
+  if (listingUrl && packPath) {
+    poller = new PackPoller({ listingUrl, packPath, log, onSwap: () => deps.watcher.checkAll().catch((e) => log(`alerts: sweep failed: ${(e as Error).message}`)) });
+    const pollMinutes = Number(process.env.BLASTRADIUS_PACK_POLL_MINUTES ?? 30);
+    if (pollMinutes > 0) poller.start(pollMinutes);
+    log(`pack: polling ${new URL(listingUrl).host} every ${pollMinutes} min`);
+  }
   return {
     url,
     close: async () => {
       clearInterval(sessionSweep);
       deps.watcher.stop();
+      poller?.stop();
       jobs.stop();
       await jobs.drain();
       await new Promise<void>((resolve) => server.close(() => resolve()));

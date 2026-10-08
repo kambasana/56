@@ -53,7 +53,7 @@ export class AlertWatcher {
   private readonly publicUrl: string | undefined;
   private readonly fetchImpl: typeof fetch;
   private readonly log: (m: string) => void;
-  private pack: { mtimeMs: number; loaded: Promise<LoadedPack> } | null = null;
+  private pack: { key: string; loaded: Promise<LoadedPack> } | null = null;
   private timer: NodeJS.Timeout | null = null;
   private running: Promise<unknown> = Promise.resolve();
 
@@ -77,10 +77,12 @@ export class AlertWatcher {
   /** The pack, reloaded when its file changes. */
   async currentPack(): Promise<LoadedPack | null> {
     if (!this.packPath) return null;
-    const mtimeMs = (await stat(this.packPath)).mtimeMs;
-    if (!this.pack || this.pack.mtimeMs !== mtimeMs) {
+    // Inode too: an atomic swap (write + rename, see pack-poll.ts) is a new file even within the same ms.
+    const st = await stat(this.packPath);
+    const key = `${st.mtimeMs}:${st.ino}:${st.size}`;
+    if (!this.pack || this.pack.key !== key) {
       const loaded = loadPack(this.packPath);
-      this.pack = { mtimeMs, loaded };
+      this.pack = { key, loaded };
       loaded.catch(() => {
         if (this.pack?.loaded === loaded) this.pack = null;
       });
