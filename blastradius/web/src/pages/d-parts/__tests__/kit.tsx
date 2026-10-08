@@ -83,6 +83,8 @@ export function findingRow(i: number, over: Partial<FindingRow> = {}): FindingRo
     behind: null,
     status: 'new',
     firstSeenAt: T0,
+    owner: null,
+    riskExpiresAt: null,
     ...over,
   };
 }

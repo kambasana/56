@@ -50,7 +50,7 @@ Monitoring › Closed). A `current` outside the steps (`ACCEPTED_RISK`) shows as
 state. Read-only: the page's one primary action moves it.
 
 ### ScopeBar
-`<ScopeBar projects={projects} showRange? />` under the page title. `useScope()` returns
+`<ScopeBar projects={projects} showRange? showProjects? />` under the page title (`showProjects={false}` on a page already scoped to one project). `useScope()` returns
 `[scope, setScope]` with `scope = { projects: string[], env: 'all'|'prod'|'dev', range }`.
 `parseScope(sp)`, `scopeSearch(sp)`, `SCOPE_PARAMS`, `ENV_LABEL`, `RANGE_LABEL`.
 
@@ -103,7 +103,7 @@ For a disabled control, keep it visible and add `<NotAllowedHint id permission /
 
 ## Routes stage 2 builds on
 
-- `/` Overview · `/findings` → current project's findings (org-wide list is stage 2)
+- `/` Overview · `/findings` org-wide Findings (`group=project` for one row per finding; `/projects/:id/findings` is the same list for one project)
 - `/incidents` · `/alerts` · `/projects` (list) · `/projects/:id/*` (project pages)
 - `/packages?name=<name>&version=<version>` package / incident verdict page (`packagePath()` in `src/nav.ts`)
 - `/settings`, `/integrations` (Settings › Sources), `/reports`

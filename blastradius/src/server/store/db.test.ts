@@ -19,6 +19,20 @@ describe('migrations', () => {
     db.close();
   });
 
+  it('keeps review statuses when the finding_state table is rebuilt (v6), and allows the new ones', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, MIGRATIONS.filter((m) => m.version < 6));
+    db.exec(`INSERT INTO org (id, name, slug, created_at) VALUES ('o', 'O', 'o', 't');
+      INSERT INTO project (id, org_id, name, target, target_kind, tier, created_at, updated_at) VALUES ('p', 'o', 'p', '/x', 'local', 'Small', 't', 't');
+      INSERT INTO finding_state (project_id, purl, status, updated_at, updated_by) VALUES ('p', 'pkg:npm/a@1', 'reviewed', 't', 'u');`);
+    expect(migrate(db)).toEqual([6, ...MIGRATIONS.filter((m) => m.version > 6).map((m) => m.version)]);
+    expect(db.prepare('SELECT status, owner_id, risk_expires_at FROM finding_state').all()).toEqual([{ status: 'reviewed', owner_id: null, risk_expires_at: null }]);
+    db.exec(`UPDATE finding_state SET status = 'fixing'`);
+    expect(() => db.exec(`UPDATE finding_state SET status = 'bogus'`)).toThrow(/CHECK/);
+    db.close();
+  });
+
   it('is forward-only: applies only newer migrations', () => {
     const db = new DatabaseSync(':memory:');
     migrate(db);

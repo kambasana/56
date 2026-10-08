@@ -80,10 +80,10 @@ describe('routes', () => {
     }
   });
 
-  it('sends /findings to the current project, keeping the query', async () => {
+  it('opens the org-wide Findings at /findings, keeping scope and filters in the URL', async () => {
     renderAt('/findings?env=prod&severity=critical', meFor('developer'));
     expect(await screen.findByRole('heading', { name: 'Findings', level: 1 })).toBeInTheDocument();
-    expect(screen.getByTestId('where')).toHaveTextContent('/projects/p1/findings?env=prod&severity=critical');
+    expect(screen.getByTestId('where')).toHaveTextContent('/findings?env=prod&severity=critical');
   });
 
   it('opens a project on its first allowed page', async () => {

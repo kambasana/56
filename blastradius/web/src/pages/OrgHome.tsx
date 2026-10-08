@@ -1,312 +1,258 @@
 /**
- * Overview (org home; stage 2 redesigns it on the Overview template): totals, the projects table (size tier, last scan, counts by level, trend, to
- * review) and the risky components shared across projects (from the org-wide exposure matrix).
+ * Overview (Overview template, docs/UX.md §3): an incident banner when an alert is active, four
+ * clickable "Needs attention" tiles that open pre-filtered Findings, open findings by severity,
+ * and the packages found in the most projects. All numbers come from the latest scans
+ * (GET /api/overview); nothing here is estimated. The projects table lives on the Projects page.
  */
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
-import type { ExposureMatrixResponse, OrgHomeResponse, Permission, ProjectRow } from '@server/api-types';
-import { api } from '@/api';
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { FolderPlus } from 'lucide-react';
+import type { OverviewResponse } from '@server/api-types';
+import { api, isApiError } from '@/api';
 import { useAuth } from '@/auth';
 import { useProject } from '@/project';
-import { RiskBadge } from '@/components/Badge';
-import { Badge } from '@/components/ui/badge';
-import { FileText, FolderPlus } from 'lucide-react';
-import { Button, ButtonLink } from '@/components/Button';
-import { DataTable, type ColumnDef } from '@/components/DataTable';
-import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { projectPath } from '@/nav';
+import { Button } from '@/components/Button';
 import { PageHeader } from '@/components/PageHeader';
-import { StatTile } from '@/components/StatTile';
+import { RANGE_LABEL, ScopeBar, SEVERITY_GLYPH, SEVERITY_LABEL, StateBlock, useScope, type Severity } from '@/components/br';
 import { useApi } from '@/lib/useApi';
-import { fmtNum, fmtTime } from '@/lib/cn';
+import { fmtNum } from '@/lib/cn';
+import { cn } from '@/lib/utils';
 import { CreateProjectDialog } from './d-parts/CreateProjectDialog';
-import { emptyCounts, LEVELS } from './d-parts/format';
-import { LevelCounts, PageSkeleton, ScanStatusBadge, SectionCard } from './d-parts/ui';
-import { AlertsCard, ExposureSearch } from './d-parts/IncidentPanel';
+import { incidentPath, reachPath } from './a-parts/links';
+import { relTime } from './a-parts/triage';
 
-/** First project page the user may open, in nav order. */
-const PROJECT_PAGES: { perm: Permission; path: string }[] = [
-  { perm: 'findings', path: 'findings' },
-  { perm: 'changes', path: 'changes' },
-  { perm: 'exposure', path: 'exposure' },
-  { perm: 'investigate', path: 'investigate' },
-  { perm: 'scans', path: 'scans' },
-];
+export { homeFromProjects, PROJECT_COLUMNS } from './a-parts/projectsTable';
 
-export function projectLanding(can: (p: Permission, projectId?: string | null) => boolean, projectId: string): string | null {
-  const hit = PROJECT_PAGES.find((p) => can(p.perm, projectId));
-  return hit ? `/projects/${encodeURIComponent(projectId)}/${hit.path}` : null;
+const OPEN = 'new,reviewed,fixing';
+const INK: Record<Severity, string> = { critical: 'text-sev-critical', high: 'text-sev-high', medium: 'text-sev-medium', low: 'text-sev-low' };
+const BAR: Record<Severity, string> = { critical: 'bg-sev-critical', high: 'bg-sev-high', medium: 'bg-sev-medium', low: 'bg-sev-low' };
+
+/** /findings with the page's scope plus `filters` (comma lists, as the Findings page reads them). */
+export function findingsLink(sp: URLSearchParams, filters: Record<string, string>): string {
+  const q = new URLSearchParams();
+  for (const k of ['projects', 'env']) {
+    const v = sp.get(k);
+    if (v) q.set(k, v);
+  }
+  for (const [k, v] of Object.entries(filters)) q.set(k, v);
+  return `/findings?${q}`;
 }
 
-/** Critical + high per scan, oldest first. Plain inline SVG, labelled for screen readers. */
-function Trend({ points }: { points: number[] }) {
-  if (points.length < 2) return <span className="text-xs text-muted-foreground">—</span>;
-  const w = 72;
-  const h = 18;
-  const max = Math.max(1, ...points);
-  const step = w / (points.length - 1);
-  const d = points.map((v, i) => `${(i * step).toFixed(1)},${(h - 1 - (v / max) * (h - 2)).toFixed(1)}`).join(' ');
+function Tile({ to, label, value, sub }: { to: string; label: string; value: number; sub: string }) {
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Critical plus high over ${points.length} scans: ${points.join(', ')}`} className="text-muted-foreground">
-      <polyline points={d} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
+    <Link
+      to={to}
+      data-slot="attention-tile"
+      className="flex flex-col gap-1 rounded-xl border bg-card px-4 py-3.5 text-foreground no-underline outline-none hover:bg-accent hover:no-underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <span className="text-text-secondary">{label}</span>
+      <span className="text-[28px] leading-[34px] font-semibold tracking-tight">{fmtNum(value)}</span>
+      <span className="text-caption text-muted-foreground">{sub}</span>
+    </Link>
   );
 }
 
-/** Columns of the projects table (Overview and the Projects page). */
-export const PROJECT_COLUMNS: ColumnDef<ProjectRow, any>[] = [
-  {
-    id: 'name',
-    header: 'Project',
-    accessorFn: (r) => r.name,
-    cell: (c) => (
-      <span className="flex min-w-0 flex-col">
-        <span className="font-medium">{c.row.original.name}</span>
-        <span className="truncate font-mono text-xs text-muted-foreground" title={c.row.original.target}>
-          {c.row.original.target}
-        </span>
-      </span>
-    ),
-    meta: { className: 'max-w-[300px]' },
-    enableHiding: false,
-  },
-  { id: 'tier', header: 'Tier', accessorFn: (r) => r.tier, cell: (c) => <Badge variant="outline">{c.getValue<string>()}</Badge>, size: 100 },
-  { id: 'assets', header: 'Assets', accessorFn: (r) => r.assets, cell: (c) => fmtNum(c.getValue<number>()), meta: { align: 'right' }, size: 72, sortDescFirst: true },
-  { id: 'components', header: 'Components', accessorFn: (r) => r.components, cell: (c) => fmtNum(c.getValue<number>()), meta: { align: 'right' }, size: 100, sortDescFirst: true },
-  {
-    id: 'counts',
-    header: 'Crit · high · med · low',
-    meta: { label: 'Counts by level' },
-    accessorFn: (r) => r.counts.critical * 1e6 + r.counts.high * 1e3 + r.counts.medium,
-    cell: (c) => <LevelCounts counts={c.row.original.counts} />,
-    sortDescFirst: true,
-  },
-  { id: 'trend', header: 'Critical + high', accessorFn: (r) => r.trend.at(-1) ?? 0, cell: (c) => <Trend points={c.row.original.trend} />, enableSorting: false, size: 100 },
-  { id: 'toReview', header: 'To review', accessorFn: (r) => r.toReview, cell: (c) => fmtNum(c.getValue<number>()), meta: { align: 'right' }, size: 84, sortDescFirst: true },
-  {
-    id: 'lastScan',
-    header: 'Last scan',
-    accessorFn: (r) => r.lastScan?.createdAt ?? '',
-    cell: (c) => {
-      const s = c.row.original.lastScan;
-      if (!s) return <span className="text-muted-foreground">never</span>;
-      return (
-        <span className="flex flex-wrap items-center gap-1.5">
-          <ScanStatusBadge status={s.status} />
-          <span className="font-mono text-xs whitespace-nowrap text-muted-foreground">{fmtTime(s.finishedAt ?? s.createdAt)}</span>
-        </span>
-      );
-    },
-    size: 220,
-  },
-  { id: 'owner', header: 'Owner', accessorFn: (r) => r.owner ?? '', cell: (c) => c.getValue<string>() || <span className="text-muted-foreground">—</span> },
-];
-
-interface SharedComponent {
-  purl: string;
-  name: string;
-  version: string;
-  level: ExposureMatrixResponse['columns'][number]['level'];
-  score: number;
-  projects: string[];
-  findingId: string;
-  projectId: string;
-}
-
-/** Components from the org-wide exposure matrix, most widely shared first. */
-export function sharedComponents(m: ExposureMatrixResponse, limit = 10): SharedComponent[] {
-  const projectsByCol = new Map<number, string[]>();
-  for (const cell of m.cells) {
-    const row = m.rows[cell.row];
-    if (!row) continue;
-    const list = projectsByCol.get(cell.col) ?? [];
-    list.push(row.label);
-    projectsByCol.set(cell.col, list);
-  }
-  return m.columns
-    .map((c, i) => ({ purl: c.purl, name: c.name, version: c.version, level: c.level, score: c.score, projects: projectsByCol.get(i) ?? [], findingId: c.findingId, projectId: c.projectId }))
-    .sort((a, b) => b.projects.length - a.projects.length || b.score - a.score || a.purl.localeCompare(b.purl))
-    .slice(0, limit);
-}
-
-function SharedRisky() {
-  const { can } = useAuth();
-  const { data, error, loading, reload } = useApi((s) => api.exposure({ minLevel: 'high', limit: 100 }, s), []);
-  const items = useMemo(() => (data ? sharedComponents(data) : []), [data]);
+function IncidentBanner({ incident }: { incident: NonNullable<OverviewResponse['incident']> }) {
+  const pkg = incident.version ? `${incident.name}@${incident.version}` : incident.name;
   return (
-    <SectionCard id="shared" title="Shared risky components" description="Critical and high components, most widely shared across projects first" flush>
-      {loading && !data && <PageSkeleton label="Loading shared components…" rows={4} />}
-      {error && <ErrorState error={error} onRetry={reload} />}
-      {data && items.length === 0 && <EmptyState title="Nothing critical or high" description="No project's latest scan has a critical or high finding." />}
-      {items.length > 0 && (
-        <ul className="flex flex-col divide-y" aria-label="Shared risky components">
-          {items.map((c) => (
-            <li key={c.purl} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
-              <RiskBadge level={c.level} score={c.score} />
-              <span className="min-w-0 truncate font-mono font-medium">
-                {c.name}@{c.version}
-              </span>
-              <span className="grow" />
-              <Badge variant="secondary" title={c.projects.join(', ')}>
-                {c.projects.length} project{c.projects.length === 1 ? '' : 's'}
-              </Badge>
-              {can('investigate', c.projectId) ? (
-                <ButtonLink size="xs" variant="ghost" to={`/projects/${encodeURIComponent(c.projectId)}/investigate?node=${encodeURIComponent(c.purl)}`}>
-                  Investigate
-                </ButtonLink>
-              ) : can('findings', c.projectId) ? (
-                <ButtonLink size="xs" variant="ghost" to={`/projects/${encodeURIComponent(c.projectId)}/findings/${encodeURIComponent(c.findingId)}`}>
-                  Open
-                </ButtonLink>
-              ) : null}
+    <Link
+      to={incidentPath(incident.advisoryId)}
+      data-slot="incident-banner"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-destructive bg-destructive-soft px-4 py-3 text-foreground no-underline outline-none hover:no-underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <span className="text-[11px] leading-4 font-semibold tracking-[0.08em] text-destructive uppercase">Active incident</span>
+      <span className="font-semibold">
+        <span className="font-mono text-[12px]">{pkg}</span> is named in <span className="font-mono text-[12px]">{incident.advisoryId}</span>
+      </span>
+      <span className="text-text-secondary">
+        {incident.projects} {incident.projects === 1 ? 'project' : 'projects'} affected · {incident.production} in production · detected {relTime(incident.detectedAt)}
+      </span>
+      <span className="ml-auto font-semibold text-destructive">Open incident →</span>
+    </Link>
+  );
+}
+
+function BySeverity({ data, sp, exposureTo }: { data: OverviewResponse; sp: URLSearchParams; exposureTo: string | null }) {
+  const max = Math.max(1, ...data.bySeverity.map((b) => b.open));
+  const range = data.since ? RANGE_LABEL[(sp.get('range') as keyof typeof RANGE_LABEL) ?? '30d'] ?? 'Last 30 days' : null;
+  return (
+    <section aria-labelledby="ov-sev" className="flex flex-col gap-3 rounded-xl border p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="ov-sev" className="m-0 text-heading font-semibold">
+          Open findings by severity
+        </h2>
+        <span className="text-caption text-muted-foreground">{range ?? 'All time'}</span>
+      </div>
+      <table className="w-full border-collapse" aria-label="Open findings by severity">
+        <thead className="sr-only">
+          <tr>
+            <th scope="col">Severity</th>
+            <th scope="col">Share</th>
+            <th scope="col">Open</th>
+            <th scope="col">New in range</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.bySeverity.map((b) => (
+            <tr key={b.level}>
+              <th scope="row" className={cn('w-24 py-1.5 pr-3 text-left font-semibold whitespace-nowrap', INK[b.level])}>
+                <Link to={findingsLink(sp, { severity: b.level, status: OPEN })} className={cn('no-underline hover:underline', INK[b.level])}>
+                  <span aria-hidden="true">{SEVERITY_GLYPH[b.level]} </span>
+                  {SEVERITY_LABEL[b.level]}
+                </Link>
+              </th>
+              <td className="w-full py-1.5">
+                <span className="block h-2 overflow-hidden rounded bg-muted" title={`${b.open} open ${SEVERITY_LABEL[b.level].toLowerCase()}`}>
+                  <span className={cn('block h-full rounded', BAR[b.level])} style={{ width: `${b.open === 0 ? 0 : Math.max(2, (b.open / max) * 100)}%` }} />
+                </span>
+              </td>
+              <td className="py-1.5 pl-3 text-right font-mono text-[12px] tabular-nums">{fmtNum(b.open)}</td>
+              <td className="py-1.5 pl-3 text-right text-caption whitespace-nowrap text-text-secondary">{b.newInRange === null ? '' : `+${fmtNum(b.newInRange)} new`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="m-0 text-caption text-muted-foreground">
+        From the latest scan of {data.scannedProjects} of {data.projects} {data.projects === 1 ? 'project' : 'projects'}.{' '}
+        {data.since ? '"New" counts open findings first seen in this range. Earlier daily counts are not stored, so no trend line is drawn.' : 'Earlier daily counts are not stored, so no trend line is drawn.'}
+      </p>
+      <span className="mt-auto flex flex-wrap gap-4 text-label">
+        <Link to={findingsLink(sp, { status: OPEN })}>View all open findings</Link>
+        {exposureTo && <Link to={exposureTo}>See where they sit (exposure matrix)</Link>}
+      </span>
+    </section>
+  );
+}
+
+function TopPackages({ data }: { data: OverviewResponse }) {
+  return (
+    <section aria-labelledby="ov-top" className="flex flex-col overflow-hidden rounded-xl border">
+      <h2 id="ov-top" className="m-0 px-4 pt-4 pb-2 text-heading font-semibold">
+        Packages in the most projects
+      </h2>
+      {data.topPackages.length === 0 ? (
+        <StateBlock kind="all-clear" className="m-3" title="No open findings" description={`Checked the latest scan of ${data.scannedProjects} ${data.scannedProjects === 1 ? 'project' : 'projects'}.`} />
+      ) : (
+        <ul aria-label="Packages in the most projects" className="m-0 flex list-none flex-col p-0">
+          {data.topPackages.map((p) => (
+            <li key={p.purl} className="border-t">
+              <Link to={reachPath(p.name, p.version)} className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-2.5 px-4 py-2 text-foreground no-underline hover:bg-accent hover:no-underline">
+                <span className={cn('font-semibold', INK[p.level])} title={SEVERITY_LABEL[p.level]}>
+                  <span aria-hidden="true">{SEVERITY_GLYPH[p.level]}</span>
+                  <span className="sr-only">{SEVERITY_LABEL[p.level]}</span>
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate font-mono text-[12px]">
+                    {p.name}@{p.version}
+                  </span>
+                  {p.reason && <span className="truncate text-caption text-muted-foreground">{p.reason}</span>}
+                </span>
+                <span className="text-right whitespace-nowrap text-text-secondary">
+                  {p.projects} {p.projects === 1 ? 'project' : 'projects'} · {p.prodProjects > 0 ? `${p.prodProjects} prod` : 'dev only'}
+                </span>
+              </Link>
             </li>
           ))}
         </ul>
       )}
-      {data?.truncated && <p className="border-t px-4 py-2 text-xs text-muted-foreground">Limited to the top {data.columns.length} components.</p>}
-    </SectionCard>
+    </section>
   );
-}
-
-/** For a user with "projects" but not "home": build the same shape from GET /api/projects. */
-export async function homeFromProjects(signal: AbortSignal): Promise<OrgHomeResponse> {
-  const items: ProjectRow[] = [];
-  let cursor: string | undefined;
-  for (let i = 0; i < 40; i++) {
-    const page = await api.projects({ limit: 500, ...(cursor ? { cursor } : {}) }, signal);
-    items.push(...page.items);
-    if (!page.nextCursor) break;
-    cursor = page.nextCursor;
-  }
-  const counts = emptyCounts();
-  let assets = 0;
-  let components = 0;
-  let toReview = 0;
-  for (const p of items) {
-    for (const l of LEVELS) counts[l] += p.counts[l] ?? 0;
-    assets += p.assets;
-    components += p.components;
-    toReview += p.toReview;
-  }
-  const recentScans = items
-    .flatMap((p) => (p.lastScan ? [p.lastScan] : []))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return { org: { id: '', name: '', slug: '', createdAt: '' }, totals: { projects: items.length, assets, components, counts, toReview }, projects: items, recentScans };
 }
 
 export default function OrgHome() {
   const { me, can } = useAuth();
-  const { reload: reloadProjects } = useProject();
+  const { projects, projectId, reload: reloadProjects } = useProject();
   const navigate = useNavigate();
-  const canHome = can('home');
-  const { data, error, loading, reload } = useApi((s) => (canHome ? api.home(s) : homeFromProjects(s)), [canHome]);
+  const [sp] = useSearchParams();
+  const [scope] = useScope();
   const [creating, setCreating] = useState(false);
   const canCreate = can('manage_projects');
-  const names = useMemo(() => new Map((data?.projects ?? []).map((p) => [p.id, p.name])), [data]);
+  const q = { projects: scope.projects.join(',') || undefined, env: scope.env === 'all' ? undefined : scope.env, range: scope.range };
+  const { data, error, loading, reload } = useApi((s) => api.overview(q, s), [q.projects, q.env, q.range]);
 
   const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: 'Overview', to: '/' }];
-  const t = data?.totals;
-  const meta = t ? `${fmtNum(t.projects)} projects · ${fmtNum(t.assets)} assets · ${fmtNum(t.components)} components` : undefined;
-
-  const openCreate = () => setCreating(true);
+  const exposureTo = projectId && can('exposure', projectId) ? projectPath(projectId, 'exposure') : null;
 
   let body;
-  if (loading && !data) body = <PageSkeleton label="Loading organization…" tiles={5} rows={6} />;
-  else if (error && !data) body = <ErrorState error={error} onRetry={reload} />;
-  else if (data && t)
+  if (loading && !data) body = <StateBlock kind="loading" label="Loading overview" rows={4} columns={4} />;
+  else if (error && isApiError(error, 'forbidden'))
     body = (
-      <div className="flex flex-col gap-4 p-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-          <StatTile label="Projects" value={fmtNum(t.projects)} hint={`${fmtNum(t.assets)} assets`} />
-          <StatTile label="Critical" value={fmtNum(t.counts.critical)} tone={t.counts.critical ? 'critical' : 'muted'} hint="Latest scans" />
-          <StatTile label="High" value={fmtNum(t.counts.high)} tone={t.counts.high ? 'high' : 'muted'} hint="Latest scans" />
-          <StatTile label="Medium · low" value={`${fmtNum(t.counts.medium)} · ${fmtNum(t.counts.low)}`} tone="muted" hint="Latest scans" />
-          <StatTile label="To review" value={fmtNum(t.toReview)} hint="New findings in the latest scans" />
-        </div>
-        {(can('exposure') || can('findings')) && (
-          <div className="grid items-start gap-4 lg:grid-cols-2">
-            {can('exposure') && <ExposureSearch />}
-            <AlertsCard />
-          </div>
-        )}
-        <SectionCard
-          id="projects"
-          title="Projects"
-          description="Each project has its own targets, size tier and scans"
-          flush
-        >
-          {data.projects.length === 0 ? (
-            <EmptyState
-              icon={<FolderPlus />}
-              title="No projects yet"
-              description="Create a project and point it at a repository to run the first scan."
-              action={canCreate ? <Button onClick={openCreate}>New project</Button> : undefined}
-            />
-          ) : (
-            <DataTable<ProjectRow>
-              label="Projects"
-              data={data.projects}
-              columns={PROJECT_COLUMNS}
-              getRowId={(r) => r.id}
-              filterPlaceholder="Filter projects…"
-              initialSorting={[{ id: 'counts', desc: true }]}
-              onRowClick={(row) => {
-                const to = projectLanding(can, row.id);
-                if (to) navigate(to);
-              }}
-            />
-          )}
-        </SectionCard>
-        <div className="grid items-start gap-4 lg:grid-cols-2">
-          {can('exposure') && <SharedRisky />}
-          <SectionCard id="recent" title="Recent scans" description="Latest scan of each project" flush>
-            {data.recentScans.length === 0 ? (
-              <EmptyState title="No scans yet" />
-            ) : (
-              <ul className="flex flex-col divide-y" aria-label="Recent scans">
-                {data.recentScans.slice(0, 10).map((s) => (
-                  <li key={s.id} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
-                    <ScanStatusBadge status={s.status} />
-                    <span className="font-medium">{names.get(s.projectId) ?? s.projectId}</span>
-                    <span className="grow" />
-                    <span className="font-mono text-xs text-muted-foreground">{fmtTime(s.finishedAt ?? s.createdAt)}</span>
-                    {can('scans', s.projectId) && (
-                      <ButtonLink size="xs" variant="ghost" to={`/projects/${encodeURIComponent(s.projectId)}/scans`}>
-                        Scans
-                      </ButtonLink>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-        </div>
+      <div className="flex flex-col gap-3">
+        <StateBlock kind="not-allowed" title="Findings are not part of your roles" permission="findings" />
+        {can('projects') && <Link to="/projects">See all projects</Link>}
       </div>
     );
+  else if (error || !data) body = <StateBlock kind="error" title="Could not load the overview" cause={error?.message ?? 'No data'} onRetry={reload} />;
+  else if (data.projects === 0)
+    body = (
+      <StateBlock
+        kind="no-results"
+        title="No projects yet"
+        description="Add a project and point it at a repository to run the first scan."
+        actions={canCreate ? [{ label: 'New project', onClick: () => setCreating(true) }] : [{ label: 'See projects', to: '/projects' }]}
+      />
+    );
+  else {
+    const a = data.attention;
+    const oldest = a.highUnassignedOldest ? `Oldest first seen ${relTime(a.highUnassignedOldest)}` : 'None waiting';
+    const source = a.sourcesToCheck[0];
+    const sourceTo = a.sourcesToCheck.length === 1 && source && can('scans', source.projectId) ? projectPath(source.projectId, 'scans') : '/projects';
+    body = (
+      <div className="flex flex-col gap-5">
+        {data.incident && <IncidentBanner incident={data.incident} />}
+        <section aria-labelledby="ov-attn" className="flex flex-col gap-2.5">
+          <h2 id="ov-attn" className="m-0 text-heading font-semibold">
+            Needs attention
+          </h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Tile to={findingsLink(sp, { severity: 'critical', status: OPEN })} label="Critical open" value={a.criticalOpen} sub={`${fmtNum(a.criticalOpenProd)} in production`} />
+            <Tile to={findingsLink(sp, { severity: 'high', owner: 'none', status: OPEN })} label="High, nobody assigned" value={a.highUnassigned} sub={oldest} />
+            <Tile to={findingsLink(sp, { new: 'week', status: OPEN })} label="New this week" value={a.newThisWeek} sub={`In ${a.newThisWeekProjects} ${a.newThisWeekProjects === 1 ? 'project' : 'projects'}`} />
+            <Tile
+              to={sourceTo}
+              label="Sources to check"
+              value={a.sourcesToCheck.length}
+              sub={source ? `${source.projectName}: ${source.problem === 'failed' ? 'last scan failed' : 'never scanned'}` : 'Every project scanned'}
+            />
+          </div>
+        </section>
+        {data.scannedProjects === 0 ? (
+          <StateBlock kind="no-results" title="No completed scan yet" description="The numbers appear after a project's first successful scan." actions={[{ label: 'See projects', to: '/projects' }]} />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <BySeverity data={data} sp={sp} exposureTo={exposureTo} />
+            <TopPackages data={data} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <>
       <PageHeader
         crumbs={crumbs}
         title="Overview"
-        meta={meta}
         actions={
-          <>
-            {can('reports') && (
-              <ButtonLink to="/reports" variant="ghost">
-                <FileText aria-hidden="true" />
-                Reports
-              </ButtonLink>
-            )}
-            {canCreate && (
-              <Button onClick={openCreate}>
-                <FolderPlus aria-hidden="true" />
-                New project
-              </Button>
-            )}
-          </>
+          canCreate && (
+            <Button onClick={() => setCreating(true)}>
+              <FolderPlus aria-hidden="true" />
+              New project
+            </Button>
+          )
         }
-      />
-      {body}
+      >
+        {can('projects') && (
+          <Link to="/projects" className="text-label">
+            All projects ({fmtNum(projects.length)})
+          </Link>
+        )}
+      </PageHeader>
+      <div className="flex flex-col gap-4 p-4">
+        <ScopeBar projects={projects} />
+        {body}
+      </div>
       {canCreate && (
         <CreateProjectDialog
           open={creating}
@@ -315,7 +261,7 @@ export default function OrgHome() {
             setCreating(false);
             reloadProjects();
             reload();
-            if (can('scans', p.id)) navigate(`/projects/${encodeURIComponent(p.id)}/scans`);
+            if (can('scans', p.id)) navigate(projectPath(p.id, 'scans'));
           }}
         />
       )}
