@@ -56,7 +56,7 @@ describe('signatures', () => {
 
 describe('push parsing and path filtering', () => {
   const push = (commits: unknown[], extra: Record<string, unknown> = {}) =>
-    parseGitHubPush({ ref: 'refs/heads/main', after: 'a'.repeat(40), repository: { id: 7, full_name: 'acme/api' }, commits, ...extra });
+    parseGitHubPush({ ref: 'refs/heads/main', after: 'a'.repeat(40), repository: { id: 7, full_name: 'acme/api' }, commits, ...extra })!;
 
   it('collects added, modified and removed paths', () => {
     const p = push([{ added: ['a.js'], modified: ['package-lock.json'], removed: [] }, { added: [], modified: ['docs/x.md'], removed: ['old/package.json'] }]);
