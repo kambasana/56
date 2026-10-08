@@ -1,0 +1,17 @@
+{
+  "name": "laya-triage-experiment",
+  "private": true,
+  "type": "module",
+  "description": "Pre-registered experiment (blastradius/test/replay/account/LAYA-PREREGISTRATION.md). Not part of the product; nothing in blastradius/ imports it.",
+  "scripts": {
+    "states": "tsx build-states.ts",
+    "run-laya": "tsx run-laya.ts",
+    "evaluate": "tsx evaluate.ts"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6"
+  },
+  "dependencies": {
+    "@receptron/laya": "0.1.2"
+  }
+}
