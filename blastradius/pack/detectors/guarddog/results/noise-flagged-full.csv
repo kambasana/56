@@ -1,0 +1,125 @@
+package,guarddog_label,guarddog_score,guarddog_risk_rules,repos
+@azure/core-rest-pipeline@1.25.0,low,3.3,threat-runtime-system-info,microsoft/TypeScript
+@azure/identity@4.13.3,low,3.3,threat-runtime-environment-read,microsoft/TypeScript
+@azure/msal-browser@5.21.0,high_risk,8.2,threat-process-download-exec,microsoft/TypeScript
+@fortawesome/fontawesome-common-types@0.3.0,suspicious,5.5,threat-process-hooks,project-qwerty/project-qwerty
+@fortawesome/fontawesome-svg-core@1.3.0,suspicious,5.5,threat-process-hooks,project-qwerty/project-qwerty
+@fortawesome/free-solid-svg-icons@6.0.0,suspicious,5.5,threat-process-hooks,project-qwerty/project-qwerty
+@fortawesome/vue-fontawesome@2.0.6,low,3.3,threat-filesystem-read,project-qwerty/project-qwerty
+@hapi/address@2.1.4,low,4.5,threat-runtime-obfuscation,project-qwerty/project-qwerty
+@secretlint/secretlint-rule-preset-recommend@10.2.2,high_risk,8.2,threat-filesystem-read threat-runtime-obfuscation-log-suppress,microsoft/TypeScript
+@tybys/wasm-util@0.10.3,low,4.9,threat-filesystem-read,mochajs/mocha
+@typespec/ts-http-runtime@0.3.9,low,3.3,threat-runtime-system-info,microsoft/TypeScript
+@vscode/extension-telemetry@1.5.2,low,3.3,threat-runtime-system-info,microsoft/TypeScript
+@vscode/vsce-sign@2.1.0,suspicious,5.5,threat-process-hooks,microsoft/TypeScript
+@vscode/vsce@4.0.0,low,4.9,threat-filesystem-read,microsoft/TypeScript
+@vue/cli-service@4.5.15,low,4.3,threat-filesystem-read,project-qwerty/project-qwerty
+address@1.1.2,suspicious,6.3,threat-runtime-enumeration,project-qwerty/project-qwerty
+ajv@4.11.8,low,4.5,threat-runtime-obfuscation,Esger/Pentominos2
+ajv@5.5.2,low,4.5,threat-runtime-obfuscation,Esri/a11y-map davglass/registry-static
+body@5.1.0,low,4.9,threat-npm-http-dependency,Esri/a11y-map
+browser-sync-client@2.27.5,high_risk,8.8,threat-process-download-exec threat-runtime-obfuscation-dynamic-eval,Esger/Pentominos2
+browser-sync@2.27.5,low,3.3,threat-runtime-environment-read,Esger/Pentominos2
+buffer@4.9.2,low,4.9,threat-runtime-obfuscation-unicode,mochajs/mocha project-qwerty/project-qwerty
+chai@4.3.4,low,3.3,threat-runtime-environment-read,telefonicaid/logops
+coffeescript@2.7.0,low,3.3,threat-runtime-environment-read,mochajs/mocha
+console-browserify@1.1.0,low,4.9,threat-npm-http-dependency,Esri/a11y-map davglass/registry-static
+console-browserify@1.2.0,low,4.9,threat-npm-http-dependency,mochajs/mocha project-qwerty/project-qwerty
+continuable-cache@0.3.1,low,4.9,threat-npm-http-dependency,Esri/a11y-map
+core-js@2.6.12,suspicious,6.1,threat-process-hooks threat-runtime-obfuscation,Esger/Pentominos2 mochajs/mocha
+coveralls@3.1.1,low,3.3,threat-runtime-environment-read,telefonicaid/logops
+crypto-browserify@3.12.0,low,4.5,threat-runtime-obfuscation,mochajs/mocha project-qwerty/project-qwerty
+dashdash@1.14.1,low,4.9,threat-filesystem-read,Esri/a11y-map davglass/registry-static project-qwerty/project-qwerty telefonicaid/logops
+date-now@0.1.4,low,4.9,threat-npm-http-dependency,Esri/a11y-map davglass/registry-static
+doctrine@0.7.2,low,4.9,threat-npm-http-dependency,telefonicaid/logops
+doctrine@1.5.0,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+dotenv@8.6.0,low,4.9,threat-filesystem-read,project-qwerty/project-qwerty
+ejs@2.7.4,suspicious,5.5,threat-process-hooks,project-qwerty/project-qwerty
+enhanced-resolve@4.5.0,low,4.9,threat-npm-http-dependency,project-qwerty/project-qwerty
+error@7.0.2,low,4.9,threat-npm-http-dependency,Esri/a11y-map
+esbuild@0.25.9,suspicious,5.5,threat-process-hooks,FinnLeh/vs-code-obsidian
+esbuild@0.28.2,suspicious,5.5,threat-process-hooks,microsoft/TypeScript mochajs/mocha
+escope@3.6.0,high_risk,8.8,threat-runtime-obfuscation-hidden-code,Esger/Pentominos2
+eslint@9.35.0,low,4.3,threat-filesystem-read,FinnLeh/vs-code-obsidian
+esprima@4.0.1,low,4.5,threat-runtime-obfuscation,Esger/Pentominos2 Esri/a11y-map davglass/registry-static mochajs/mocha project-qwerty/project-qwerty telefonicaid/logops
+estraverse@1.9.3,low,4.9,threat-npm-http-dependency,davglass/registry-static
+esutils@1.1.6,low,4.9,threat-npm-http-dependency,telefonicaid/logops
+esutils@2.0.2,low,4.9,threat-npm-http-dependency,Esri/a11y-map davglass/registry-static
+eventsource@1.1.0,low,4.9,threat-npm-http-dependency,project-qwerty/project-qwerty
+eyes@0.1.8,low,4.9,threat-npm-http-dependency,Esri/a11y-map davglass/registry-static
+format@0.2.2,low,4.9,threat-npm-http-dependency,mochajs/mocha
+fsevents@1.2.13,suspicious,5.5,threat-process-hooks,Esger/Pentominos2 project-qwerty/project-qwerty
+global-dirs@0.1.1,low,4.9,threat-filesystem-read,telefonicaid/logops
+global-prefix@1.0.2,low,4.9,threat-filesystem-read,Esger/Pentominos2
+hawk@2.3.1,low,4.9,threat-npm-http-dependency,davglass/registry-static
+highlight.js@10.7.3,low,4.9,threat-runtime-obfuscation-unicode,project-qwerty/project-qwerty
+homedir-polyfill@1.0.3,low,4.9,threat-filesystem-read,Esger/Pentominos2
+jiti@2.7.0,suspicious,6.5,threat-filesystem-read threat-runtime-obfuscation,mochajs/mocha
+js-base64@2.4.9,high_risk,7.3,threat-runtime-obfuscation-base64exec,Esri/a11y-map
+jsesc@0.5.0,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+jshint@2.9.6,high_risk,7.2,threat-runtime-obfuscation-log-suppress,Esri/a11y-map davglass/registry-static
+json-schema@0.2.3,low,4.9,threat-npm-http-dependency,Esri/a11y-map davglass/registry-static
+json3@3.3.2,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+katex@0.16.45,high_risk,7.1,threat-npm-http-dependency threat-runtime-obfuscation,mochajs/mocha
+knip@6.35.0,low,4.9,threat-runtime-obfuscation-unicode,mochajs/mocha
+less@3.13.1,low,3.3,threat-runtime-environment-read,Esger/Pentominos2
+limiter@1.1.5,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+log4js@0.6.38,low,3.3,threat-runtime-environment-read,Esger/Pentominos2
+memorystream@0.3.1,low,4.9,threat-npm-http-dependency,Esri/a11y-map FinnLeh/vs-code-obsidian mochajs/mocha
+minimatch@0.3.0,low,4.9,threat-npm-http-dependency,davglass/registry-static
+mocha@11.7.2,low,4.5,threat-runtime-obfuscation,FinnLeh/vs-code-obsidian
+mocha@6.2.3,high_risk,8.2,threat-filesystem-autostart threat-runtime-obfuscation,telefonicaid/logops
+mockery@1.7.0,low,4.9,threat-npm-http-dependency,davglass/registry-static
+mute-stream@0.0.5,low,4.9,threat-runtime-obfuscation-unicode,Esger/Pentominos2
+node-forge@0.10.0,high_risk,7.2,threat-runtime-obfuscation-log-suppress,project-qwerty/project-qwerty
+node-uuid@1.4.8,low,4.9,threat-npm-http-dependency,davglass/registry-static
+npm@3.10.10,suspicious,5.9,threat-filesystem-autostart threat-filesystem-read threat-npm-http-dependency threat-runtime-environment-read threat-runtime-obfuscation threat-runtime-obfuscation-unicode,Esger/Pentominos2
+phantom@4.0.12,high_risk,8.8,threat-runtime-obfuscation-hidden-code,Esri/a11y-map davglass/registry-static
+phantomjs-prebuilt@2.1.16,suspicious,5.5,threat-process-hooks,Esri/a11y-map davglass/registry-static
+playwright-core@1.63.0,high_risk,7.3,threat-filesystem-read threat-process-download-exec threat-process-spawn-silent threat-runtime-enumeration threat-runtime-environment-read threat-runtime-obfuscation threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-steganography,mochajs/mocha
+playwright@1.63.0,suspicious,6.7,threat-process-memory threat-runtime-obfuscation threat-runtime-obfuscation-steganography,mochajs/mocha
+postcss-selector-parser@3.1.2,low,4.9,threat-npm-http-dependency,project-qwerty/project-qwerty
+postcss-selector-parser@6.0.9,low,4.9,threat-npm-http-dependency,project-qwerty/project-qwerty
+prettier@2.5.1,high_risk,7.3,threat-runtime-obfuscation threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-general,project-qwerty/project-qwerty
+prettier@3.9.5,low,4.5,threat-runtime-obfuscation,mochajs/mocha
+pretty-hrtime@1.0.3,low,4.9,threat-runtime-obfuscation-unicode,Esger/Pentominos2
+psl@1.1.29,suspicious,6.4,threat-network-outbound-shady-links,Esri/a11y-map davglass/registry-static
+psl@1.8.0,suspicious,6.4,threat-network-outbound-shady-links,project-qwerty/project-qwerty telefonicaid/logops
+punycode@1.3.2,low,4.9,threat-npm-http-dependency,mochajs/mocha project-qwerty/project-qwerty
+punycode@1.4.1,low,4.9,threat-npm-http-dependency,Esri/a11y-map davglass/registry-static project-qwerty/project-qwerty
+qs@2.3.3,low,4.9,threat-npm-http-dependency,davglass/registry-static
+qs@2.4.2,low,4.9,threat-npm-http-dependency,davglass/registry-static
+registry-auth-token@3.4.0,low,3.3,threat-filesystem-read,telefonicaid/logops
+replace-ext@0.0.1,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+requirejs@2.3.6,high_risk,7.2,threat-runtime-obfuscation threat-runtime-obfuscation-log-suppress,Esger/Pentominos2
+rollup-plugin-polyfill-node@0.13.0,suspicious,6.4,threat-network-outbound-shady-links,mochajs/mocha
+rx-lite@3.1.2,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+rxjs@5.5.12,high_risk,8.2,threat-process-download-exec,Esger/Pentominos2
+safe-json-parse@1.0.1,low,4.9,threat-npm-http-dependency,Esri/a11y-map
+selfsigned@1.10.14,low,4.9,threat-npm-http-dependency,project-qwerty/project-qwerty
+sntp@1.0.9,low,4.9,threat-npm-http-dependency,davglass/registry-static
+sockjs-client@1.6.0,low,4.5,threat-runtime-obfuscation,project-qwerty/project-qwerty
+source-map@0.2.0,low,4.9,threat-npm-http-dependency,davglass/registry-static
+stackframe@1.2.1,low,3.3,threat-runtime-environment-read,project-qwerty/project-qwerty
+string-template@0.2.1,low,4.9,threat-npm-http-dependency,Esri/a11y-map
+svgo@1.3.2,low,4.9,threat-npm-http-dependency,project-qwerty/project-qwerty
+terser@4.8.0,high_risk,7.3,threat-runtime-obfuscation threat-runtime-obfuscation-base64exec,project-qwerty/project-qwerty
+terser@5.51.2,high_risk,7.3,threat-runtime-obfuscation threat-runtime-obfuscation-base64exec,mochajs/mocha
+thread-loader@2.1.3,low,4.1,threat-process-spawn-silent,project-qwerty/project-qwerty
+to-array@0.1.4,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+typescript@2.9.2,suspicious,5.9,threat-runtime-obfuscation-base64exec threat-runtime-system-info,Esri/a11y-map
+typescript@4.5.4,high_risk,7.2,threat-runtime-obfuscation-log-suppress,telefonicaid/logops
+uglify-js@2.8.29,low,4.5,threat-runtime-obfuscation,Esger/Pentominos2
+uglify-js@3.4.10,low,4.5,threat-runtime-obfuscation,project-qwerty/project-qwerty
+uglify-js@3.4.9,low,4.5,threat-runtime-obfuscation,davglass/registry-static
+unexpected@13.2.1,high_risk,7.1,threat-npm-http-dependency threat-runtime-obfuscation,mochajs/mocha
+update-notifier@2.5.0,low,4.1,threat-process-spawn-silent,telefonicaid/logops
+url@0.11.0,low,3.3,threat-filesystem-read,mochajs/mocha project-qwerty/project-qwerty
+utils-merge@1.0.1,low,4.9,threat-npm-http-dependency,Esger/Pentominos2 davglass/registry-static project-qwerty/project-qwerty
+vue-template-compiler@2.6.14,low,4.5,threat-runtime-obfuscation,project-qwerty/project-qwerty
+vue-template-es2015-compiler@1.9.1,low,4.5,threat-runtime-obfuscation,project-qwerty/project-qwerty
+webpack-dev-server@3.11.3,low,4.5,threat-runtime-obfuscation,project-qwerty/project-qwerty
+webpack@5.110.1,low,4.3,threat-filesystem-read,mochajs/mocha
+xmlhttprequest-ssl@1.6.3,low,4.9,threat-npm-http-dependency,Esger/Pentominos2
+yaml@2.9.0,low,3.3,threat-runtime-environment-read,mochajs/mocha
+yargs@3.10.0,low,4.9,threat-npm-http-dependency,Esger/Pentominos2

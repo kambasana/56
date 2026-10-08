@@ -1,0 +1,1458 @@
+name,version,discovered,guarddog_label,guarddog_score,guarddog_risk_rules,scan_seconds
+@0xobelisk/sui-cli,0.5.38,2024-12-15,low,4.3,threat-filesystem-read threat-process-spawn-silent threat-runtime-environment-read,0.742
+@0xobelisk/sui-cli,1.0.1,2024-12-24,low,4.3,threat-filesystem-read threat-process-spawn-silent threat-runtime-environment-read,0.757
+@0xobelisk/sui-cli,1.2.0-pre.18,2025-05-17,low,4.3,threat-filesystem-read threat-process-spawn-silent threat-runtime-environment-read,0.666
+@0xobelisk/sui-cli,1.2.0-pre.24,2025-06-21,low,4.3,threat-filesystem-read threat-process-spawn-silent threat-runtime-environment-read,0.949
+@0xobelisk/sui-cli,1.2.0-pre.26,2025-06-22,low,4.3,threat-filesystem-read threat-process-spawn-silent threat-runtime-environment-read,0.635
+@0xobelisk/sui-cli,1.2.0-pre.59,2025-07-24,low,4.3,threat-filesystem-read threat-process-spawn-silent threat-runtime-environment-read,0.59
+@0xobelisk/sui-cli,1.2.0-pre.7,2025-05-04,low,4.3,threat-filesystem-read threat-runtime-environment-read,0.581
+@3stripes/core,999.0.3,2026-03-15,high_risk,8.6,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-process-sysinfo threat-runtime-enumeration,0.442
+@42ailab/42cc-win32-x64,0.3.16,2026-01-21,no_risks_detected,0.0,,1.38
+@42ailab/42cc-win32-x64,0.7.0,2026-02-23,no_risks_detected,0.0,,1.443
+@42ailab/42cc,0.5.0,2026-01-31,low,4.1,threat-process-spawn-silent,0.427
+@42ailab/42cc,0.5.1,2026-01-31,low,4.1,threat-process-spawn-silent,0.369
+@42ailab/42cc,0.5.2,2026-02-04,low,4.1,threat-process-spawn-silent,0.364
+@42ailab/42cc,0.7.5,2026-03-03,low,4.1,threat-process-spawn-silent,0.385
+@42ailab/42plugin-darwin-arm64,0.2.26,2026-01-24,no_risks_detected,0.0,,12.251
+@42ailab/42plugin-darwin-x64,0.2.36,2026-02-12,no_risks_detected,0.0,,14.052
+@42ailab/42plugin-darwin-x64,0.3.10,2026-03-12,no_risks_detected,0.0,,14.228
+@42ailab/42plugin-darwin-x64,0.3.7,2026-03-09,no_risks_detected,0.0,,14.446
+@42ailab/42plugin-darwin-x64,0.4.9,2026-03-31,no_risks_detected,0.0,,18.424
+@42ailab/42plugin-linux-arm64,0.2.27,2026-01-24,no_risks_detected,0.0,,22.972
+@42ailab/42plugin-linux-x64,0.2.27,2026-01-24,no_risks_detected,0.0,,25.254
+@42ailab/42plugin-linux-x64,0.2.31,2026-01-26,no_risks_detected,0.0,,24.605
+@42ailab/42plugin-linux-x64,0.4.14,2026-04-27,no_risks_detected,0.0,,21.016
+@42ailab/42plugin-win32-x64,0.2.31,2026-01-26,no_risks_detected,0.0,,21.891
+@42ailab/42plugin-win32-x64,0.2.36,2026-02-12,no_risks_detected,0.0,,22.553
+@42ailab/42plugin-win32-x64,0.4.5,2026-03-20,no_risks_detected,0.0,,22.602
+@42ailab/42plugin,0.1.39,2025-12-31,low,4.3,threat-filesystem-read threat-runtime-environment-read,0.847
+@42ailab/42plugin,0.2.3,2026-01-09,low,4.3,threat-filesystem-read threat-runtime-environment-read,0.746
+@42ailab/42plugin,0.2.4,2026-01-10,low,4.3,threat-filesystem-read threat-runtime-environment-read,0.872
+@42ailab/42plugin,0.2.6,2026-01-11,low,4.3,threat-filesystem-read threat-runtime-environment-read,0.729
+@42ailab/42plugin,0.3.0,2026-02-22,suspicious,5.5,threat-process-hooks,0.384
+@activation_code/error,99.0.3,2026-04-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.392
+@alaska-its/design-tokens,1.0.1,2024-12-04,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.372
+@alexandrsarioglo/npm-ghost-htb,1.0.5,2025-10-29,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.394
+@angular_devkit/build-webpack,99.1.1,2025-08-14,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.397
+@angular_devkit/build_angular,99.1.1,2025-08-14,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.409
+@antoncallahan/aws-user-helper,2.13.0,2026-05-31,high_risk,8.8,threat-network-exfiltration threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.403
+@antoncallahan/aws-user-helper,6767.67.2,2026-05-31,high_risk,8.0,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.389
+@antoncallahan/aws-user-helper,6767.67.72,2026-05-31,high_risk,8.0,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.378
+@asarioglo/npm-ghost-htb,1.23.469,2025-10-29,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.38
+@athena-ui-components/user-activity,1.9.36,2026-04-15,high_risk,8.6,threat-network-dns-exfil threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-process-sysinfo threat-runtime-enumeration threat-runtime-system-info,0.377
+@avihay6992/pullproof,1.0.3,2026-01-01,no_risks_detected,0.0,,0.954
+@ba-ui-toolkit/ba-graphics,7.1.2,2024-11-22,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.382
+@bb-ui-utils/memoizer,9.7.9,2025-06-25,high_risk,7.6,threat-network-outbound-shady-links threat-process-hooks threat-runtime-obfuscation-js-mangling,0.378
+@bbkkfkk/pre,0.0.14,2025-11-03,high_risk,7.3,threat-runtime-obfuscation-base64exec,0.374
+@biovia/amd-loader,1.0.1,2024-12-13,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.367
+@birdmania1/namecheap-mcp,1.0.8,2026-03-14,low,4.9,threat-process-hooks threat-runtime-environment-read,0.365
+@brewnet/cli,0.0.11,2026-03-29,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent,1.036
+@bugdtest/test1,1.0.0,2025-12-13,no_risks_detected,0.0,,0.403
+@builderius/sense-ai,1.0.0,2026-02-23,suspicious,5.5,threat-process-hooks,0.484
+@builderius/sense-ai,1.0.18,2026-02-25,suspicious,5.5,threat-process-hooks,0.6
+@cbre-internal/mapping-component,99.9.0,2025-07-03,high_risk,8.0,threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.419
+@chatbot-builder/core,10.1.1,2025-05-31,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.496
+@cheqplease/structured-logger,2.2.7,2025-12-10,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.569
+@cheqplease/structured-logger,2.2.9,2025-12-10,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.556
+@cheqplease/structured-logger,9.1.15,2025-12-11,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.529
+@clearpool/table,9.9.9,2026-04-26,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.58
+@cloudplatform-single-spa/dataplatform-metastore,99.99.100,2026-05-28,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.505
+@cloudplatform-single-spa/iam,99.99.99,2026-05-27,suspicious,5.5,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.423
+@cnx-ui/cnx-ui-core,20.0.12,2025-09-14,high_risk,8.0,threat-filesystem-read threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.406
+@contraktor-tech/poc_confusion,99.9.9,2025-03-13,high_risk,7.4,threat-npm-preinstall-script,0.458
+@dailyapy-rn/rn-push-provisioning,5.81.0,2026-04-19,no_risks_detected,0.0,,0.558
+@depro-tech/cortana-md,1.0.19,2026-02-22,high_risk,7.6,threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-environment-read threat-runtime-obfuscation threat-runtime-obfuscation-js-mangling,1.008
+@depro-tech/cortana-md,1.0.41,2026-02-25,high_risk,7.6,threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-environment-read threat-runtime-obfuscation threat-runtime-obfuscation-js-mangling,0.964
+@douinfe/create-semi-d2c-plugin,9.3.5,2024-11-04,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.517
+@ejazullah/browser-mcp,0.0.62,2026-03-19,low,4.1,threat-process-spawn-silent threat-runtime-environment-read,0.67
+@energysolutions/mylib,999999999.999999.999999,2024-09-28,high_risk,7.0,threat-network-outbound-shady-links threat-process-hooks,0.432
+@eooce/sbx,2.0.8,2025-08-23,high_risk,9.4,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation-js-mangling,0.485
+@equis/core,99.99.101,2024-12-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.465
+@evg-ui/lib,99.9.0,2025-06-10,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.459
+@fastifyv4/fastifyv4,5.0.0,2025-09-02,no_risks_detected,0.0,,0.47
+@flipster/utils,89.0.0,2026-01-13,high_risk,8.8,threat-network-exfil-sysinfo threat-process-hooks threat-runtime-system-info,0.37
+@flutterfire/source-api-reference,1.0.0,2025-03-17,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.383
+@fnos/api-client,2.3.13,2026-04-16,high_risk,9.4,threat-network-exfil-sysinfo threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.42
+@fvla-framework/fvla,1.0.1,2026-02-25,no_risks_detected,0.0,,0.402
+@genoma-ui/components,99.99.1,2026-04-09,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.392
+@google-pay-trust/cancelled,99.0.2,2026-04-26,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.408
+@grafanacloud/test-utils,1.0.2,2025-07-26,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.409
+@hash-validator/v2,1.22.1,2025-09-18,no_risks_detected,0.0,,0.601
+@hex-validator/v2,1.0.21,2025-10-05,no_risks_detected,0.0,,0.583
+@hex-validator/v2,1.0.27,2025-10-05,low,3.3,threat-filesystem-read,0.573
+@hex-validator/v2,1.0.29,2025-10-05,no_risks_detected,0.0,,0.574
+@hopper-b2b/uber-iframe,231.0.0,2025-07-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.411
+@hpx-core-experiences/react-my-account-commons,11.0.2,2025-08-30,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.397
+@indigo-multi/fonts,4.0.1,2025-07-03,suspicious,6.1,threat-process-hooks threat-runtime-system-info,0.429
+@inscada/mcp-server,1.4.1,2026-03-04,suspicious,6.5,threat-network-exfiltration threat-runtime-environment-read threat-runtime-system-info,0.52
+@inscada/mcp-server,1.5.3,2026-04-04,suspicious,6.5,threat-network-exfiltration threat-runtime-environment-read threat-runtime-system-info,0.698
+@ivy-shared-components/iconslibrary,99.99.991,2025-07-14,no_risks_detected,0.0,,0.532
+@jameson777/mytest7,1.0.0,2025-10-16,high_risk,8.5,threat-network-exfiltration threat-process-hooks threat-runtime-obfuscation-base64exec,1.111
+@jdei/codmi-figma-test,0.0.5,2025-10-10,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.524
+@johndeere-tech/eslint-plugin-timbercloud-custom-rules,101.101.101,2025-03-27,high_risk,7.4,threat-npm-http-dependency threat-npm-preinstall-script threat-process-hooks,0.392
+@kiwiiw/ez-lib,1.0.0,2025-11-20,low,4.9,threat-process-hooks threat-runtime-system-info,0.797
+@lanyer640/mcp-runcommand-server,1.0.0,2025-09-06,no_risks_detected,0.0,,0.426
+@lanyer640/mcp-runcommand-server,1.0.5,2025-09-29,high_risk,7.4,threat-npm-preinstall-script,0.46
+@liquid-web/external-cards,1.2.9213,2025-08-27,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-sysinfo threat-runtime-enumeration,0.426
+@maps-bc/i18n,1.0.0,2024-11-06,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.417
+@matjp/dvi-decode,0.4.101,2026-05-09,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.392
+@mesh-atoms/typography,99999.0.0,2026-03-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.38
+@mgcrae/pino-pretty-logger,1.0.5,2026-03-01,low,3.3,threat-filesystem-read,0.423
+@mlspace/file-manager,99.99.99,2026-05-27,suspicious,5.5,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.419
+@mlspace/inference-build,99.99.99,2026-05-27,suspicious,5.5,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.419
+@mmm-otrade/transaction,18.2.1,2025-09-17,no_risks_detected,0.0,,0.386
+@modals/layout,99999.0.0,2026-03-21,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.389
+@modals/layout,99999.0.1,2026-03-21,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.401
+@mp-food/knapsack,1.0.0,2025-01-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-process-hooks,0.359
+@mpsemea/fspay-smartpay-logging-web-sdk,10.0.0,2025-05-30,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.36
+@navancorp/angular-web-components,1.0.8,2025-08-21,suspicious,5.5,threat-process-hooks,0.408
+@navancorp/fe-analytics,1.0.2,2025-08-21,suspicious,5.5,threat-process-hooks,0.405
+@navancorp/ta-fe-components,1.0.4,2025-08-21,suspicious,5.5,threat-process-hooks,0.407
+@nestor_hexom/garfield1,1.0.0,2025-12-15,no_risks_detected,0.0,,0.395
+@ng-cat/common,9.99.99,2024-10-21,high_risk,8.8,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks,0.384
+@nomicfoundations/hardhat-config,1.0.1,2025-07-12,no_risks_detected,0.0,,0.585
+@one-site/europcar,2.64.123456,2025-02-13,high_risk,7.9,threat-network-exfiltration threat-process-hooks,0.377
+@oneaudi/current-carline-service,3.8.5,2025-09-10,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.376
+@partner-tech/pax-illustrations,99.99.101,2025-03-11,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-runtime-enumeration,0.398
+@partner-tech/pax-illustrations,99.99.105,2025-03-11,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-runtime-enumeration,0.395
+@partnercenter-react/ui-webcore,162.0.0,2025-07-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.385
+@patternfly-v5/patternfly,1.0.5,2025-01-07,high_risk,9.4,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.405
+@pentestleg/core,10.1.2,2025-05-31,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.411
+@phoenix-common/angular-frontend-library,100.100.104,2025-04-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.458
+@phoenix-common/angular-frontend-library,100.100.112,2025-04-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.453
+@pmm-ux/asset-uploader,0.7.0,2025-07-03,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.518
+@pwnedshell/nn,1.0.4,2025-10-03,no_risks_detected,0.0,,0.519
+@rbacore/providers,2.2.2,2025-08-27,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.496
+@roku-web-ui/kitchensink-ui-base,99.9.7,2025-02-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.483
+@rrvis/vehicle,99.99.2,2024-12-20,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.452
+@s21games/game-engine,1.15.12,2025-09-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.429
+@s21games/game-engine,1.15.18,2025-09-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.434
+@s21games/game-engine,1.15.5,2025-09-12,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.421
+@saas2/utils,9.8.1,2025-06-18,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.429
+@safecorp/one-ui,7.2.2,2025-05-26,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.377
+@saferpay/logging,5.9.2,2024-12-17,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.375
+@sage-org/fabric-ui-root-config,99.9.1,2025-05-08,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.383
+@sber-business-id/srp-client,2.0.0,2025-08-11,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.413
+@sbt_gitverse/analytics-client,99.0.3,2026-04-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.387
+@sbt_gitverse/analytics-client,99.0.6,2026-04-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.433
+@sbxapps/sbx-operations-administration-fieldservicetools-ui,45.0.3,2026-04-01,suspicious,5.9,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read,0.433
+@sbxapps/sbx-operations-administration-fieldservicetools-ui,48.0.1,2026-04-07,high_risk,9.4,threat-filesystem-read threat-network-exfil-sysinfo threat-process-hooks threat-runtime-enumeration,0.496
+@sequoia-engineering/eureka-utilities,1.0.0,2025-07-03,no_risks_detected,0.0,,0.419
+@service-suppliers/fetch_suppliers_action_saga,9.9.10,2026-05-25,suspicious,6.5,threat-filesystem-read threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.403
+@service-suppliers/select-supplier-watcher-saga,11.11.11,2026-05-27,suspicious,5.5,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.386
+@service-suppliers/set_initial_loaded,11.11.11,2026-05-27,suspicious,5.5,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.398
+@sev-ui-verse/contact-models,339.52.1,2025-09-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.395
+@sev-ui-verse/feature-flag,339.52.1,2025-09-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.415
+@sev-ui-verse/react-query-client,339.52.1,2025-09-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.418
+@seznam-diskuze/embed,100.8.0,2025-08-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.509
+@shenira/libsignal-node,4.0.3,2026-01-28,no_risks_detected,0.0,,0.564
+@shop-cicd/webpack-package-artifact,13.0.0,2025-12-23,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.44
+@shr3k/tdspt-helper,3.2.3,2025-11-18,suspicious,5.5,threat-process-hooks,0.435
+@skyeng/libs,99.99.10,2026-01-30,no_risks_detected,0.0,,0.41
+@speedshop/sdk-api,21.5.1,2026-01-21,high_risk,8.8,threat-network-exfil-sysinfo threat-process-hooks threat-runtime-system-info,0.506
+@sporta-technology/d11-web-components.bit-theme-wrapper,0.0.9999,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.397
+@sporta-technology/d11-web-components.controller,0.0.9999,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.398
+@sporta-technology/d11-web-components.date-picker.time-picker,0.0.9999,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.47
+@sporta-technology/d11-web-components.list-item.list-item-dropdown,0.0.94,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.482
+@sporta-technology/d11-web-components.pagination,0.0.9999,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.468
+@sporta-technology/d11-web-components.table-cells.tc-icon-list,0.0.76,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.399
+@sporta-technology/d11-web-components.tags.tags-status,0.0.9999,2025-03-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.403
+@swiggy-private/aatm-nirbhar-bharat-ui,8999999999999999.99999999.99999999999,2024-12-16,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.396
+@swiggy-private/aatm-nirbhar-ui,8999999999999999.99999999.99999999999,2024-12-16,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.398
+@swiggy-private/analytics,8999999999999999.99999999.99999999999,2024-12-16,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.394
+@swiggy-private/js-utils,99999999.10012.9999,2024-12-14,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.415
+@telepo/web-attendant,4.5.5,2025-02-08,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.404
+@tochka-ui/foundation,99.0.5,2026-04-26,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.522
+@toloka-tb/core,2.5.1,2024-11-03,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.437
+@toptal/davinci-graphql-codegen-extensions,2.0.0,2026-04-07,no_risks_detected,0.0,,0.656
+@toptal/picasso-accordion,3.0.31,2026-03-06,no_risks_detected,0.0,,0.6
+@toptal/picasso-accordion,4.0.0,2026-05-14,no_risks_detected,0.0,,0.626
+@toptal/picasso-icons,1.13.0,2025-09-18,no_risks_detected,0.0,,6.588
+@toptal/picasso-popper,2.0.1,2025-12-03,no_risks_detected,0.0,,0.451
+@toptal/picasso-popper,2.0.2,2026-05-14,no_risks_detected,0.0,,0.438
+@toptal/picasso-rich-text-editor,17.2.11,2025-12-18,no_risks_detected,0.0,,1.55
+@toptal/picasso-rich-text-editor,19.0.0,2026-05-28,no_risks_detected,0.0,,1.8
+@toptal/picasso,54.0.4,2025-09-18,no_risks_detected,0.0,,1.157
+@tradair-repo/sources-react,1.0.0-alpha.14,2025-08-11,no_risks_detected,0.0,,0.37
+@tradair-repo/sources-react,1.0.3,2025-08-12,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.354
+@tushar-br/desktop,1.0.206,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.396
+@tushar-br/desktop,1.0.270,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.4
+@tushar-br/desktop,1.0.301,2026-03-25,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.407
+@tushar-br/desktop,1.0.321,2026-03-25,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.387
+@tushar-br/editing-pack,1.0.145,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.382
+@tushar-br/editing-pack,1.0.153,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.384
+@tushar-br/editing-pack,1.0.166,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.382
+@tushar-br/editing-pack,1.0.183,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.398
+@tushar-br/editing-pack,1.0.217,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.407
+@tushar-br/editing-pack,1.0.248,2026-03-24,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-spawn-silent,0.393
+@tushar-br/file11,1.0.77,2026-03-06,high_risk,7.1,threat-filesystem-read threat-process-hooks,0.376
+@typescript_eslinter/eslint,1.0.0,2024-11-30,high_risk,8.5,threat-network-exfiltration threat-runtime-keylogging,0.386
+@typescript_eslinter/eslint,1.0.2,2024-11-30,high_risk,8.5,threat-network-exfiltration threat-runtime-keylogging,0.377
+@typescript_eslinter/eslint,2.1.0,2024-12-02,low,4.9,threat-runtime-keylogging threat-runtime-system-info,3.926
+@typescript_eslinter/eslint,2.1.2,2024-12-03,low,4.9,threat-runtime-keylogging threat-runtime-system-info,4.091
+@typescript_eslinter/eslint,2.1.5,2024-12-03,low,4.9,threat-runtime-keylogging threat-runtime-system-info,4.176
+@uallianceorg/config,1.0.4,2026-04-10,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.448
+@usaa-grp-ent-conv-platform/usaa,1.1.16,2025-02-16,high_risk,9.4,threat-network-dns-exfil threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.374
+@validate-pubkey/hex,1.0.1,2025-10-30,no_risks_detected,0.0,,0.409
+@vk-cloud-billing/common,0.17.6,2026-03-03,low,4.9,threat-process-hooks threat-runtime-system-info,0.375
+@vyzensockets/baileys,0.0.2,2026-01-02,high_risk,7.2,threat-runtime-obfuscation-js-mangling,4.239
+@vyzensockets/baileys,0.2.1,2026-01-18,high_risk,7.2,threat-runtime-obfuscation-js-mangling,4.155
+@vyzensockets/baileys,0.3.1,2026-02-15,high_risk,7.2,threat-runtime-obfuscation-js-mangling,4.264
+@walletwave/core,1.0.4,2025-11-10,suspicious,5.5,threat-process-hooks,0.379
+@walletwave/core,1.0.6,2025-11-10,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.389
+@walletwave/core,1.0.7,2025-11-10,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.389
+@wb-drive/icons,2.4.9,2025-12-02,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.373
+@zentrafinance/protocol-config,1.0.8,2026-05-17,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-process-hooks threat-runtime-system-info,0.396
+@zentrafinance/sdk,1.0.9,2026-05-17,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.426
+ac-async-helpers,1.0.0,2025-03-20,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.478
+ac-element-engagement,99.9.9,2026-02-04,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-runtime-system-info,0.696
+ac-sasskit-internal,100.0.10,2026-04-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.454
+ac-sasskit-internal,100.0.11,2026-04-18,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.389
+ac-sasskit-internal,1000.1.0,2026-04-18,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.402
+acces-react,99.3.5,2024-11-12,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.433
+acme-auth-utils-2,1.0.1,2025-09-21,suspicious,6.5,threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-keylogging threat-runtime-system-info,0.417
+action-mattermost-notify,1.0.0,2024-12-14,high_risk,7.4,threat-npm-preinstall-script,0.479
+active_dove_z3n,4.2.2,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.461
+activity-reader,0.0.1,2025-02-11,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.435
+addon-sdk,9.10.11,2025-01-24,no_risks_detected,0.0,,0.428
+adfg-project,1.0.1,2025-03-09,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.429
+adhxsc,1.0.1,2025-03-11,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.458
+admin0911,1.0.40,2026-04-06,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.453
+admin0911,1.0.85,2026-04-08,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.445
+admin10001,1.0.132,2026-01-17,high_risk,7.4,threat-npm-preinstall-script,0.435
+admin10001,1.0.135,2026-01-17,high_risk,7.4,threat-npm-preinstall-script,0.49
+admin10001,1.0.148,2026-01-17,high_risk,7.4,threat-npm-preinstall-script,0.434
+admin10001,1.0.160,2026-01-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.436
+admin10001,1.0.161,2026-01-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.443
+admin10001,1.0.173,2026-01-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.391
+admin10001,1.0.176,2026-01-17,high_risk,7.4,threat-npm-preinstall-script,0.413
+admin10001,1.0.247,2026-01-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.423
+admin10001,1.0.259,2026-01-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.433
+admin10001,1.0.292,2026-01-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.419
+admin10001,1.0.293,2026-01-18,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.41
+admin10001,1.0.327,2026-01-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.41
+admin10001,1.0.344,2026-01-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.462
+admin10001,1.0.35,2026-01-16,high_risk,7.4,threat-npm-preinstall-script,0.38
+admin10001,1.0.366,2026-01-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.443
+admin10001,1.0.38,2026-01-16,high_risk,7.4,threat-npm-preinstall-script,0.38
+admin10001,1.0.4,2026-01-16,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.4
+admin10001,1.0.71,2026-01-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.39
+admin1001,3.0.3,2026-01-13,high_risk,7.4,threat-npm-preinstall-script,0.372
+admin1001,4.0.5,2026-01-13,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.367
+admin1001,4.3.102,2026-01-14,high_risk,7.4,threat-npm-preinstall-script,0.486
+admin1001,4.3.105,2026-01-15,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.473
+admin1001,4.3.82,2026-01-14,high_risk,7.4,threat-npm-preinstall-script,0.435
+admin1001,4.3.90,2026-01-14,high_risk,7.4,threat-npm-preinstall-script,0.451
+advanced-utils-demo-test1,1.0.0,2025-10-29,suspicious,5.5,threat-process-hooks,0.407
+aes-decode-runner-pro,1.0.10,2026-05-26,low,3.3,threat-runtime-environment-read,0.402
+agent-dispatcher,99.0.9,2025-08-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.372
+agent-patterns,1.1.1,2025-08-02,suspicious,5.5,threat-process-hooks,0.408
+agentgg,0.1.1,2026-05-19,high_risk,7.9,threat-filesystem-destruction threat-filesystem-read threat-process-download-exec threat-process-hooks threat-process-memory threat-process-spawn-silent threat-runtime-environment-read threat-runtime-obfuscation threat-runtime-obfuscation-base64exec,55.243
+agoda.cronos.activities.client-side,9.2.2,2025-07-09,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.442
+agoda.cronos.gql,1.0.3,2025-07-02,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-process-hooks,0.473
+agricultural_mammal_z3n,3.1.3,2024-07-11,high_risk,7.4,threat-runtime-self-propagation,0.638
+agus-telur54-miaww,4.1.3,2024-05-08,high_risk,7.4,threat-runtime-self-propagation,0.438
+ai-analyzer,1.0.10,2025-09-23,suspicious,6.5,threat-npm-preinstall-script threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.409
+ai-plugin-template,1.0.0,2025-01-14,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.407
+ai-protocol,0.0.1,2026-01-27,no_risks_detected,0.0,,0.398
+aicp-tracker,1.1.0,2026-05-06,high_risk,8.8,threat-filesystem-autostart threat-process-hooks threat-process-spawn-silent,0.43
+airbnb-base,1.0.4,2025-07-18,no_risks_detected,0.0,,0.371
+airbnb-embed-frame,10.9.0,2025-04-11,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.39
+airbnb-es5,1.0.1,2025-08-07,low,4.9,threat-npm-http-dependency,0.378
+airbnb-i18n,2.5.0,2025-03-17,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.404
+airbnb-location-suggester,3.6.0,2025-06-11,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.43
+airbnb-location-suggester,4.0.0,2025-06-11,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.468
+airbnb-private,10.0.1,2025-07-24,high_risk,8.6,threat-filesystem-read threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.573
+airbnb-prod,1.0.1,2025-07-24,high_risk,9.4,threat-network-reverse-shell threat-npm-preinstall-script threat-process-hooks threat-process-spawn-silent,0.56
+airbyte-webapp,8.6.13,2025-09-28,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.452
+aiven-docs,1.0.0,2025-02-26,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.465
+ak-mal-test-poc,1.0.3,2026-04-28,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.478
+alchmey-sdk,5.2.3,2025-08-16,suspicious,5.7,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read,0.79
+alef-frontend,7.7.7,2025-10-07,high_risk,7.4,threat-npm-preinstall-script,0.401
+all.en.js,1.0.18,2025-02-27,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.438
+all.en.js,1.5.0,2025-02-27,high_risk,7.4,threat-npm-preinstall-script,0.434
+alpha-replicator,1.4.7,2026-02-24,no_risks_detected,0.0,,0.392
+amazon-codewhisperer-jupyterlab-ext,1.0.11,2025-02-13,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.405
+amazon-q-developer-streaming-client,99.9.12,2026-04-23,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.397
+amdocs-auth-package,1.0.0,2025-08-02,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.404
+amdocs-auth-package,99.1.0,2026-01-01,high_risk,9.4,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.418
+an-video-viewability,99.99.1,2025-08-13,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.378
+analytics.js-integration-google-tag-manager,10.0.1,2025-01-19,no_risks_detected,0.0,,0.414
+andi-asinan96-breki,3.4.4,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.456
+andi-dradag79-sukiwir,3.3.2,2024-05-09,high_risk,7.4,threat-runtime-self-propagation,0.425
+andrii.bulat.ably,1.0.0,2025-07-18,suspicious,5.5,threat-process-hooks,0.413
+android-mobile-agent,99.0.9,2025-08-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.378
+angular-tealium,1.0.1,2025-05-20,high_risk,7.4,threat-npm-preinstall-script,0.37
+aog3,1.0.3,2025-12-26,high_risk,7.3,threat-runtime-obfuscation-base64exec,1.883
+apache-httpclient1,1.0.0,2025-07-23,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.386
+api-extractor-lib4-test,99.0.9,2025-08-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.379
+api-typings,100.3.0,2026-05-04,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.396
+apollo-ms,1.0.1,2025-08-10,high_risk,7.2,threat-runtime-obfuscation-js-mangling,12.56
+apollo-ms,1.0.7,2025-08-10,high_risk,8.8,threat-process-cryptomining threat-runtime-obfuscation-js-mangling,11.74
+apollo-vertex,1.0.0,2026-04-25,no_risks_detected,0.0,,0.482
+app-explorer,1.0.1,2025-03-19,no_risks_detected,0.0,,0.436
+appauthhelper-enduser,99.0.0,2026-05-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.387
+apple-app-store-server-library-poc,134.0.35,2026-04-28,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.38
+apple-app-store-server-library-poc,134.0.56,2026-04-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.372
+apple-app-store-server-library-poc,135.0.21,2026-04-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.471
+apple-internal-config,100.0.8,2026-04-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.456
+applicationooks21,1.4.4,2025-09-08,high_risk,7.3,threat-runtime-obfuscation-base64exec,0.454
+arbitrary_felidae-appteadev,2.2.4,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.518
+arc-offsec-header,1.0.3,2025-06-15,high_risk,7.2,threat-network-exfiltration threat-network-outbound-shady-links,0.409
+archgate-win32-x64,0.21.0,2026-03-23,no_risks_detected,0.0,,23.745
+archon4,1.1.0,2025-02-18,high_risk,8.0,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks,0.502
+arif-kue53-wekto,2.2.3,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.389
+arif-ronde60-riris,1.3.2,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.53
+ark-boostrap,1.0.0,2025-03-01,suspicious,5.5,threat-process-hooks,0.435
+asciidoctor.rb,99.99.1,2025-08-07,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.408
+asdasssd-hello-world,1.0.0,2024-11-18,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.374
+async-pipeline-builder,1.0.4,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.485
+atlas-user-monitor,11.5.6,2025-03-14,high_risk,8.8,threat-network-reverse-shell threat-process-hooks,0.374
+atlas-user-monitor,5.5.5,2025-03-10,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.452
+atlaskit-registry,1.2.0,2025-05-12,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.4
+atlaspack-transformer-string,1.1.0,2024-12-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.464
+atm-droid,1.0.9,2025-12-28,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.642
+auth-validator,1.0.1,2025-03-11,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.555
+auth0-mcp-server,1.0.2,2025-07-26,low,4.9,threat-npm-http-dependency,0.454
+auth0-styleguide-website,55.3.1,2025-07-05,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.665
+auto-claim-service,1.3.0,2024-12-27,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.568
+automated-native-creatives,2.0.0,2025-06-15,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.437
+autoshipment-public-front,99.99.0,2026-03-28,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.497
+average_locust_z3n,2.3.4,2024-07-12,high_risk,7.4,threat-runtime-self-propagation,0.387
+axios-fingerprint,1.0.6,2025-05-09,high_risk,8.6,threat-filesystem-destruction threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-cryptomining threat-runtime-environment-read threat-runtime-system-info,1.505
+axios-hehe,1.10.4,2025-06-22,suspicious,5.5,threat-process-hooks,1.071
+axis-ui-generator,1.0.0,2026-04-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.479
+b3dtiles-sample,1.0.0,2025-10-12,no_risks_detected,0.0,,0.438
+babel-plugin-error-context,9.2.9,2024-11-07,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-runtime-system-info,0.413
+baby-electrona,24.6.4,2024-12-28,high_risk,7.2,threat-network-exfiltration threat-network-outbound-shady-links,0.441
+baby-loris,1.0.3,2024-12-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.455
+backoffice-charges-module,2.999.0,2026-06-16,high_risk,8.8,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks,0.489
+backstage-plugin-glean,1.0.0,2025-12-27,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.451
+baileys-cleaner,1.8.0,2025-07-03,no_risks_detected,0.0,,0.408
+baileys-cleaner,1.9.5,2025-07-03,no_risks_detected,0.0,,0.391
+base_parts_ai,1.0.35,2026-03-25,high_risk,7.3,threat-network-exfiltration,0.39
+base_parts_ai,1.0.39,2026-03-25,high_risk,7.1,threat-network-exfiltration threat-npm-http-dependency threat-process-hooks,0.447
+baserow,0.0.0-dev-202603280649,2026-03-28,no_risks_detected,0.0,,0.433
+basic-pump-sdk,1.3.3,2025-09-04,no_risks_detected,0.0,,0.462
+basic-validator-pro,1.0.5,2025-09-04,no_risks_detected,0.0,,0.392
+bayu-tahutek59-breki,3.2.4,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.452
+bcryptkit,1.0.5,2025-11-14,suspicious,5.5,threat-process-hooks,0.432
+bcryptutils,1.0.6,2024-09-15,no_risks_detected,0.0,,0.39
+bcryptutils,1.1.11,2024-09-02,no_risks_detected,0.0,,0.423
+bcryptutils,1.1.13,2024-09-24,no_risks_detected,0.0,,0.397
+bcryptutils,1.1.4,2024-09-15,no_risks_detected,0.0,,0.437
+bigmathix,1.0.2,2026-01-08,no_risks_detected,0.0,,0.416
+bigmathix,1.0.8,2026-01-30,no_risks_detected,0.0,,0.431
+bingo-logger,7.12.3,2025-07-18,suspicious,6.7,threat-network-exfil-sysinfo threat-process-spawn-silent threat-runtime-system-info,0.812
+bip40,1.0.0,2025-11-25,high_risk,7.0,threat-filesystem-read threat-process-hooks threat-runtime-obfuscation-js-mangling,0.418
+bird-clean-sky-request,0.0.0,2025-09-29,no_risks_detected,0.0,,0.408
+bitcoin-main-lib,7.1.9,2025-11-26,suspicious,5.5,threat-process-hooks,0.692
+bizsignupnodeweb,99.10.9,2026-03-29,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.403
+blade_background,1.0.0,2025-06-25,no_risks_detected,0.0,,0.385
+blank-hacker,1337.0.0,2025-08-28,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.431
+blanl-pkg,16.0.0,2025-07-29,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.412
+blocks-nextjs,9999.9999.10015,2025-05-26,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.39
+blocks-nextjs,9999.9999.10069,2025-05-26,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-runtime-system-info,0.441
+blocks-nextjs,9999.9999.10102,2025-05-27,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-runtime-system-info,0.45
+blocks-nextjs,9999.9999.10140,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.71
+blocks-nextjs,9999.9999.10147,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.607
+blocks-nextjs,9999.9999.10150,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.627
+blocks-nextjs,9999.9999.10185,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.585
+blocks-nextjs,9999.9999.10189,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.641
+blocks-nextjs,9999.9999.10218,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.571
+blocks-nextjs,9999.9999.10231,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.473
+blocks-nextjs,9999.9999.10264,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.51
+blocks-nextjs,9999.9999.10282,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.436
+blocks-nextjs,9999.9999.10317,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.47
+blocks-nextjs,9999.9999.10320,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.399
+blocks-nextjs,9999.9999.10329,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.451
+blocks-nextjs,9999.9999.10341,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.409
+blocks-nextjs,9999.9999.10346,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.446
+blocks-nextjs,9999.9999.10362,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.422
+blocks-nextjs,9999.9999.10363,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.464
+blocks-nextjs,9999.9999.10364,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.552
+blocks-nextjs,9999.9999.10372,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.428
+blocks-nextjs,9999.9999.10383,2025-05-27,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.44
+blocks-nextjs,9999.9999.10387,2025-05-28,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.409
+blocks-nextjs,9999.9999.10433,2025-05-28,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.48
+bmath,1.0.3,2026-02-21,high_risk,8.8,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-spawn-silent,0.424
+botframework-webchat-react-valibot,9.9.9,2025-07-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,3.994
+brlc-monorepo,12.9.9,2026-05-06,suspicious,5.5,threat-process-hooks,0.372
+browser-nextjs,9.9.9,2025-01-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.437
+bsamba,33.12.12,2025-06-07,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.36
+bsee-shared-hmd,1.0.6,2025-03-12,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.394
+build-onchain-apps,1.0.0,2024-12-05,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.37
+build-tracker-n5p1,1.0.0,2026-06-15,high_risk,9.4,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-runtime-enumeration threat-runtime-environment-read threat-runtime-system-info,0.419
+built-with-workers,99.99.99,2025-01-23,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.363
+ca-ui-carbon-toolkit,99.99.2,2025-07-04,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.406
+calculator-40ed,5.0.0,2025-11-17,high_risk,8.6,threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read,0.359
+calypso-babel-config,1003.0.0,2025-01-18,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.41
+calypso-build,1003.0.0,2025-01-18,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.371
+calypso-build,1004.0.0,2025-01-19,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.372
+calypso-build,999.999.999,2025-01-15,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.418
+calypso-config,1003.0.0,2025-01-18,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.399
+camelize-http-headers,1.1.1,2025-09-02,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.401
+canvas-ios,9.1.1,2025-08-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.453
+car-configuration,15.11.6,2025-09-09,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.403
+carcandofilex,1.0.0,2025-04-21,high_risk,8.2,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.577
+careers-job-detail,7.1.9,2024-11-10,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.399
+cargo-hub-ui-api,123.0.1,2024-08-11,high_risk,8.6,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.445
+certain-common-library,99.99.4,2024-11-24,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.551
+certain-tomato-goose,0.9.4,2024-07-10,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.531
+certik-swc-registry,1.0.1,2025-03-06,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.5
+chai-as-approved,5.0.1,2026-01-28,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.557
+chai-as-consisted,2.2.9,2026-05-19,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.604
+chai-as-float,2.3.2,2026-04-18,low,4.1,threat-process-spawn-silent,0.675
+chai-as-launched,3.51.1,2026-06-01,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.541
+chai-as-listened,4.26.2,2026-05-27,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.641
+chai-as-proofed,5.0.5,2026-02-27,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.564
+chai-as-redeployed,3.5.8,2026-04-20,low,4.9,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read,0.537
+chai-await-test,2.3.2,2025-10-30,low,3.3,threat-runtime-environment-read,0.589
+chai-max,2.4.2,2025-12-10,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.536
+chai-promise-suite,2.2.6,2025-10-27,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.525
+chai-promised-chain,2.4.2,2025-11-26,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.571
+chai-promised-cli,3.3.5,2026-02-05,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.553
+chai-smart-assert,1.1.8,2026-06-06,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.513
+chai-tests-async,3.3.5,2025-12-24,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.617
+chalk-tempalte,1.0.17,2026-05-16,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.458
+check-deps-ver-consistency,99.11.18,2024-11-18,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.43
+checkout-app,1.5.2,2025-08-09,high_risk,8.2,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.494
+chia-dev-guides,1.1.2,2025-07-06,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.415
+chia.dock1,1.1.0,2025-09-26,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links,0.449
+chime-utils,1.0.6,2025-07-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.431
+chime-utils,1.0.9,2025-07-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.401
+chromecast-caf-receiver,1.0.0,2025-05-25,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.447
+cici-mangut6-sluey,2.2.3,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.414
+circuit-playground,999.55.17,2026-02-01,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.411
+circuit-runtime-ui,10.0.1,2025-09-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.438
+cko-ui-toolkit,99.99.9,2026-01-07,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.387
+cktool.internal,1000.0.1,2026-04-18,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.412
+claud-code,0.2.0,2026-02-14,no_risks_detected,0.0,,0.488
+claude-skills-library,2.0.10,2026-04-20,high_risk,9.4,threat-network-exfil-sysinfo threat-process-hooks threat-process-spawn-silent,0.577
+cld-ai-chatbot-web,3.1.4,2025-08-24,high_risk,7.4,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-runtime-system-info,0.398
+client-req-scopes,3.4.3,2024-10-30,no_risks_detected,0.0,,17.085
+closure-net,99.99.1,2026-01-12,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.437
+cloud-functions-schedule-instance,1.0.0,2024-11-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.435
+cmp-spid-login,1.0.4,2025-06-12,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.491
+cms-catalogue,99.0.0,2026-03-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.483
+coatue,0.0.0-dev-202603281859,2026-03-28,no_risks_detected,0.0,,0.4
+codat-snippets,2.0.2,2025-10-01,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.383
+codebarrel,999.9.9,2025-02-25,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.385
+coinbase-wallet-history-frontend,1.1.0,2024-12-28,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.387
+com.db.gtb.ppe.rtp-authjs,10.0.0,2024-12-26,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.423
+com.db.gtb.ppe.rtp-authjs,8.0.0,2024-12-26,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.392
+com.meta.xr.sdk.avatars,6.0.0,2025-05-03,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.399
+com.playtika.controllers-tree,66.6.0,2026-03-09,high_risk,7.4,threat-npm-preinstall-script,0.389
+com.revenuecat.purchases-unity,13.9.0,2025-09-09,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.383
+com.unity.ai.navigation,10.9.9,2025-01-29,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.372
+com.unity.ai.navigation,13.9.9,2025-01-29,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.38
+com.unity.collections,6.3.1,2024-12-09,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.377
+com.unity.formats.fbx,1.0.0,2025-05-10,high_risk,8.8,threat-network-dns-exfil threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks,0.414
+com.unity.robotics.warehouse.base,1.0.0,2025-05-10,high_risk,8.8,threat-network-dns-exfil threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks,0.384
+com.unity.test-framework.performance,10.0.1,2025-08-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.523
+comet-ml,0.0.0-dev-202603281254,2026-03-28,no_risks_detected,0.0,,0.51
+common-cli-utils,0.0.0,2026-01-01,high_risk,8.6,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.486
+common-icons,1.1.0,2024-11-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.483
+company-ts,1.0.3,2025-03-07,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.534
+comparable_worm-appteadev,2.4.1,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.544
+component-detection,7.3.2,2025-08-01,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.459
+component-modernizr,0.1.0,2025-05-02,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.439
+composer-bin-plugin,4.1.1,2025-06-16,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.624
+condemned_guppy_z3n,3.3.4,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.612
+confidential-package-nam,99.9.9,2024-11-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.476
+connectnodewebclient,9.9.9,2025-06-09,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.456
+consgraphqlnodeserv,1.0.2,2025-07-05,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-enumeration threat-runtime-system-info,0.384
+consumerweb-authflow,4.1.1,2026-06-07,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.604
+consumerweb-captcha,99.0.0,2025-06-01,high_risk,7.4,threat-npm-dependency-confusion threat-process-hooks,0.386
+continuing-apricot-dolphin,7.5.7,2024-07-11,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.394
+controlplane,1.0.0,2025-01-18,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.381
+conversations-embed,99.9.0,2026-05-07,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.399
+cooo,12.0.0,2025-07-01,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.38
+coral-wraith,19.0.0,2026-06-12,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-process-hooks,0.377
+coral-wraith,22.0.0,2026-06-12,high_risk,8.8,threat-network-dns-exfil threat-network-exfil-sysinfo threat-network-exfiltration threat-process-hooks,0.414
+corp-build-utils-poc,99.9.20,2026-02-27,high_risk,8.6,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read,0.37
+corp-build-utils-poc,99.9.29,2026-02-27,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read,0.947
+corplogger,2.0.0,2025-07-06,no_risks_detected,0.0,,0.373
+create-semi-d2c-plugin,9.3.5,2024-11-04,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.387
+create-shopify-web-app,9.0.0,2024-12-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.424
+createarrayfrommixed,5.0.0,2025-07-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.372
+crediteligibilityserv,1.0.0,2025-11-02,no_risks_detected,0.0,,0.378
+creditkarma-us,99.0.2,2025-05-16,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.365
+cro-pricing,1.0.11,2025-06-21,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.386
+cro-pricing,1.0.1,2025-06-21,high_risk,8.8,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.376
+crypto-credential-scanner,3.1.2,2026-05-21,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-system-info,0.462
+crypto-credential-scanner,3.1.5,2026-05-21,high_risk,8.6,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.434
+crypto-credential-scanner,3.1.7,2026-05-21,high_risk,8.6,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.415
+crypto-encrypt-ts,5.4.2,2025-04-26,suspicious,5.5,threat-process-hooks,0.415
+crypto-encrypt-ts,5.5.14,2025-04-27,high_risk,8.8,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.526
+crypto-encrypt-ts,5.5.16,2025-04-27,high_risk,8.8,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.574
+crypto-encrypt-ts,5.5.7,2025-04-27,high_risk,8.8,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.573
+crypto-hash-sdk,1.0.1,2026-05-15,no_risks_detected,0.0,,0.384
+crypto-provider,1.0.0,2025-07-09,no_risks_detected,0.0,,0.39
+cryptomus-aurora-kit,9.0.17,2025-03-15,high_risk,7.4,threat-npm-dependency-confusion threat-process-hooks,0.404
+cryptomus-aurora-kit,9.0.18,2025-03-15,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.373
+cryptotax,9.0.1,2025-04-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.368
+cspotcode,1.0.1,2025-03-26,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.408
+customer-information,2.30.0,2025-08-01,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.373
+customerdigital-ui-containers-lib,99.12.9,2026-05-16,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.419
+cw-isdk,1.0.0,2026-03-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.399
+cw-isdk,40.0.0,2026-03-13,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.367
+cwanner,9.2.0,2025-10-29,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.511
+cwttools1,1.0.0,2025-07-16,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.373
+cwttools,9.9.10,2025-06-10,no_risks_detected,0.0,,0.398
+cx-api-client-lite,200.0.0,2024-07-12,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.431
+cx-hub-interaction-ui-lib,99.0.0,2025-10-02,suspicious,6.4,threat-network-outbound-shady-links,0.43
+cxo-storyboard,99.0.5,2025-04-20,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.424
+d360-frontend,0.1.4,2025-08-12,high_risk,8.8,threat-network-exfiltration threat-process-download-exec threat-process-hooks,41.581
+daos.fun,0.1.3,2025-04-10,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.366
+data-planning-models,9.9.9,2024-12-09,no_risks_detected,0.0,,0.382
+data-version-service,1.7.3,2025-09-09,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.371
+dawid-insecure-npm,1.0.0,2025-09-27,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.374
+daytonjs,1.11.20,2026-02-26,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.374
+dc-comments-beta-dropin,10.1.0,2025-04-08,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.376
+ddddddd1d,1.0.52,2026-01-19,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.382
+ddddddd1d,1.0.54,2026-01-19,high_risk,7.4,threat-npm-preinstall-script,0.38
+ddddddd1d,1.0.58,2026-01-19,high_risk,7.4,threat-npm-preinstall-script,0.442
+ddddddd1d,1.0.7,2026-01-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.422
+debug-mj-v3,1.0.1,2025-10-10,high_risk,8.8,threat-process-hooks threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-dynamic-eval,0.661
+dep-poc,1.0.3,2025-03-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.654
+dependency-review-action,2.0.9,2024-11-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.688
+deployment-core,50.50.50,2026-04-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.684
+depressed_lion_z3n,1.2.2,2024-06-08,no_risks_detected,0.0,,0.452
+despicable-me-ctf,1.0.3,2026-01-23,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.461
+dev-env-bootstrapper,1.0.10,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.528
+dev-env-bootstrapper,1.0.13,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.69
+dev-journey-app,1.2.0,2024-12-27,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.435
+deviceconfig,1.0.0,2025-10-20,no_risks_detected,0.0,,0.403
+deviceconnect,1.0.0,2025-10-20,no_risks_detected,0.0,,0.441
+dewanto-nasipecel100-sluey,3.4.3,2024-05-09,high_risk,7.4,threat-runtime-self-propagation,0.461
+dewi-kentang96-riris,4.4.2,2024-05-08,high_risk,7.4,threat-runtime-self-propagation,0.426
+dewi-sroto37-miaww,3.4.2,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.507
+dhhdbank92015,25.501.3,2025-05-01,suspicious,5.3,threat-filesystem-read threat-runtime-environment-read threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-log-suppress threat-runtime-obfuscation-unicode,3.268
+dhrunner,24.1230.1,2024-12-30,no_risks_detected,0.0,,0.478
+dialog-holder,99.99.99,2025-06-15,high_risk,8.2,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.427
+dian-bakso93-breki,2.4.3,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.457
+dian-kue30-ruro,1.2.2,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.493
+dian-serimuka53-kyuki,4.2.2,2024-05-06,high_risk,7.4,threat-runtime-self-propagation,0.489
+digitalexp-datasource-definitions,9.0.4,2025-01-29,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.423
+digits-electron-src,1.0.2,2025-03-04,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.413
+discord-utils-enhanced,1.0.1,2025-10-09,high_risk,7.6,threat-network-outbound-shady-links threat-runtime-environment-read threat-runtime-obfuscation-js-mangling,0.499
+discord-utils-enhanced,1.0.4,2025-10-12,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-environment-read threat-runtime-system-info,0.564
+discovery-build,1.0.1,2026-05-23,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.465
+disputeapiserv-paypal,19.0.2,2025-03-18,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.403
+dist-decoder,2.0.4,2025-10-17,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.451
+dono-ketan12-sukiwir,3.2.2,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.426
+dono-kue59-sukiwir,4.2.4,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.418
+dotenv-express,17.4.4,2026-06-13,low,4.9,threat-filesystem-read threat-runtime-environment-read,0.452
+dotenv-express,17.4.5,2026-06-13,low,4.9,threat-filesystem-read threat-runtime-environment-read,0.43
+doubtful_toucan-appteadev,2.1.3,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.41
+doyouknowyourstuff,1.0.0,2025-10-04,no_risks_detected,0.0,,0.37
+dragonhack-workshop,1.0.1,2024-10-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.381
+dreame-claude,1.2.10,2025-11-27,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.476
+dreame-claude,1.2.12,2025-12-02,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.441
+due_harrier_z3n,3.1.2,2024-07-07,high_risk,7.4,threat-runtime-self-propagation,0.413
+durablefunctionsmonitor-vscodeext,0.1.3,2025-08-12,low,4.9,threat-npm-http-dependency,0.403
+dynamic-form-components,1.0.0,2025-08-07,no_risks_detected,0.0,,0.382
+dynatrace-test-automation,11.3.0,2025-06-30,high_risk,7.4,threat-npm-dependency-confusion threat-process-hooks,0.367
+dzengi,19.5.0,2025-02-12,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.392
+e-voting-libraries-ui-kit,9.9.7,2025-09-08,low,4.9,threat-npm-http-dependency,0.409
+e39testing,1.0.0,2024-11-06,high_risk,8.2,threat-process-download-exec threat-process-hooks,0.394
+earthengine-api,9.0.2,2026-03-30,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.399
+ebay-testeru,999.9.9,2025-01-23,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.388
+ecpfs-react-build-scripts,1.0.0-dev.80,2024-12-11,high_risk,7.4,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.452
+ect-472839,100.0.0,2026-06-12,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.378
+ecto-spirit,120.0.7,2026-03-06,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.388
+educational-depconf-poc,1.0.0,2025-06-02,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.381
+eithernet-test-fixtures-test,10.0.1,2025-09-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.382
+eka-otak-otak69-sluey,1.2.2,2024-05-11,high_risk,7.4,threat-runtime-self-propagation,0.381
+eko-bubur39-miaww,4.3.1,2024-05-13,high_risk,7.4,threat-runtime-self-propagation,0.403
+electra-web-player,1.0.0,2025-12-29,no_risks_detected,0.0,,0.383
+elf-stats-aurora-toy-659,99.9.10,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.369
+elf-stats-candystriped-bauble-740,1.0.2,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.401
+elf-stats-caroling-stocking-510,1.0.4,2025-12-04,no_risks_detected,0.0,,0.382
+elf-stats-cheery-fireplace-598,1.0.0,2025-12-03,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.382
+elf-stats-cranberry-pinecone-878,1.0.50,2025-12-04,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.366
+elf-stats-ember-stocking-807,1.0.5,2025-12-05,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.368
+elf-stats-evergreen-nightcap-747,1.0.0,2025-12-04,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.365
+elf-stats-evergreen-snowglobe-961,1.0.0,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.355
+elf-stats-festive-sparkler-275,1.0.3,2025-12-03,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.361
+elf-stats-festive-sparkler-275,2.0.0,2025-12-04,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.375
+elf-stats-festive-sparkler-275,2.0.2,2025-12-04,high_risk,8.2,threat-process-download-exec,0.365
+elf-stats-flickering-satchel-815,1.0.3,2025-12-03,no_risks_detected,0.0,,0.373
+elf-stats-frosty-candy-152,1.0.1,2025-12-03,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.373
+elf-stats-ginger-cookiejar-383,1.0.2,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.371
+elf-stats-holly-fir-593,5.0.0,2025-12-03,high_risk,8.0,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks,0.392
+elf-stats-joyous-mailbag-164,1.0.10,2025-12-03,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.415
+elf-stats-joyous-mailbag-164,1.0.8,2025-12-03,no_risks_detected,0.0,,0.373
+elf-stats-midnight-rocket-499,1.0.0,2025-12-05,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.367
+elf-stats-mulled-bauble-252,1.0.4,2025-12-03,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.375
+elf-stats-mulled-drum-529,2.2.1,2025-12-03,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.371
+elf-stats-mulled-stocking-538,1.0.1,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.372
+elf-stats-northbound-bauble-535,1.0.0,2025-12-03,suspicious,5.5,threat-process-hooks,0.373
+elf-stats-sleighing-nutcracker-806,10.0.0,2025-12-03,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.362
+elf-stats-snowdusted-lantern-234,1.0.6,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.37
+elf-stats-sparkly-candy-805,2.0.0,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.371
+elf-stats-sparkly-train-831,1.0.2,2025-12-03,no_risks_detected,0.0,,0.368
+elf-stats-starlit-mitten-980,1.0.4,2025-12-03,no_risks_detected,0.0,,0.366
+elf-stats-starlit-mitten-980,1.2.13,2025-12-03,no_risks_detected,0.0,,0.412
+elf-stats-starlit-mitten-980,1.2.18,2025-12-03,no_risks_detected,0.0,,0.437
+elf-stats-storybook-reindeer-552,2.0.7,2025-12-03,high_risk,8.8,threat-network-exfiltration threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.402
+elf-stats-twinkling-wishlist-283,9.9.9,2025-12-04,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.377
+elf-stats-whimsical-chimney-949,1.0.0,2025-12-03,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.365
+elf-stats-whimsical-marshmallow-258,1.0.0,2025-12-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.364
+embarrassed_wildcat_z3n,4.4.4,2024-06-09,no_risks_detected,0.0,,0.372
+ember-simplepractice,0.0.1-poc,2025-10-27,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.365
+embroider,99.9.3,2025-02-03,no_risks_detected,0.0,,0.367
+ent-profile-unauth-stop,999.1.5,2025-07-31,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.367
+enterprise-auth-gateway-core,50.50.50,2026-04-29,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.368
+env-express-cli,2.5.5,2026-03-03,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.469
+envoy1,1.0.5,2026-02-12,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.361
+envoy1,1.0.7,2026-02-12,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.366
+epic-blog-frontend,1.0.0,2025-03-25,no_risks_detected,0.0,,0.371
+epic-file-upload,1.0.0,2025-03-25,no_risks_detected,0.0,,0.372
+epic-hooks,1.0.0,2025-03-25,no_risks_detected,0.0,,0.394
+epic-visualizations,1.0.0,2025-03-25,no_risks_detected,0.0,,0.48
+epic-web-payment-management-sandbox,1.0.0,2025-03-25,no_risks_detected,0.0,,0.456
+epxreso,5.2.0,2025-08-26,high_risk,7.2,threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.542
+epxressoo,5.1.1,2025-09-04,high_risk,7.2,threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.53
+equimper,9.9.0,2026-01-09,low,4.9,threat-npm-http-dependency,0.448
+ersagent-frontend,9.5.5,2026-01-11,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.422
+eslint-config-i18n-scan,10.0.1,2025-08-17,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.429
+eslint-config-jest,1.0.0,2025-09-29,suspicious,5.5,threat-process-hooks,0.418
+eslint-plugin-consumerweb,1.10.2,2025-09-19,suspicious,6.4,threat-network-outbound-shady-links,0.483
+eslint-plugin-ethereumjs,10.0.1,2025-09-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.447
+eslint-plugin-mark-i18n,6.5.8,2024-11-13,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.447
+eslint-plugin-react-discord,9.0.3,2025-10-09,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.381
+eslint-v9,9.9.9,2025-01-23,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.382
+esoftplay,0.0.138-r,2024-04-18,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.441
+esoftplay,0.0.139-z,2024-06-29,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.512
+esoftplay,0.0.140-g,2024-07-15,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.522
+esoftplay,0.0.141-o,2024-10-14,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.704
+esoftplay,0.0.142-p,2025-02-04,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.613
+esoftplay,0.0.142-r,2025-02-05,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.655
+esoftplay,0.0.142-z,2025-02-28,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.509
+esoftplay,0.0.143-f,2025-04-29,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.453
+esoftplay,0.0.143-m,2025-05-13,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.508
+esoftplay,0.0.153,2025-05-26,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.427
+esoftplay,0.0.154,2025-05-26,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.427
+esoftplay,0.0.180,2025-07-10,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.556
+esoftplay,0.0.183,2025-07-16,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.478
+esoftplay,0.0.195,2025-07-25,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.472
+esoftplay,0.0.255,2026-02-23,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.533
+esoftplay,0.0.258,2026-03-11,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-self-propagation threat-runtime-system-info,1.551
+esoftplay,0.0.268-4a0e176,2026-04-23,high_risk,8.6,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-runtime-obfuscation threat-runtime-obfuscation-base64exec threat-runtime-self-propagation threat-runtime-system-info,1.784
+estatement-fe,14.9.8,2025-05-20,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.422
+eth-austt,4.1.2,2024-10-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.416
+ether-lint,5.9.0,2026-02-11,high_risk,8.0,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.373
+ethers-address,1.0.0,2026-05-13,suspicious,5.5,threat-process-hooks,0.371
+ethers-errors,1.0.0,2026-05-13,suspicious,5.5,threat-process-hooks,0.369
+ethetsjs,1.0.0,2025-07-04,suspicious,5.5,threat-process-hooks,0.442
+euskalplantxa,5.8.1,2026-01-30,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.426
+event-handle-package,1.0.0,2025-03-07,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.483
+evmlogger,1.0.6,2025-06-28,high_risk,7.2,threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.418
+evolutionary_eel_z3n,3.1.3,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.38
+example-fastify-api,0.1.1,2025-08-23,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.365
+example-marko-webpack,100.0.1,2025-05-18,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.391
+examplereactnative76,0.0.8,2026-02-24,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.369
+excellent_reptile_z3n,4.1.4,2024-07-09,high_risk,7.4,threat-runtime-self-propagation,0.372
+exiouss,1.0.4,2026-05-01,suspicious,6.7,threat-process-hooks threat-process-spawn-silent threat-runtime-keylogging,13.227
+express-flowlimit,2.2.8,2026-03-31,low,4.1,threat-process-spawn-silent,0.47
+expressjs-lint,5.3.2,2026-02-26,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.39
+fabric-shim-docs,1.0.0,2025-01-15,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.365
+facetec-browser-sdk,9.6.97,2025-01-13,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.363
+fadhil-saguer1-sluey,3.3.1,2024-05-09,high_risk,7.4,threat-runtime-self-propagation,0.404
+fast-todo-app,3.0.0,2025-07-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.361
+fast-todo-app,9.9.1,2025-07-27,no_risks_detected,0.0,,0.672
+fauzi-lodeh73-ruro,4.3.1,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.51
+fe-prometheus-report,6.5.8,2024-11-13,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.434
+fider,1.1.0,2024-12-28,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.387
+financialforce,10.99.1,2025-07-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.372
+finsys-webcomponent,5.1.2,2024-11-04,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.425
+fireblocks-netlink-v2-api-validator,9.0.2,2025-06-04,no_risks_detected,0.0,,0.364
+fitri-pecel63-sluey,3.1.2,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.422
+fixed_cockroach_z3n,1.2.1,2024-07-11,high_risk,7.4,threat-runtime-self-propagation,0.369
+flagstealerfinal,1.0.1,2025-12-07,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.414
+flash-hros,1.0.0,2025-07-23,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.41
+fluid-tooltip,5.3.6,2024-12-01,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.482
+fmt-helpers-794b,1.0.0,2026-06-18,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-runtime-enumeration threat-runtime-environment-read threat-runtime-system-info,0.459
+forge-jsx,1.0.18,2026-04-22,suspicious,6.5,threat-filesystem-autostart threat-filesystem-read threat-process-hooks threat-process-memory threat-process-spawn-silent threat-runtime-environment-read threat-runtime-keylogging threat-runtime-system-info,0.932
+forge-jsxy,1.0.72,2026-05-05,suspicious,6.5,threat-filesystem-autostart threat-filesystem-read threat-process-hooks threat-process-memory threat-process-spawn-silent threat-runtime-environment-read threat-runtime-keylogging threat-runtime-system-info,1.072
+foundry-toolkit,1.0.15,2026-02-27,high_risk,8.8,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks,0.621
+foxy-node-google-pay-decrypt,0.0.2,2025-02-06,high_risk,9.4,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-unicode threat-runtime-system-info,11.946
+free-anthropic-claude,5.0.3,2026-06-20,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.434
+free-anthropic-claude,5.5.0,2026-06-22,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.435
+frontegg-angular-sanity-check,0.0.1,2025-06-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.381
+frontend-layout,1.19.0,2024-05-27,high_risk,7.3,threat-network-exfiltration,0.984
+frozen_fly_z3n,2.1.4,2024-07-12,high_risk,7.4,threat-runtime-self-propagation,0.449
+fuzzy_woodpecker_z3n,2.3.3,2024-07-09,high_risk,7.4,threat-runtime-self-propagation,0.393
+fzreo-trading-sdk,1.1.4,2025-10-19,no_risks_detected,0.0,,0.438
+garena-admin,10.7.8,2025-05-20,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.453
+gateweb3crypto,1.0.1,2026-04-21,suspicious,5.5,threat-process-hooks,0.449
+gemini-ai-checker,1.3.5,2026-03-19,low,4.1,threat-process-spawn-silent,0.687
+getcardslib,1.0.3,2026-04-09,no_risks_detected,0.0,,0.451
+ggtech,10.0.0,2025-10-19,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.401
+ggtech,10.0.9,2025-10-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.422
+gita-kue5-sukiwir,2.1.2,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.396
+github-badge-bot,1.2.3,2025-12-21,suspicious,5.5,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.463
+github-badge-bot,1.7.9,2025-12-21,high_risk,9.4,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read threat-runtime-system-info,0.468
+glia-widgets-ionic,1.2.3,2025-01-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.362
+goals-summary-widget,1.3.0,2025-08-01,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.365
+google-cloud-secret-manager-config-poc,99.9.37,2026-05-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.369
+google-library,20.1.1,2025-08-22,suspicious,5.5,threat-process-hooks,0.405
+goworker,1.0.0,2024-12-11,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.404
+gpt-sdk,0.2.4,2026-06-04,high_risk,7.9,threat-network-exfiltration threat-process-hooks,0.38
+grab-service-worker,1.0.1,2025-08-19,suspicious,5.5,threat-process-hooks,0.366
+grafana-metricsdrilldown-app,1.4.1,2025-03-03,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.419
+grafana-strava-datasource,1.0.0,2025-07-02,no_risks_detected,0.0,,0.378
+graphflowx,1.0.0,2026-01-24,no_risks_detected,0.0,,0.489
+graphnet,0.0.7,2025-10-23,no_risks_detected,0.0,,0.495
+grepleaks,1.3.0,2025-12-30,low,4.9,threat-filesystem-read,0.4
+grepleaks,1.4.4,2025-12-30,low,3.3,threat-runtime-environment-read,0.391
+grepleaks,1.4.5,2025-12-30,low,3.3,threat-runtime-environment-read,0.397
+grepleaks,1.4.8,2025-12-30,low,3.3,threat-runtime-environment-read,0.383
+grepleaks,1.5.2,2026-01-05,low,3.3,threat-runtime-environment-read,0.369
+groq-link,1.0.23,2025-07-12,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.387
+groq-link,10.1.1,2025-07-14,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.381
+grpclb-zk,6.5.8,2024-11-14,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.375
+gwalior,0.0.0-dev-202603280649,2026-03-28,no_risks_detected,0.0,,0.37
+hadianto-gudeg46-ruro,2.3.4,2024-05-08,high_risk,7.4,threat-runtime-self-propagation,0.382
+handlebars-formatter,20.0.0,2025-06-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.368
+harthat-chain,4.2.3,2024-07-25,high_risk,8.0,threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks,0.416
+hast-util-to-mdast9,9.0.0,2025-12-03,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.363
+helioviewer.org,10.0.0,2025-07-02,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.387
+helioviewer.org,10.2.0,2025-07-03,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.38
+hellosign-embed-with-dbx-file,1.0.0,2025-01-18,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.392
+hemi-viem-stake-actions,1.0.0,2025-10-12,no_risks_detected,0.0,,0.435
+hendra-mendoan98-sluey,2.4.3,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.499
+hexo-theme-linen,0.1.4,2026-03-22,low,4.9,threat-runtime-obfuscation-unicode,1.209
+hexo-theme-linen,0.2.2,2026-03-22,suspicious,6.9,threat-process-hooks threat-runtime-obfuscation-unicode,7.281
+hiero-explorer,1.0.0,2024-12-21,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.502
+horizon-ui-ng,99.9.19,2025-08-09,high_risk,8.0,threat-network-dns-exfil threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.489
+hosts-reader-ctf-demo-xyz,1.0.0,2026-04-01,high_risk,7.1,threat-filesystem-read threat-process-hooks,0.42
+hrm-absence-frontend-deps,1.0.1,2025-10-05,high_risk,8.5,threat-filesystem-read threat-network-exfiltration,0.431
+hrpqvq123111,1.0.0,2025-09-07,suspicious,6.5,threat-filesystem-read threat-network-exfiltration,0.394
+hs-locale-management,99.99.99-poc2,2026-06-24,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.382
+htps-curl,5.0.1,2025-03-20,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.42
+http-err-notification,5.4.12,2025-09-15,low,3.3,threat-runtime-system-info,0.585
+httpreslog,1.0.12,2025-08-21,low,3.3,threat-runtime-system-info,0.62
+https-agen-chii,1.0.1,2025-02-02,high_risk,8.2,threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-dynamic-eval threat-runtime-obfuscation-js-mangling,0.424
+https-agen-chii,1.0.2,2025-02-03,high_risk,8.2,threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-dynamic-eval threat-runtime-obfuscation-js-mangling,0.571
+https-emailjs,7.0.13,2026-01-11,high_risk,8.8,threat-process-download-exec threat-runtime-environment-read,0.781
+https-servers,3.0.0,2026-01-21,suspicious,5.9,threat-process-injection-dll,0.531
+hushed_roundworm_z3n,3.3.4,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.402
+husky-logger,3.3.2,2025-07-08,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.899
+husky-logger,3.3.9,2025-08-08,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.916
+hydra-node-consent-sdk,99.99.1,2025-12-04,high_risk,7.4,threat-npm-preinstall-script,0.373
+icon-service,2.0.0,2025-12-12,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.368
+iconpark,9.3.5,2024-11-14,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.379
+iff-root,4.0.0,2025-03-01,high_risk,8.2,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.363
+ifood-github-io,10.10.10,2024-12-18,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.366
+igshared,8.1.2,2025-07-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.37
+iife-sample,1.0.0,2025-10-12,no_risks_detected,0.0,,0.385
+imhuman-fw-logger,99.9.9,2026-02-26,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.365
+immediate_tapir-appteadev,4.3.4,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.424
+implicit_gayal_z3n,4.1.2,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.357
+indah-sambel63-sluey,2.2.4,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.399
+inhouse-root,10.6.9,2025-05-12,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.37
+integration-date,1.0.0,2025-10-21,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.352
+intel-ai-assistant-ui,1.1.1,2025-08-06,suspicious,5.5,threat-process-hooks,0.36
+internal-logger,33.12.12,2025-06-07,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.383
+internallib_v249,1.0.1,2025-09-11,no_risks_detected,0.0,,0.351
+internallib_v730,1.0.6,2025-07-07,high_risk,8.2,threat-process-download-exec,0.371
+internallib_v808,1.0.3,2025-10-08,high_risk,8.2,threat-process-download-exec,0.383
+internallib_v828,1.0.3,2026-01-12,high_risk,8.2,threat-process-download-exec,0.372
+interview-question,1.0.0,2024-12-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.36
+invalid-polyfill-missing,11.0.1,2025-08-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.379
+ios-signing-common,1337.0.0,2025-10-07,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.391
+irma-semur12-miaww,3.4.2,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.398
+iron-demo-helpers,5.5.0,2026-02-22,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.369
+isood,13.4.6,2025-09-07,high_risk,7.4,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links,0.378
+iwan-botok36-miaww,2.1.1,2024-05-13,high_risk,7.4,threat-runtime-self-propagation,0.391
+iwf-ant-design-draggable-modal,1.1.14,2025-10-18,high_risk,8.6,threat-filesystem-read threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration threat-runtime-environment-read threat-runtime-system-info,0.386
+iwf-ant-design-draggable-modal,1.1.15,2025-10-18,high_risk,8.6,threat-filesystem-read threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration threat-runtime-environment-read threat-runtime-system-info,0.377
+iwf-ant-design-draggable-modal,1.1.7,2025-10-18,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.372
+jaeger-ui,2.0.0,2024-12-27,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.373
+jaja-klentik6-sluey,1.4.2,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.391
+janus-ft,1.0.0,2026-06-08,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-process-hooks threat-runtime-system-info,0.369
+jh5o,1.0.3,2025-12-24,high_risk,7.3,threat-runtime-obfuscation-base64exec,1.701
+jio-payment-sdk,1.0.3,2025-11-13,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.879
+js-coauth,7.2.7,2025-11-20,low,4.9,threat-runtime-obfuscation-js-mangling threat-runtime-system-info,0.588
+js-logger-pack,1.0.0,2026-04-01,suspicious,5.5,threat-process-hooks,0.359
+js-unpack,1.1.8,2026-02-02,low,3.3,threat-runtime-system-info,0.557
+json-mapping-src,2.4.9,2026-02-09,low,3.3,threat-runtime-environment-read,0.51
+jsondatatoruby,1.999.13,2025-12-19,high_risk,8.2,threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.365
+jsonlogbundler,2.1.2,2026-05-25,no_risks_detected,0.0,,0.503
+jsonwebjstoken,9.0.4,2025-09-03,no_risks_detected,0.0,,0.416
+junior_impala_z3n,3.1.2,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.372
+justaexpformyself,2.1.12,2025-07-22,no_risks_detected,0.0,,0.364
+justeatapplepayjs,9.0.0,2025-04-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.362
+justgetit,1.1.8,2026-05-09,suspicious,5.5,threat-process-hooks,0.367
+kamino-modules,1.0.1,2025-03-04,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.405
+karemm3,1.0.0,2025-12-03,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.369
+keepachangelog-manager,99.0.0,2025-06-09,high_risk,7.4,threat-npm-dependency-confusion threat-process-hooks,0.41
+key-yellow-anteater,8.4.8,2024-07-12,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.371
+kiki-lontong50-sukiwir,4.3.4,2024-05-11,high_risk,7.4,threat-runtime-self-propagation,0.381
+kiki-nasisayur55-sukiwir,2.4.1,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.438
+kresna-dradag29-riris,1.4.4,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.435
+kube-health-tools,2.4.2,2026-04-22,no_risks_detected,0.0,,2.351
+kurnia-gaplek28-sukiwir,1.1.4,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.43
+kurnia-ikan34-apidev,1.1.4,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.38
+kurnia-mendoan99-ruro,4.4.1,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.395
+kwp-client,99.99.2,2025-06-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.366
+laila-klanting10-ruro,3.4.4,2024-05-22,high_risk,7.4,threat-runtime-self-propagation,0.391
+lana-docs-site,1.0.2,2024-12-30,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.381
+launch-darkly-provider,1.0.10,2025-06-07,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.372
+layouts-lib,1.0.1,2025-03-10,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.363
+learning-kotlin,1.0.0,2025-03-04,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.364
+left-pad-browser,99.9.0,2025-01-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.357
+legal_quail-appteadev,2.3.4,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.393
+legoland-shared,1.3.0,2025-09-03,low,4.9,threat-process-hooks threat-runtime-system-info,0.37
+lesser_antlion_z3n,3.1.2,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.372
+lexical_chickadee-appteadev,2.4.3,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.393
+lezer-snowsql,0.1.22,2025-05-02,high_risk,8.0,threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.368
+lezer-snowsql,1.999.0,2025-05-02,high_risk,8.8,threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.368
+libxmljs2qwerty,0.31.0,2025-12-09,suspicious,5.5,threat-process-hooks,0.372
+libxmljsololo4,0.30.2,2025-12-09,high_risk,8.6,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-process-sysinfo threat-runtime-obfuscation-unicode,0.375
+libxmlussr2,0.30.2,2025-12-09,high_risk,9.4,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-obfuscation-unicode,0.376
+light_dingo_z3n,2.2.3,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.376
+lina-bakwan7-sluey,3.3.3,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.39
+lina-wajit52-riris,4.2.3,2024-05-13,high_risk,7.4,threat-runtime-self-propagation,0.39
+llm-context-compressor,1.0.10,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.453
+llm-context-compressor,1.0.9,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.451
+loading-session,4.2.1,2026-05-23,low,4.1,threat-process-spawn-silent,0.471
+locale-loader-pro,1.0.0,2026-02-17,no_risks_detected,0.0,,0.52
+logger-beauty,2.1.1,2026-05-04,low,3.3,threat-filesystem-read,0.423
+loliloli,1.0.108,2025-11-07,high_risk,7.2,threat-runtime-obfuscation threat-runtime-obfuscation-js-mangling,0.85
+lowerx-package2,1.0.11,2025-11-04,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.371
+lowerx-package,1.0.2,2025-11-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.368
+lowerx-package,1.0.6,2025-11-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.378
+lscommons,9.2.0,2025-07-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.373
+ltval,2.3.49,2024-11-04,high_risk,8.6,threat-process-hooks threat-runtime-obfuscation-base64exec threat-runtime-self-propagation,0.43
+lucide-node,1.0.0,2025-04-21,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.849
+luigi-core-private,6.7.9,2025-03-04,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.37
+lutfi-ronde30-sluey,2.2.1,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.397
+m0m0x01d,1.0.8,2024-09-10,no_risks_detected,0.0,,0.37
+m0m0x01d,1.1.2,2024-09-10,no_risks_detected,0.0,,0.412
+mad-1.0.0.2.2.8.,1.0.8,2025-09-27,no_risks_detected,0.0,,0.359
+mad-1.2.6.2.2.8,1.0.0,2025-10-01,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.409
+mad-10.2.1.2.2.8,1.0.0,2025-10-02,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.434
+mad-3.0.0.2.2.8.,2.0.0,2025-09-29,no_risks_detected,0.0,,0.37
+mad-4.0.0.2.2.8.,1.0.1,2025-09-28,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.359
+mad-4.0.0.2.2.8.,3.0.2,2025-09-28,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.41
+mad-8.2.1.2.2.8,1.0.0,2025-09-30,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.366
+magic-enum,17.9.9,2025-01-29,suspicious,5.9,threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.366
+mahesa-tahutek44-sluey,2.2.1,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.377
+mailconfirmer,3.2.35,2026-06-13,suspicious,5.5,threat-process-hooks,0.382
+mailconfirmer,3.3.23,2026-06-15,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.382
+mailconfirmer,3.3.52,2026-06-16,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.562
+malicious-package-test,1.0.4,2025-08-25,high_risk,9.4,threat-network-reverse-shell threat-process-hooks threat-process-spawn-silent,0.365
+malware-testbed,1.0.0,2025-01-20,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.366
+maman-naget54-sluey,2.1.2,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.42
+marcom-ac-console,1.0.2,2025-07-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.386
+marcom-ac-console,1.0.5,2025-07-17,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.407
+markast-win32-x64-msvc,0.1.1,2026-03-18,no_risks_detected,0.0,,0.601
+marvelapp,3.1.1,2025-09-06,no_risks_detected,0.0,,0.393
+marxist_ladybug_z3n,1.3.4,2024-07-12,high_risk,7.4,threat-runtime-self-propagation,0.374
+mathy-console,0.8.0,2025-08-22,high_risk,8.8,threat-runtime-obfuscation-hidden-code,0.405
+matic-transfer-consumer,8.3.56,2026-01-03,no_risks_detected,0.0,,0.399
+matlab-proxy,1.0.0,2024-12-14,high_risk,7.4,threat-npm-preinstall-script,0.36
+matlab-proxy,2.0.6,2025-10-21,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks,0.466
+matrix-shell-bench,2.2.0,2025-01-08,no_risks_detected,0.0,,0.397
+mattermost-cloudnative-bootstrapper,1.0.0,2024-12-14,high_risk,7.4,threat-npm-preinstall-script,0.396
+maxdome-compute,1.0.0,2025-06-13,high_risk,7.4,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.362
+maya-papeda10-sukiwir,1.1.1,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.395
+maybe-i-would-like-a-banana,1.0.3,2025-06-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.38
+mcp-secure-server,0.0.14-security,2026-04-29,suspicious,5.9,threat-filesystem-read threat-process-injection-dll,0.922
+me5war,1.0.0,2025-07-28,high_risk,8.6,threat-filesystem-read threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-enumeration,0.37
+mean_fish_z3n,4.1.2,2024-07-12,high_risk,7.4,threat-runtime-self-propagation,0.412
+mean_wasp_z3n,1.3.1,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.406
+media_kit_native_event_loop,1.1.9,2024-12-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.367
+mediapipe,1.1.0,2025-10-21,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-enumeration,0.387
+mediapipe,1.1.2,2025-10-21,high_risk,8.2,threat-network-reverse-shell,0.434
+mediapipe,1.2.8,2025-10-22,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-enumeration,0.369
+medieval-amethyst-bug,0.0.3,2024-07-11,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.379
+mender-binary-delta,2.1.5,2025-10-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.391
+merchantsettingserv,1.0.0,2025-02-27,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.422
+meta-code-verify,8.2.31,2025-12-21,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.425
+metereorpreter-test2-dns,1.0.3,2025-09-25,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.608
+microsoft-bonsai-api,9.9.9,2025-08-12,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.451
+minneapolis,0.0.0-dev-202603280649,2026-03-28,no_risks_detected,0.0,,0.463
+mirror-logger-utils,1.1.5,2025-05-26,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.446
+mixpanel-lib,1.0.0,2025-12-31,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.405
+mlb-site-core,1.0.3,2025-01-13,high_risk,8.8,threat-network-exfiltration threat-network-outbound-shady-links threat-network-reverse-shell threat-process-hooks,0.452
+mms-tools,1.0.0,2025-03-28,no_risks_detected,0.0,,0.434
+mnemonic-safety-check,0.5.2,2026-05-21,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.409
+mnemonic-safety-check,1.6.4,2026-05-21,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.464
+mnemonic-safety-check,1.6.7,2026-05-21,high_risk,8.6,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.535
+model-providers,99.3.9,2025-08-18,suspicious,5.5,threat-process-hooks,0.493
+model-switch-router,1.0.10,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.498
+model-switch-router,1.0.13,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.532
+modern-events,1.3.2,2026-03-04,no_risks_detected,0.0,,0.487
+modern-react,0.0.0-semantically-released,2025-06-26,no_risks_detected,0.0,,0.414
+moduletestsimple5,1.1.0,2025-09-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.376
+moloch,1.1.0,2025-10-20,low,3.3,threat-runtime-environment-read,0.501
+mona-service-commands,99.11.18,2024-11-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.406
+money-badger-open-rpc,101.99.99,2026-05-06,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.43
+mongodb-chatbot-verified-answers,11.11.11,2024-12-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.452
+mongodb-ci,3.1.2,2025-09-16,low,3.3,threat-runtime-system-info,0.585
+month_year_dropdown,1337.0.0,2025-10-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.432
+moonskin,1.0.0,2025-08-13,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.43
+moorkh_hai_tu,1.2.0,2025-05-31,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.46
+mpesa-backoffice-ekyc-frontend,2.17.14-EKYC,2025-09-19,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.463
+mpesa-backoffice-ekyc-frontend,2.17.15-EKYC,2025-09-19,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.467
+mre-config-react,1.0.9,2025-07-05,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.553
+mre-layout-react,2.0.0,2025-07-06,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.45
+mre-layout-react,2.0.5,2025-07-06,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.427
+mre-layout-react,2.0.6,2025-07-06,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.422
+mre-layout-react,2.0.8,2025-07-06,high_risk,8.8,threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec,0.377
+mtls-ambassador,1.0.0,2025-10-20,no_risks_detected,0.0,,0.392
+muenxo,99.9.9,2026-04-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.445
+multi-cloud-data-migrator,1.256.10,2025-06-17,no_risks_detected,0.0,,0.479
+multi-cloud-data-migrator,1.258.32,2025-10-16,high_risk,7.2,threat-runtime-obfuscation-js-mangling,1.027
+multiple_bear_z3n,3.3.1,2024-06-08,no_risks_detected,0.0,,0.421
+multirpc-sdk,4.2.3,2025-02-17,high_risk,9.4,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.416
+multirpc-sdk,4.2.5,2025-02-17,high_risk,9.4,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.386
+multiturn-prompts-agent,10.0.1,2025-08-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.426
+mvn-runtime,1.0.1,2026-02-20,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.401
+my-js-cdn,1.0.12,2025-06-25,suspicious,6.4,threat-network-outbound-shady-links,0.397
+my-not-confused-package,1.0.2,2025-06-19,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.391
+my-not-confused-package,2.1.0,2025-06-19,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.395
+my-rei-browser-shim,2.0.0,2025-04-30,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.449
+my-unique-package-here,1.0.2,2025-10-10,no_risks_detected,0.0,,0.397
+myconfusedfunctionpoctestpackage,1.1.8,2025-02-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,27.455
+myconfusedfunctionpoctestpackage,1.4.6,2025-02-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,12.499
+myconfusedfunctionpoctestpackage,1.4.7,2025-02-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,24.678
+n8n-nodes-comfyui-illu,1.0.4,2025-12-18,high_risk,7.4,threat-npm-preinstall-script,0.434
+n8n-nodes-gasdhgfuy-rejerw-ytjsadx,0.0.77,2025-12-16,no_risks_detected,0.0,,0.661
+n8n-nodes-hfgjf-irtuinvcm-lasdqewriit,0.0.30,2026-01-08,high_risk,7.2,threat-runtime-obfuscation threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.699
+n8n-nodes-hfgjf-irtuinvcm-lasdqewriit,0.0.5,2025-12-31,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.532
+n8n-nodes-hfgjf-irtuinvcm-lasdqewriit,0.0.8,2026-01-05,high_risk,7.2,threat-runtime-obfuscation threat-runtime-obfuscation-js-mangling,0.532
+n8n-nodes-phoai-ultimate-tools,1.1.5,2025-07-06,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.485
+n8n-nodes-phoai-ultimate-tools,1.3.1,2025-07-11,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.482
+n8n-nodes-phoai-ultimate-tools,1.8.0,2025-10-16,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.666
+n8n-nodes-vbmkajdsa-uehfitvv-ueqjhhhksdlkkmz,0.0.3,2025-12-26,high_risk,7.2,threat-runtime-obfuscation threat-runtime-obfuscation-js-mangling,11.173
+n8n-nodes-weixin-wechat,1.2.10,2025-08-31,low,4.1,threat-process-spawn-silent,0.487
+n8n-nodes-weixin-wechat,1.2.18,2025-09-01,low,4.1,threat-process-spawn-silent,0.479
+n8n-nodes-xkwqpzrt-jmflhvbn-dsyocgxwmkelpt,0.0.7,2026-01-12,high_risk,7.2,threat-runtime-obfuscation threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.998
+nadia-serimuka29-riris,2.4.3,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.417
+namaframwork,1.0.0,2025-08-11,high_risk,7.4,threat-npm-preinstall-script,0.43
+nana-ongol-ongol85-riris,1.2.4,2024-05-08,high_risk,7.4,threat-runtime-self-propagation,0.412
+nana-sasag51-sluey,1.3.3,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.423
+narrow_zebra_z3n,1.3.4,2024-07-06,high_risk,7.4,threat-runtime-self-propagation,0.428
+natel-plotly-panel,10.2.4,2025-06-30,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.405
+nemo-fpti,1.0.0,2026-03-21,no_risks_detected,0.0,,0.429
+networkx,1.0.0,2025-05-25,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.383
+new-ecro-1,0.4.9,2026-06-18,no_risks_detected,0.0,,0.605
+newrelics-scheduler,1.7.2,2025-08-09,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-process-hooks,0.61
+nextcloud2,9.9.9,2024-12-08,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.393
+nf-jaw,0.0.1,2026-04-22,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.377
+nf-metatron,0.0.1,2026-04-22,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.38
+nflx-release,99.0.1,2026-03-19,high_risk,8.6,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.378
+nikmodzp,1.0.0,2024-11-14,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.399
+nina-brengkes53-ruro,4.3.4,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.385
+nina-enting56-sukiwir,4.4.4,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.396
+nina-miebogor95-breki,1.4.3,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.385
+nina-nasicampur45-breki,2.1.4,2024-05-16,high_risk,7.4,threat-runtime-self-propagation,0.4
+nina-tempe92-miaww,3.1.4,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.401
+nintendoamerica-ncom,99.0.21,2026-03-21,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.368
+nitro-contracts,4.0.0,2025-06-22,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.353
+node-calculator-0c8f,3.0.1,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.371
+node-calculator-31b9,2.1.1,2025-11-19,high_risk,8.0,threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks,0.348
+node-calculator-5b8f,3.0.0,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.381
+node-calculator-7b82,2.4.0,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.362
+node-calculator-98b6,3.0.8,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.374
+node-calculator-a34e,9999999999.3.1,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.35
+node-calculator-bde6,3.7.0,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.374
+node-calculator-c213,1.0.2,2025-11-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.368
+node-calculator-f2af,4.0.0,2025-11-17,high_risk,8.6,threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read,0.371
+node-calculator-f483,3.4.0,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.374
+node-clog,1.0.0,2025-03-02,no_risks_detected,0.0,,0.371
+node-mongo-orm,3.6.2,2025-07-07,low,3.3,threat-runtime-system-info,0.51
+node-setup-helpers,1.0.13,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.451
+node-setup-helpers,1.4.0,2026-05-24,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.385
+node-tailwind-magic,3.4.1,2025-10-20,suspicious,5.5,threat-process-hooks,0.656
+node-vfs-polyfill,2.0.5,2026-06-18,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.36
+nodelogex,3.17.1,2025-10-02,no_risks_detected,0.0,,0.485
+nodemailer-helper,1.0.7,2025-06-25,suspicious,5.7,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read,0.706
+nodemon-pkg,5.1.1,2025-10-07,low,4.9,threat-runtime-obfuscation-js-mangling threat-runtime-system-info,0.577
+nodemon-pkg,5.1.2,2025-10-07,low,4.9,threat-runtime-obfuscation-js-mangling threat-runtime-system-info,0.573
+nodepaysafesdk,20.1.5,2024-11-21,high_risk,8.0,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks,0.358
+nordic-dev-ts,99.5.3,2025-06-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.377
+notificationsandbox,1.0.0,2025-07-06,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.4
+npe-toolkit-faves,3.0.0,2025-12-18,no_risks_detected,0.0,,0.386
+npm-security-testing,1.0.1,2026-02-18,suspicious,6.5,threat-filesystem-read threat-process-hooks threat-process-memory threat-runtime-system-info,0.384
+npmrunnode-fetch-test,1337.1.0,2025-10-21,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.565
+nri-kube-events,8.9.12,2025-09-07,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.367
+nsot,1.0.1,2025-02-19,no_risks_detected,0.0,,0.369
+nstmrt-stf-api,1.0.9,2025-06-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.395
+nurul-rangi65-miaww,1.3.4,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.446
+o11y-ds-frontend,1.0.0,2025-06-17,no_risks_detected,0.0,,0.401
+o2-tooltip,97.1.0,2025-11-22,high_risk,8.6,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.43
+o3-storybook,1.0.0,2025-10-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.365
+o3forms,99.1.99,2026-06-01,no_risks_detected,0.0,,0.37
+oauth2-paypal,699.0.0,2025-03-12,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.395
+ocha-kembang29-remi,4.2.2,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.434
+octuple,4.4.4,2025-01-09,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-runtime-enumeration threat-runtime-system-info,0.403
+odds-analyzer,2.3.1,2026-03-02,no_risks_detected,0.0,,0.382
+ofjaaah-internal-utils,999.0.0,2026-01-17,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.413
+ogi-brengkes46-sluey,3.1.2,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.44
+ogi-ragi27-ruro,2.2.2,2024-05-09,high_risk,7.4,threat-runtime-self-propagation,0.381
+oj-sp-common-util,1.0.1,2025-12-30,no_risks_detected,0.0,,0.368
+okta-mangut57-miaww,1.4.3,2024-05-16,high_risk,7.4,threat-runtime-self-propagation,0.444
+okta-template-validator,99.99.99,2025-07-04,suspicious,5.5,threat-process-hooks,0.417
+okx-dex,1.0.16,2025-07-22,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.352
+olivergreen,2.1.1,2024-12-03,no_risks_detected,0.0,,0.41
+omaronsec,1.0.0,2026-02-14,no_risks_detected,0.0,,0.402
+online-learning-components,1.0.1,2025-06-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.363
+openclaw-droid,1.0.0,2026-02-08,high_risk,8.2,threat-process-download-exec threat-process-hooks,0.394
+openclaw-droid,2.0.6,2026-02-08,high_risk,8.2,threat-process-download-exec threat-process-hooks,0.403
+openikt-web,1.1.1,2025-08-06,suspicious,5.5,threat-process-hooks,0.365
+openmct-e2e,10.0.1,2025-08-30,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.356
+opentk,1.0.0,2025-04-21,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.374
+optimized-fastest-levenshtein,1.3.8,2026-04-15,no_risks_detected,0.0,,0.384
+org.cocoapods.csv,2.0.0,2025-01-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-runtime-system-info,0.372
+org.cocoapods.mosaicui,1.0.0,2025-01-26,no_risks_detected,0.0,,0.364
+org.mixedrealitytoolkit.core,10.0.1,2025-08-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.364
+organic_antlion_z3n,4.3.2,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.371
+orion-ui,9.1.1,2025-08-20,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.409
+os-apps-ui-creative-manager,9.9.9,2025-07-18,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.363
+os-apps-ui-curvelibrary1,12.1.1,2025-07-18,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.376
+os-apps-ui-curvelibrary,11.1.15,2025-06-12,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.397
+overdrive-db,2.4.5,2026-05-14,no_risks_detected,0.0,,3.944
+overstock-logger,3.16.4,2026-01-25,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.36
+overstock-logger,3.9.4,2026-01-25,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-npm-dependency-confusion threat-npm-preinstall-script threat-runtime-enumeration threat-runtime-system-info,0.363
+overstock-login-layer,3.3.2,2026-01-25,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-npm-dependency-confusion threat-npm-preinstall-script threat-runtime-enumeration threat-runtime-system-info,0.37
+owl.carousel.custom,0.1.10,2025-02-13,high_risk,8.0,threat-network-reverse-shell threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.369
+oxrvxxxxxaslllcaj,1.0.0,2025-09-22,high_risk,8.8,threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks,0.352
+p2pb2b-internal,19.4.9,2025-02-11,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.369
+pa-marked,99.1.7,2026-04-19,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.437
+packt-dm,1.0.13,2026-02-02,high_risk,7.1,threat-filesystem-read threat-process-hooks,0.373
+pap-sdk,6.5.8,2024-11-15,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.387
+paper-dropdown-input,99.9.2,2025-08-30,high_risk,8.6,threat-filesystem-read threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.386
+paper-dropdown-input,99.9.5,2025-08-30,high_risk,8.6,threat-filesystem-read threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.368
+parcel-plugin-lighterhtm,6.5.8,2024-11-15,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.371
+parental-tomato-landfowl,0.5.5,2024-07-11,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.374
+pascoresend,3.2.7,2025-01-26,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.351
+path-external,1.0.9,2026-03-05,high_risk,7.3,threat-runtime-obfuscation-base64exec,0.383
+pathfix,3.0.11,2026-06-24,no_risks_detected,0.0,,0.359
+patria-kolak35-sluey,3.3.3,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.385
+patria-mendut87-sluey,2.2.2,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.385
+pay-by-bank-dashboard-server,1.0.15,2026-01-23,high_risk,8.6,threat-filesystem-read threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-network-reverse-shell threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-keylogging threat-runtime-system-info,0.369
+pay-by-bank-dashboard-server,1.0.16,2026-01-23,high_risk,8.6,threat-filesystem-read threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-network-reverse-shell threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-keylogging threat-runtime-system-info,0.379
+pay-by-bank-dashboard-server,1.0.21,2026-01-23,high_risk,8.6,threat-filesystem-read threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-network-reverse-shell threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-keylogging threat-runtime-system-info,0.399
+pay-internal,33.12.13,2025-06-07,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.361
+payments-ui,99.9.10,2026-03-22,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.359
+payouts-report,2.0.0,2025-11-07,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.37
+paypal-payouts-bridge,100.3.3,2026-05-04,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.365
+paypal-scripts-server-utils,1.0.0,2025-12-11,no_risks_detected,0.0,,0.363
+paypal-url-generator,1.1.1,2025-02-16,high_risk,7.4,threat-npm-preinstall-script,0.366
+pc-analytics-promotion-creation-core,1.0.0,2025-09-23,no_risks_detected,0.0,,0.357
+pegin-address-verificator,20.9.9,2025-01-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.367
+people-ats-common,6.5.8,2024-11-15,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.394
+permanent-sapphire-panda,1.6.3,2024-07-11,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.363
+persistent_orca_z3n,3.2.3,2024-07-13,high_risk,7.4,threat-runtime-self-propagation,0.363
+pexels-internal,2.8.6,2025-08-03,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.362
+phantom-chartwinds,9999.0.2,2026-03-05,high_risk,8.0,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration,0.382
+phantom-module,111.0.11,2026-03-06,low,4.1,threat-process-spawn-silent,0.353
+phlib-config,1.0.2,2025-06-03,no_risks_detected,0.0,,0.386
+phone-mockup-react-js,1.0.2,2025-07-08,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.402
+pi-exa-mcp,99.9.9,2026-04-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.376
+pipet-code-agent,2.0.0,2025-06-15,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.36
+pipet-code-agent,2.0.1,2025-06-15,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.367
+pixel-bloom,10.29.4,2025-10-20,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.39
+plain_squid_z3n,4.2.3,2024-07-06,high_risk,7.4,threat-runtime-self-propagation,0.388
+playground_root,1.1.6,2025-09-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.358
+plugin-senna,9.3.130,2025-12-17,high_risk,8.6,threat-filesystem-read threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.371
+plugin-vue,1.0.1,2026-01-08,suspicious,6.9,threat-process-hooks threat-runtime-obfuscation-general,0.422
+pnpm-workspaces,1000.0.2,2026-04-14,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.37
+poc-malicious-sim,1.0.1,2025-04-24,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.377
+poc-malicious-sim,1.0.4,2025-04-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.359
+polymarket-clob,1.3.1,2025-12-20,no_risks_detected,0.0,,0.367
+pool-check,1.0.0,2026-02-04,high_risk,7.4,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links,0.367
+pool-check,1.0.6,2026-02-04,high_risk,7.4,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links,0.373
+postcss-hotfix,77.7.7,2026-01-07,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.363
+potdf,9.0.0,2026-01-20,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.371
+pp-react-content-loader,2.2.6,2025-02-15,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.378
+private-internal-sdk,1.0.0,2025-12-13,high_risk,8.8,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks,0.388
+probable-amber-cougar,9.2.8,2024-07-10,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.368
+processwithcloudevents-client,10.0.1,2025-06-05,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.369
+productboard-eslint-plugin-relay,10120.0.1112,2025-08-06,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-sysinfo threat-runtime-enumeration threat-runtime-system-info,0.394
+productboard-freemail,11091.0.1113,2025-08-06,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-sysinfo threat-runtime-enumeration threat-runtime-system-info,0.378
+productboard-html-to-image,1001.0.9,2025-08-06,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-sysinfo threat-runtime-enumeration threat-runtime-system-info,0.38
+productbundlesserv,2.0.0,2025-02-12,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.374
+project-init-tools,1.0.8,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.458
+project-init-tools,1.1.0,2026-05-23,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.418
+project-init-tools,1.2.0,2026-05-24,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.41
+project-init-tools,1.5.0,2026-05-24,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.413
+proleis-web-app,1.0.1,2026-01-26,no_risks_detected,0.0,,0.366
+proleis-web-app,10.0.1,2026-01-28,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.371
+proleis-web-file-input,10.1.0,2026-01-28,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.374
+promisified-resource-pool123,1.0.3,2024-12-09,high_risk,7.4,threat-npm-preinstall-script,0.363
+prompt-engineering-toolkit,1.3.0,2026-05-24,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.409
+proper_chipmunk_z3n,2.2.4,2024-07-06,high_risk,7.4,threat-runtime-self-propagation,0.371
+protobufjs-websocket-example,55.3.1,2025-07-04,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.372
+proxyapi-docs,55.3.1,2025-06-16,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.363
+pt-sc-logger,1.0.1,2026-04-12,high_risk,8.2,threat-network-exfiltration threat-network-outbound-shady-links,0.378
+publicmapa,1.0.2,2025-09-02,suspicious,5.5,threat-process-hooks,0.373
+putra-donat89-miaww,2.3.4,2024-05-13,high_risk,7.4,threat-runtime-self-propagation,0.381
+putri-nasi94-ruro,1.4.4,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.381
+puzzle-gateway,2.4.1,2026-03-20,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration threat-runtime-environment-read threat-runtime-system-info,0.376
+pxsceneui-example-02,1.0.2,2025-06-16,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.368
+pycodestyle,10.1.1,2025-09-25,no_risks_detected,0.0,,0.363
+qlkube-docs,2.0.0,2025-05-14,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.362
+qxytest1,1.0.4,2025-12-05,high_risk,8.2,threat-runtime-obfuscation-dynamic-eval threat-runtime-obfuscation-general,0.367
+raas-client-app,10.0.1,2025-08-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.37
+rank253222,1.0.2,2026-01-22,high_risk,7.4,threat-npm-preinstall-script,0.366
+rank4222wun,1.0.21,2026-01-23,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-runtime-system-info,0.374
+rank4222wun,1.0.38,2026-01-23,high_risk,8.0,threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.383
+rank4222wun,1.0.56,2026-01-24,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.386
+rank4222wun,1.0.8,2026-01-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.367
+rank4222wun,1.0.92,2026-01-26,high_risk,8.0,threat-network-dns-exfil threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.373
+rank4222wun,1.0.95,2026-01-26,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.389
+rbx-parser-ts,1.5.9,2025-08-02,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.391
+rbxm-tools,1.0.0,2026-02-19,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.368
+rca-overlay-panel,3.0.0,2025-07-30,no_risks_detected,0.0,,0.359
+react-context-stylizer,1.0.1,2025-07-29,low,3.3,threat-runtime-system-info,0.571
+react-event-dependency,1.0.1,2025-03-11,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.475
+react-event-tracker1,9999.0.0-security-test,2025-08-22,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.381
+react-fatigue-dev,5.2.7,2024-11-20,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.353
+react-fixtures,3.4.2,2025-03-03,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.375
+react-forget-runtime,19.1.0,2025-06-14,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.406
+react-headers,5.1.4,2025-07-22,high_risk,8.8,threat-npm-preinstall-script threat-process-download-exec threat-process-hooks threat-process-spawn-silent,0.362
+react-hook-form-ui,1.0.1,2025-06-20,high_risk,7.9,threat-process-hooks threat-runtime-obfuscation-base64exec,0.396
+react-mandes,1.1.4,2025-10-22,suspicious,6.7,threat-network-exfil-sysinfo threat-process-spawn-silent threat-runtime-system-info,0.74
+react-markdown-v7,1.0.0,2025-08-22,high_risk,8.2,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.35
+react-naming-convention,9.9.0,2025-10-14,low,4.9,threat-npm-http-dependency,0.366
+react-native-atob,1.0.0,2025-05-25,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.37
+react-pro-components-next,6.5.8,2024-11-15,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.369
+react-prop-types-helper,1.0.4,2025-10-11,no_risks_detected,0.0,,0.377
+react-simple-utils-kit,1.0.1,2026-06-23,low,4.9,threat-process-hooks threat-runtime-environment-read,0.367
+react-simple-utils-kit,1.2.0,2026-06-23,suspicious,6.1,threat-process-hooks threat-runtime-environment-read,0.369
+react-simple-utils-kit,1.4.0,2026-06-23,high_risk,7.9,threat-network-exfiltration threat-process-hooks,0.372
+react-spa-shadcn,99.0.0,2026-04-19,high_risk,8.0,threat-network-exfil-messenger threat-npm-preinstall-script threat-process-hooks,0.379
+react-svg-helper-fast,1.0.0,2025-11-18,no_risks_detected,0.0,,0.367
+react-thunk-log,2.23.2,2025-08-30,suspicious,5.7,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read,0.698
+react-vis-website,1.1.0,2024-12-16,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.363
+realtime-demo,99.11.9,2025-09-02,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.375
+realtime-solar-system,9.9.9,2025-03-16,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.381
+reasonable_sloth_z3n,1.1.4,2024-07-11,high_risk,7.4,threat-runtime-self-propagation,0.375
+redirect-1wc4gw,1.0.0,2025-09-22,no_risks_detected,0.0,,0.383
+redirect-colaux,1.0.0,2025-10-01,no_risks_detected,0.0,,0.386
+redirect-ht8x82,1.0.0,2025-09-24,no_risks_detected,0.0,,4.849
+redirect-lxzc6c,1.0.0,2025-09-15,no_risks_detected,0.0,,8.271
+redirect-nixl3q,1.0.0,2025-10-02,no_risks_detected,0.0,,0.426
+redirect-nqfhsn,1.0.0,2025-09-29,no_risks_detected,0.0,,5.347
+redirect-nuyvwk,1.0.0,2025-09-26,no_risks_detected,0.0,,5.228
+redirect-thzyis,1.0.0,2025-10-08,no_risks_detected,0.0,,0.561
+redirect-w9cx9u,1.0.0,2025-09-23,no_risks_detected,0.0,,5.056
+redirect-ytimeb,1.0.0,2025-09-29,no_risks_detected,0.0,,5.125
+redis-cookie-js,3.0.8,2025-12-18,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.381
+reduced_falcon_z3n,3.1.3,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.401
+remitly-icon-font,1.0.0,2025-06-17,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.353
+remote-inp,1.0.0,2025-07-16,high_risk,8.8,threat-network-exfiltration threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.397
+repository-dispatch1,9.1.3,2024-11-14,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.362
+reqmanagemedifdt,1.0.2,2025-01-27,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.413
+responses-starter-app,99.9.8,2026-02-12,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.373
+restrict-imports,9.20.5,2026-02-18,no_risks_detected,0.0,,0.396
+retaillocationserv-paypal,2.0.0,2025-11-17,high_risk,7.4,threat-npm-preinstall-script,0.366
+riana-gorengan1-breki,3.4.4,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.404
+riana-keripik12-ruro,2.3.2,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.406
+riana-lapis99-riris,3.3.2,2024-05-14,high_risk,7.4,threat-runtime-self-propagation,0.651
+rina-sego93-riris,1.1.1,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.602
+rina-tongseng23-sukiwir,2.2.1,2024-05-16,high_risk,7.4,threat-runtime-self-propagation,0.448
+rn-native-portals,6.5.8,2024-11-16,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.469
+rncalendareventsexample,0.0.11,2026-02-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.354
+rose-bn,1.0.7,2025-04-24,high_risk,8.0,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration,0.369
+rsd-monorepo,1.0.1,2024-12-14,high_risk,7.4,threat-npm-preinstall-script,0.392
+rsflows-pexml,99.9.15,2026-05-10,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.418
+rt-da-classic-card-collection,1.0.0,2025-12-19,no_risks_detected,0.0,,0.426
+ruba-clearpass-api,1.0.0,2025-03-15,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-runtime-system-info,0.452
+rudi-lapis46-sluey,1.1.4,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.411
+rum-events-format,1.0.0,2025-11-27,no_risks_detected,0.0,,0.387
+sabay-tg-api,1.0.0,2025-10-19,high_risk,9.4,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-process-download-exec threat-process-spawn-silent,0.615
+saifulhhacker.site-test,1.199.0,2025-10-18,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.396
+sap-accesstype,0.0.0,2024-07-11,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.382
+sap-apicpicturetype,0.0.0,2024-07-11,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.404
+sari-saguer47-sluey,1.2.2,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.374
+scattered_vulture_z3n,3.2.2,2024-06-11,no_risks_detected,0.0,,0.376
+scw-core,0.0.1,2026-05-15,suspicious,5.5,threat-process-hooks,0.357
+sd-basket-highlight,1.0.2,2026-03-21,no_risks_detected,0.0,,0.381
+sdp-transform-parser,9999.0.2,2025-08-23,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.373
+sea-bound-siren,100.0.0,2026-06-12,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-process-hooks,0.376
+sea-bound-siren,2.0.0,2026-06-12,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-process-hooks,0.38
+seatalk-protocol,6.5.8,2024-11-16,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.374
+seblakkuah23,1.1.4,2024-05-04,no_risks_detected,0.0,,0.403
+secops-repro-pl,0.0.1,2026-05-07,high_risk,7.0,threat-network-outbound-shady-links threat-process-hooks,0.367
+secure-toolkits,1.0.5,2025-01-10,high_risk,7.8,threat-process-hooks threat-process-spawn-silent threat-runtime-obfuscation-js-mangling,0.384
+secured-ssh,1.6.9,2025-08-22,high_risk,7.9,threat-process-hooks threat-runtime-obfuscation-base64exec,0.378
+securegate-cli-tool,2.1.0,2026-02-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.439
+secureshield4,3.1.0,2025-03-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.362
+security-testing-research99,1.0.7,2025-11-18,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.372
+selectkit1,9.9.9,2025-01-05,high_risk,7.4,threat-npm-preinstall-script,0.389
+seller-node-logger,6.5.8,2024-11-16,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.394
+sendbird-moderation-dashboard,2.2.2,2025-01-08,high_risk,7.4,threat-npm-preinstall-script,0.365
+sendgrid-sdk,0.2.2,2026-06-04,high_risk,7.9,threat-network-exfiltration threat-process-hooks,0.368
+sentencex-win32-x64,1.0.16,2026-03-06,no_risks_detected,0.0,,0.772
+serve-static-corell,1.0.1,2025-01-09,high_risk,8.8,threat-process-hooks threat-process-spawn-silent threat-runtime-obfuscation-dynamic-eval threat-runtime-obfuscation-general,0.373
+servicecore-response-handler,4.0.0,2025-03-26,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.367
+session-exp,1.3.21,2025-10-17,high_risk,8.8,threat-runtime-obfuscation-base64exec threat-runtime-obfuscation-hidden-code,0.417
+seznam-diskuze,11.0.0,2025-08-08,high_risk,8.2,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.365
+sfly-services,4.0.6,2025-09-04,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.368
+sfly-services,4.1.4,2025-09-05,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.392
+sfly-services,4.1.8,2025-09-05,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.368
+sfly-web-vitals,4.0.7,2025-09-04,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.368
+sforce,1.1.2,2025-05-17,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.361
+sfx-data,2.1.0,2026-03-20,high_risk,8.6,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.386
+shmam-test-carrot,4.0.0,2025-08-06,no_risks_detected,0.0,,0.374
+shmam-test-pear,3.0.0,2025-07-30,no_risks_detected,0.0,,0.381
+shmam-test-pear,4.0.0,2025-08-05,no_risks_detected,0.0,,0.378
+shoal-cli,0.4.1,2026-04-01,suspicious,6.9,threat-network-exfiltration threat-process-hooks,0.383
+shop-state,999.1.0,2026-01-05,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.373
+shopify-monorail,1.0.0,2025-12-02,suspicious,5.5,threat-process-hooks,0.354
+sieve2workers,5.0.0,2025-09-24,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-npm-preinstall-script threat-process-hooks,0.366
+sigma-payment,1.0.0,2025-02-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.389
+signals-embed-pro,1.2.4,2025-09-03,high_risk,7.3,threat-runtime-obfuscation-base64exec,0.381
+signup-failover,12.0.0,2025-11-26,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.346
+simple-icon-maker,1.0.5,2025-07-13,no_risks_detected,0.0,,0.422
+sinon-node,2.4.5,2026-02-10,low,3.3,threat-process-spawn-silent threat-runtime-environment-read,0.484
+sip.js-v2,10.0.3,2025-03-02,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.41
+siren-lament,2.14.799,2025-10-29,suspicious,5.5,threat-process-hooks,0.359
+siren-lament,2.14.800,2025-10-29,suspicious,5.5,threat-process-hooks,0.361
+siren-lament,2.14.829,2025-10-29,suspicious,5.5,threat-process-hooks,0.367
+sirius-import-article,4.0.0,2025-07-27,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.365
+siska-kue78-riris,4.1.2,2024-05-22,high_risk,7.4,threat-runtime-self-propagation,0.391
+skipmetoo,1337.0.0,2025-08-28,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.361
+slack-opsgenie-alert-creator,9.9.9,2025-01-10,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.431
+slimy_macaw-tool,2.4.1,2024-05-15,high_risk,7.4,threat-runtime-self-propagation,0.415
+smiling_spoonbill-tool,1.4.3,2024-05-15,high_risk,7.4,threat-runtime-self-propagation,0.465
+smm-youtube,1.0.4,2025-12-05,suspicious,5.9,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-unicode,0.363
+sn3akysnak3-test,1.0.0,2026-03-29,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.387
+snapchat-snapnet,1.0.0,2025-08-12,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.376
+solana-login,1.0.5,2024-12-30,suspicious,5.5,threat-process-hooks,0.561
+solana-pump-test,2.4.1,2025-08-15,high_risk,8.0,threat-filesystem-read threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.45
+solana-pump-test,2.5.5,2025-08-15,high_risk,8.0,threat-filesystem-read threat-process-hooks threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.43
+solarpeng_node_eval,0.9.0,2025-09-24,no_risks_detected,0.0,,0.439
+solidity-deploy-guard,0.4.4,2026-05-21,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.389
+soliditycoverag,0.8.13,2024-11-01,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.373
+solna-web3,1.5.98,2026-05-15,suspicious,5.5,threat-process-hooks,0.355
+soufianewldnass,1.0.1,2025-06-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.392
+spark-ar-libs,10.9.9,2025-01-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.357
+spendesk,99.99.99,2025-07-30,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.351
+squarespace,0.0.0-dev-202603280649,2026-03-28,no_risks_detected,0.0,,0.367
+ssc-mobile-ui-react,9.4.1,2024-11-21,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.389
+stake-operations-script,0.0.1,2025-06-03,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.376
+stardrop-darwin-x64,1.1.46,2026-02-13,no_risks_detected,0.0,,17.357
+stardrop,1.1.46,2026-02-13,no_risks_detected,0.0,,0.364
+start-decent,1.0.0,2024-12-17,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.364
+starter-assets-sass,9.9.10,2024-11-07,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.355
+statistical_egret_z3n,2.4.2,2024-06-07,no_risks_detected,0.0,,0.365
+statutory_boa_z3n,3.1.4,2024-07-08,high_risk,7.4,threat-runtime-self-propagation,0.371
+stelo-win32-x64-msvc,12.0.0,2026-05-23,no_risks_detected,0.0,,1.341
+stencil-module-base,99.0.3,2025-07-03,high_risk,8.6,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration threat-runtime-system-info,0.361
+storj-satellite,1.0.0,2025-09-17,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.358
+stormapp,1.0.5,2024-11-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.346
+storyblok-rich-text-astro-renderer-workspace,99.99.1,2025-02-20,suspicious,5.5,threat-process-hooks,0.37
+strapi-plugin-database,3.6.8,2026-04-03,high_risk,8.8,threat-network-reverse-shell threat-process-download-exec threat-process-hooks threat-process-sysinfo,0.418
+strapi-plugin-finseven,3.6.8,2026-03-31,suspicious,6.7,threat-filesystem-read threat-process-hooks threat-process-sysinfo threat-runtime-enumeration,0.442
+strapi-plugin-nordica,3.6.8,2026-03-31,suspicious,6.1,threat-process-hooks threat-runtime-environment-read,0.356
+strengthifys,1.0.0,2025-12-06,no_risks_detected,0.0,,0.349
+string-mapper,1.3.9,2025-08-25,suspicious,5.7,threat-process-hooks threat-process-spawn-silent threat-runtime-obfuscation-js-mangling,0.424
+string-width-aliased,4.2.3,2025-02-06,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.41
+stringmaster-pro,2.0.1,2025-09-02,no_risks_detected,0.0,,0.46
+strutil-pro,2.3.0,2025-09-16,no_risks_detected,0.0,,0.394
+stylelint-recommended,13.10.9,2026-02-04,suspicious,6.9,threat-process-hooks threat-runtime-obfuscation-general,2.063
+subsequent_bug_z3n,2.4.1,2024-06-11,no_risks_detected,0.0,,0.362
+superbankbackdoor,0.30.1,2025-11-06,high_risk,8.6,threat-filesystem-read threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.378
+svg-content-validation,1.0.8,2026-03-02,no_risks_detected,0.0,,0.392
+sw-cur1,1.3.0,2025-02-13,no_risks_detected,0.0,,0.369
+sw-cur,1.9.0,2025-02-14,no_risks_detected,0.0,,0.373
+sw-cur,2.0.0,2025-02-16,no_risks_detected,0.0,,0.392
+syncora,0.2.0,2026-06-04,no_risks_detected,0.0,,0.413
+syntax-function-bind,6.13.0,2026-02-13,low,4.9,threat-npm-http-dependency,0.387
+syntax-jsx,9.9.0,2026-01-09,low,4.9,threat-npm-http-dependency,0.41
+tableau-widgets-datagrid,10.0.0,2025-06-27,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.384
+tailchat-service-swagger-generator,10.3.8,2024-12-01,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.377
+tailwind-chart,0.6.1,2025-10-17,no_risks_detected,0.0,,0.378
+tailwind-components-cli,1.0.0,2026-01-10,no_risks_detected,0.0,,0.365
+tailwindcss-react-sass,1.17.19,2025-10-28,no_risks_detected,0.0,,0.383
+tania-bakwan2-breki,1.2.1,2024-05-20,high_risk,7.4,threat-runtime-self-propagation,0.38
+tania-tahu67-riris,1.1.4,2024-05-14,high_risk,7.4,threat-runtime-self-propagation,0.374
+tap-bar,8.8.1,2025-06-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.376
+telegramclient-utils,2.26.17,2025-01-27,high_risk,8.8,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-download-exec threat-runtime-system-info,1.435
+tensor-fi-utils-lib,1.1.2,2025-10-28,no_risks_detected,0.0,,0.366
+tensorfi-secure-hash,1.1.0,2025-11-19,no_risks_detected,0.0,,0.379
+test-npm-style,1.0.9,2026-02-05,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.374
+test-pkg-x5,3.2.0,2024-06-07,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.367
+test-thegenetic-module,2.2.8,2025-12-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.349
+test-topdev-logger-v1,1.0.0,2025-05-02,no_risks_detected,0.0,,0.388
+test1sharp,0.34.5,2026-03-24,high_risk,8.0,threat-npm-preinstall-script threat-process-hooks threat-runtime-obfuscation-js-mangling,0.583
+testapi1232,1.0.1,2025-02-18,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.375
+testapi1232,1.0.2,2025-02-18,high_risk,7.4,threat-npm-preinstall-script,0.356
+testbcms,1.3.8,2025-01-28,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.369
+testbyakash2310xxxxxxxnowaympasti,69.0.0,2024-12-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.468
+testetedep,13.0.0,2025-06-25,no_risks_detected,0.0,,0.354
+testhelloworldfromitaly,1.999.2,2025-06-02,high_risk,8.0,threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.366
+tfjs-backend-webgl,2.8.6,2025-02-22,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.368
+the-integrator,0.0.1,2025-02-11,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.41
+themeone-animate,71.71.80,2025-07-01,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.403
+themeone-utils,71.71.71,2025-07-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.35
+theta-sdk,1.0.10,2026-03-16,suspicious,5.5,threat-process-hooks,0.405
+theta-sdk,1.0.11,2026-04-02,suspicious,5.5,threat-process-hooks,0.378
+theta-sdk,1.0.14,2026-04-09,suspicious,5.5,threat-process-hooks,0.376
+thirsty_beaver_z3n,1.1.2,2024-06-05,no_risks_detected,0.0,,0.368
+thunk-logger,1.0.0,2026-04-07,no_risks_detected,0.0,,0.362
+tianqishengqishi,1.0.0,2025-09-07,suspicious,6.5,threat-filesystem-read threat-network-exfiltration,0.366
+tidb-lightning-web,4.0.6,2025-07-27,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.381
+tiktok-dev,1337.0.0,2025-08-15,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.374
+timeout-ts,0.0.99,2026-01-01,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.37
+tnaparserxml,0.30.2,2025-12-07,low,4.9,threat-filesystem-read,0.408
+todo-plz,9.9.0,2026-01-28,low,4.9,threat-npm-http-dependency,0.38
+token-usage-tracker,1.0.13,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.441
+token_security_check,1.0.5,2025-10-02,low,3.3,threat-runtime-environment-read,0.375
+tokenize-lib,0.0.1,2024-12-10,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.359
+traceviz,10.0.1,2025-08-25,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.353
+transform-es2015-modules-amd,9.9.0,2025-12-07,low,4.9,threat-npm-http-dependency,0.375
+translation-note,9.0.1,2026-01-19,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.366
+transparent-example-request99,1.0.4,2025-11-17,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.394
+tree-sitter-strings,1.0.0,2025-01-06,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.396
+trex-proxy-browser-extension-sdk,0.1.4,2026-02-06,high_risk,8.8,threat-process-download-exec threat-runtime-obfuscation threat-runtime-obfuscation-api threat-runtime-obfuscation-base64exec,3.889
+trgrip,1.0.8,2026-04-06,high_risk,9.4,threat-filesystem-autostart threat-network-exfiltration threat-process-hooks threat-process-spawn-silent,0.365
+trial-guard,1.0.1,2025-12-10,no_risks_detected,0.0,,0.371
+truelayer-service,339.52.1,2025-09-13,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.364
+ts-logger-pack,0.1.1,2026-04-07,no_risks_detected,0.0,,0.367
+ts-tweetnacl-utils,0.0.5,2026-01-13,no_risks_detected,0.0,,0.365
+tsconfig-stitch,19.9.9,2026-01-25,no_risks_detected,0.0,,0.373
+turbolinks_jwt_test2,99.99.99,2025-01-31,suspicious,5.9,threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.354
+tuti-rojak68-breki,1.1.2,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.378
+tv-admin-commons,0.2.29,2026-01-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.341
+typedoc-plugin-fuel-variants,1.0.1,2026-01-17,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.391
+types-lodash.es,1.0.5,2025-10-14,suspicious,5.5,threat-process-hooks,0.364
+typescript-5.1,99.0.9,2025-08-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.372
+typescript-5.8,99.0.9,2025-08-23,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.367
+typescript-api-project,10.0.1,2025-08-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.377
+typescript-util-core,7.1.3,2026-05-04,high_risk,9.4,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-process-hooks,0.361
+ugc-kit,99.99.99,2025-12-27,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.373
+ui-cluster-driver-otccce,5.5.5,2025-11-17,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.355
+ui-router-cool-plugin,72.72.72,2025-06-30,high_risk,7.4,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.372
+uipagain,1.0.0,2026-03-23,high_risk,9.4,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-enumeration,0.359
+umi-dodol25-sukiwir,2.4.2,2024-05-12,high_risk,7.4,threat-runtime-self-propagation,0.385
+umi-lapis82-riris,3.2.1,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.384
+umi-mie2-sluey,1.2.3,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.378
+un112,1.0.20,2026-01-22,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.371
+un112,1.0.33,2026-01-22,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.361
+unifydata,3.6.6,2026-06-24,no_risks_detected,0.0,,0.368
+uniswap-v4-scratchpad-poc,1.0.3,2025-06-12,suspicious,5.5,threat-process-hooks,0.358
+unisys-sdk,99.99.1,2026-04-11,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.365
+unleash-strategies,8.15.0,2025-01-29,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.361
+uphold-sdk-javascript-extensions,1.0.0,2025-06-24,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.375
+upm-template-utils,1.0.6,2025-02-10,high_risk,8.8,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.37
+urgent_orca_z3n,3.2.3,2024-07-11,high_risk,7.4,threat-runtime-self-propagation,0.404
+urti,1.0.4,2026-01-21,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.397
+usage-tracker-secured,1.0.1,2025-10-05,high_risk,8.0,threat-network-exfil-sysinfo threat-process-hooks threat-runtime-system-info,0.367
+use-videos,1.0.0,2025-04-21,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.906
+useful-azure-pinniped,3.8.4,2024-07-11,suspicious,5.9,threat-runtime-environment-read threat-runtime-self-propagation,0.369
+utils-mf,11.2.2,2026-05-20,high_risk,7.2,threat-runtime-obfuscation-js-mangling threat-runtime-obfuscation-unicode,3.831
+utils-mf,11.9.1,2026-06-02,high_risk,7.2,threat-runtime-obfuscation-js-mangling threat-runtime-obfuscation-unicode,27.554
+utomo-mangga78-sumpek,3.2.4,2024-05-07,high_risk,7.4,threat-runtime-self-propagation,0.391
+utomo-mangut23-sluey,3.4.2,2024-05-08,high_risk,7.4,threat-runtime-self-propagation,0.402
+uxline,1.0.1,2025-07-30,no_risks_detected,0.0,,0.399
+v0-core,999.999.29002,2025-10-08,no_risks_detected,0.0,,0.361
+v0-next-shadcn,999.999.9000,2025-10-08,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.371
+v0-next-shadcn,999.999.999,2025-10-08,high_risk,7.4,threat-npm-preinstall-script,0.363
+valida-bepass,99.99.99,2025-04-10,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.36
+validator-utils-pro,1.0.1,2025-09-18,no_risks_detected,0.0,,0.389
+vercel-v0,999.999.2005,2025-10-08,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.361
+vercel-v0,999.999.33005,2025-10-09,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks,0.346
+viam,2.4.3,2025-08-16,suspicious,5.7,threat-process-hooks threat-process-spawn-silent threat-runtime-environment-read,0.698
+victory-native-xl-monorepo,10.0.4,2025-02-01,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.396
+virtru-private,1.0.11,2025-06-06,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.363
+visitor-targeting,1.0.0,2025-02-26,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-runtime-system-info,0.343
+vite-config-field,1.1.1,2026-06-15,low,4.1,threat-process-spawn-silent threat-runtime-environment-read,0.507
+vite-config-react,1.1.4,2026-04-18,low,3.3,threat-runtime-environment-read,0.395
+vite-css-icon,1.0.5,2025-08-08,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.387
+vite-mobcss-log,0.3.2,2025-08-04,high_risk,8.2,threat-network-exfil-sysinfo threat-runtime-system-info,0.388
+vite-plugin-env-compat-plus,5.2.3,2026-04-22,high_risk,7.3,threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.377
+vite-plugin-legacy-umd,1.0.0,2025-05-13,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.365
+vite-tsconfig-log,1.0.8,2025-05-04,no_risks_detected,0.0,,0.404
+vite-ui-components,1.0.2,2026-01-23,suspicious,5.5,threat-process-hooks,0.369
+vite_ruby_monorepo,11.2.8,2025-03-05,high_risk,7.4,threat-npm-preinstall-script,0.379
+vity-toolkit,0.1.13,2025-10-21,low,3.3,threat-runtime-environment-read,0.688
+vity-toolkit,0.1.1,2024-12-19,suspicious,5.3,threat-filesystem-autostart threat-runtime-environment-read,0.987
+vity-toolkit,0.1.25,2025-10-31,low,3.3,threat-runtime-environment-read,0.784
+vity-toolkit,0.1.3,2024-12-22,suspicious,5.3,threat-filesystem-autostart threat-runtime-environment-read,0.977
+viz_schema,9.1.9,2024-11-22,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.363
+vscode-azure-mcp-server,1.0.0,2025-12-16,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.39
+vscode-kubernetes-tools,1.4.0,2025-08-01,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.361
+vscode-websearchforcopilot,2.0.0,2025-06-17,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.355
+vsts-iiswebapp,1.0.2,2025-07-06,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.37
+vusd-lib,1.0.0,2025-09-13,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.367
+wac-relay-runtime,99.99.1,2026-01-10,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.365
+wallet-security-checker,4.0.0,2026-05-21,high_risk,8.6,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.437
+watchmen-cli-win32-x64,1.6.14,2026-06-11,no_risks_detected,0.0,,6.959
+watchmen-cli-win32-x64,1.6.8,2026-06-08,no_risks_detected,0.0,,7.203
+wawan-klanting11-breki,1.1.2,2024-05-17,high_risk,7.4,threat-runtime-self-propagation,0.379
+wawan-lapis77-sukiwir,1.3.1,2024-05-18,high_risk,7.4,threat-runtime-self-propagation,0.387
+wawan-serimuka4-miaww,4.3.4,2024-05-09,high_risk,7.4,threat-runtime-self-propagation,0.384
+wb3cor,4.7.0,2024-11-01,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.689
+wc,1.5.1,2025-07-20,high_risk,8.0,threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks,0.374
+wcc-connector,1.0.0,2025-02-15,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.478
+wdpr-ra-hybrid-content-router,11.999.999,2025-02-21,high_risk,8.8,threat-network-dns-exfil threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.465
+wdpr-test-package,999.999.999,2025-02-21,high_risk,8.8,threat-network-dns-exfil threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-download-exec threat-process-hooks,0.4
+web3-secrets-detector,2.3.0,2026-05-21,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-system-info,0.403
+web3-token-helper,1.0.0,2026-06-19,no_risks_detected,0.0,,0.369
+web3-token-helper,1.1.2,2026-06-22,suspicious,6.1,threat-process-hooks threat-runtime-obfuscation,0.421
+web3e-iban,4.0.7,2024-11-01,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.424
+web3js-wallet,1.0.36,2025-07-12,high_risk,7.4,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links,0.441
+web3js-wallet,2.0.10,2025-07-13,high_risk,8.0,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-spawn-silent,0.404
+web3js-wallet,2.0.31,2025-07-14,high_risk,8.0,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-spawn-silent,0.458
+web3js-wallet,2.0.35,2025-07-14,high_risk,8.0,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-spawn-silent,0.405
+web3js-wallet,2.0.5,2025-07-13,high_risk,8.0,threat-network-exfil-messenger threat-network-exfiltration threat-network-outbound-shady-links threat-process-spawn-silent,0.426
+web3rpcs,1.0.3,2025-04-20,high_risk,7.2,threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.495
+webb3-bzz,1.10.3,2024-11-01,high_risk,8.8,threat-process-download-exec threat-runtime-obfuscation-js-mangling,0.393
+webchat-agents,10.0.1,2025-08-29,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.389
+webpikes,1.2.2,2025-04-26,high_risk,7.2,threat-runtime-obfuscation-general threat-runtime-obfuscation-js-mangling,0.451
+whatsapp-core-auth-drzak,99.9.9,2026-03-03,high_risk,8.0,threat-network-dns-exfil threat-npm-preinstall-script threat-process-hooks,0.43
+whatsapp-sdk-docs,1.0.0,2025-03-15,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.395
+whatwg-node,1.0.0,2025-05-25,suspicious,5.7,threat-process-hooks threat-process-spawn-silent,0.422
+wickra-win32-arm64-msvc,0.6.4,2026-06-07,no_risks_detected,0.0,,0.92
+wickra-win32-arm64-msvc,0.8.3,2026-06-10,no_risks_detected,0.0,,1.021
+widgets-mainappointments,2.6.0,2024-12-22,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-runtime-system-info,0.465
+windows-version-check,1.0.2,2024-12-13,high_risk,8.6,threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-obfuscation-js-mangling,0.46
+winston-loggerex,1.0.1,2025-10-12,no_risks_detected,0.0,,0.581
+winston-prisma,1.1.3,2026-03-30,low,3.3,threat-runtime-environment-read,0.645
+wispy_herring_z3n,2.2.3,2024-07-06,high_risk,7.4,threat-runtime-self-propagation,0.384
+wittering_coral-gooddev,2.4.2,2024-05-22,high_risk,7.4,threat-runtime-self-propagation,0.403
+workerd-linux-arm64,99.99.99,2025-01-19,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.366
+workflows-templates,9.0.0,2025-07-01,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script threat-process-hooks,0.364
+workfront-twind,1.0.5,2025-02-26,high_risk,8.0,threat-network-exfil-sysinfo threat-npm-dependency-confusion threat-npm-preinstall-script threat-runtime-system-info,0.361
+workspace-config-loader,1.0.14,2026-05-23,high_risk,9.4,threat-filesystem-autostart threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-process-spawn-silent threat-runtime-system-info,0.475
+workvivo-chatbot,0.0.1,2025-11-16,no_risks_detected,0.0,,0.375
+wpe-php-compat1mm,2.0.0,2025-10-23,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.352
+wwc22docker,0.1.1,2025-09-20,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-process-hooks threat-runtime-system-info,0.375
+xapi_test,1.1.0,2025-01-03,high_risk,8.6,threat-filesystem-read threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.369
+xeno-client,1.0.4,2025-03-09,high_risk,8.6,threat-network-exfiltration threat-network-outbound-shady-links threat-process-download-exec threat-process-hooks threat-runtime-obfuscation-js-mangling,0.362
+xo-angular-ui-utils,1.0.2,2025-08-02,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.36
+xo-device-info,88.8.9,2025-08-10,low,4.9,threat-npm-http-dependency,0.371
+xo-tray-height,99.0.99,2025-08-30,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.369
+xp-anti-fraud-js-lib,2.0.0,2025-07-25,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.369
+yanti-lontong85-sluey,3.4.3,2024-05-13,high_risk,7.4,threat-runtime-self-propagation,0.379
+yapi-to-dts,10.5.2,2024-11-22,high_risk,8.0,threat-network-exfil-messenger threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.359
+year_dropdown,1337.0.0,2025-10-28,high_risk,7.4,threat-npm-preinstall-script threat-process-hooks,0.362
+yellowcard-styling-config,1.0.1,2025-08-07,low,4.9,threat-npm-http-dependency,0.362
+yelp-mobile-site-common,99.0.0,2026-03-24,high_risk,7.4,threat-npm-preinstall-script,0.359
+yt-smm,1.0.0,2025-12-05,suspicious,6.5,threat-filesystem-read threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-environment-read threat-runtime-system-info,0.372
+yummy_marsupial_z3n,3.1.4,2024-07-06,high_risk,7.4,threat-runtime-self-propagation,0.359
+yuni-kentang16-ruro,4.3.2,2024-05-21,high_risk,7.4,threat-runtime-self-propagation,0.375
+yuni-rawon59-apidev,2.4.3,2024-05-08,high_risk,7.4,threat-runtime-self-propagation,0.379
+yuni-tempe47-miaww,1.3.1,2024-05-19,high_risk,7.4,threat-runtime-self-propagation,0.378
+zain-buburayam53-breki,3.4.2,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.376
+zain-gandul4-sukiwir,3.3.1,2024-05-10,high_risk,7.4,threat-runtime-self-propagation,0.381
+zama1.js,1.0.0,2024-09-09,high_risk,7.2,threat-runtime-obfuscation-js-mangling,0.358
+zd-css-bedrock,1.0.0,2024-12-23,high_risk,8.0,threat-network-exfil-sysinfo threat-network-exfiltration threat-network-outbound-shady-links threat-npm-preinstall-script threat-runtime-system-info,0.364
+zeitwerk,11.1.1,2025-09-26,no_risks_detected,0.0,,0.359
+zentra-sdk,1.0.0,2026-05-16,no_risks_detected,0.0,,0.351
+zhilian-js-sdk,12.0.10,2025-03-21,high_risk,8.0,threat-network-exfil-sysinfo threat-network-outbound-shady-links threat-npm-preinstall-script threat-process-hooks threat-runtime-system-info,0.351
+zoddle,4.4.2,2026-02-26,high_risk,7.8,threat-process-hooks threat-runtime-obfuscation-js-mangling,0.37
+zohodeskportalsdksampleappsreactnative,3.3.3,2025-07-07,high_risk,7.4,threat-npm-dependency-confusion threat-npm-preinstall-script,0.358
+zqdl55512,22.2.2,2025-01-10,high_risk,7.4,threat-npm-preinstall-script,0.357
+zul-kolak22-sluey,2.2.1,2024-05-13,high_risk,7.4,threat-runtime-self-propagation,0.375
