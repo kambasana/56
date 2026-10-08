@@ -5,8 +5,10 @@ on:
     paths:
       - 'blastradius/**'
       - '.github/workflows/blastradius.yml'
+  # Every branch, not only main: feature branches pushed without a PR got no CI at all before.
+  # review/* branches hold partial slices of the code for CodeRabbit's file limit; they cannot build.
   push:
-    branches: [main]
+    branches-ignore: ['review/**']
     paths:
       - 'blastradius/**'
       - '.github/workflows/blastradius.yml'
@@ -15,9 +17,11 @@ on:
 permissions:
   contents: read
 
+# One group per event and branch: a newer push to a branch supersedes the older run (shown as
+# "cancelled"); main is never cancelled, so every main commit keeps its own result.
 concurrency:
-  group: blastradius-${{ github.ref }}
-  cancel-in-progress: true
+  group: blastradius-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
   run:
@@ -26,8 +30,10 @@ defaults:
 jobs:
   test:
     name: typecheck, test, build (offline)
-    # review/* branches hold partial slices of the code for CodeRabbit's file limit; they cannot build on their own.
-    if: ${{ !startsWith(github.base_ref, 'review/') }}
+    # Pull requests from this repository are already tested by the push run on the same head
+    # commit (its checks show on the PR), so only fork PRs run here: no duplicate run per commit.
+    # PRs into review/* slices never run: those branches cannot build on their own.
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && !startsWith(github.base_ref, 'review/')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,8 +57,10 @@ jobs:
   web:
     name: 'web: typecheck, test, build, e2e'
     needs: test
-    # review/* branches hold partial slices of the code for CodeRabbit's file limit; they cannot build on their own.
-    if: ${{ !startsWith(github.base_ref, 'review/') }}
+    # Pull requests from this repository are already tested by the push run on the same head
+    # commit (its checks show on the PR), so only fork PRs run here: no duplicate run per commit.
+    # PRs into review/* slices never run: those branches cannot build on their own.
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && !startsWith(github.base_ref, 'review/')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

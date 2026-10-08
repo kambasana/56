@@ -109,8 +109,10 @@ for (const s of runner.servers ?? []) {
   };
   // Quick mode (HAMMER_MODE unset or quick): the dated servers only hold the historical incident
   // scenarios, so run just the scenario suite there; every feature suite runs once, on "now".
+  // --no-deps as well: the @perf project is the chromium project's teardown, and Playwright runs
+  // teardown projects whatever --grep says, so without it the perf check ran on every dated server.
   const quickDated = process.env.HAMMER_MODE !== 'full' && s.asOf !== 'now';
-  const grep = quickDated && !extra.includes('--grep') ? ['--grep', 'scenarios\\.hammer\\.ts'] : [];
+  const grep = quickDated && !extra.includes('--grep') ? ['--grep', 'scenarios\\.hammer\\.ts', '--no-deps'] : [];
   const r = await runPlaywright(['-c', join(here, 'hammer.config.ts'), ...grep, ...extra], env);
   ran.push(`${s.name}: exit ${r.status}${r.hung ? ' (runner hung after finishing; stopped)' : ''}`);
   if (r.status !== 0) failed++;
