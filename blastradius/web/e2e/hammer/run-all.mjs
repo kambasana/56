@@ -106,6 +106,8 @@ for (const s of runner.servers ?? []) {
     HAMMER_SERVER_NAME: s.name,
     HAMMER_SERVER_ASOF: s.asOf,
     HAMMER_KEEP_RESULTS: '1',
+    // The scenarios the runner scanned (all, or the --only subset), so the suite expects just those.
+    ...(Array.isArray(runner.scenarios) ? { HAMMER_SELECTED_SCENARIOS: runner.scenarios.map((x) => x.id).join(',') } : {}),
   };
   // Quick mode (HAMMER_MODE unset or quick): the dated servers only hold the historical incident
   // scenarios, so run just the scenario suite there; every feature suite runs once, on "now".
