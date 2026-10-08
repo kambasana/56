@@ -1,0 +1,57 @@
+[
+ {
+  "runtime": "@receptron/laya 0.1.2 (onnxruntime-node 1.30.0, CPU execution provider, default session options)",
+  "repo": "receptron/laya-onnx",
+  "revision": "68f27dfe5a27a54fb2b1fefc432f43f972e90868",
+  "sha256": {
+   "laya.onnx": "a874eb254b58b0fcb1e7ad56fbb188c29d64e08c9a46b689433e1f52c66dba1e",
+   "laya.onnx.data": "487746363a8da57bcadb4345352997d22a0fb90d70aa22c6856668d023242aba"
+  },
+  "bundleBytes": {
+   "laya.onnx": 3807291,
+   "laya.onnx.data": 1685258240
+  },
+  "config": {
+   "max_len": 512,
+   "head_max_len": 192,
+   "temperature": [
+    1.6369030475616455,
+    1.2514300346374512,
+    1.983399510383606
+   ],
+   "temperature_by_options": {
+    "choice:3-5": 1.7601518630981445,
+    "choice:6-10": 1.0000158548355103,
+    "score:3-5": 1.2514300346374512,
+    "noul:2": 1.983399510383606,
+    "choice:11+": 0.10058280825614929,
+    "choice:2": 1.9063563346862793
+   }
+  },
+  "machine": {
+   "cpu": "Intel(R) Xeon(R) Processor",
+   "cores": 4,
+   "totalMemGiB": 15.7,
+   "node": "v22.22.0"
+  },
+  "decisions": 1380,
+  "loadMs": 13096,
+  "latencyMs": {
+   "median": 4122,
+   "p95": 8695,
+   "max": 10219,
+   "mean": 4826
+  },
+  "memory": {
+   "rssAfterLoadMiB": 1606,
+   "peakRssMiB": 2145
+  },
+  "inputTokens": {
+   "max": 1536,
+   "atMaxLen": 1380,
+   "maxLen": 512
+  },
+  "statesSha256": "37fa30f86f7fd0e69bc73ff61b2454348e1b0eb9c0a224eaaaddb6f6627cba78",
+  "alreadyScoredAtStart": 1974
+ }
+]

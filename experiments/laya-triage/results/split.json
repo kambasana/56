@@ -1,0 +1,31 @@
+{
+ "calibration": [
+  "cwmma",
+  "ljharb",
+  "isaacs",
+  "types",
+  "aws-sdk-bot"
+ ],
+ "test": [
+  "oss-bot",
+  "sindresorhus",
+  "wooorm",
+  "microsoft1es",
+  "xtuc",
+  "GitHub Actions"
+ ],
+ "proofEpisodes": {
+  "aws-sdk-bot": 63,
+  "cwmma": 0,
+  "GitHub Actions": 32,
+  "isaacs": 8,
+  "ljharb": 0,
+  "microsoft1es": 34,
+  "oss-bot": 0,
+  "sindresorhus": 11,
+  "types": 13,
+  "wooorm": 1,
+  "xtuc": 0
+ },
+ "points": 3354
+}

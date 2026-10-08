@@ -19,6 +19,10 @@ hours before the per-package advisories finish, and they need no re-scan. The bu
 earn a standalone alert: routine monorepo and prolific-maintainer releases look the same as a worm.
 At most it is a low-weight input to combine with other signals, which was not tested here.
 
+**Follow-up (2026-10-08):** a pre-registered zero-shot Laya triage step on each burst was tested in
+[LAYA-TRIAGE.md](LAYA-TRIAGE.md). It fails: 0.427 false alarms per test-control account-month, and
+only 13 of 25 Shai-Hulud early warnings kept.
+
 ## Caveats (read before quoting the numbers)
 
 - **Deleted versions lose their publisher.** npm removed the bad versions; their `_npmUser` is gone.

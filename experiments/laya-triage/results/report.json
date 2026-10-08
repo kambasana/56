@@ -1,0 +1,1248 @@
+{
+ "tau": 0.7154,
+ "monthsPerAccount": 7.031,
+ "sanity": {
+  "cwmma": {
+   "proof": 0,
+   "cadence": 0
+  },
+  "ljharb": {
+   "proof": 0,
+   "cadence": 0
+  },
+  "isaacs": {
+   "proof": 8,
+   "cadence": 8
+  },
+  "types": {
+   "proof": 13,
+   "cadence": 13
+  },
+  "aws-sdk-bot": {
+   "proof": 63,
+   "cadence": 82
+  },
+  "oss-bot": {
+   "proof": 0,
+   "cadence": 0
+  },
+  "sindresorhus": {
+   "proof": 11,
+   "cadence": 11
+  },
+  "wooorm": {
+   "proof": 1,
+   "cadence": 1
+  },
+  "microsoft1es": {
+   "proof": 34,
+   "cadence": 34
+  },
+  "xtuc": {
+   "proof": 0,
+   "cadence": 0
+  },
+  "GitHub Actions": {
+   "proof": 32,
+   "cadence": 33
+  }
+ },
+ "noTriage": {
+  "name": "no triage",
+  "calibration": {
+   "perAccount": {
+    "cwmma": 0,
+    "ljharb": 0,
+    "isaacs": 8,
+    "types": 13,
+    "aws-sdk-bot": 82
+   },
+   "episodes": 103,
+   "accountMonths": 35.15,
+   "rate": 2.93
+  },
+  "test": {
+   "perAccount": {
+    "oss-bot": 0,
+    "sindresorhus": 11,
+    "wooorm": 1,
+    "microsoft1es": 34,
+    "xtuc": 0,
+    "GitHub Actions": 33
+   },
+   "episodes": 79,
+   "accountMonths": 42.18,
+   "rate": 1.873
+  },
+  "incidents": [
+   {
+    "account": "qix",
+    "incident": "chalk-debug-2025",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-08T13:19:05.292Z",
+    "leadH": 1.1
+   },
+   {
+    "account": "aqz23678",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-14T20:45:55.170Z",
+    "leadH": 44.3
+   },
+   {
+    "account": "art-ws",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-15T08:39:08.818Z",
+    "leadH": 32.4
+   },
+   {
+    "account": "mohit_ahirwal",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-15T08:21:38.198Z",
+    "leadH": 32.7
+   },
+   {
+    "account": "scttcper",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-15T19:52:42.282Z",
+    "leadH": 3.8
+   },
+   {
+    "account": "shaneholloman",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-14T18:35:09.651Z",
+    "leadH": 34.4
+   },
+   {
+    "account": "teselagen-admin",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-14T21:01:44.148Z",
+    "leadH": 31.1
+   },
+   {
+    "account": "thangved02",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-14T20:31:41.794Z",
+    "leadH": 44.6
+   },
+   {
+    "account": "vamsi3293",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-15T04:54:49.223Z",
+    "leadH": 36.2
+   },
+   {
+    "account": "alexadark",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T15:53:19.114Z",
+    "leadH": 7
+   },
+   {
+    "account": "barbarosso",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T07:44:38.004Z",
+    "leadH": 5.6
+   },
+   {
+    "account": "baroned1707",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:21:35.955Z",
+    "leadH": 8.9
+   },
+   {
+    "account": "dustintownsend",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T17:54:19.797Z",
+    "leadH": 4.9
+   },
+   {
+    "account": "linux_china",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:43:11.803Z",
+    "leadH": 7.8
+   },
+   {
+    "account": "osmanekrem",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T09:12:49.964Z",
+    "leadH": 12.3
+   },
+   {
+    "account": "productdevbook",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-11-24T16:44:15.303Z",
+    "leadH": 6.1
+   },
+   {
+    "account": "prosenjit-itobuz",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T09:22:37.226Z",
+    "leadH": 12.4
+   },
+   {
+    "account": "pruthvi21",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T11:18:40.226Z",
+    "leadH": 10.4
+   },
+   {
+    "account": "sameepsi",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T16:51:26.002Z",
+    "leadH": 6.2
+   },
+   {
+    "account": "scgscorp",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:17:17.919Z",
+    "leadH": 8.3
+   },
+   {
+    "account": "tiaanduplessis",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T10:04:48.820Z",
+    "leadH": 5.9
+   },
+   {
+    "account": "trigo-admin",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T07:51:19.264Z",
+    "leadH": 4.9
+   },
+   {
+    "account": "vasudev_arya",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T10:26:44.982Z",
+    "leadH": 11
+   },
+   {
+    "account": "victoriaxaoquyet",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T15:48:54.676Z",
+    "leadH": 6.8
+   },
+   {
+    "account": "xiaojiannpm",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 3,
+    "warnedAt": "2025-11-24T05:35:00.105Z",
+    "leadH": 8.2
+   },
+   {
+    "account": "zeallat",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T03:26:30.212Z",
+    "leadH": 0.2
+   }
+  ],
+  "qixLeadH": 1.1,
+  "shaiWarned": 25,
+  "shaiTotal": 25,
+  "qixOutside20250908": 2,
+  "rule": {
+   "a_falseAlarmsOk": false,
+   "b_qixWarned": true,
+   "c_shai80": true,
+   "pass": false
+  }
+ },
+ "laya": {
+  "name": "Laya P(takeover) ≥ τ (τ = 0.7154)",
+  "calibration": {
+   "perAccount": {
+    "cwmma": 0,
+    "ljharb": 0,
+    "isaacs": 0,
+    "types": 0,
+    "aws-sdk-bot": 3
+   },
+   "episodes": 3,
+   "accountMonths": 35.15,
+   "rate": 0.085
+  },
+  "test": {
+   "perAccount": {
+    "oss-bot": 0,
+    "sindresorhus": 0,
+    "wooorm": 1,
+    "microsoft1es": 16,
+    "xtuc": 0,
+    "GitHub Actions": 1
+   },
+   "episodes": 18,
+   "accountMonths": 42.18,
+   "rate": 0.427
+  },
+  "incidents": [
+   {
+    "account": "qix",
+    "incident": "chalk-debug-2025",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-08T13:19:05.292Z",
+    "leadH": 1.1
+   },
+   {
+    "account": "aqz23678",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-14T20:45:55.170Z",
+    "leadH": 44.3
+   },
+   {
+    "account": "art-ws",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "mohit_ahirwal",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "scttcper",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-15T19:52:42.282Z",
+    "leadH": 3.8
+   },
+   {
+    "account": "shaneholloman",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "teselagen-admin",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "thangved02",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-14T20:31:41.794Z",
+    "leadH": 44.6
+   },
+   {
+    "account": "vamsi3293",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-15T04:54:49.223Z",
+    "leadH": 36.2
+   },
+   {
+    "account": "alexadark",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "barbarosso",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T07:44:38.004Z",
+    "leadH": 5.6
+   },
+   {
+    "account": "baroned1707",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:21:35.955Z",
+    "leadH": 8.9
+   },
+   {
+    "account": "dustintownsend",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "linux_china",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "osmanekrem",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "productdevbook",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "prosenjit-itobuz",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T09:22:37.226Z",
+    "leadH": 12.4
+   },
+   {
+    "account": "pruthvi21",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T11:18:40.226Z",
+    "leadH": 10.4
+   },
+   {
+    "account": "sameepsi",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T16:51:26.002Z",
+    "leadH": 6.2
+   },
+   {
+    "account": "scgscorp",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "tiaanduplessis",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T10:04:48.820Z",
+    "leadH": 5.9
+   },
+   {
+    "account": "trigo-admin",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "vasudev_arya",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "victoriaxaoquyet",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T15:48:54.676Z",
+    "leadH": 6.8
+   },
+   {
+    "account": "xiaojiannpm",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 3,
+    "warnedAt": "2025-11-24T05:35:00.105Z",
+    "leadH": 8.2
+   },
+   {
+    "account": "zeallat",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T03:26:30.212Z",
+    "leadH": 0.2
+   }
+  ],
+  "qixLeadH": 1.1,
+  "shaiWarned": 13,
+  "shaiTotal": 25,
+  "qixOutside20250908": 2,
+  "rule": {
+   "a_falseAlarmsOk": false,
+   "b_qixWarned": true,
+   "c_shai80": false,
+   "pass": false
+  }
+ },
+ "baseline": {
+  "name": "plain-rules baseline",
+  "calibration": {
+   "perAccount": {
+    "cwmma": 0,
+    "ljharb": 0,
+    "isaacs": 4,
+    "types": 10,
+    "aws-sdk-bot": 13
+   },
+   "episodes": 27,
+   "accountMonths": 35.15,
+   "rate": 0.768
+  },
+  "test": {
+   "perAccount": {
+    "oss-bot": 0,
+    "sindresorhus": 10,
+    "wooorm": 1,
+    "microsoft1es": 24,
+    "xtuc": 0,
+    "GitHub Actions": 37
+   },
+   "episodes": 72,
+   "accountMonths": 42.18,
+   "rate": 1.707
+  },
+  "incidents": [
+   {
+    "account": "qix",
+    "incident": "chalk-debug-2025",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-08T13:19:05.292Z",
+    "leadH": 1.1
+   },
+   {
+    "account": "aqz23678",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "art-ws",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "mohit_ahirwal",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-09-15T08:21:38.198Z",
+    "leadH": 32.7
+   },
+   {
+    "account": "scttcper",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "shaneholloman",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "teselagen-admin",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-14T21:01:44.148Z",
+    "leadH": 31.1
+   },
+   {
+    "account": "thangved02",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "vamsi3293",
+    "incident": "shai-hulud-1",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-09-15T04:54:49.223Z",
+    "leadH": 36.2
+   },
+   {
+    "account": "alexadark",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T15:53:19.114Z",
+    "leadH": 7
+   },
+   {
+    "account": "barbarosso",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T07:44:38.004Z",
+    "leadH": 5.6
+   },
+   {
+    "account": "baroned1707",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:21:35.955Z",
+    "leadH": 8.9
+   },
+   {
+    "account": "dustintownsend",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T17:54:19.797Z",
+    "leadH": 4.9
+   },
+   {
+    "account": "linux_china",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:43:11.803Z",
+    "leadH": 7.8
+   },
+   {
+    "account": "osmanekrem",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "productdevbook",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 2,
+    "warnedAt": "2025-11-24T16:44:15.303Z",
+    "leadH": 6.1
+   },
+   {
+    "account": "prosenjit-itobuz",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T09:22:37.226Z",
+    "leadH": 12.4
+   },
+   {
+    "account": "pruthvi21",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T11:18:40.226Z",
+    "leadH": 10.4
+   },
+   {
+    "account": "sameepsi",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T16:51:26.002Z",
+    "leadH": 6.2
+   },
+   {
+    "account": "scgscorp",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T05:17:17.919Z",
+    "leadH": 8.3
+   },
+   {
+    "account": "tiaanduplessis",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T10:04:48.820Z",
+    "leadH": 5.9
+   },
+   {
+    "account": "trigo-admin",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T07:51:19.264Z",
+    "leadH": 4.9
+   },
+   {
+    "account": "vasudev_arya",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T10:26:44.982Z",
+    "leadH": 11
+   },
+   {
+    "account": "victoriaxaoquyet",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T15:48:54.676Z",
+    "leadH": 6.8
+   },
+   {
+    "account": "xiaojiannpm",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 3,
+    "warnedAt": null,
+    "leadH": null
+   },
+   {
+    "account": "zeallat",
+    "incident": "shai-hulud-2",
+    "qualifyingTriagePoints": 1,
+    "warnedAt": "2025-11-24T03:26:30.212Z",
+    "leadH": 0.2
+   }
+  ],
+  "qixLeadH": 1.1,
+  "shaiWarned": 18,
+  "shaiTotal": 25,
+  "qixOutside20250908": 1,
+  "rule": {
+   "a_falseAlarmsOk": false,
+   "b_qixWarned": true,
+   "c_shai80": false,
+   "pass": false
+  }
+ },
+ "sensitivityCarryForward": {
+  "noTriage": {
+   "calibration": {
+    "perAccount": {
+     "cwmma": 0,
+     "ljharb": 0,
+     "isaacs": 8,
+     "types": 13,
+     "aws-sdk-bot": 63
+    },
+    "episodes": 84,
+    "rate": 2.389
+   },
+   "test": {
+    "perAccount": {
+     "oss-bot": 0,
+     "sindresorhus": 11,
+     "wooorm": 1,
+     "microsoft1es": 34,
+     "xtuc": 0,
+     "GitHub Actions": 32
+    },
+    "episodes": 78,
+    "rate": 1.849
+   },
+   "incidents": [
+    {
+     "account": "qix",
+     "incident": "chalk-debug-2025",
+     "leadH": 1.1
+    },
+    {
+     "account": "aqz23678",
+     "incident": "shai-hulud-1",
+     "leadH": 44.3
+    },
+    {
+     "account": "art-ws",
+     "incident": "shai-hulud-1",
+     "leadH": 35.7
+    },
+    {
+     "account": "mohit_ahirwal",
+     "incident": "shai-hulud-1",
+     "leadH": 32.7
+    },
+    {
+     "account": "scttcper",
+     "incident": "shai-hulud-1",
+     "leadH": 3.8
+    },
+    {
+     "account": "shaneholloman",
+     "incident": "shai-hulud-1",
+     "leadH": 34.4
+    },
+    {
+     "account": "teselagen-admin",
+     "incident": "shai-hulud-1",
+     "leadH": 31.1
+    },
+    {
+     "account": "thangved02",
+     "incident": "shai-hulud-1",
+     "leadH": 44.6
+    },
+    {
+     "account": "vamsi3293",
+     "incident": "shai-hulud-1",
+     "leadH": 36.2
+    },
+    {
+     "account": "alexadark",
+     "incident": "shai-hulud-2",
+     "leadH": 7
+    },
+    {
+     "account": "barbarosso",
+     "incident": "shai-hulud-2",
+     "leadH": 5.6
+    },
+    {
+     "account": "baroned1707",
+     "incident": "shai-hulud-2",
+     "leadH": 8.9
+    },
+    {
+     "account": "dustintownsend",
+     "incident": "shai-hulud-2",
+     "leadH": 4.9
+    },
+    {
+     "account": "linux_china",
+     "incident": "shai-hulud-2",
+     "leadH": 7.8
+    },
+    {
+     "account": "osmanekrem",
+     "incident": "shai-hulud-2",
+     "leadH": 12.3
+    },
+    {
+     "account": "productdevbook",
+     "incident": "shai-hulud-2",
+     "leadH": 6.1
+    },
+    {
+     "account": "prosenjit-itobuz",
+     "incident": "shai-hulud-2",
+     "leadH": 12.4
+    },
+    {
+     "account": "pruthvi21",
+     "incident": "shai-hulud-2",
+     "leadH": 10.4
+    },
+    {
+     "account": "sameepsi",
+     "incident": "shai-hulud-2",
+     "leadH": 6.2
+    },
+    {
+     "account": "scgscorp",
+     "incident": "shai-hulud-2",
+     "leadH": 8.3
+    },
+    {
+     "account": "tiaanduplessis",
+     "incident": "shai-hulud-2",
+     "leadH": 5.9
+    },
+    {
+     "account": "trigo-admin",
+     "incident": "shai-hulud-2",
+     "leadH": 4.9
+    },
+    {
+     "account": "vasudev_arya",
+     "incident": "shai-hulud-2",
+     "leadH": 11
+    },
+    {
+     "account": "victoriaxaoquyet",
+     "incident": "shai-hulud-2",
+     "leadH": 6.8
+    },
+    {
+     "account": "xiaojiannpm",
+     "incident": "shai-hulud-2",
+     "leadH": 8.2
+    },
+    {
+     "account": "zeallat",
+     "incident": "shai-hulud-2",
+     "leadH": 0.2
+    }
+   ],
+   "qixLeadH": 1.1,
+   "shaiWarned": 25,
+   "shaiTotal": 25,
+   "wouldPass": false
+  },
+  "baseline": {
+   "calibration": {
+    "perAccount": {
+     "cwmma": 0,
+     "ljharb": 0,
+     "isaacs": 4,
+     "types": 10,
+     "aws-sdk-bot": 13
+    },
+    "episodes": 27,
+    "rate": 0.768
+   },
+   "test": {
+    "perAccount": {
+     "oss-bot": 0,
+     "sindresorhus": 10,
+     "wooorm": 1,
+     "microsoft1es": 24,
+     "xtuc": 0,
+     "GitHub Actions": 37
+    },
+    "episodes": 72,
+    "rate": 1.707
+   },
+   "incidents": [
+    {
+     "account": "qix",
+     "incident": "chalk-debug-2025",
+     "leadH": 1.1
+    },
+    {
+     "account": "aqz23678",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "art-ws",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "mohit_ahirwal",
+     "incident": "shai-hulud-1",
+     "leadH": 32.7
+    },
+    {
+     "account": "scttcper",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "shaneholloman",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "teselagen-admin",
+     "incident": "shai-hulud-1",
+     "leadH": 31.1
+    },
+    {
+     "account": "thangved02",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "vamsi3293",
+     "incident": "shai-hulud-1",
+     "leadH": 36.2
+    },
+    {
+     "account": "alexadark",
+     "incident": "shai-hulud-2",
+     "leadH": 7
+    },
+    {
+     "account": "barbarosso",
+     "incident": "shai-hulud-2",
+     "leadH": 5.6
+    },
+    {
+     "account": "baroned1707",
+     "incident": "shai-hulud-2",
+     "leadH": 8.9
+    },
+    {
+     "account": "dustintownsend",
+     "incident": "shai-hulud-2",
+     "leadH": 4.9
+    },
+    {
+     "account": "linux_china",
+     "incident": "shai-hulud-2",
+     "leadH": 7.8
+    },
+    {
+     "account": "osmanekrem",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "productdevbook",
+     "incident": "shai-hulud-2",
+     "leadH": 6.1
+    },
+    {
+     "account": "prosenjit-itobuz",
+     "incident": "shai-hulud-2",
+     "leadH": 12.4
+    },
+    {
+     "account": "pruthvi21",
+     "incident": "shai-hulud-2",
+     "leadH": 10.4
+    },
+    {
+     "account": "sameepsi",
+     "incident": "shai-hulud-2",
+     "leadH": 6.2
+    },
+    {
+     "account": "scgscorp",
+     "incident": "shai-hulud-2",
+     "leadH": 8.3
+    },
+    {
+     "account": "tiaanduplessis",
+     "incident": "shai-hulud-2",
+     "leadH": 5.9
+    },
+    {
+     "account": "trigo-admin",
+     "incident": "shai-hulud-2",
+     "leadH": 4.9
+    },
+    {
+     "account": "vasudev_arya",
+     "incident": "shai-hulud-2",
+     "leadH": 11
+    },
+    {
+     "account": "victoriaxaoquyet",
+     "incident": "shai-hulud-2",
+     "leadH": 6.8
+    },
+    {
+     "account": "xiaojiannpm",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "zeallat",
+     "incident": "shai-hulud-2",
+     "leadH": 0.2
+    }
+   ],
+   "qixLeadH": 1.1,
+   "shaiWarned": 18,
+   "shaiTotal": 25,
+   "wouldPass": false
+  },
+  "laya": {
+   "calibration": {
+    "perAccount": {
+     "cwmma": 0,
+     "ljharb": 0,
+     "isaacs": 0,
+     "types": 0,
+     "aws-sdk-bot": 3
+    },
+    "episodes": 3,
+    "rate": 0.085
+   },
+   "test": {
+    "perAccount": {
+     "oss-bot": 0,
+     "sindresorhus": 0,
+     "wooorm": 1,
+     "microsoft1es": 16,
+     "xtuc": 0,
+     "GitHub Actions": 1
+    },
+    "episodes": 18,
+    "rate": 0.427
+   },
+   "incidents": [
+    {
+     "account": "qix",
+     "incident": "chalk-debug-2025",
+     "leadH": 1.1
+    },
+    {
+     "account": "aqz23678",
+     "incident": "shai-hulud-1",
+     "leadH": 44.3
+    },
+    {
+     "account": "art-ws",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "mohit_ahirwal",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "scttcper",
+     "incident": "shai-hulud-1",
+     "leadH": 3.8
+    },
+    {
+     "account": "shaneholloman",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "teselagen-admin",
+     "incident": "shai-hulud-1",
+     "leadH": null
+    },
+    {
+     "account": "thangved02",
+     "incident": "shai-hulud-1",
+     "leadH": 44.6
+    },
+    {
+     "account": "vamsi3293",
+     "incident": "shai-hulud-1",
+     "leadH": 36.2
+    },
+    {
+     "account": "alexadark",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "barbarosso",
+     "incident": "shai-hulud-2",
+     "leadH": 5.6
+    },
+    {
+     "account": "baroned1707",
+     "incident": "shai-hulud-2",
+     "leadH": 8.9
+    },
+    {
+     "account": "dustintownsend",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "linux_china",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "osmanekrem",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "productdevbook",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "prosenjit-itobuz",
+     "incident": "shai-hulud-2",
+     "leadH": 12.4
+    },
+    {
+     "account": "pruthvi21",
+     "incident": "shai-hulud-2",
+     "leadH": 10.4
+    },
+    {
+     "account": "sameepsi",
+     "incident": "shai-hulud-2",
+     "leadH": 6.2
+    },
+    {
+     "account": "scgscorp",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "tiaanduplessis",
+     "incident": "shai-hulud-2",
+     "leadH": 5.9
+    },
+    {
+     "account": "trigo-admin",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "vasudev_arya",
+     "incident": "shai-hulud-2",
+     "leadH": null
+    },
+    {
+     "account": "victoriaxaoquyet",
+     "incident": "shai-hulud-2",
+     "leadH": 6.8
+    },
+    {
+     "account": "xiaojiannpm",
+     "incident": "shai-hulud-2",
+     "leadH": 8.2
+    },
+    {
+     "account": "zeallat",
+     "incident": "shai-hulud-2",
+     "leadH": 0.2
+    }
+   ],
+   "qixLeadH": 1.1,
+   "shaiWarned": 13,
+   "shaiTotal": 25,
+   "wouldPass": false
+  }
+ },
+ "descriptive": {
+  "aucTakeover": 0.859,
+  "aucKindTakeover": 0.914,
+  "aucRisk": 0.715,
+  "pTakeover": {
+   "controls": {
+    "n": 3266,
+    "min": 0.415,
+    "p25": 0.537,
+    "median": 0.574,
+    "p75": 0.611,
+    "p95": 0.664,
+    "max": 0.844
+   },
+   "qualifyingIncident": {
+    "n": 32,
+    "min": 0.526,
+    "p25": 0.615,
+    "median": 0.744,
+    "p75": 0.787,
+    "p95": 0.829,
+    "max": 0.836
+   }
+  },
+  "baselineFlagShare": {
+   "controls": 0.125,
+   "qualifyingIncident": 0.625
+  },
+  "triagePoints": {
+   "calibration": 157,
+   "testControl": 3109,
+   "incident": 88,
+   "qualifying": 32
+  },
+  "maxInputTokens": 1536,
+  "latencyMs": {
+   "n": 3354,
+   "median": 3042,
+   "p95": 8633,
+   "max": 20678,
+   "totalHours": 3.84
+  }
+ },
+ "verdict": {
+  "experimentPasses": false,
+  "worthTheDependency": false
+ }
+}

@@ -53,8 +53,9 @@ await laya.systemOne({ note: 'warm-up' }, QUESTIONS);
 const lat: number[] = [];
 let maxTokens = 0;
 let atLimit = 0;
-for (const p of points) {
-  if (done.has(p.id)) continue;
+// Pending states, incident points first (order does not change any score; it only matters if a run is cut short).
+const pending = points.filter((p) => !done.has(p.id)).sort((a, b) => Number(b.group === 'incident') - Number(a.group === 'incident'));
+for (const p of pending) {
   const s = performance.now();
   const r = await laya.systemOne(p.state, QUESTIONS);
   const ms = performance.now() - s;
@@ -86,6 +87,9 @@ if (lat.length) {
     inputTokens: { max: maxTokens, atMaxLen: atLimit, maxLen: laya.config.max_len },
     statesSha256: readFileSync(join(RES, 'states.sha256'), 'utf8').split(' ')[0],
   };
-  writeFileSync(join(RES, 'laya-run.json'), `${JSON.stringify(run, null, 1)}\n`);
+  // One entry per run segment (the run is resumable; a segment covers the decisions it made).
+  const file = join(RES, 'laya-run.json');
+  const prev = existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as unknown[]) : [];
+  writeFileSync(file, `${JSON.stringify([...prev, { ...run, alreadyScoredAtStart: done.size }], null, 1)}\n`);
   console.log(JSON.stringify(run, null, 1));
 }
