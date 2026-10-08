@@ -1,0 +1,111 @@
+{
+ "builtAt": "2026-10-07",
+ "registry": {
+  "url": "https://registry.npmjs.org/",
+  "fetched": "2026-10-07",
+  "note": "full packuments slimmed by fetch_packuments.py; the live time map keeps unpublished versions"
+ },
+ "downloads": {
+  "url": "https://api.npmjs.org/downloads/range/",
+  "fetched": "2026-10-07/08",
+  "note": "historical daily counts; bulk for unscoped packages, one request per year for scoped"
+ },
+ "hammerLockfiles": [
+  {
+   "repo": "microsoft/TypeScript",
+   "commit": "de61e696214322f72d967bd17c58c50e44b2920d",
+   "path": "package-lock.json",
+   "url": "https://raw.githubusercontent.com/microsoft/TypeScript/de61e696214322f72d967bd17c58c50e44b2920d/package-lock.json",
+   "sha256": "52b6c9bd0a26ef1b0fc27dfbfaa00df6a047cdddd587d07c4f6c1c3345faf5cf"
+  },
+  {
+   "repo": "apache/superset",
+   "commit": "5a2f4c8e80c213fc79e72a9b8d9390c3ce1567a3",
+   "path": "superset-frontend/package-lock.json",
+   "url": "https://raw.githubusercontent.com/apache/superset/5a2f4c8e80c213fc79e72a9b8d9390c3ce1567a3/superset-frontend/package-lock.json",
+   "sha256": "abc5058a49e6814bb76382441b32932b8596fbf7ef0d92083664c1f06f74bc17"
+  },
+  {
+   "repo": "mochajs/mocha",
+   "commit": "a9fc5296831641fbbcc8862e561e498549d840dc",
+   "path": "package-lock.json",
+   "url": "https://raw.githubusercontent.com/mochajs/mocha/a9fc5296831641fbbcc8862e561e498549d840dc/package-lock.json",
+   "sha256": "7a0b770292d0e5cf11c2fe44214616c0984eb1d4016ffeffca3c6892e021f2c8"
+  },
+  {
+   "repo": "microsoft/vscode",
+   "commit": "4809baeed6c46c1e90b44638f7d8bdb802e95b10",
+   "path": "package-lock.json",
+   "url": "https://raw.githubusercontent.com/microsoft/vscode/4809baeed6c46c1e90b44638f7d8bdb802e95b10/package-lock.json",
+   "sha256": "f69693e0438018d8dbf0bcc03d00d8cad5b5730faec7f7ddf951d6d754945891"
+  },
+  {
+   "repo": "npm/cli",
+   "commit": "b317f16c80df02ea3628cfa77170d5ae9b59720c",
+   "path": "package-lock.json",
+   "url": "https://raw.githubusercontent.com/npm/cli/b317f16c80df02ea3628cfa77170d5ae9b59720c/package-lock.json",
+   "sha256": "785ca65893e25bc3ef9c870d191818104031b21b15030fd6bedbd18a3d7050b0"
+  }
+ ],
+ "acmeControls": "blastradius/test/replay/data/org/*/package-lock.json",
+ "notes": [
+  "deps.dev (api.deps.dev) and OpenSSF Scorecard (api.securityscorecards.dev) were reachable but only give today's values; they are not used as features for past releases, and not used to sample negatives either (today's popularity is hindsight).",
+  "api.github.com /advisories is refused in this session (bound to its repositories); GitHub CWE-506 advisories come from the OSV export instead.",
+  "Typosquat distance needs an as-of popular-name list; none was built, so the feature is NaN on every row."
+ ],
+ "rebuild": [
+  "cd blastradius/pack/model",
+  "curl -o osv-npm.zip https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip   # check sha256 in manifest/sources.json",
+  "git clone https://github.com/tstromberg/supplychain-attack-data sad && git -C sad checkout <commit in sources.json>",
+  "python labels.py names --osv-zip osv-npm.zip --attack-data sad --root ../.. --out out/labels",
+  "python fetch_packuments.py --names out/labels/candidates.txt --cache .cache/packuments",
+  "python fetch_packuments.py --names manifest/universe-negatives.txt --cache .cache/packuments   # and universe-hammer.txt",
+  "python labels.py labels --osv-zip osv-npm.zip --attack-data sad --root ../.. --cache .cache/packuments --out out/labels",
+  "python build_dataset.py --root ../.. --cache .cache/packuments --labels out/labels --negatives manifest/universe-negatives.txt --negatives manifest/universe-hammer.txt --controls manifest/universe-controls.txt --out out/dataset --requests-only",
+  "python fetch_downloads.py --requests out/dataset/requests.jsonl --out .cache/downloads",
+  "python build_dataset.py ... --downloads .cache/downloads   # same flags, without --requests-only",
+  "python dataset_report.py --labels out/labels --dataset out/dataset --universe out/universe --sources out/sources.json --manifest manifest --report reports/<date>-dataset.md"
+ ],
+ "labels": {
+  "osv": {
+   "records": 222386,
+   "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+   "downloaded": "2026-10-07T02:46Z",
+   "sha256": "5a7217769c65205becb89484f4fcec85af5708c55305fa9886f103193588e5a3",
+   "licence": "OSV npm export: MAL-* records CC-BY-4.0 (OpenSSF malicious-packages), GitHub advisories CC-BY-4.0",
+   "claims": 222506
+  },
+  "sad": {
+   "attacks": 84,
+   "commit": "a87dcc3559ca89f289ce22542805b7badea68cc2",
+   "licence": "tstromberg/supplychain-attack-data, Apache-2.0",
+   "claims": 732
+  },
+  "kb": {
+   "kbIncidents": 12,
+   "replayIncidents": 7,
+   "licence": "blastradius incident KB (this repository)",
+   "claims": 54
+  }
+ },
+ "criteria": {
+  "minCleanPriorReleases": 1,
+  "minHistoryDays": 90.0,
+  "campaignWindowDays": 2.0,
+  "namedMergeHours": 12.0,
+  "chainGapDays": 1.0,
+  "chainMaxSpanDays": 14.0,
+  "maxSpanDays": 30.0,
+  "maxLiveStream": 10
+ },
+ "featureSchema": "blastradius-features/v2",
+ "sampling": {
+  "maxPerPackageYear": 12,
+  "negativeCandidates": 638515,
+  "negativeRequests": 138700
+ },
+ "timeRange": [
+  "2016-02-25T14:12:57.309000+00:00",
+  "2026-10-05T11:56:29.414000+00:00"
+ ]
+}

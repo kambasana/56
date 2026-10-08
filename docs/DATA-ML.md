@@ -160,14 +160,24 @@ These come from our incident KB plus entity resolution and need ongoing curation
 - **Why.** Ten positives from four campaigns, each with a different signal (new publisher, new install hook, new dependency, protestware), cannot teach a pattern that transfers to a new campaign. The data is the bottleneck, not the code.
 - **Found on the way.** With the full live history, chalk 5.6.1 is **not** a publisher change: qix has published chalk since 2016. The proof run's early warning for chalk comes from the trimmed replay packument. Live, the noisy-OR misses chalk 5.6.1 as well, so held-out recall is 4/6, not 5/6.
 
-**Still needed (networked Actions run and more data):**
-- **More labelled compromises.** This is the blocker.
-  - **The problem:** npm unpublishes malicious releases. The live `time` map keeps their dates, but their manifests are gone.
-  - **Today's coverage:** only the 16 replay releases have manifests, rebuilt by hand from the advisories.
-  - **Options:** reconstruct more manifests from supplychain-attack-data and the advisories; recover archived manifests from a registry mirror or the replicate.npmjs.com changes feed; or train a time-only variant on the thousands of OSV `MAL-*` compromised releases. The time-only variant would need care, because the missing manifest itself must never become a feature.
-- **Data the local run could not reach.** Scorecard and dependents data from deps.dev, and as-of download trends, are blocked locally, so those features stay NaN. They need as-of snapshots (deps.dev BigQuery history) to be leak-free.
-- **Training negatives.** Draw them from deps.dev top-N instead of the dependency walk, and drop known-bad versions from the OSV export (`known_bad.py`; the workflow does this).
-- **Re-run.** Run `train.yml` in the private repo, then the gate. Only a passing run publishes a model.
+### Dataset with network access (2026-10-08, data first)
+
+Report: `blastradius/pack/model/reports/2026-10-08-dataset.md`. Manifest (labels, negative package lists, every input's URL, commit or SHA-256): `blastradius/pack/model/manifest/`. The dataset itself (13.9 MB gzipped) is not committed; the report lists the commands that rebuild it.
+
+- **Positives: 5,306 compromised releases of 2,180 packages in 98 campaigns** (was 16 releases from 7 incidents). Sources: the OSV npm export (MAL-* and CWE-506 GitHub advisories, 5,261 positives cite it), tstromberg/supplychain-attack-data (Apache-2.0, 1,157), the incident KB (56) and the replay incidents (15).
+  - **Rule** (`labels.py`): the package had at least one release not called malicious and 90 days of history before its first bad release, read from the packument `time` map (npm keeps it for unpublished versions). Records whose versions span more than 30 days are affected ranges (e.g. fsevents < 1.2.11), not compromises at publish time. Packages with more than 10 bad versions, most still live, are package-level classifications. Every drop is listed with its reason (12,264 versions of packages npm removed entirely, 5,810 of packages without history, and so on).
+  - **Campaigns:** supplychain-attack-data ids merged into families by campaign marker (TeamPCP, Sha1-Hulud "Second Coming", Shai-Hulud 2025-09, Miasma, the npnjs and npmjs.help phishing waves), KB and replay ids, and OSV-only positives joined to a named campaign within 2 days or chained in time. The four largest campaigns hold 4,616 of the positives, and 38 campaigns have a single positive.
+  - **5,102 of the positives have no manifest** (npm unpublished them). Their features come from the history before them (`allowMissingManifest`), with the 18 manifest features NaN.
+- **Negatives: 138,700 releases** (sampled from 638,515 by at most 12 per package and year, using a hash): the dependency walk from the Acme lockfiles, the hammer control repos' lockfiles at their pinned commits, and the positive packages' own clean releases. Known-bad versions, whole-package malware and the Acme lockfile packages (the gate's noise set) are excluded.
+- **External features.** Downloads are real and as of the release: `api.npmjs.org` range history, using the week ending two days before the release (`downloads_weekly_log10`, new in schema v2, and `downloads_trend`), with 100% coverage. Scorecard, deps.dev dependents and typosquat distance have no history here, so they stay NaN on every row.
+- **Warnings for the model step** (both quantified in the report):
+  - **Manifest missing.** The manifest features are NaN on 97% of positives and on under 1% of negatives. Train a history-only variant with them masked on all rows, or train only on rows that have a manifest.
+  - **Sampling bias.** Negatives come from popular packages. The AUC of weekly downloads alone is 0.27 on the training split, partly because of how negatives were chosen, not because of the attacks. Evaluate within package and weight by year.
+
+**Still needed:**
+- **Model step.** Adapt `train.py` to the history-only variant and to campaign-grouped folds (`campaign`). Then rerun the gate. Only a passing run publishes a model.
+- **As-of history for Scorecard and dependents.** For example, deps.dev BigQuery snapshots. Until then, those features stay NaN.
+- **More manifests for unpublished positives**, from a registry mirror or the replicate.npmjs.com changes feed, so the publisher, install-script and dependency features can be trained.
 
 ## 5. Deliverables
 
