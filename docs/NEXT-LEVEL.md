@@ -84,6 +84,8 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 - node-ipc 10.1.x: the same maintainer, with no install script.
 - chalk 5.6.1 and debug 4.4.2: the same publisher (qix, phished), with no install script. Only the advisory catches them.
 
+**Next (2026-10-08):** see [FEEDS-AND-DETECTORS.md](FEEDS-AND-DETECTORS.md). The known-bad list becomes an incrementally synced, versioned feed (OSV `modified_id.csv` → raw store → compiled index → pack with `listing.json`), and pre-advisory detection reuses GuardDog, adopted only after a catch / noise / cost gate.
+
 **Not yet done:**
 - Org membership and funders need the GitHub and Open Collective APIs. Without a GitHub token, the chain stops at npm accounts and repo owner. The hammer runs with a token.
 

@@ -1,5 +1,7 @@
 # Blastradius data and model design (knowledge pack)
 
+> **Superseded in part (2026-10-08): see [FEEDS-AND-DETECTORS.md](FEEDS-AND-DETECTORS.md).** We no longer train our own "next compromise" model. Detection reuses established feeds and detectors (OSV and OpenSSF, GuardDog, Datadog's dataset), and Blastradius owns the blast radius and "who's behind it". The model was trained properly but lost to the existing rules on both gate measures, so it is not shipped (`data-ml/model`, reports/2026-10-08-gate.md). The dataset and gate stay as the way we evaluate detectors.
+
 **Decision (2026-10-07):** build the data and train the model **once**, as a one-off bootstrap. The result is a small, versioned **knowledge pack** that ships with the app. Regular scans run against the pack and only fetch live data for gaps. Refreshing the pack means re-running the same bootstrap job, by hand, when wanted. There is no continuous ingestion service.
 
 Why: scan-time fetching of every source for every package was slow (3,000 packages took about 27 minutes in the hammer run). It was noisy, because hand-set weights flag almost every npm package as "low". And it never built up the maintainer → org → funder graph, so "who's behind it" stayed empty.
