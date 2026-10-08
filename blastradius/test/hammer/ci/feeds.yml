@@ -1,0 +1,122 @@
+# Blastradius known-bad feeds: hourly incremental sync (docs/FEEDS-AND-DETECTORS.md §2.3).
+#
+# TEMPLATE, not wired up. Copy into the PRIVATE repo (kambasana/blastradius-hammer) as
+# .github/workflows/feeds.yml.
+#
+# Each run:
+#   1. restores the raw record store (feeds.db.gz, an asset of the `feeds-store` release; the first
+#      run has none and bootstraps from OSV all.zip, about 1 min);
+#   2. runs `blastradius feeds sync`: OSV npm incrementally via modified_id.csv, the Datadog
+#      manifest and BKC names via git, the incident KB from the checkout;
+#   3. when a new pack was written, uploads pack-<ts>.json.gz, its .sha256 and listing.json to the
+#      `feeds` release (listing last), and saves the store back.
+# Servers poll listing.json (BLASTRADIUS_PACK_LISTING_URL) with If-None-Match. Release assets of a
+# private repo need a token to download; serve the `feeds` assets from wherever your servers can
+# read them (set FEEDS_BASE_URL so listing.json carries absolute URLs), or keep the URL relative.
+name: feeds
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Blastradius branch, tag or commit in kambasana/56
+        default: docs/blast-radius-plan
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feeds
+  cancel-in-progress: false
+
+env:
+  FEEDS_REF: ${{ inputs.ref || 'docs/blast-radius-plan' }}
+  FEEDS_BASE_URL: ''
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out Blastradius (public)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kambasana/56
+          ref: ${{ env.FEEDS_REF }}
+          path: src
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install
+        working-directory: src/blastradius
+        run: npm ci --ignore-scripts
+
+      - name: Restore the raw store
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/feeds/out"
+          gh release view feeds-store --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create feeds-store --repo "$GITHUB_REPOSITORY" --title "Feeds raw store" --notes "Raw record store for the hourly feeds sync. Not for download by servers."
+          gh release view feeds --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create feeds --repo "$GITHUB_REPOSITORY" --title "Knowledge pack feed" --notes "pack-<ts>.json.gz, .sha256 and listing.json, rebuilt hourly."
+          if gh release download feeds-store --repo "$GITHUB_REPOSITORY" -p feeds.db.gz -D "$RUNNER_TEMP/feeds"; then
+            gunzip "$RUNNER_TEMP/feeds/feeds.db.gz"
+          fi
+          # The current listing, so an unchanged pack is recognised and not re-uploaded.
+          gh release download feeds --repo "$GITHUB_REPOSITORY" -p listing.json -D "$RUNNER_TEMP/feeds/out" || true
+
+      - name: Sync
+        working-directory: src/blastradius
+        run: |
+          npx tsx src/cli.ts feeds sync --store "$RUNNER_TEMP/feeds/feeds.db" --out "$RUNNER_TEMP/feeds/out" \
+            ${FEEDS_BASE_URL:+--base-url "$FEEDS_BASE_URL"} > "$RUNNER_TEMP/feeds/report.json"
+          node -e '
+            const r = require(process.argv[1]);
+            const l = r.listing;
+            console.log(["## Feeds sync",
+              "| | |", "|---|---|",
+              `| pack | ${l.url} (${l.bytes} bytes) |`,
+              `| written | ${r.written.join(", ") || "nothing (no change)"} |`,
+              `| store changes | ${r.storeChanges} |`,
+              `| OSV | ${r.osv?.mode}: ${r.osv?.fetched} fetched, ${r.osv?.inserted} new, ${r.osv?.updated} updated, ${r.osv?.ms} ms |`,
+              `| newest record | ${l.newestModified} |`,
+              `| counts | ${JSON.stringify(l.counts)} |`].join("\n"));
+          ' "$RUNNER_TEMP/feeds/report.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the pack (listing last)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP/feeds/out"
+          written=$(node -e 'console.log(require(process.argv[1]).written.join(" "))' "$RUNNER_TEMP/feeds/report.json")
+          # listing.json was restored above: it is rewritten only when the pack changed.
+          case " $written " in *" listing.json "*) ;; *) echo "No new pack."; exit 0 ;; esac
+          for f in $written; do
+            [ "$f" = listing.json ] && continue
+            gh release upload feeds --repo "$GITHUB_REPOSITORY" --clobber "$f"
+          done
+          gh release upload feeds --repo "$GITHUB_REPOSITORY" --clobber listing.json
+          # Keep the newest 48 packs.
+          gh release view feeds --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' \
+            | grep -E '^pack-.*\.json\.gz$' | sort | head -n -48 \
+            | while read -r old; do
+                gh release delete-asset feeds "$old" --repo "$GITHUB_REPOSITORY" -y
+                gh release delete-asset feeds "$old.sha256" --repo "$GITHUB_REPOSITORY" -y || true
+              done
+
+      - name: Save the raw store
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          changes=$(node -e 'console.log(require(process.argv[1]).storeChanges)' "$RUNNER_TEMP/feeds/report.json")
+          if [ "$changes" = 0 ]; then echo "Store unchanged."; exit 0; fi
+          gzip -1 -c "$RUNNER_TEMP/feeds/feeds.db" > "$RUNNER_TEMP/feeds/feeds.db.gz"
+          gh release upload feeds-store --repo "$GITHUB_REPOSITORY" --clobber "$RUNNER_TEMP/feeds/feeds.db.gz"
