@@ -83,3 +83,62 @@ Adoption follows the same rule as the model: **prove it first**. A detector ship
 3. **GuardDog proof.** Catch / noise / cost as in §3 on replay incidents, Datadog npm compromised samples and control repos. Adopt only if it passes.
 4. **If it passes,** a GuardDog finding source on lockfile diffs, shown with rule names and evidence, never as "critical" on its own.
 5. **OpenSSF package-analysis results** as evidence, if queryable.
+
+## 6. Status
+
+### Step 1, feeds sync: done (branch `feeds/incremental-sync`)
+
+`blastradius feeds sync --store feeds.db --out <dir> [--offline-from <dir>] [--ecosystem npm]` (code in `blastradius/src/feeds/`).
+
+- **OSV** per ecosystem: bootstrap from `all.zip` (own ZIP64 reader, no dependency), then `modified_id.csv` read only down to the high-water mark minus a 2 h overlap. Only ids whose stored `modified` is older than the CSV row are fetched, so the overlap costs no downloads.
+- **Raw store** (`node:sqlite`): `(source, id)` → `modified`, SHA-256, `firstSeenAt`, `lastSeenAt`, `withdrawnAt`, deflated JSON. Writes happen only when `modified` is newer or the hash differs. Withdrawn records and names dropped from a dataset become tombstones and are never deleted. High-water marks are kept per source (OSV: newest `modified`; git sources: commit and date; KB: content hash).
+- **Datadog manifest** and **BKC names** come in by blob-less `git fetch`, so the Datadog sample archives are never downloaded.
+- **BKC decision.** `data/packages.json` is `ecosystem → [names]`, with no versions, and now holds 14,678 npm names (not 174). It also lists compromised *legitimate* packages: `chalk`, `debug`, `event-stream`, `node-ipc`. Marking every version of those as malicious would be wrong, so BKC is a label source only (`pack.labels[name] = ["bkc"]`, "named in a known attack dataset"). Labels are evidence for people and never produce a match. The repository states no licence, so only the names are used, with the DIMVA 2020 citation in NOTICE.
+- **Index.** The pack v2 shape is unchanged, and v2 loaders read it. OSV records go through the existing builder (`addOsvRecord`), and range-only advisories stay ranges. Precedence: KB > GitHub reviewed > OSV `MAL-*` / unreviewed GHSA > dataset manifests.
+  - A lower-ranked "every version" claim is a **conflict** when a higher-ranked source names only versions or ranges. It goes to `pack.conflicts` with the ids that contradict it, and it does not match.
+  - An open range from `0.0.0` counts as "every version", which is how GHSA writes it.
+  - Dataset entries only fill gaps. Anything a higher source already covers counts as corroborating, so the same version is not alerted twice.
+  - KB refs (`source: "kb"`) give org-wide alerts for KB incidents. The scan enricher skips them because a scan reads the KB itself.
+- **Artifact.** The output is `pack-<UTC ts>.json.gz`, `.sha256` and `listing.json` (version, builtAt, counts, high-water marks, `newestModified`, url, NOTICE).
+  - `builtAt` is the newest source timestamp, not the wall clock, so the same inputs give the same bytes and a re-run with nothing new writes nothing.
+  - If a different pack would get an existing name, a hash suffix is added. A published pack is never overwritten.
+- **Gates** (`src/feeds/feeds.test.ts`) run on a trimmed recording of real data: the 2026-10-07 slice of `modified_id.csv` with its records. They cover:
+  - incremental replay giving byte-for-byte the same pack as a full rebuild;
+  - a CSV-walk bootstrap giving the same pack as a zip bootstrap;
+  - an idempotent re-run (0 store writes, 0 files);
+  - withdrawn records becoming tombstones that are absent from the index;
+  - determinism;
+  - precedence and conflicts.
+- **Workflow template:** `blastradius/test/hammer/ci/feeds.yml` runs hourly. It keeps the store as a release asset and publishes to a `feeds` release. It is not wired up.
+
+**Real run, 2026-10-08:**
+
+| | |
+|---|---|
+| Bootstrap | 45 s total. OSV npm 25 s: 218 MB `all.zip`, 230,147 records, 729 withdrawn. |
+| Bootstrap sources | Datadog 48,516 entries (46,443 every version, 5,257 versions). BKC 14,678 npm names. KB 16 incidents. |
+| Store | 308 MB |
+| One-day incremental | 2.5 s for OSV: 150 CSV rows read, 148 records fetched. 20 s end to end, of which 10 s is compiling. The pack is byte-identical to the full bootstrap of the same moment. |
+| No-change re-run | 24 s. OSV 0.3 s, compile 13 s. 0 store writes, 0 files written. |
+| Pack | 3.35 MB gzipped |
+| Malware index | 210,612 every-version packages; 27,379 bad versions of 14,668 packages; 579 range-only advisories |
+| Datasets | 3,744 dataset-only entries; 44,717 corroborated |
+| Conflicts | 3,235 in total: 3,226 Datadog "every version" against an OSV `MAL-*` that lists versions; 8 `MAL-*` against a reviewed GHSA; 1 GHSA against the KB (`flatmap-stream`) |
+
+### Step 2, pack polling: done (small)
+
+`src/server/pack-poll.ts`. With `BLASTRADIUS_PACK_LISTING_URL` and `BLASTRADIUS_PACK` set, the server:
+
+1. polls the listing with `If-None-Match` every `BLASTRADIUS_PACK_POLL_MINUTES` (default 30);
+2. downloads only a newer pack;
+3. verifies its SHA-256 and that it loads;
+4. renames it into place;
+5. runs `AlertWatcher.checkAll()`.
+
+**Next:**
+
+- Freshness end to end: an alert's time minus the listing's `newestModified`.
+- Skip the compile when no source moved, which saves about 13 s per hourly run.
+- Compiling from the store at a time T, for "what did we know at T".
+- CISA KEV and EPSS.
+- The supplychain-attack-data incidents. The old `pack:build` carried them; the feeds sync does not yet.
