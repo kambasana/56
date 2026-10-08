@@ -12,7 +12,7 @@ import { fakeApi, renderPage } from './e-parts/testkit';
 import Alerts, { ruleWhen } from './Alerts';
 import BehindPage, { rootIdFor } from './Behind';
 import Exposure from './Exposure';
-import IncidentDetail, { fmtDuration } from './IncidentDetail';
+import IncidentDetail, { fmtAgo, fmtDuration } from './IncidentDetail';
 import Incidents, { incidentFacet, incidentTitle } from './Incidents';
 import PackagePage, { lifecyclePhases, shortestFix } from './Package';
 
@@ -108,6 +108,8 @@ describe('Incident page', () => {
     expect(fmtDuration(130 * 60_000)).toBe('2 h 10 min');
     expect(fmtDuration(3 * 86_400_000 + 4 * 3_600_000)).toBe('3 d 4 h');
     expect(fmtDuration(5_000)).toBe('under a minute');
+    expect(fmtAgo('2026-10-08T10:00:00Z', Date.parse('2026-10-08T10:00:31Z'))).toBe('31 s ago');
+    expect(fmtAgo('2026-10-08T10:00:00Z', Date.parse('2026-10-08T12:10:00Z'))).toBe('2 h 10 min ago');
   });
 });
 

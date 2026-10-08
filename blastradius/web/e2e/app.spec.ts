@@ -149,7 +149,8 @@ test.describe('admin screens', () => {
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/packages\?name=event-stream&version=3\.3\.6/);
     await expect(page.getByRole('heading', { name: 'event-stream@3.3.6', level: 1 })).toBeVisible();
-    await expect(page.getByRole('list', { name: 'Projects' })).toContainText('payments-platform');
+    await expect(page.getByRole('group', { name: /event-stream@3\.3\.6 reaches 1 project/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^payments-platform \(production\)/ }).first()).toBeVisible();
     await shot(page, 'package');
     // A package nobody uses is a clear "not found".
     await page.keyboard.press('Control+k');
@@ -213,11 +214,15 @@ test.describe('admin screens', () => {
   });
 
   test('Exposure matrix', async ({ page }) => {
+    // The project matrix is the org-wide one, scoped to that project.
     await page.goto(`/projects/${project}/exposure`);
-    await expect(page.getByText('event-stream').first()).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/exposure\\?projects=${project}`));
+    await expect(page.getByRole('heading', { name: 'Exposure', level: 1 })).toBeVisible();
+    const heat = page.getByRole('table', { name: /Exposure heatmap/ });
+    await expect(heat.getByRole('link', { name: /^event-stream@3\.3\.6$/ })).toBeVisible();
     await shot(page, 'exposure');
-    await page.goto(`/projects/${project}/exposure?scope=org`);
-    await expect(page.getByText('payments-platform').first()).toBeVisible();
+    await page.goto('/exposure');
+    await expect(heat.getByRole('rowheader', { name: /payments-platform/ })).toBeVisible();
     await shot(page, 'exposure-org');
   });
 

@@ -49,7 +49,7 @@ export function BlastSankey({ pkg, flows, selected, onPickProject, summary, widt
             </text>
           ))}
           {layout.links.map((l) => (
-            <path key={l.id} d={l.d} className={cn(l.production ? 'fill-edge-runtime opacity-55' : 'fill-edge-dev opacity-35', 'hover:opacity-80')}>
+            <path key={l.id} d={l.d} className={cn(l.production ? 'fill-edge-runtime opacity-30' : 'fill-edge-dev opacity-20', 'hover:opacity-60')}>
               <title>{l.title}</title>
             </path>
           ))}

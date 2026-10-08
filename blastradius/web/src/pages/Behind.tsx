@@ -52,7 +52,7 @@ function Sources({ urls }: { urls: readonly string[] }) {
 
 function Legend() {
   return (
-    <div className="pointer-events-none absolute right-3 bottom-3 grid grid-cols-[auto_auto] gap-x-2.5 gap-y-0.5 rounded-lg border bg-background px-2.5 py-2 text-caption text-text-secondary">
+    <div aria-label="Legend" role="note" className="flex flex-wrap gap-x-4 gap-y-0.5 border-t bg-background px-3 py-2 text-caption text-text-secondary">
       <span>⬭ package</span>
       <span>━ High confidence</span>
       <span>○ account</span>
@@ -188,8 +188,9 @@ function Behind({ data }: { data: PackageBehindResponse }) {
           <button
             type="button"
             aria-pressed={showUnreviewed}
+            disabled={!showUnreviewed && unreviewedCount === 0}
             onClick={() => update({ unreviewed: showUnreviewed ? null : '1' })}
-            className={cn('h-6 rounded-[6px] border bg-background px-2.5 text-label', showUnreviewed ? 'border-selection font-semibold text-selection' : 'border-input text-foreground')}
+            className={cn('h-6 rounded-[6px] border bg-background px-2.5 text-label disabled:opacity-60', showUnreviewed ? 'border-selection font-semibold text-selection' : 'border-input text-foreground')}
           >
             {showUnreviewed ? 'Hide unreviewed links' : `Show unreviewed links (${unreviewedCount})`}
           </button>

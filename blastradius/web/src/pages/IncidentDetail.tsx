@@ -39,6 +39,14 @@ export function fmtDuration(ms: number): string {
   return `${m} min`;
 }
 
+/** "31 s ago"-style age of a past time. */
+export function fmtAgo(iso: string, now = Date.now()): string {
+  const ms = now - Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  if (ms < 60_000) return `${Math.max(0, Math.round(ms / 1000))} s ago`;
+  return `${fmtDuration(ms)} ago`;
+}
+
 function Tile({ label, value, note, tone }: { label: string; value: number; note: string; tone?: 'alert' }) {
   return (
     <div className="rounded-xl border px-4 py-3.5">
@@ -144,7 +152,7 @@ function Body({ d, setData }: { d: Detail; setData: (d: Detail) => void }) {
         <div className="flex min-w-0 grow flex-col gap-4 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Tile label="Projects affected" value={projectsAffected} note={d.production ? `${d.production} in production` : 'none in production'} tone={d.production ? 'alert' : undefined} />
-            <Tile label="Projects checked" value={d.checked.projects} note={d.checked.at ? `all, ${fmtTime(d.checked.at)}` : 'latest scans'} />
+            <Tile label="Projects checked" value={d.checked.projects} note={d.checked.at ? `all, ${fmtAgo(d.checked.at)}` : 'latest scans'} />
             <Tile label="Fixed" value={d.fixed} note={`of ${d.affected}`} />
           </div>
 
@@ -217,7 +225,11 @@ function Body({ d, setData }: { d: Detail; setData: (d: Detail) => void }) {
           <h2 id="tl" className="m-0 text-heading font-semibold">
             Timeline
           </h2>
-          <EventTimeline events={d.timeline} />
+          <EventTimeline
+            events={d.timeline.map((e) =>
+              e.kind === 'status' && e.from && e.to ? { ...e, detail: '', from: STATUS_LABEL[e.from as IncidentStatus] ?? e.from, to: STATUS_LABEL[e.to as IncidentStatus] ?? e.to } : e,
+            )}
+          />
           <dl className="m-0 grid grid-cols-[96px_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 border-t pt-3 text-label">
             <dt className="text-muted-foreground">Advisory</dt>
             <dd className="m-0 font-mono">

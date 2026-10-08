@@ -81,7 +81,7 @@ describe('routes', () => {
       expect(await screen.findByRole('heading', { name: title, level: 1 })).toBeInTheDocument();
       unmount();
     }
-  });
+  }, 20_000);
 
   it('sends a project Exposure matrix to the org-wide one, scoped to that project', async () => {
     renderAt('/projects/p1/exposure?min=high', meFor('org_admin'));

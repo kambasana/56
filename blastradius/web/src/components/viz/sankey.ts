@@ -118,10 +118,11 @@ export function layoutSankey(pkg: { label: string }, flowsIn: readonly SankeyFlo
 
   const columns: Agg[][] = [[{ key: 'pkg', label: pkg.label, value: total, production: prodValue > 0 }], vias.kept, projects.kept, envs];
   const maxCount = Math.max(...columns.map((c) => c.length), 1);
-  const height = opts.height ?? Math.max(160, Math.min(560, maxCount * 34 + 40));
   const top = 24;
-  const usable = height - top - 8;
-  const scale = total > 0 ? Math.max(0, (usable - gap * (maxCount - 1)) / total) : 0;
+  const budget = opts.height ?? Math.max(160, Math.min(560, maxCount * 34 + 40));
+  const usable = budget - top - 8;
+  // Thin flows stay thin: at most 28px per asset, so one asset is not a wall.
+  const scale = total > 0 ? Math.min(28, Math.max(0, (usable - gap * (maxCount - 1)) / total)) : 0;
   const columnsX: SankeyLayout['columnsX'] = [0, Math.round(width * 0.28), Math.round(width * 0.56), Math.round(width * 0.8)];
 
   const nodes: SankeyNode[] = [];
@@ -196,5 +197,7 @@ export function layoutSankey(pkg: { label: string }, flowsIn: readonly SankeyFlo
       title: `${s.label} → ${t.label} · ${[...l.kinds].join(' and ')} · ${plural(l.value, 'asset')}`,
     };
   });
+  const bottom = Math.max(...nodes.map((n) => n.y + n.height), top);
+  const height = opts.height ?? Math.max(110, Math.ceil(bottom + 26));
   return { width, height, nodeWidth, columnsX, nodes, links, hiddenProjects: projects.hidden };
 }
