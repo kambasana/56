@@ -1,7 +1,7 @@
 /**
  * Regressions for bugs the hammer run found: axe serious/critical issues (contrast, aria,
  * scrollable regions), the sidebar rail over table rows, the mobile nav sheet staying open,
- * 403s from the nav for roles without the projects page, and the Blast column precision.
+ * 403s from the nav for read-only roles, and the plain-word column labels.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -29,6 +29,10 @@ test.describe('accessibility (axe serious/critical)', () => {
       const project = await devProject(page);
       const paths = [
         '/',
+        '/projects',
+        '/incidents',
+        '/alerts',
+        '/packages?name=event-stream&version=3.3.6',
         '/reports',
         '/integrations',
         '/settings',
@@ -55,7 +59,7 @@ test('auditor navigates without any 4xx from the API (no /api/projects 403)', as
   page.on('response', (r) => {
     if (r.url().includes('/api/') && r.status() >= 400) bad.push(`${r.status()} ${r.url()}`);
   });
-  for (const path of ['/reports', '/no-such-page', '/reports']) {
+  for (const path of ['/', '/findings', '/incidents', '/alerts', '/projects', '/reports', '/no-such-page', '/reports']) {
     await page.goto(path);
     await settle(page);
   }
@@ -89,17 +93,15 @@ test.describe('layout', () => {
     await expect(page.locator(`[id="${controls}"]`)).toHaveAttribute('role', 'tabpanel');
   });
 
-  test('Findings Blast column keeps decimals', async ({ page }) => {
+  test('Findings use plain words: Package, no Blast or Purl column shown by default', async ({ page }) => {
     await login(page, 'admin');
     const project = await devProject(page);
     await page.goto(`/projects/${project}/findings`);
     const table = page.getByRole('table').first();
-    await expect(table.getByRole('columnheader', { name: /Blast/ })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: /Package/ }).first()).toBeVisible();
     const headers = await table.getByRole('columnheader').allInnerTexts();
-    const idx = headers.findIndex((h) => /Blast/.test(h));
-    const values = await table.locator('tbody tr').evaluateAll((rows, i) => rows.map((r) => r.querySelectorAll('td')[i]?.textContent?.trim() ?? ''), idx);
-    expect(values.length).toBeGreaterThan(0);
-    for (const v of values) expect(v).toMatch(/^(<0\.01|[\d,]+\.\d\d)$/);
+    for (const h of headers) expect(h).not.toMatch(/Blast|Purl|noisy/i);
+    await expect(page.getByText(/noisy-OR|Upkeep signals|Snapshot/)).toHaveCount(0);
   });
 });
 
@@ -109,7 +111,7 @@ test('mobile: the nav sheet closes after choosing a page', async ({ page }) => {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
   const project = await devProject(page);
   await page.goto(`/projects/${project}/findings`);
-  for (const name of ['Exposure matrix', 'Reports', 'Changes']) {
+  for (const name of ['Projects', 'Reports', 'Findings']) {
     await page.getByRole('button', { name: 'Toggle Sidebar' }).first().click();
     const sheet = page.getByRole('dialog');
     await expect(sheet).toBeVisible();
@@ -192,7 +194,7 @@ test.describe('hammer round 2', () => {
   });
 });
 
-test('Findings: upkeep-only signals sit in their own tab, apart from findings (noise rule)', async ({ page }) => {
+test('Findings: maintenance-only signals sit in their own tab, apart from findings (noise rule)', async ({ page }) => {
   await login(page, 'admin');
   const project = await devProject(page);
   const health = await page.request.get(`/api/projects/${project}/health`);
@@ -200,11 +202,11 @@ test('Findings: upkeep-only signals sit in their own tab, apart from findings (n
   const items = ((await health.json()) as { items: { purl: string }[] }).items;
   await page.goto(`/projects/${project}/findings`);
   await settle(page);
-  const upkeep = page.getByRole('tab', { name: /Upkeep signals/ });
+  const upkeep = page.getByRole('tab', { name: /Maintenance/ });
   await expect(upkeep).toContainText(`(${items.length})`);
   await upkeep.click();
   await expect(page).toHaveURL(/[?&]view=health/);
-  const table = page.getByRole('table', { name: 'Upkeep signals' });
+  const table = page.getByRole('table', { name: 'Maintenance' });
   await expect(table).toBeVisible();
   if (items.length) await expect(table.locator('tbody tr').first()).toBeVisible();
   // No purl is both a finding and an upkeep entry.

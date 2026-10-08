@@ -2,41 +2,37 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { devProject, login, navLabels, shot, watchConsole, type DevRole } from './helpers';
 
-const ALL_PAGES = ['Home', 'Projects', 'Reports', 'Integrations', 'Changes', 'Findings', 'Exposure matrix', 'Investigate', 'Scans'];
+// One-level sidebar (docs/UX.md §2), Reports and Settings at the bottom.
+const MAIN = ['Overview', 'Findings', 'Incidents', 'Projects', 'Alerts'];
 
-// PLAN §12 default roles: Org admin everything; AppSec and Developer every page but Settings; Auditor only Reports.
-const EXPECTED_NAV: Record<DevRole, { has: string[]; lacks: string[] }> = {
-  admin: { has: [...ALL_PAGES, 'Settings'], lacks: [] },
-  appsec: { has: ALL_PAGES, lacks: ['Settings'] },
-  developer: { has: ALL_PAGES, lacks: ['Settings'] },
-  auditor: { has: ['Reports'], lacks: [...ALL_PAGES.filter((p) => p !== 'Reports'), 'Settings', 'Incident KB'] },
+// Default roles (docs/UX.md §9): every role reads every page but Settings; Settings opens
+// Members (admin) or Sources (AppSec, Developer); the Auditor has no Settings at all.
+const EXPECTED_NAV: Record<DevRole, string[]> = {
+  admin: [...MAIN, 'Reports', 'Settings'],
+  appsec: [...MAIN, 'Reports', 'Settings'],
+  developer: [...MAIN, 'Reports', 'Settings'],
+  auditor: [...MAIN, 'Reports'],
 };
 
 test.describe('navigation per default role', () => {
   for (const role of Object.keys(EXPECTED_NAV) as DevRole[]) {
-    test(`${role} sees the pages PLAN §12 grants`, async ({ page }) => {
+    test(`${role} sees the pages docs/UX.md §9 grants`, async ({ page }) => {
       await login(page, role);
       // The signed-out /api/me 401 before login is expected; watch from here on.
       const errors = watchConsole(page);
       await page.reload();
-      if (role !== 'auditor') {
-        // The project group appears once the seeded project is known.
-        await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Findings' })).toBeVisible();
-      } else {
-        await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Reports' })).toBeVisible();
-      }
+      await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Findings' })).toBeVisible();
       const labels = await navLabels(page);
-      for (const l of EXPECTED_NAV[role].has) expect(labels, `${role} nav has ${l}`).toContain(l);
-      for (const l of EXPECTED_NAV[role].lacks) expect(labels, `${role} nav lacks ${l}`).not.toContain(l);
+      expect(labels).toEqual(EXPECTED_NAV[role]);
+      for (const gone of ['Home', 'Incident KB', 'Integrations', 'Exposure matrix']) expect(labels, `${role} nav lacks ${gone}`).not.toContain(gone);
+      await expect(page.getByText(/coming soon/i)).toHaveCount(0);
       if (role === 'auditor') {
-        expect(labels).toEqual(['Reports']);
         await shot(page, 'auditor-nav');
         await page.goto('/reports');
         await expect(page.getByRole('link', { name: /^Download HTML report for payments-platform/ }).first()).toBeVisible();
         await shot(page, 'auditor-reports');
-      } else {
-        expect(errors()).toEqual([]);
       }
+      expect(errors()).toEqual([]);
     });
   }
 });
@@ -58,17 +54,38 @@ test('accept-invite page is public and rejects an unknown token', async ({ page 
   await expect(page.getByRole('alert')).toContainText('invalid, expired or already used');
 });
 
-test('server denies the auditor GET /api/findings with 403', async ({ page }) => {
+test('the auditor reads findings but the server refuses changes and settings', async ({ page }) => {
   await login(page, 'admin');
   const project = await devProject(page);
   await page.request.post('/api/auth/logout', { headers: { 'X-Requested-With': 'blastradius' } });
   await login(page, 'auditor');
   const res = await page.request.get(`/api/findings?project=${encodeURIComponent(project)}`);
-  expect(res.status()).toBe(403);
-  const home = await page.request.get('/api/home');
-  expect(home.status()).toBe(403);
-  const reports = await page.request.get('/api/reports');
-  expect(reports.status()).toBe(200);
+  expect(res.status()).toBe(200);
+  const first = ((await res.json()) as { items: { id: string }[] }).items[0]!;
+  const patch = await page.request.patch(`/api/findings/${first.id}`, { data: { status: 'reviewed' }, headers: { 'X-Requested-With': 'blastradius' } });
+  expect(patch.status()).toBe(403);
+  expect((await page.request.get('/api/roles')).status()).toBe(403);
+  expect((await page.request.get('/api/reports')).status()).toBe(200);
+  // The status control stays visible, disabled, and says why.
+  await page.goto(`/projects/${project}/findings`);
+  await page.getByRole('table').first().getByText('flatmap-stream', { exact: true }).click();
+  const form = page.getByRole('form', { name: 'Finding status' });
+  await expect(form.getByRole('combobox', { name: 'Status' })).toBeDisabled();
+  await expect(form).toContainText('Needs the Triage permission: ask an admin.');
+  await shot(page, 'auditor-status-disabled');
+});
+
+test('the developer triages findings in the project they are bound to', async ({ page }) => {
+  await login(page, 'admin');
+  const project = await devProject(page);
+  await page.request.post('/api/auth/logout', { headers: { 'X-Requested-With': 'blastradius' } });
+  await login(page, 'developer');
+  await page.goto(`/projects/${project}/findings`);
+  await page.getByRole('table').first().getByText('flatmap-stream', { exact: true }).click();
+  const form = page.getByRole('form', { name: 'Finding status' });
+  await expect(form.getByRole('combobox', { name: 'Status' })).toBeEnabled();
+  // Accepting risk is not theirs: the option is disabled and the reason is shown.
+  await expect(form).toContainText('Needs the Accept risk permission: ask an admin.');
 });
 
 test.describe('admin screens', () => {
@@ -85,10 +102,85 @@ test.describe('admin screens', () => {
     expect(errors(), 'console errors').toEqual([]);
   });
 
-  test('Org home', async ({ page }) => {
+  test('Overview', async ({ page }) => {
     await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible();
     await expect(page.getByRole('cell', { name: /payments-platform/ }).first()).toBeVisible();
     await shot(page, 'org-home');
+  });
+
+  test('sidebar pages are real pages, and breadcrumbs are links', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main' });
+    await page.goto('/');
+    await nav.getByRole('link', { name: 'Projects' }).click();
+    await expect(page).toHaveURL(/\/projects$/);
+    await expect(page.getByRole('heading', { name: 'Projects', level: 1 })).toBeVisible();
+    await page.getByRole('table', { name: 'Projects' }).getByRole('cell', { name: /payments-platform/ }).first().click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings`));
+    const sub = page.getByRole('navigation', { name: 'Project' });
+    await sub.getByRole('link', { name: 'Scans' }).click();
+    await expect(page.getByRole('heading', { name: 'Scans', level: 1 })).toBeVisible();
+    const crumbs = page.getByRole('navigation', { name: 'breadcrumb' });
+    await expect(crumbs.getByRole('link')).toHaveCount(3);
+    await crumbs.getByRole('link', { name: 'payments-platform' }).click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings`));
+    await nav.getByRole('link', { name: 'Findings' }).click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings`));
+    for (const [link, heading] of [['Incidents', 'Incidents'], ['Alerts', 'Alerts'], ['Reports', 'Reports'], ['Settings', 'Settings']] as const) {
+      await nav.getByRole('link', { name: link }).click();
+      await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+    }
+    await page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: 'Sources' }).click();
+    await expect(page).toHaveURL(/\/integrations$/);
+    await shot(page, 'settings-sources');
+  });
+
+  test('⌘K answers "is it here?" for name@version and opens the package page', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible();
+    await page.keyboard.press('Control+k');
+    const box = page.getByRole('combobox', { name: 'Search packages, projects, people, settings' });
+    await expect(box).toBeFocused();
+    await box.fill('event-stream@3.3.6');
+    const verdict = page.getByTestId('cmdk-verdict');
+    await expect(verdict).toContainText(/Yes, it is here: 1 project, \d in production/);
+    await expect(verdict).toHaveAttribute('aria-selected', 'true');
+    await shot(page, 'cmdk-verdict');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/packages\?name=event-stream&version=3\.3\.6/);
+    await expect(page.getByRole('heading', { name: 'event-stream@3.3.6', level: 1 })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Projects' })).toContainText('payments-platform');
+    await shot(page, 'package');
+    // A package nobody uses is a clear "not found".
+    await page.keyboard.press('Control+k');
+    await box.fill('left-pad 1.3.0');
+    await expect(page.getByTestId('cmdk-verdict')).toContainText(/Not found in (any of \d+ projects|the 1 project searched)/);
+    await page.keyboard.press('Escape');
+    await expect(box).toBeHidden();
+    // The sidebar button opens the same palette, with settings and actions.
+    await page.getByRole('button', { name: /Search or jump to/ }).click();
+    await box.fill('sources');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/integrations$/);
+  });
+
+  test('dev "view as" lives in the top bar, not the user menu', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('nav-user').click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(page.getByRole('menu').getByText(/view as/i)).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    const viewAs = async (email: RegExp) => {
+      await expect(async () => {
+        await page.getByTestId('dev-view-as').click();
+        await expect(page.getByRole('menuitemradio', { name: email })).toBeVisible({ timeout: 1_000 });
+      }).toPass();
+      await page.getByRole('menuitemradio', { name: email }).click();
+    };
+    await viewAs(/appsec@local/);
+    await expect(page.getByTestId('nav-role')).toContainText('AppSec');
+    await viewAs(/admin@local/);
+    await expect(page.getByTestId('nav-role')).toContainText('Org admin');
   });
 
   test('Findings lists event-stream and flatmap-stream as critical and opens the side panel', async ({ page }) => {
