@@ -20,11 +20,11 @@ describe('small components', () => {
     const crit = screen.getByText('Critical').closest('[data-level]')!;
     expect(crit).toHaveAttribute('data-level', 'critical');
     expect(crit).toHaveAttribute('data-slot', 'badge');
-    expect(crit.className).toContain('bg-level-critical');
-    expect(crit).toHaveTextContent('Critical92');
-    expect(screen.getByText('High').className).toContain('text-level-high');
-    expect(screen.getByText('Medium').className).toContain('text-level-medium');
-    expect(screen.getByText('Low').className).toContain('text-level-low');
+    expect(crit.className).toContain('bg-sev-critical-soft');
+    expect(crit).toHaveTextContent('◆Critical92');
+    expect(screen.getByText('High').className).toContain('text-sev-high');
+    expect(screen.getByText('Medium').className).toContain('text-sev-medium');
+    expect(screen.getByText('Low').className).toContain('text-sev-low');
   });
 
   it('renders a stat tile and an empty state', () => {
