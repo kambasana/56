@@ -13,10 +13,20 @@ describe('migrations', () => {
     expect(currentVersion(db)).toBe(SCHEMA_VERSION);
     expect(migrate(db)).toEqual([]);
     const tables = (db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`).all() as { name: string }[]).map((r) => r.name);
-    for (const t of ['org', 'project', 'scan', 'finding', 'finding_state', 'app_user', 'session', 'role', 'role_binding', 'audit_log']) {
+    for (const t of ['org', 'project', 'scan', 'finding', 'finding_state', 'app_user', 'session', 'role', 'role_binding', 'audit_log', 'incident_state', 'incident_event', 'alert_check', 'alert_rule']) {
       expect(tables).toContain(t);
     }
     db.close();
+  });
+
+  it('numbers migrations 1..N with no gaps or repeats, alert rules last', () => {
+    expect(MIGRATIONS.map((m) => m.version)).toEqual(MIGRATIONS.map((_, i) => i + 1));
+    expect(MIGRATIONS.slice(5).map((m) => [m.version, m.name])).toEqual([
+      [6, 'finding triage: fixing, resolved, owner, risk expiry'],
+      [7, 'incidents'],
+      [8, 'alert rules'],
+    ]);
+    expect(SCHEMA_VERSION).toBe(8);
   });
 
   it('keeps review statuses when the finding_state table is rebuilt (v6), and allows the new ones', () => {

@@ -27,14 +27,24 @@ test.describe('accessibility (axe serious/critical)', () => {
       await page.emulateMedia({ colorScheme: scheme });
       await login(page, 'admin');
       const project = await devProject(page);
+      // An incident to look at (idempotent: the same advisory raises its alerts once).
+      const advisory = JSON.parse(readFileSync(new URL('../../test/replay/data/advisories/GHSA-mh6f-8j2x-4483.json', import.meta.url), 'utf8')) as unknown;
+      expect((await page.request.post('/api/alerts/check', { data: { advisories: [advisory] }, headers: { 'X-Requested-With': 'blastradius' } })).status()).toBe(200);
       const paths = [
         '/',
         '/findings',
         '/findings?group=project&severity=critical',
         '/projects',
         '/incidents',
+        '/incidents/GHSA-mh6f-8j2x-4483',
         '/alerts',
+        '/alerts?rule=new',
         '/packages?name=event-stream&version=3.3.6',
+        '/packages?name=flatmap-stream&view=table',
+        '/packages/behind?name=event-stream',
+        '/packages/behind?name=event-stream&view=table&unreviewed=1',
+        '/exposure',
+        '/exposure?view=table',
         '/reports',
         '/integrations',
         '/settings',

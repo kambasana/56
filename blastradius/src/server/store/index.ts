@@ -27,3 +27,5 @@ export * from './invites.js';
 export * from './seed.js';
 export * from './alerts.js';
 export * from './triage.js';
+export * from './incidents.js';
+export * from './alert-rules.js';

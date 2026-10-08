@@ -624,6 +624,8 @@ export interface ExposureRow {
   criticality: Criticality | null;
   /** Sum of exposure × column score across the row, for sorting. */
   blastScore: number;
+  /** Org-wide rows: a column's package reaches production in this project. */
+  production?: boolean;
 }
 
 /** Sparse: only non-zero cells are listed. */
@@ -633,6 +635,10 @@ export interface ExposureCell {
   /** 0–1, max exposure over the row's assets (AssetExposure.exposure). */
   exposure: number;
   pathCount: number;
+  /** Org-wide cells: this project's own finding for the package, its level and reach. */
+  findingId?: Id;
+  level?: RiskLevel;
+  production?: boolean;
 }
 
 export interface ExposureMatrixResponse {
@@ -979,6 +985,11 @@ export interface AlertItem {
   production: boolean;
   reachText: string;
   createdAt: string;
+  /** The advisory's rating, else the finding's level; null when neither is known. */
+  level?: RiskLevel | null;
+  summary?: string | null;
+  /** First fixed version the advisory names. */
+  fixedIn?: string | null;
 }
 /** GET /api/alerts */
 export interface ListAlertsResponse {

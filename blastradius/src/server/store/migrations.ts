@@ -264,6 +264,77 @@ ALTER TABLE finding_state_v6 RENAME TO finding_state;
 CREATE INDEX finding_state_owner ON finding_state(owner_id);
 `,
   },
+  {
+    version: 7,
+    name: 'incidents',
+    sql: `
+-- An incident is one advisory that hit at least one project (its alerts). The advisory's own
+-- severity, summary and first fixed version are kept on each alert when the advisory names them.
+ALTER TABLE alert ADD COLUMN level TEXT CHECK (level IS NULL OR level IN ('critical', 'high', 'medium', 'low'));
+ALTER TABLE alert ADD COLUMN summary TEXT;
+ALTER TABLE alert ADD COLUMN fixed_in TEXT;
+CREATE INDEX alert_org_advisory ON alert (org_id, advisory_id);
+
+-- Where the team is with an incident (Investigating > Fixing > Monitoring > Closed). No row means
+-- Investigating.
+CREATE TABLE incident_state (
+  org_id      TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  advisory_id TEXT NOT NULL,
+  status      TEXT NOT NULL CHECK (status IN ('investigating', 'fixing', 'monitoring', 'closed')),
+  updated_at  TEXT NOT NULL,
+  updated_by  TEXT NOT NULL,
+  PRIMARY KEY (org_id, advisory_id)
+);
+
+-- The incident's timeline beyond its alerts: status changes and notifications sent.
+CREATE TABLE incident_event (
+  seq         INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  advisory_id TEXT NOT NULL,
+  at          TEXT NOT NULL,
+  actor       TEXT NOT NULL,
+  kind        TEXT NOT NULL CHECK (kind IN ('status', 'notified')),
+  title       TEXT NOT NULL,
+  detail      TEXT NOT NULL DEFAULT '',
+  from_value  TEXT,
+  to_value    TEXT
+);
+CREATE INDEX incident_event_advisory ON incident_event (org_id, advisory_id, seq);
+
+-- Every org-wide check of stored inventories (the pack sweep, or advisories posted to the API).
+CREATE TABLE alert_check (
+  seq              INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id           TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  at               TEXT NOT NULL,
+  source           TEXT NOT NULL CHECK (source IN ('pack', 'advisories')),
+  projects_checked INTEGER NOT NULL,
+  created          INTEGER NOT NULL
+);
+CREATE INDEX alert_check_org ON alert_check (org_id, seq);
+`,
+  },
+  {
+    version: 8,
+    name: 'alert rules',
+    sql: `
+-- Team alert rules (WHEN severity >= min_level [and it reaches production] THEN post to the Slack
+-- webhook, naming the channel). With no rows, every new alert is posted (the default rule).
+CREATE TABLE alert_rule (
+  id              TEXT PRIMARY KEY,
+  org_id          TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  min_level       TEXT NOT NULL CHECK (min_level IN ('critical', 'high', 'medium', 'low')),
+  production_only INTEGER NOT NULL DEFAULT 0,
+  channel         TEXT NOT NULL,
+  email_owners    INTEGER NOT NULL DEFAULT 0,
+  enabled         INTEGER NOT NULL DEFAULT 1,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL,
+  created_by      TEXT NOT NULL,
+  UNIQUE (org_id, name)
+);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

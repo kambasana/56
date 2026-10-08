@@ -3,6 +3,7 @@
  * and alerts for (project, component, advisory) hits. An alert is recorded once; checking the same
  * advisory again adds nothing.
  */
+import type { RiskLevel } from '../../core/types.js';
 import type { ExposureHit, StoredInventory } from '../../watch/match.js';
 import { all, get, newId, nowIso, placeholders, run, tx, type Store } from './db.js';
 import { getScanInventory } from './scans.js';
@@ -18,6 +19,15 @@ export interface AlertRow {
   production: boolean;
   reachText: string;
   createdAt: string;
+  /**
+   * The advisory's rating, else the finding's level for this package in the alert's scan; null
+   * when neither is known.
+   */
+  level?: RiskLevel | null;
+  /** The advisory's summary, when it has one. */
+  summary?: string | null;
+  /** First fixed version the advisory names. */
+  fixedIn?: string | null;
 }
 
 /** Newest succeeded scan's inventory for every (visible) project that has one. */
@@ -53,7 +63,7 @@ export function recordAlerts(s: Store, orgId: string, hits: readonly ExposureHit
       const id = newId('alr');
       run(
         s,
-        `INSERT INTO alert (id, org_id, project_id, scan_id, purl, advisory_id, advisory_published, production, reach_text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO alert (id, org_id, project_id, scan_id, purl, advisory_id, advisory_published, production, reach_text, created_at, level, summary, fixed_in) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         orgId,
         h.projectId,
@@ -64,24 +74,72 @@ export function recordAlerts(s: Store, orgId: string, hits: readonly ExposureHit
         h.production ? 1 : 0,
         h.reachText,
         at,
+        h.level ?? null,
+        h.summary?.slice(0, 500) ?? null,
+        h.fixedIn ?? null,
       );
-      created.push({ id, projectId: h.projectId, projectName: h.projectName, scanId: h.scanId ?? null, purl: h.purl, advisoryId: h.advisoryId, advisoryPublished: h.advisoryPublished ?? null, production: h.production, reachText: h.reachText, createdAt: at });
+      const level = h.level ?? findingLevel(s, h.scanId ?? null, h.purl);
+      created.push({
+        id,
+        projectId: h.projectId,
+        projectName: h.projectName,
+        scanId: h.scanId ?? null,
+        purl: h.purl,
+        advisoryId: h.advisoryId,
+        advisoryPublished: h.advisoryPublished ?? null,
+        production: h.production,
+        reachText: h.reachText,
+        createdAt: at,
+        level,
+        summary: h.summary?.slice(0, 500) ?? null,
+        fixedIn: h.fixedIn ?? null,
+      });
     }
   });
   return created;
 }
 
-export function listAlerts(s: Store, orgId: string, opts: { projectIds?: readonly string[] | null; limit?: number } = {}): AlertRow[] {
+/** The finding's level for `purl` in `scanId`, or null. */
+function findingLevel(s: Store, scanId: string | null, purl: string): RiskLevel | null {
+  if (!scanId) return null;
+  return get<{ level: RiskLevel }>(s, 'SELECT level FROM finding WHERE scan_id = ? AND purl = ?', scanId, purl)?.level ?? null;
+}
+
+export interface ListAlertsOptions {
+  projectIds?: readonly string[] | null;
+  limit?: number;
+  /** Only alerts of this advisory. */
+  advisoryId?: string;
+  /** Only alerts created at or after this time. */
+  since?: string;
+}
+
+/** Newest first. `level` falls back to the finding's level in the alert's scan. */
+export function listAlerts(s: Store, orgId: string, opts: ListAlertsOptions = {}): AlertRow[] {
   if (opts.projectIds && opts.projectIds.length === 0) return [];
-  const filter = opts.projectIds ? ` AND a.project_id IN (${placeholders(opts.projectIds.length)})` : '';
+  const where: string[] = ['a.org_id = ?'];
+  const params: (string | number)[] = [orgId];
+  if (opts.projectIds) {
+    where.push(`a.project_id IN (${placeholders(opts.projectIds.length)})`);
+    params.push(...opts.projectIds);
+  }
+  if (opts.advisoryId !== undefined) {
+    where.push('a.advisory_id = ?');
+    params.push(opts.advisoryId);
+  }
+  if (opts.since !== undefined) {
+    where.push('a.created_at >= ?');
+    params.push(opts.since);
+  }
   return all<Omit<AlertRow, 'production'> & { production: number }>(
     s,
     `SELECT a.id, a.project_id AS projectId, p.name AS projectName, a.scan_id AS scanId, a.purl, a.advisory_id AS advisoryId,
-       a.advisory_published AS advisoryPublished, a.production, a.reach_text AS reachText, a.created_at AS createdAt
+       a.advisory_published AS advisoryPublished, a.production, a.reach_text AS reachText, a.created_at AS createdAt,
+       COALESCE(a.level, (SELECT f.level FROM finding f WHERE f.scan_id = a.scan_id AND f.purl = a.purl)) AS level,
+       a.summary, a.fixed_in AS fixedIn
      FROM alert a JOIN project p ON p.id = a.project_id
-     WHERE a.org_id = ?${filter} ORDER BY a.created_at DESC, a.production DESC, p.name LIMIT ?`,
-    orgId,
-    ...(opts.projectIds ?? []),
-    Math.min(1000, Math.max(1, opts.limit ?? 200)),
-  ).map((r) => ({ ...r, production: r.production === 1 }));
+     WHERE ${where.join(' AND ')} ORDER BY a.created_at DESC, a.production DESC, p.name LIMIT ?`,
+    ...params,
+    Math.min(5000, Math.max(1, opts.limit ?? 200)),
+  ).map((r) => ({ ...r, production: r.production === 1, level: r.level ?? null, summary: r.summary ?? null, fixedIn: r.fixedIn ?? null }));
 }
