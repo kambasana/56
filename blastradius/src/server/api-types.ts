@@ -835,3 +835,125 @@ export interface CheckAlertsResponse {
   ms: number;
   created: AlertItem[];
 }
+
+// ---------------------------------------------------------------------------
+// Sources (repo connectors, docs/CONNECTORS.md)
+// ---------------------------------------------------------------------------
+
+export const SOURCE_HOSTS = ['github'] as const;
+export type SourceHostName = (typeof SOURCE_HOSTS)[number];
+
+/** pending: install started, not finished · connected · access_lost: revoked, suspended or 401 · disconnected: by a user. */
+export const SOURCE_STATUSES = ['pending', 'connected', 'access_lost', 'disconnected'] as const;
+export type SourceStatus = (typeof SOURCE_STATUSES)[number];
+
+/**
+ * discovering: being listed · watching: scanned, re-scanned on relevant pushes · scanning: a scan
+ * is queued or running · no_lockfile: no manifest, lockfile or workflow found (nothing to scan) ·
+ * unsupported: only yarn.lock / pnpm-lock.yaml (package.json pins and workflows are still read),
+ * or the tree is too large for the API (not scanned) · access_lost · removed: taken out of the
+ * installation (history kept) · not_watched: turned off.
+ */
+export const SOURCE_REPO_STATUSES = ['discovering', 'watching', 'scanning', 'no_lockfile', 'unsupported', 'access_lost', 'removed', 'not_watched'] as const;
+export type SourceRepoStatus = (typeof SOURCE_REPO_STATUSES)[number];
+
+export interface SourceDeliveryRef {
+  at: IsoTime;
+  event: string;
+  outcome: string;
+}
+
+export interface Source {
+  id: Id;
+  host: SourceHostName;
+  /** GitHub org or user login (null until the install is finished). */
+  account: string | null;
+  accountType: string | null;
+  installationId: string | null;
+  /** all: every repo, new ones included · selected: the repos picked on GitHub. */
+  repositorySelection: 'all' | 'selected' | null;
+  /** Start watching repos as they are discovered (new ones included). */
+  autoWatch: boolean;
+  status: SourceStatus;
+  /** Why the source is not healthy (safe text), or null. */
+  health: string | null;
+  healthCheckedAt: IsoTime | null;
+  repos: { total: number; watching: number; accessLost: number };
+  lastDelivery: SourceDeliveryRef | null;
+  createdAt: IsoTime;
+  createdBy: Id;
+  updatedAt: IsoTime;
+}
+
+/** GET /api/sources (manage_projects) */
+export interface ListSourcesResponse {
+  /** Hosts whose App is configured on this server. */
+  configured: Record<SourceHostName, boolean>;
+  items: Source[];
+  /** Webhook deliveries dropped since start (bad or missing signature). */
+  webhooks: { rejected: number };
+}
+
+/** POST /api/sources */
+export interface StartSourceInstallRequest {
+  host: SourceHostName;
+  autoWatch?: boolean;
+}
+export interface StartSourceInstallResponse {
+  source: Source;
+  /** Send the browser here; GitHub returns to /api/sources/github/callback. */
+  installUrl: string;
+  expiresAt: IsoTime;
+}
+
+export type GetSourceResponse = Source;
+
+/** PATCH /api/sources/:id */
+export interface UpdateSourceRequest {
+  autoWatch?: boolean;
+}
+
+export interface SourceRepo {
+  id: Id;
+  sourceId: Id;
+  /** The host's repository id. */
+  repoId: string;
+  fullName: string;
+  defaultBranch: string | null;
+  private: boolean;
+  htmlUrl: string | null;
+  /** Lockfiles found (every workspace root), yarn/pnpm included. */
+  lockfiles: string[];
+  /** Exactly the files read for the inventory at the last discovery. */
+  filesRead: string[];
+  watching: boolean;
+  status: SourceRepoStatus;
+  statusDetail: string | null;
+  /** The project findings, alerts and blast radius live under. */
+  projectId: Id | null;
+  lastCommit: string | null;
+  lastDeliveryAt: IsoTime | null;
+  lastDeliveryOutcome: string | null;
+  lastScanAt: IsoTime | null;
+  lastScanId: Id | null;
+  createdAt: IsoTime;
+  updatedAt: IsoTime;
+}
+
+/** GET /api/sources/:id/repos */
+export interface ListSourceReposResponse {
+  items: SourceRepo[];
+}
+
+/** PATCH /api/sources/:id/repos/:repoId */
+export interface UpdateSourceRepoRequest {
+  watching: boolean;
+}
+export type UpdateSourceRepoResponse = SourceRepo;
+
+/** POST /api/hooks/github → 202 (200 for a duplicate delivery) */
+export interface WebhookAcceptedResponse {
+  ok: true;
+  duplicate: boolean;
+  outcome: string;
+}

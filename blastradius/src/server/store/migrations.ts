@@ -241,6 +241,79 @@ CREATE TABLE alert (
 CREATE INDEX alert_org_created ON alert (org_id, created_at DESC);
 `,
   },
+  {
+    version: 6,
+    name: 'repo connectors',
+    sql: `
+-- Connected code hosts (docs/CONNECTORS.md). GitHub stores no token: installation tokens are
+-- minted per use from the App key in the environment. A pending row holds the SHA-256 of the
+-- single-use install state until GitHub sends the browser back.
+CREATE TABLE source (
+  id                    TEXT PRIMARY KEY,
+  org_id                TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  host                  TEXT NOT NULL CHECK (host IN ('github')),
+  installation_id       TEXT,
+  account               TEXT,
+  account_type          TEXT,
+  repository_selection  TEXT CHECK (repository_selection IN ('all', 'selected')),
+  auto_watch            INTEGER NOT NULL DEFAULT 1,
+  status                TEXT NOT NULL CHECK (status IN ('pending', 'connected', 'access_lost', 'disconnected')),
+  health                TEXT,
+  health_checked_at     TEXT,
+  state_hash            TEXT,
+  state_expires_at      TEXT,
+  created_at            TEXT NOT NULL,
+  created_by            TEXT NOT NULL,
+  updated_at            TEXT NOT NULL
+);
+CREATE INDEX source_org ON source(org_id, created_at);
+-- One org per installation.
+CREATE UNIQUE INDEX source_installation ON source(host, installation_id) WHERE installation_id IS NOT NULL;
+
+-- Repositories a source can read. Each scannable, watched repo is linked to a project, so
+-- findings, alerts and blast radius work unchanged. Removing a repo keeps its project and history.
+CREATE TABLE source_repo (
+  id                     TEXT PRIMARY KEY,
+  source_id              TEXT NOT NULL REFERENCES source(id) ON DELETE CASCADE,
+  org_id                 TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  repo_id                TEXT NOT NULL,
+  full_name              TEXT NOT NULL,
+  default_branch         TEXT,
+  private                INTEGER NOT NULL DEFAULT 1,
+  html_url               TEXT,
+  lockfiles              TEXT NOT NULL DEFAULT '[]',
+  files_read             TEXT NOT NULL DEFAULT '[]',
+  watching               INTEGER NOT NULL DEFAULT 1,
+  status                 TEXT NOT NULL CHECK (status IN ('discovering', 'watching', 'scanning', 'no_lockfile', 'unsupported', 'access_lost', 'removed', 'not_watched')),
+  status_detail          TEXT,
+  project_id             TEXT REFERENCES project(id) ON DELETE SET NULL,
+  last_commit            TEXT,
+  last_delivery_at       TEXT,
+  last_delivery_outcome  TEXT,
+  last_scan_at           TEXT,
+  last_scan_id           TEXT,
+  created_at             TEXT NOT NULL,
+  updated_at             TEXT NOT NULL,
+  UNIQUE (source_id, repo_id)
+);
+CREATE UNIQUE INDEX source_repo_project ON source_repo(project_id) WHERE project_id IS NOT NULL;
+
+-- Signed webhook deliveries, deduplicated by the host's delivery id. Unsigned or badly signed
+-- deliveries are never stored (only counted), so they cannot fill this table.
+CREATE TABLE webhook_delivery (
+  host         TEXT NOT NULL,
+  delivery_id  TEXT NOT NULL,
+  event        TEXT NOT NULL,
+  action       TEXT,
+  source_id    TEXT REFERENCES source(id) ON DELETE SET NULL,
+  repo_id      TEXT,
+  received_at  TEXT NOT NULL,
+  outcome      TEXT NOT NULL,
+  PRIMARY KEY (host, delivery_id)
+);
+CREATE INDEX webhook_delivery_source ON webhook_delivery(source_id, received_at);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
