@@ -14,6 +14,14 @@ describe('backtest gate', () => {
     expect(gateVerdict({ recall: 0.9, noiseAtRelease: 1, noiseOnScanDay: 6 }, base)).toMatchObject({ strict: false, pareto: false });
   });
 
+  it('when hammer controls are given, the model must also beat the baseline on them', () => {
+    const base = { recall: 0.5, noiseAtRelease: 10, noiseOnScanDay: 5, controlsAtRelease: 20, controlsOnScanDay: 8 };
+    expect(gateVerdict({ recall: 0.6, noiseAtRelease: 9, noiseOnScanDay: 4, controlsAtRelease: 19, controlsOnScanDay: 7 }, base)).toMatchObject({ strict: true });
+    const worse = gateVerdict({ recall: 0.6, noiseAtRelease: 9, noiseOnScanDay: 4, controlsAtRelease: 19, controlsOnScanDay: 9 }, base);
+    expect(worse).toMatchObject({ strict: false, pareto: false });
+    expect(worse.reasons).toHaveLength(5);
+  });
+
   it('the baseline is the scan-time noisy-OR on the same packuments (replay data, offline)', () => {
     const store = openStore({ overlayDir: join(DATA_DIR, 'registry') });
     const at = (name: string, v: string) => new Date(Date.parse(store.get(name)!.time![v] as string) + H);
