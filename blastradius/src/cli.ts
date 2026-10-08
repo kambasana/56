@@ -122,6 +122,24 @@ export function buildProgram(io: ProgramIo = {}): Command {
       if (!res.ok) process.exitCode = 1;
     });
 
+  const feeds = program.command('feeds').description('Known-bad feeds: sync, compile and publish the knowledge pack');
+  feeds
+    .command('sync')
+    .description('Sync OSV (incremental via modified_id.csv), the Datadog manifest, BKC names and the KB into a raw store; emit pack-<ts>.json.gz, .sha256 and listing.json')
+    .requiredOption('--store <db>', 'raw record store (SQLite file; created if missing)')
+    .requiredOption('--out <dir>', 'output directory for the pack and listing.json')
+    .option('--ecosystem <eco>', 'OSV ecosystem', 'npm')
+    .option('--offline-from <dir>', 'read recorded feeds from this directory instead of the network (tests)')
+    .option('--git-dir <dir>', 'where git mirrors of dataset repositories live (default: <store>.git)')
+    .option('--kb <dir>', 'incident knowledge base directory', DEFAULT_KB_DIR)
+    .option('--sources <list>', `comma-separated sources (${['osv', 'datadog', 'bkc', 'kb'].join(', ')})`, 'osv,datadog,bkc,kb')
+    .option('--base-url <url>', 'URL prefix for the pack in listing.json')
+    .option('--no-zip', 'bootstrap by walking modified_id.csv instead of downloading all.zip')
+    .action(async (o: FeedsSyncCliOptions) => {
+      const { runFeedsSync } = await import('./feeds/cli.js');
+      out(`${JSON.stringify(await runFeedsSync(o, (m) => err(`… ${m}\n`)), null, 2)}\n`);
+    });
+
   program
     .command('serve')
     .description('Start the web app and API (binds to 127.0.0.1 by default). Scans never execute repository code.')
@@ -163,6 +181,18 @@ export function buildProgram(io: ProgramIo = {}): Command {
     });
 
   return program;
+}
+
+export interface FeedsSyncCliOptions {
+  store: string;
+  out: string;
+  ecosystem: string;
+  offlineFrom?: string;
+  gitDir?: string;
+  kb: string;
+  sources: string;
+  baseUrl?: string;
+  zip: boolean;
 }
 
 interface ServeCliOptions {
