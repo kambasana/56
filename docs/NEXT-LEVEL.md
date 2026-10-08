@@ -86,6 +86,8 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 
 **Next (2026-10-08):** see [FEEDS-AND-DETECTORS.md](FEEDS-AND-DETECTORS.md). The known-bad list becomes an incrementally synced, versioned feed (OSV `modified_id.csv` → raw store → compiled index → pack with `listing.json`), and pre-advisory detection reuses GuardDog, adopted only after a catch / noise / cost gate.
 
+**Repo connectors (2026-10-08):** see [CONNECTORS.md](CONNECTORS.md). Users connect GitHub (App), GitLab or Forgejo/Gitea once and their repos are watched automatically; push webhooks re-scan only when lockfiles change. GitHub first.
+
 **Not yet done:**
 - Org membership and funders need the GitHub and Open Collective APIs. Without a GitHub token, the chain stops at npm accounts and repo owner. The hammer runs with a token.
 
