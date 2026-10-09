@@ -204,16 +204,22 @@ describe('G1: the product names what the account-level proof named (qix, chalk/d
     }
   });
 
-  it('with since (the attack day) also lists the versions qix published, and flags the locked ones', async () => {
+  it('with since (the attack day) lists the versions attributable to qix; the locked bad versions have no recorded publisher', async () => {
     const since = '2025-09-08T00:00:00.000Z';
     const res = await call<AccountExposureResponse>('GET', `/api/accounts/npm/qix/exposure?asOf=${encodeURIComponent(T0_ISO)}&since=${encodeURIComponent(since)}`);
     expect(res.status).toBe(200);
     const w = res.body;
     expect(w.counts.exposures).toBe(204);
+    // Only sole-maintainer packages can be attributed: npm deleted the bad versions and their _npmUser
+    // (docs/ACCOUNT-PROOF.md caveats). These six are bad and none is locked by a recorded project.
+    expect(w.publishedSince.map((p) => `${p.name}@${p.version}`).sort()).toEqual(['backslash@0.2.1', 'color-convert@3.1.1', 'color-string@2.1.1', 'color@5.0.1', 'is-arrayish@0.3.3', 'simple-swizzle@0.2.3']);
     for (const p of w.publishedSince) expect(bad.get(p.name)?.has(p.version)).toBe(true);
-    const flagged = w.exposures.filter((e) => e.reasons.includes('published_since'));
-    for (const e of flagged) expect(bad.get(e.name)?.has(e.version)).toBe(true);
-    expect(flagged.every((e) => e.publishedBy?.account === 'qix')).toBe(true);
+    // So none of the 21 locked bad versions is flagged "published since" (their incident alerts are High,
+    // not Critical): the product does not guess a publisher the registry no longer records.
+    const locked = w.exposures.filter((e) => bad.get(e.name)?.has(e.version));
+    expect(locked).toHaveLength(21);
+    expect(locked.filter((e) => e.publishedBy !== null || e.reasons.includes('published_since'))).toEqual([]);
+    expect(w.exposures.filter((e) => e.reasons.includes('published_since'))).toEqual([]);
   });
 
   it("attributes publishes exactly like the proof's rule (npmUser, else a sole previous maintainer)", () => {

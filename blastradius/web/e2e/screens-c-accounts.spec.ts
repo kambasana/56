@@ -114,6 +114,8 @@ test.describe('accounts', () => {
       await page.goto('/accounts/npm/right9ctrl');
       await page.getByRole('button', { name: /Mark as compromised|Update the incident/ }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
+      // Let the open animation finish: mid-fade the dialog is translucent and axe reads blended colours.
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
       problems.push(...(await seriousAxe(page)).map((p) => `dialog: ${p}`));
       expect(problems).toEqual([]);
     });
