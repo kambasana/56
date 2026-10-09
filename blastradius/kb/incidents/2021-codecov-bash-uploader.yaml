@@ -13,11 +13,9 @@ affected:
   # exact version or digest can be listed; "*" is scored as a decaying incident_affected reason.
   - purl: pkg:generic/codecov-bash-uploader
     versions: ["*"]
-# The company was the compromised party; no individual is named.
-entities:
-  - ref: org:github/codecov
-    role: owner_of_compromised_distribution
-    confidence: 1
+# Codecov was the victim of the compromise, so no entity is attributed: listing it would pass
+# inherited risk to its other, unaffected projects (kb/incidents/README.md). No individual is named.
+entities: []
 evidence:
   - https://about.codecov.io/security-update/
   - https://www.cisa.gov/news-events/alerts/2021/04/22/codecov-releases-security-update

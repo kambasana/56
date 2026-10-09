@@ -13,7 +13,8 @@ export interface PagedState<T> {
 
 /**
  * Cursor-paged list (Page<T>): loads the first page, `loadMore` appends the next one. Reloads
- * from the start when `deps` change. Stale responses are dropped.
+ * from the start, with the list cleared, when `deps` change; `reload()` keeps the rows on screen
+ * until the fresh first page arrives. Stale responses are dropped.
  */
 export function usePaged<T>(loader: (cursor: string | undefined, signal: AbortSignal) => Promise<Page<T>>, deps: DependencyList): PagedState<T> {
   const [items, setItems] = useState<T[]>([]);
@@ -48,7 +49,16 @@ export function usePaged<T>(loader: (cursor: string | undefined, signal: AbortSi
     );
   }, []);
 
+  const lastTick = useRef(tick);
   useEffect(() => {
+    // New deps (another filter): drop the old pages at once, so rows of the previous query are
+    // never shown while loading or next to its error. reload() keeps them until the answer comes.
+    if (lastTick.current === tick) {
+      setItems([]);
+      setTotal(0);
+      setCursor(null);
+    }
+    lastTick.current = tick;
     run(undefined, false);
     return () => ctrl.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps

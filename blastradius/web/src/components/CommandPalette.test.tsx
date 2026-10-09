@@ -36,6 +36,12 @@ describe('package queries', () => {
     expect(parsePackageQuery('lodash')).toBeNull();
     expect(parsePackageQuery('slack alerts')).toBeNull();
     expect(parsePackageQuery('@scope/pkg')).toBeNull();
+    // name@version needs an exact version too, like "name version".
+    expect(parsePackageQuery('lodash@v4.17.20')).toEqual({ name: 'lodash', version: '4.17.20' });
+    expect(parsePackageQuery('lodash@latest')).toBeNull();
+    expect(parsePackageQuery('@scope/pkg@next')).toBeNull();
+    expect(parsePackageQuery('lodash@^4.17.0')).toBeNull();
+    expect(parsePackageQuery('lodash@v')).toBeNull();
   });
 
   it('counts projects once, production first', () => {

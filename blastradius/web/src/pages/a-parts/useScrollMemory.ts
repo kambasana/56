@@ -26,14 +26,24 @@ function write(key: string, y: number): void {
 }
 
 export function useScrollMemory(ready: boolean): void {
-  const { key } = useLocation();
+  const { key, pathname } = useLocation();
   const restored = useRef<string | null>(null);
+  const lastPath = useRef<string | null>(null);
 
   useEffect(() => {
-    // A new entry (e.g. the peek sheet opened) starts where the page is now; an entry we came
-    // Back to keeps its saved offset until it has been restored.
+    // An entry we came Back to keeps its saved offset until it has been restored. A new entry of
+    // the same mounted page (same path: the peek sheet opened, a filter changed) starts where the
+    // page is now. A newly mounted page, or another path, starts at the top: the previous route's
+    // offset belongs to that route.
+    const samePage = lastPath.current === pathname;
+    lastPath.current = pathname;
     if (read(key) === null) {
-      write(key, window.scrollY);
+      if (!samePage) {
+        write(key, 0);
+        if (window.scrollY !== 0 && typeof window.scrollTo === 'function') window.scrollTo(0, 0);
+      } else {
+        write(key, window.scrollY);
+      }
       restored.current = key;
     }
     let frame = 0;
@@ -47,7 +57,7 @@ export function useScrollMemory(ready: boolean): void {
       cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
     };
-  }, [key]);
+  }, [key, pathname]);
 
   useEffect(() => {
     if (!ready || restored.current === key) return;

@@ -22,6 +22,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { coversAllVersions } from '../../../src/core/osv-range.js';
 import { scan } from '../../../src/pipeline.js';
 import { DATA_DIR as REPLAY_DATA } from '../server.js';
 import { encodeTimelines } from './timelines.js';
@@ -122,7 +123,7 @@ for (const f of readdirSync(osvDir)) {
   if (!group.length || r.withdrawn) continue;
   for (const a of r.affected ?? []) {
     if (a.package?.ecosystem !== 'npm') continue;
-    const all = (a.ranges ?? []).some((x: any) => (x.events ?? []).some((e: any) => e.introduced === '0') && !(x.events ?? []).some((e: any) => e.fixed || e.last_affected));
+    const all = coversAllVersions(a.ranges ?? []);
     advs.push({ id: r.id, published: p, name: a.package.name, versions: a.versions ?? [], allVersions: all, group });
   }
 }

@@ -3,12 +3,13 @@ import type { SearchExposureResponse } from '@server/api-types';
 import type { VerdictData } from '@/components/br/Verdict';
 
 /**
- * "lodash@4.17.20", "@scope/pkg@1.0.0" or "lodash 4.17.20" (the version must start with a digit,
- * optionally after "v"). Returns null for anything else.
+ * "lodash@4.17.20", "@scope/pkg@1.0.0" or "lodash 4.17.20": in both forms the version must start
+ * with a digit, optionally after "v" (exact versions only: the exposure search compares them
+ * literally, so "lodash@latest" would match nothing). Returns null for anything else.
  */
 export function parsePackageQuery(q: string): { name: string; version: string } | null {
   const s = q.trim();
-  const at = /^(@?[^@\s]+)@([^@\s]+)$/.exec(s);
+  const at = /^(@?[^@\s]+)@v?(\d[^@\s]*)$/.exec(s);
   if (at) return { name: at[1]!, version: at[2]! };
   const sp = /^(@?[^@\s]+)\s+v?(\d[^\s]*)$/.exec(s);
   if (sp) return { name: sp[1]!, version: sp[2]! };

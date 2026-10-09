@@ -151,6 +151,12 @@ evidence:
     expect(tj.affected[0]!.versions).not.toContain('*');
   });
 
+  // README rule: victims of a compromise are not attributed (an entity passes inherited risk on).
+  it('attributes no entity to compromised victims (tj-actions, Codecov)', async () => {
+    const res = await loadIncidents(KB_DIR);
+    for (const id of ['INC-2025-0001', 'INC-2021-0004']) expect(res.incidents.find((i) => i.id === id)?.entities, id).toEqual([]);
+  });
+
   // Hammer KB gap: the March 2022 node-ipc protestware also covers 9.2.2, 11.x and peacenotwar.
   it('covers node-ipc 9.2.2 / 11.x and peacenotwar (GHSA-8gr3-2gjw-jj7g, GHSA-3mpp-xfvh-qh37)', async () => {
     const res = await loadIncidents(KB_DIR);
