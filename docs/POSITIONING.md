@@ -141,7 +141,8 @@ We only state what we could source on 2026-10-09.
 
 What follows from this:
 
-- **Known-bad matching is free in GitHub.** We must not charge for it. It is an input we show.
+- **Known-bad matching is built into GitHub Dependabot** (opt-in, per the changelog above; the pages we
+  read do not state its price). We do not charge for it on its own. It is an input we show.
 - **Both GitHub and Snyk are package- and version-keyed** in the sources above. We have not found a
   source saying either answers "this account is compromised: what in our estate can it publish?".
   That is what we claim. We have not proven that no paid tool does it.
