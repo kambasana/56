@@ -2,41 +2,37 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { devProject, login, navLabels, shot, watchConsole, type DevRole } from './helpers';
 
-const ALL_PAGES = ['Home', 'Projects', 'Reports', 'Integrations', 'Changes', 'Findings', 'Exposure matrix', 'Investigate', 'Scans'];
+// One-level sidebar (docs/UX.md §2), Reports and Settings at the bottom.
+const MAIN = ['Overview', 'Findings', 'Incidents', 'Projects', 'Alerts'];
 
-// PLAN §12 default roles: Org admin everything; AppSec and Developer every page but Settings; Auditor only Reports.
-const EXPECTED_NAV: Record<DevRole, { has: string[]; lacks: string[] }> = {
-  admin: { has: [...ALL_PAGES, 'Settings'], lacks: [] },
-  appsec: { has: ALL_PAGES, lacks: ['Settings'] },
-  developer: { has: ALL_PAGES, lacks: ['Settings'] },
-  auditor: { has: ['Reports'], lacks: [...ALL_PAGES.filter((p) => p !== 'Reports'), 'Settings', 'Incident KB'] },
+// Default roles (docs/UX.md §9): every role reads every page but Settings; Settings opens
+// Members (admin) or Sources (AppSec, Developer); the Auditor has no Settings at all.
+const EXPECTED_NAV: Record<DevRole, string[]> = {
+  admin: [...MAIN, 'Reports', 'Settings'],
+  appsec: [...MAIN, 'Reports', 'Settings'],
+  developer: [...MAIN, 'Reports', 'Settings'],
+  auditor: [...MAIN, 'Reports'],
 };
 
 test.describe('navigation per default role', () => {
   for (const role of Object.keys(EXPECTED_NAV) as DevRole[]) {
-    test(`${role} sees the pages PLAN §12 grants`, async ({ page }) => {
+    test(`${role} sees the pages docs/UX.md §9 grants`, async ({ page }) => {
       await login(page, role);
       // The signed-out /api/me 401 before login is expected; watch from here on.
       const errors = watchConsole(page);
       await page.reload();
-      if (role !== 'auditor') {
-        // The project group appears once the seeded project is known.
-        await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Findings' })).toBeVisible();
-      } else {
-        await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Reports' })).toBeVisible();
-      }
+      await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Findings' })).toBeVisible();
       const labels = await navLabels(page);
-      for (const l of EXPECTED_NAV[role].has) expect(labels, `${role} nav has ${l}`).toContain(l);
-      for (const l of EXPECTED_NAV[role].lacks) expect(labels, `${role} nav lacks ${l}`).not.toContain(l);
+      expect(labels).toEqual(EXPECTED_NAV[role]);
+      for (const gone of ['Home', 'Incident KB', 'Integrations', 'Exposure matrix']) expect(labels, `${role} nav lacks ${gone}`).not.toContain(gone);
+      await expect(page.getByText(/coming soon/i)).toHaveCount(0);
       if (role === 'auditor') {
-        expect(labels).toEqual(['Reports']);
         await shot(page, 'auditor-nav');
         await page.goto('/reports');
         await expect(page.getByRole('link', { name: /^Download HTML report for payments-platform/ }).first()).toBeVisible();
         await shot(page, 'auditor-reports');
-      } else {
-        expect(errors()).toEqual([]);
       }
+      expect(errors()).toEqual([]);
     });
   }
 });
@@ -58,17 +54,38 @@ test('accept-invite page is public and rejects an unknown token', async ({ page 
   await expect(page.getByRole('alert')).toContainText('invalid, expired or already used');
 });
 
-test('server denies the auditor GET /api/findings with 403', async ({ page }) => {
+test('the auditor reads findings but the server refuses changes and settings', async ({ page }) => {
   await login(page, 'admin');
   const project = await devProject(page);
   await page.request.post('/api/auth/logout', { headers: { 'X-Requested-With': 'blastradius' } });
   await login(page, 'auditor');
   const res = await page.request.get(`/api/findings?project=${encodeURIComponent(project)}`);
-  expect(res.status()).toBe(403);
-  const home = await page.request.get('/api/home');
-  expect(home.status()).toBe(403);
-  const reports = await page.request.get('/api/reports');
-  expect(reports.status()).toBe(200);
+  expect(res.status()).toBe(200);
+  const first = ((await res.json()) as { items: { id: string }[] }).items[0]!;
+  const patch = await page.request.patch(`/api/findings/${first.id}`, { data: { status: 'reviewed' }, headers: { 'X-Requested-With': 'blastradius' } });
+  expect(patch.status()).toBe(403);
+  expect((await page.request.get('/api/roles')).status()).toBe(403);
+  expect((await page.request.get('/api/reports')).status()).toBe(200);
+  // The status control stays visible, disabled, and says why.
+  await page.goto(`/projects/${project}/findings`);
+  await page.getByRole('table', { name: 'Findings' }).getByText('flatmap-stream@0.1.1', { exact: true }).click();
+  const form = page.getByRole('dialog').getByRole('form', { name: 'Finding status' });
+  await expect(form.getByRole('combobox', { name: 'Status' })).toBeDisabled();
+  await expect(form).toContainText('Needs the Triage permission: ask an admin.');
+  await shot(page, 'auditor-status-disabled');
+});
+
+test('the developer triages findings in the project they are bound to', async ({ page }) => {
+  await login(page, 'admin');
+  const project = await devProject(page);
+  await page.request.post('/api/auth/logout', { headers: { 'X-Requested-With': 'blastradius' } });
+  await login(page, 'developer');
+  await page.goto(`/projects/${project}/findings`);
+  await page.getByRole('table', { name: 'Findings' }).getByText('flatmap-stream@0.1.1', { exact: true }).click();
+  const form = page.getByRole('dialog').getByRole('form', { name: 'Finding status' });
+  await expect(form.getByRole('combobox', { name: 'Status' })).toBeEnabled();
+  // Accepting risk is not theirs: the option is disabled and the reason is shown.
+  await expect(form).toContainText('Needs the Accept risk permission: ask an admin.');
 });
 
 test.describe('admin screens', () => {
@@ -85,47 +102,181 @@ test.describe('admin screens', () => {
     expect(errors(), 'console errors').toEqual([]);
   });
 
-  test('Org home', async ({ page }) => {
+  test('Overview: tiles open pre-filtered Findings; top packages and the projects table are one click away', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('cell', { name: /payments-platform/ }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible();
+    const tiles = page.getByRole('region', { name: 'Needs attention' }).getByRole('link');
+    await expect(tiles).toHaveCount(4);
+    await expect(tiles.first()).toContainText('Critical open');
+    await expect(page.getByRole('table', { name: 'Open findings by severity' })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Packages in the most projects' }).getByRole('link').first()).toBeVisible();
     await shot(page, 'org-home');
+    await tiles.first().click();
+    await expect(page).toHaveURL(/\/findings\?severity=critical&status=new%2Creviewed%2Cfixing/);
+    await expect(page.getByRole('list', { name: 'Applied filters' })).toContainText('Severity: Critical');
+    await expect(page.getByRole('table', { name: 'Findings' }).getByText('event-stream@3.3.6', { exact: true })).toBeVisible();
+    await page.goBack();
+    await page.getByRole('link', { name: /All projects/ }).click();
+    await expect(page.getByRole('cell', { name: /payments-platform/ }).first()).toBeVisible();
   });
 
-  test('Findings lists event-stream and flatmap-stream as critical and opens the side panel', async ({ page }) => {
-    await page.goto(`/projects/${project}/findings`);
-    const table = page.getByRole('table').first();
-    for (const name of ['event-stream', 'flatmap-stream']) {
-      // Match the component cell exactly: reason text of one row can mention the other package.
+  test('sidebar pages are real pages, and breadcrumbs are links', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main' });
+    await page.goto('/');
+    await nav.getByRole('link', { name: 'Projects' }).click();
+    await expect(page).toHaveURL(/\/projects$/);
+    await expect(page.getByRole('heading', { name: 'Projects', level: 1 })).toBeVisible();
+    await page.getByRole('table', { name: 'Projects' }).getByRole('cell', { name: /payments-platform/ }).first().click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings`));
+    const sub = page.getByRole('navigation', { name: 'Project' });
+    await sub.getByRole('link', { name: 'Scans' }).click();
+    await expect(page.getByRole('heading', { name: 'Scans', level: 1 })).toBeVisible();
+    const crumbs = page.getByRole('navigation', { name: 'breadcrumb' });
+    await expect(crumbs.getByRole('link')).toHaveCount(3);
+    await crumbs.getByRole('link', { name: 'payments-platform' }).click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings`));
+    await nav.getByRole('link', { name: 'Findings' }).click();
+    await expect(page).toHaveURL(/\/findings$/);
+    await expect(page.getByRole('heading', { name: 'Findings', level: 1 })).toBeVisible();
+    for (const [link, heading] of [['Incidents', 'Incidents'], ['Alerts', 'Alerts'], ['Reports', 'Reports'], ['Settings', 'Settings']] as const) {
+      await nav.getByRole('link', { name: link }).click();
+      await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+    }
+    await page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: 'Sources' }).click();
+    await expect(page).toHaveURL(/\/integrations$/);
+    await shot(page, 'settings-sources');
+  });
+
+  test('⌘K answers "is it here?" for name@version and opens the package page', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible();
+    await page.keyboard.press('Control+k');
+    const box = page.getByRole('combobox', { name: 'Search packages, projects, people, settings' });
+    await expect(box).toBeFocused();
+    await box.fill('event-stream@3.3.6');
+    const verdict = page.getByTestId('cmdk-verdict');
+    await expect(verdict).toContainText(/Yes, it is here: 1 project, \d in production/);
+    await expect(verdict).toHaveAttribute('aria-selected', 'true');
+    await shot(page, 'cmdk-verdict');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/packages\?name=event-stream&version=3\.3\.6/);
+    await expect(page.getByRole('heading', { name: 'event-stream@3.3.6', level: 1 })).toBeVisible();
+    await expect(page.getByRole('group', { name: /event-stream@3\.3\.6 reaches 1 project/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^payments-platform \(production\)/ }).first()).toBeVisible();
+    await shot(page, 'package');
+    // A package nobody uses is a clear "not found".
+    await page.keyboard.press('Control+k');
+    await box.fill('left-pad 1.3.0');
+    await expect(page.getByTestId('cmdk-verdict')).toContainText(/Not found in (any of \d+ projects|the 1 project searched)/);
+    await page.keyboard.press('Escape');
+    await expect(box).toBeHidden();
+    // The sidebar button opens the same palette, with settings and actions.
+    await page.getByRole('button', { name: /Search or jump to/ }).click();
+    await box.fill('sources');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/integrations$/);
+  });
+
+  test('dev "view as" lives in the top bar, not the user menu', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('nav-user').click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(page.getByRole('menu').getByText(/view as/i)).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    const viewAs = async (email: RegExp) => {
+      await expect(async () => {
+        await page.getByTestId('dev-view-as').click();
+        await expect(page.getByRole('menuitemradio', { name: email })).toBeVisible({ timeout: 1_000 });
+      }).toPass();
+      await page.getByRole('menuitemradio', { name: email }).click();
+    };
+    await viewAs(/appsec@local/);
+    await expect(page.getByTestId('nav-role')).toContainText('AppSec');
+    await viewAs(/admin@local/);
+    await expect(page.getByTestId('nav-role')).toContainText('Org admin');
+  });
+
+  test('Findings: org-wide list, peek sheet, full page and Back to the same view', async ({ page }) => {
+    await page.goto('/findings?group=project');
+    const table = page.getByRole('table', { name: 'Findings' });
+    for (const name of ['event-stream@3.3.6', 'flatmap-stream@0.1.1']) {
       const row = table.getByRole('row').filter({ has: page.getByText(name, { exact: true }) });
       await expect(row).toHaveCount(1);
-      await expect(row).toBeVisible();
-      await expect(row).toContainText(/critical/i);
+      await expect(row).toContainText('Critical');
+      await expect(row).toContainText('payments-platform');
     }
+    const headers = (await table.getByRole('columnheader').allInnerTexts()).map((h) => h.trim()).filter(Boolean);
+    expect(headers).toEqual(['Severity', 'Package', 'Projects', 'Introduced by', 'First seen', 'Status', 'Owner']);
     await shot(page, 'findings');
-    await table.getByText('flatmap-stream', { exact: true }).click();
-    const panel = page.getByRole('complementary').or(page.getByRole('dialog')).first();
-    await expect(panel).toBeVisible();
-    await expect(panel).toContainText('flatmap-stream@0.1.1');
-    await expect(page).toHaveURL(/[?&]f=/);
-    await shot(page, 'findings-panel');
-    await panel.getByRole('link', { name: /open finding/i }).click();
+    // flatmap-stream comes in through event-stream.
+    await expect(table.getByRole('row').filter({ has: page.getByText('flatmap-stream@0.1.1', { exact: true }) })).toContainText('event-stream');
+    await table.getByText('flatmap-stream@0.1.1', { exact: true }).click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toContainText('flatmap-stream@0.1.1');
+    await expect(page).toHaveURL(/[?&]peek=/);
+    await shot(page, 'findings-peek');
+    // K and J move to the previous and next row (replacing the history entry).
+    // The fixture has two findings: flatmap-stream and event-stream.
+    const order = await table.locator('tbody tr').allInnerTexts();
+    const at = order.findIndex((t) => t.includes('flatmap-stream@0.1.1'));
+    const [away, back] = at === 0 ? ['j', 'k'] : ['k', 'j'];
+    await page.keyboard.press(away);
+    await expect(sheet).toContainText('event-stream@3.3.6');
+    await page.keyboard.press(back);
+    await expect(sheet).toContainText('flatmap-stream@0.1.1');
+    await sheet.getByRole('link', { name: 'Open full page' }).click();
     await expect(page).toHaveURL(new RegExp(`/projects/${project}/findings/`));
-    await expect(page.getByText('flatmap-stream').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'flatmap-stream@0.1.1', level: 1 })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Finding status' })).toBeVisible();
+    for (const h of ['Where it reaches', 'What to do', "Who's behind it", 'Evidence', 'Timeline']) await expect(page.getByRole('region', { name: h })).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.getByRole('complementary', { name: 'Details' })).toContainText('Affected');
     await shot(page, 'finding');
-    // The graph tab loads Cytoscape on demand and draws the finding-scoped graph.
-    await page.getByRole('tab', { name: 'Graph' }).click();
-    const graph = page.getByRole('img', { name: 'Graph scoped to this finding' });
-    await expect(graph).toHaveAttribute('data-graph-ready', 'true');
-    await expect(graph).not.toHaveAttribute('data-node-count', '0');
-    await shot(page, 'finding-graph');
+    await page.goBack();
+    await expect(page).toHaveURL(/\/findings\?group=project&peek=/);
+    await expect(page.getByRole('dialog')).toContainText('flatmap-stream@0.1.1');
+  });
+
+  test('Findings: bulk triage, owner and accepted risk with a reason and expiry', async ({ page }) => {
+    await page.goto(`/projects/${project}/findings?sort=score`);
+    const table = page.getByRole('table', { name: 'Findings' });
+    await expect(table.locator('tbody tr').first()).toBeVisible();
+    const first = table.locator('tbody tr').first();
+    const pkg = (await first.locator('td').nth(2).locator('span').first().innerText()).trim();
+    await first.getByRole('checkbox').click();
+    const bar = page.getByRole('toolbar', { name: 'Bulk actions' });
+    await expect(bar).toContainText('1 selected');
+    await expect(bar.getByRole('button', { name: /Create ticket/ })).toBeDisabled();
+    await bar.getByRole('button', { name: /Set status/ }).click();
+    await page.getByRole('menuitem', { name: 'Fixing' }).click();
+    await expect(bar).toContainText('1 set to Fixing');
+    await expect(table.getByRole('row').filter({ hasText: pkg })).toContainText('Fixing');
+    await bar.getByRole('button', { name: /Assign/ }).click();
+    await page.getByRole('menuitem', { name: 'Dev AppSec' }).click();
+    await expect(table.getByRole('row').filter({ hasText: pkg })).toContainText('Dev AppSec');
+    await bar.getByRole('button', { name: 'Accept risk…' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Reason *').fill('Only in a sandboxed build step');
+    await dialog.getByLabel('Expires on *').fill('2999-01-31');
+    await dialog.getByRole('button', { name: 'Accept risk' }).click();
+    await expect(table.getByRole('row').filter({ hasText: pkg })).toContainText('Accepted risk');
+    // Put it back for later tests (the row is still selected).
+    await expect(bar).toContainText('1 selected');
+    await bar.getByRole('button', { name: /Set status/ }).click();
+    await page.getByRole('menuitem', { name: 'Open' }).click();
+    await expect(table.getByRole('row').filter({ hasText: pkg })).toContainText('Open');
   });
 
   test('Exposure matrix', async ({ page }) => {
+    // The project matrix is the org-wide one, scoped to that project.
     await page.goto(`/projects/${project}/exposure`);
-    await expect(page.getByText('event-stream').first()).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/exposure\\?projects=${project}`));
+    await expect(page.getByRole('heading', { name: 'Exposure', level: 1 })).toBeVisible();
+    const heat = page.getByRole('table', { name: /Exposure heatmap/ });
+    await expect(heat.getByRole('link', { name: /^event-stream@3\.3\.6$/ })).toBeVisible();
     await shot(page, 'exposure');
-    await page.goto(`/projects/${project}/exposure?scope=org`);
-    await expect(page.getByText('payments-platform').first()).toBeVisible();
+    await page.goto('/exposure');
+    await expect(heat.getByRole('rowheader', { name: /payments-platform/ })).toBeVisible();
     await shot(page, 'exposure-org');
   });
 
@@ -259,12 +410,12 @@ test.describe('admin screens', () => {
     // The background really changed (theme tokens, not hard-coded colours).
     const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     expect(bg).not.toMatch(/^rgb\(255, 255, 255\)$/);
-    await expect(page.getByRole('cell', { name: /payments-platform/ }).first()).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Needs attention' })).toBeVisible();
     await shot(page, 'dark-org-home');
     // The choice survives a reload.
     await page.goto(`/projects/${project}/findings`);
     await expect(page.locator('html')).toHaveClass(/\bdark\b/);
-    await expect(page.getByText('flatmap-stream', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('flatmap-stream@0.1.1', { exact: true }).first()).toBeVisible();
     await shot(page, 'dark-findings');
     await page.goto(`/projects/${project}/investigate?node=${encodeURIComponent('pkg:npm/event-stream@3.3.6')}`);
     const darkGraph = page.getByRole('img', { name: /graph/i }).first();
@@ -275,28 +426,5 @@ test.describe('admin screens', () => {
     await page.getByTestId('nav-user').click();
     await page.getByRole('menuitemradio', { name: 'Light' }).click();
     await expect(page.locator('html')).toHaveClass(/\blight\b/);
-  });
-
-  test('Findings "Top reason" column shows readable reason text', async ({ page }) => {
-    await page.goto(`/projects/${project}/findings`);
-    const table = page.getByRole('table').first();
-    const row = table.getByRole('row').filter({ has: page.getByText('flatmap-stream', { exact: true }) });
-    await expect(row).toBeVisible();
-    await expect(table.getByRole('columnheader', { name: /Top reason/ })).toBeVisible();
-    const headers = await table.getByRole('columnheader').allInnerTexts();
-    const idx = headers.findIndex((h) => /Top reason/.test(h));
-    expect(idx, `Top reason header in ${JSON.stringify(headers)}`).toBeGreaterThanOrEqual(0);
-    const cell = row.getByRole('cell').nth(idx);
-    const text = (await cell.innerText()).trim();
-    // A real sentence, not an ellipsis-crushed sliver.
-    expect(text.length).toBeGreaterThan(20);
-    expect(text).toMatch(/[a-z]{3,}\s+[a-z]{3,}/i);
-    const box = await cell.boundingBox();
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(300);
-    // Clamped to at most two lines but at least one full line of text is visible.
-    const span = cell.locator('span.line-clamp-2').first();
-    const h = await span.evaluate((el) => ({ client: el.clientHeight, line: parseFloat(getComputedStyle(el).lineHeight) || 20 }));
-    expect(h.client).toBeGreaterThanOrEqual(h.line * 0.9);
-    expect(h.client).toBeLessThanOrEqual(h.line * 2 + 2);
   });
 });

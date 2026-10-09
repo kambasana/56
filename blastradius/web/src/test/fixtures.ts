@@ -15,3 +15,8 @@ export function meFor(role: BuiltinRoleId, extra: Partial<MeResponse> = {}): MeR
     ...extra,
   };
 }
+
+/** A custom reports-only member (the Auditor template reads every page since docs/UX.md §9). */
+export function reportsOnly(extra: Partial<MeResponse> = {}): MeResponse {
+  return meFor('auditor', { permissions: ['reports'], ...extra });
+}

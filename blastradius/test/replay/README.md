@@ -15,3 +15,8 @@ Recorded once by `record.ts` (network), then used offline by the replay server a
 - `data/manifest.json`: provenance for every file (URL, commit and fetch time).
 
 Re-record: `npx tsx test/replay/record.ts --osv-dir <dir of OSV npm JSON>` (needs network).
+
+Account-level proof (`account/`, docs/ACCOUNT-PROOF.md): `record-account.ts` records package timelines
+(publish time, `_npmUser`, `maintainers`), account package lists, OSV records and five 2025 lockfiles into
+`account/data/`. `proof-account.ts` replays them offline (`npm run proof:account`). The methods are
+pre-registered in `account/PREREGISTRATION.md`.

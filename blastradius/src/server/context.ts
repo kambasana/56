@@ -5,6 +5,7 @@
  *   1. signed in (401) → 2. resource exists in the caller's org (404) → 3. permission (403).
  */
 import type { AlertWatcher } from './watch.js';
+import type { AccountIndexer } from './accounts.js';
 import type { Context } from 'hono';
 import type { MeResponse, Permission, User } from './api-types.js';
 import { can, type PagePermission } from './permissions.js';
@@ -57,6 +58,8 @@ export interface ServerDeps {
   scanLimiter: RateLimiter;
   /** Alerts from the knowledge pack after scans and on a timer, plus webhook notifications. */
   watcher: AlertWatcher;
+  /** Who can publish what: registry data for every stored inventory, after scans and on a timer. */
+  accounts: AccountIndexer;
 }
 
 export interface Session {

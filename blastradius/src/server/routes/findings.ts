@@ -13,11 +13,11 @@ import type {
   Project,
   UpdateFindingStatusResponse,
 } from '../api-types.js';
-import { FINDING_STATUSES } from '../api-types.js';
 import { deps, requireOrg, requireProjectPerm, visibleProjects, type AppEnv, type Ctx } from '../context.js';
 import { badRequest, notFound } from '../errors.js';
 import { findingGraph, investigateNode, investigateSearch, nodeGraph, type ScanFindingSet } from '../graph.js';
 import { idParam, pageQuery, parseBody, queryInt, queryString } from '../request.js';
+import { listOrgFindingsHandler, TriageFields } from './triage.js';
 import {
   all,
   diffScans,
@@ -27,7 +27,10 @@ import {
   getFindingDetail,
   getFindingRow,
   getScanInventory,
+  introducedByOf,
   isRiskLevel,
+  listAlertsFor,
+  packageSpread,
   latestSucceededScan,
   listFindings,
   listProjects,
@@ -42,10 +45,7 @@ import {
 
 const SORTS: readonly FindingSort[] = ['score', '-score', 'name', 'reach'];
 
-const UpdateStatusBody = z.strictObject({
-  status: z.enum(FINDING_STATUSES),
-  note: z.string().max(2000).optional(),
-});
+const UpdateStatusBody = z.strictObject(TriageFields);
 
 /** Engine findings + metadata of one scan, for graphs and Investigate. */
 export function loadScanSet(store: Store, orgId: string, project: Pick<Project, 'id' | 'name'>, scanId: string): ScanFindingSet {
@@ -88,6 +88,8 @@ function nodeParam(c: Ctx, name: string): string {
 export function registerFindingRoutes(app: Hono<AppEnv>): void {
   app.get('/api/findings', (c) => {
     const projectId = queryString(c, 'project', 100);
+    // No project: every project the caller may read findings in (docs/WEB-API.md).
+    if (projectId === undefined) return listOrgFindingsHandler(c);
     const { orgId } = requireProjectPerm(c, projectId, 'findings');
     const sort = queryString(c, 'sort', 10);
     if (sort !== undefined && !(SORTS as readonly string[]).includes(sort)) throw badRequest('Unknown sort', ['sort']);
@@ -112,10 +114,18 @@ export function registerFindingRoutes(app: Hono<AppEnv>): void {
     const { orgId } = requireOrg(c);
     const row = getFindingRow(deps(c).store, orgId, id);
     if (!row) throw notFound('Finding not found');
-    requireProjectPerm(c, row.projectId, 'findings');
-    const detail = getFindingDetail(deps(c).store, orgId, id);
+    const { project } = requireProjectPerm(c, row.projectId, 'findings');
+    const { store } = deps(c);
+    const detail = getFindingDetail(store, orgId, id);
     if (!detail) throw notFound('Finding not found');
-    return c.json<GetFindingResponse>(detail);
+    const { projectIds } = visibleProjects(c, 'findings');
+    return c.json<GetFindingResponse>({
+      ...detail,
+      projectName: project.name,
+      introducedBy: introducedByOf(detail.finding),
+      alerts: listAlertsFor(store, orgId, row.projectId, row.purl),
+      spread: packageSpread(store, orgId, projectIds, row.purl),
+    });
   });
 
   app.patch('/api/findings/:id', async (c) => {
@@ -124,11 +134,12 @@ export function registerFindingRoutes(app: Hono<AppEnv>): void {
     const row = getFindingRow(deps(c).store, orgId, id);
     if (!row) throw notFound('Finding not found');
     const body = await parseBody(c, UpdateStatusBody);
+    if (body.status === undefined && body.ownerId === undefined) throw badRequest('Nothing to change: give status or ownerId', ['status']);
     // Moving into or out of accepted_risk needs accept_risk: a review-only user must not be
-    // able to undo someone else's risk acceptance.
-    const perm = body.status === 'accepted_risk' || row.status === 'accepted_risk' ? 'accept_risk' : 'review';
-    requireProjectPerm(c, row.projectId, perm);
-    const updated = updateFindingStatus(deps(c).store, orgId, id, { status: body.status, ...(body.note !== undefined ? { note: body.note } : {}) }, session.user.id);
+    // able to undo someone else's risk acceptance. Assigning an owner needs review.
+    const touchesRisk = body.status !== undefined && (body.status === 'accepted_risk' || row.status === 'accepted_risk');
+    requireProjectPerm(c, row.projectId, touchesRisk ? 'accept_risk' : 'review');
+    const updated = updateFindingStatus(deps(c).store, orgId, id, body, session.user.id);
     return c.json<UpdateFindingStatusResponse>(updated);
   });
 

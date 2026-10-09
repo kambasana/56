@@ -17,6 +17,7 @@ import {
   projectsWithPermission,
   resetRole,
   rolesForUser,
+  seedOrgRoles,
   updateRole,
   userAccess,
 } from './rbac.js';
@@ -102,11 +103,20 @@ describe('roles', () => {
     expect(actions[0]).toBe('role.delete');
   });
 
+  it('upgrades untouched legacy built-in defaults and leaves customised roles alone', () => {
+    const { s, admin, org } = setup();
+    updateRole(s, org.id, 'appsec', { permissions: ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'] }, admin.id);
+    updateRole(s, org.id, 'auditor', { permissions: ['reports', 'findings'] }, admin.id);
+    seedOrgRoles(s, org.id);
+    expect(getRole(s, org.id, 'appsec')?.permissions).toEqual(ROLE_TEMPLATES.appsec.permissions);
+    expect(getRole(s, org.id, 'auditor')?.permissions).toEqual(['reports', 'findings']);
+  });
+
   it('keeps roles per org (same built-in ids in two orgs)', () => {
     const { s, admin, org } = setup();
     const other = createOrg(s, { name: 'Other' }, admin.id);
     updateRole(s, other.id, 'auditor', { permissions: ['reports', 'findings'] }, admin.id);
-    expect(getRole(s, org.id, 'auditor')?.permissions).toEqual(['reports']);
+    expect(getRole(s, org.id, 'auditor')?.permissions).toEqual(ROLE_TEMPLATES.auditor.permissions);
     expect(getRole(s, other.id, 'auditor')?.permissions).toEqual(['reports', 'findings']);
   });
 });
@@ -148,7 +158,8 @@ describe('bindings and access', () => {
     const { s, admin, dev, org } = setup();
     const p1 = createProject(s, org.id, { name: 'one', tier: 'Small', target: '/srv/one' }, admin.id);
     const p2 = createProject(s, org.id, { name: 'two', tier: 'Small', target: '/srv/two' }, admin.id);
-    createBinding(s, org.id, { roleId: 'auditor', subject: { kind: 'user', userId: dev.id }, scope: { kind: 'org' } }, admin.id);
+    const readers = createRole(s, org.id, { name: 'Readers', permissions: ['reports'] }, admin.id);
+    createBinding(s, org.id, { roleId: readers.id, subject: { kind: 'user', userId: dev.id }, scope: { kind: 'org' } }, admin.id);
     const triage = createRole(s, org.id, { name: 'Triage', permissions: ['findings', 'review'] }, admin.id);
     const pb = createBinding(s, org.id, { roleId: triage.id, subject: { kind: 'user', userId: dev.id }, scope: { kind: 'project', projectId: p1.id } }, admin.id);
 
@@ -186,7 +197,7 @@ describe('dev seed', () => {
     expect(r.users.map((u) => u.email)).toEqual(DEV_USERS.map((u) => u.email));
     expect(r.created).toHaveLength(4);
     for (const u of r.users) expect(rolesForUser(s, r.org.id, u.id).map((x) => x.id)).toEqual([u.role]);
-    expect(userAccess(s, r.org.id, r.users[3]!.id).permissions).toEqual(['reports']);
+    expect(userAccess(s, r.org.id, r.users[3]!.id).permissions).toEqual([...ROLE_TEMPLATES.auditor.permissions]);
     expect((await verifyLogin(s, 'appsec@local', 'pw-for-test'))?.email).toBe('appsec@local');
 
     const again = await seedDev(s, { devMode: true, password: 'other' });

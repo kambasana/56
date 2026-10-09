@@ -9,7 +9,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { WEB_ROUTES, type PagePermission } from '@server/permissions';
 import { useAuth } from './auth';
 import { useProject } from './project';
-import { landingPath } from './nav';
+import { landingPath, projectLandingPath } from './nav';
 import { AppShell } from './components/AppShell';
 import { EmptyState, ErrorState, ForbiddenState, LoadingState } from './components/EmptyState';
 import Login from './pages/Login';
@@ -23,13 +23,41 @@ export const PAGES: Record<string, Page> = {
   '/projects/:id/changes': lazy(() => import('./pages/Changes')),
   '/projects/:id/findings': lazy(() => import('./pages/Findings')),
   '/projects/:id/findings/:fid': lazy(() => import('./pages/FindingDetail')),
-  '/projects/:id/exposure': lazy(() => import('./pages/Exposure')),
+  '/projects/:id/exposure': lazy(() => Promise.resolve({ default: ProjectExposure })),
   '/projects/:id/investigate': lazy(() => import('./pages/Investigate')),
   '/projects/:id/scans': lazy(() => import('./pages/Scans')),
   '/reports': lazy(() => import('./pages/Reports')),
   '/integrations': lazy(() => import('./pages/Integrations')),
   '/settings': lazy(() => import('./pages/Settings')),
+  '/findings': lazy(() => import('./pages/Findings')),
+  '/incidents': lazy(() => import('./pages/Incidents')),
+  '/alerts': lazy(() => import('./pages/Alerts')),
+  '/projects': lazy(() => import('./pages/Projects')),
+  '/packages': lazy(() => import('./pages/Package')),
+  '/incidents/:incidentId': lazy(() => import('./pages/IncidentDetail')),
+  '/packages/behind': lazy(() => import('./pages/Behind')),
+  '/exposure': lazy(() => import('./pages/Exposure')),
+  '/accounts/:registry/:name': lazy(() => import('./pages/Account')),
 };
+
+/** The project Exposure matrix is the org-wide one, scoped to that project. */
+export function ProjectExposure() {
+  const id = useParams().id ?? '';
+  const { search } = useLocation();
+  const keep = new URLSearchParams(search);
+  keep.set('projects', id);
+  return <Navigate to={`/exposure?${keep}`} replace />;
+}
+
+/** /projects/:id: the first project page the viewer may open. */
+export function ProjectHome() {
+  const { me } = useAuth();
+  const params = useParams();
+  const id = params.id ?? '';
+  const to = projectLandingPath(me, id);
+  if (to) return <Navigate to={to} replace />;
+  return <ForbiddenState page="findings" />;
+}
 
 /** Signed-in gate: no session → /login?next=<path>. */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -52,7 +80,8 @@ export function RequirePage({ page, path, children }: { page: PagePermission; pa
   const { me, can } = useAuth();
   const { projectId } = useProject();
   const params = useParams();
-  const scope = params.id ?? null;
+  // /findings follows the current project, so a project-scope binding is enough there.
+  const scope = params.id ?? (path === '/findings' ? projectId : null);
   if (path === '/') {
     if (can('home') || can('projects')) return <>{children}</>;
     const to = landingPath(me, projectId);
@@ -147,6 +176,7 @@ export function AppRoutes() {
             />
           );
         })}
+        <Route path="/projects/:id" element={<ProjectHome />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

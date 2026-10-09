@@ -33,6 +33,7 @@ describe('catalogue', () => {
       'build_reports',
       'accept_risk',
       'review_entity_links',
+      'manage_alert_rules',
       'manage_projects',
       'manage_integrations',
       'manage_members',
@@ -50,20 +51,48 @@ describe('catalogue', () => {
   });
 });
 
-describe('default role templates (PLAN §12)', () => {
+describe('default role templates (docs/UX.md §9)', () => {
   it('Org admin has everything', () => {
     for (const p of ALL_PERMISSIONS) expect(can([role('org_admin')], p)).toBe(true);
   });
 
-  it.each(['appsec', 'developer'])('%s sees every page except settings and has no actions', (id) => {
+  it.each(['appsec', 'developer'])('%s sees every page except settings', (id) => {
     const r = [role(id)];
     for (const p of PAGE_PERMISSIONS) expect(can(r, p)).toBe(p !== 'settings');
-    for (const a of ACTION_PERMISSIONS) expect(can(r, a)).toBe(false);
   });
 
-  it('Auditor sees reports only', () => {
-    expect([...effectivePermissions([role('auditor')])]).toEqual(['reports']);
-    expect(allowedPages([role('auditor')])).toEqual(['reports']);
+  it('AppSec triages, accepts risk and manages alert rules, nothing else', () => {
+    const r = [role('appsec')];
+    const granted = ACTION_PERMISSIONS.filter((a) => can(r, a));
+    expect(granted).toEqual(['review', 'accept_risk', 'manage_alert_rules']);
+  });
+
+  it('Developer has no actions at org scope and triage in projects they are bound to', () => {
+    for (const a of ACTION_PERMISSIONS) expect(can([role('developer')], a)).toBe(false);
+    const bindings: BindingLike[] = [
+      { roleId: 'developer', subject: { kind: 'user', userId: 'd' }, scope: { kind: 'org' } },
+      { roleId: 'developer', subject: { kind: 'user', userId: 'd' }, scope: { kind: 'project', projectId: 'mine' } },
+    ];
+    expect(canInProject(bindings, roles, { userId: 'd' }, 'mine', 'review')).toBe(true);
+    expect(canInProject(bindings, roles, { userId: 'd' }, 'mine', 'accept_risk')).toBe(false);
+    expect(canInProject(bindings, roles, { userId: 'd' }, 'other', 'review')).toBe(false);
+    expect(can(rolesInScope(bindings, roles, { userId: 'd' }), 'review')).toBe(false);
+    // The binding order does not matter, and the stored role is not mutated.
+    expect(canInProject([...bindings].reverse(), roles, { userId: 'd' }, 'mine', 'review')).toBe(true);
+    expect(role('developer').permissions).not.toContain('review');
+  });
+
+  it('a custom role bound at project scope gets no implicit grants', () => {
+    const custom: RoleLike = { id: 'role_dev_like', permissions: ['findings'] };
+    const b: BindingLike[] = [{ roleId: custom.id, subject: { kind: 'user', userId: 'x' }, scope: { kind: 'project', projectId: 'p' } }];
+    expect(canInProject(b, [custom], { userId: 'x' }, 'p', 'review')).toBe(false);
+  });
+
+  it('Auditor reads every page but Settings and Integrations, and builds reports', () => {
+    const r = [role('auditor')];
+    expect(allowedPages(r)).toEqual(PAGE_PERMISSIONS.filter((p) => p !== 'settings' && p !== 'integrations'));
+    expect(ACTION_PERMISSIONS.filter((a) => can(r, a))).toEqual(['build_reports']);
+    expect(effectivePermissions(r).has('review')).toBe(false);
   });
 
   it('defaultRoles returns independent copies', () => {
@@ -82,7 +111,7 @@ describe('can / union of roles', () => {
 
   it('unions multiple roles', () => {
     const reviewer: RoleLike = { id: 'role_x', permissions: ['review', 'accept_risk'] };
-    const r = [role('auditor'), reviewer];
+    const r = [{ id: 'role_readers', permissions: ['reports'] } as RoleLike, reviewer];
     expect(can(r, 'reports')).toBe(true);
     expect(can(r, 'review')).toBe(true);
     expect(can(r, 'findings')).toBe(false);

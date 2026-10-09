@@ -3,6 +3,7 @@
  * listen with @hono/node-server. Default host is 127.0.0.1 (loopback only).
  */
 import { AlertWatcher, type AlertWatcherOptions } from './watch.js';
+import { AccountIndexer, type AccountIndexerOptions } from './accounts.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { serve as nodeServe } from '@hono/node-server';
@@ -16,12 +17,14 @@ import { ConcurrencyGate, RateLimiter } from './ratelimit.js';
 import { DEFAULT_WEB_DIR } from './static.js';
 import {
   closeStore,
+  createBinding,
   createProject,
   deleteExpiredSessions,
   deleteUserSessions,
   enqueueScan,
   failInterruptedScans,
   latestSucceededScan,
+  listBindingRecords,
   listDevUsers,
   listProjects,
   openStore,
@@ -77,6 +80,8 @@ export interface CreateServerOptions {
   scanRateLimit?: number;
   /** Knowledge-pack alerts and webhook (defaults from BLASTRADIUS_PACK / BLASTRADIUS_ALERT_WEBHOOK). */
   alerts?: AlertWatcherOptions;
+  /** Account index options (tests inject an offline HttpClient; default: scanOptions.http when given). */
+  accounts?: AccountIndexerOptions;
 }
 
 export function defaultLocalRoots(env: NodeJS.ProcessEnv = process.env): string[] {
@@ -99,8 +104,20 @@ export function createServer(opts: CreateServerOptions = {}) {
     ...(opts.trustProxy && opts.trustProxy.length > 0 ? { trustProxy: [...opts.trustProxy] } : {}),
   };
   const watcher = new AlertWatcher(store, { log, ...(opts.alerts ?? {}) });
+  const accounts = new AccountIndexer(store, {
+    offline: config.offline,
+    ...(config.fixturesDir !== undefined ? { fixturesDir: config.fixturesDir } : {}),
+    ...(opts.scanOptions?.http ? { http: opts.scanOptions.http } : {}),
+    ...(opts.scanOptions?.cacheDir !== undefined ? { cacheDir: opts.scanOptions.cacheDir } : {}),
+    log,
+    ...(opts.accounts ?? {}),
+  });
   const jobs = new ScanJobs({
-    onScanSucceeded: (projectId) => watcher.afterScan(projectId),
+    onScanSucceeded: (projectId, mode) => {
+      watcher.afterScan(projectId);
+      // Registry data is fetched the way the scan fetched it (a fixture replay stays offline).
+      accounts.afterScan(projectId, mode);
+    },
     store,
     localRoots: () => config.localRoots,
     offline: config.offline,
@@ -122,6 +139,7 @@ export function createServer(opts: CreateServerOptions = {}) {
     loginGate: new ConcurrencyGate(4, 32),
     scanLimiter: new RateLimiter(opts.scanRateLimit ?? 60, 60 * 60_000),
     watcher,
+    accounts,
   };
   return { app: createApp(deps), deps, store, jobs, config };
 }
@@ -152,6 +170,15 @@ export async function seedDevData(deps: Pick<ServerDeps, 'store' | 'jobs' | 'con
       { name: DEV_PROJECT_NAME, tier: 'Standard', target: E2E_REPO_DIR, owner: 'Payments · fixture repo' },
       admin.id,
     );
+  // The seeded Developer is also bound to this project, so they can triage its findings
+  // (Developer's project-scope grant, docs/UX.md §9).
+  const developer = seeded.users.find((u) => u.role === 'developer');
+  const bound = listBindingRecords(store, seeded.org.id, { projectId: project.id }).some(
+    (b) => b.roleId === 'developer' && b.scope.kind === 'project' && b.subject.kind === 'user' && b.subject.userId === developer?.id,
+  );
+  if (developer && !bound) {
+    createBinding(store, seeded.org.id, { roleId: 'developer', subject: { kind: 'user', userId: developer.id }, scope: { kind: 'project', projectId: project.id } }, admin.id);
+  }
   let scanId: string | null = null;
   if (!latestSucceededScan(store, project.id)) {
     const scan = enqueueScan(store, seeded.org.id, project.id, { requestedBy: admin.id, offline: true });
@@ -234,13 +261,19 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
     deps.watcher.start(watchMinutes);
     log(`alerts: checking all projects against the knowledge pack every ${watchMinutes} min`);
   }
+  // Account index: every stored inventory's packages, now and every BLASTRADIUS_ACCOUNT_REFRESH_MINUTES
+  // (default 360; packuments younger than a day are not re-fetched, and the HttpClient rate-limits).
+  const accountMinutes = Number(process.env.BLASTRADIUS_ACCOUNT_REFRESH_MINUTES ?? 360);
+  if (accountMinutes > 0) deps.accounts.start(accountMinutes);
   return {
     url,
     close: async () => {
       clearInterval(sessionSweep);
       deps.watcher.stop();
+      deps.accounts.stop();
       jobs.stop();
       await jobs.drain();
+      await deps.accounts.idle();
       await new Promise<void>((resolve) => server.close(() => resolve()));
       if (!opts.store) closeStore(store);
     },
