@@ -37,25 +37,34 @@ its own releases were compromised in March 2026 (DATA-ML.md §4, "Not adopted").
 
 ## 3. What is unique to us, and what is proven
 
-### 3.1 Account compromise to estate (proven on one incident type)
+### 3.1 Account compromise to estate (proven for multi-package takeovers)
 
 Source: `docs/ACCOUNT-PROOF.md` [proof/account-level], pre-registered in
 `blastradius/test/replay/account/PREREGISTRATION.md` [proof/account-level].
 
-- **chalk/debug 2025 (account qix): pass.** At the first advisory, 1 advisory existed. "qix is
-  compromised" named all 19 bad packages at once.
-- It named them a median of 2.7 h, and up to 6.4 h, before their own advisories.
-- Across the recorded orgs it named 204 package-level exposures, against 21 from advisories.
-  Precision was 1.
-- It named all 21 locked bad versions. Advisories at that time covered 1.
-- **event-stream 2018: fail.** 2 vs 2 packages, 0 h gained. A one-package takeover gains nothing.
-- **Shai-Hulud wave 1: fail.** 37 packages named early, median gain 0 h, precision 0.568.
-- **Shai-Hulud wave 2: pass.** 245 packages named early, median gain 1.3 h, precision 0.369.
-  No recorded project used a Shai-Hulud package, so this is package-level only.
+Four recorded incidents were replayed. Each is one row; no single incident family carries the
+result.
+
+| Incident | Bad packages named early | Median gain | Precision | Org exposures named (vs advisories) | Result |
+|---|---|---|---|---|---|
+| chalk/debug 2025 (account qix) | 19 vs 1 | 2.7 h (max 6.4 h) | 1 | 204 (vs 21) | pass |
+| event-stream 2018 (account right9ctrl) | 2 vs 2 | 0 h | 1 | 2 (vs 2) | fail |
+| Shai-Hulud wave 1, 2025-09 (13 accounts with ≥ 2 bad packages) | 37 | 0 h | 0.568 | 0 | fail |
+| Shai-Hulud wave 2, 2025-11 (39 accounts with ≥ 2 bad packages) | 245 | 1.3 h | 0.369 | 0 | pass |
+
+- **Macro view** (each incident counted once; arithmetic on the rows above, not a pre-registered
+  metric): passes in 2 of 4 incidents; unweighted mean of the per-incident median gains 1.0 h;
+  unweighted mean precision 0.734.
+- Clearest case, chalk/debug: at the first advisory only 1 advisory existed, and "qix is
+  compromised" named all 19 bad packages at once and all 21 locked bad versions (advisories then
+  covered 1).
+- No recorded project used a Shai-Hulud package, so the org-level evidence comes from chalk/debug
+  and event-stream; the Shai-Hulud rows are package-level only.
+- Four incidents is a small set, and two are waves of one family.
 
 **What this means.** The account query earns its place for multi-package takeovers. It does not help
-for single-package ones. For worms, precision is low, because an account's other packages are not
-all bad.
+for single-package ones. For multi-account campaigns, precision is low, because an account's other
+packages are not all bad.
 
 **Caveats** (all from ACCOUNT-PROOF.md):
 
@@ -115,8 +124,8 @@ offer (see §5). It is table stakes. It is the base the account answer stands on
 | Own model, local run (2026-10-07) | held-out recall 0% vs rules 66.7% | `blastradius/pack/model/reports/2026-10-07-local.md` [data-ml/model] | **not proven** |
 | Own model, full gate (2026-10-08) | 16/100 vs rules 27/100 caught; 22.5 vs 11.0 findings per control repo on scan day | `blastradius/pack/model/reports/2026-10-08-gate.md` [data-ml/model] | **not proven** |
 | GuardDog as a finding source | noise: 7 of 8 control repos over the limit of 1, mean 5.5 per repo. Catch passed only as a union (99.4% on 1,439 Datadog samples; 12 vs 11 of 16 on replay). | `blastradius/pack/detectors/reports/2026-10-08-guarddog-gate.md` [detectors/guarddog-proof-clean] | **not proven** |
-| Account burst rule as an alert | warns qix 1.1 h early and 25 of 25 qualifying Shai-Hulud accounts, but 2.095 false alarms per control account-month against a limit of 0.1 | `docs/ACCOUNT-PROOF.md` [proof/account-level], H2 | **not proven** |
-| Laya zero-shot triage of bursts | 0.427 false alarms per account-month (limit 0.1); 13 of 25 Shai-Hulud warnings (need 20). Plain-rules baseline: 1.707 and 18 of 25. | `docs/LAYA-TRIAGE.md` [proof/laya-triage] | **not proven** |
+| Account burst rule as an alert | warns before the first advisory in 3 of 4 incidents (26 of 27 incident accounts; qix 1.1 h early; event-stream never fires), but 2.095 false alarms per control account-month against a limit of 0.1. It fails on noise, not on any incident. | `docs/ACCOUNT-PROOF.md` [proof/account-level], H2 | **not proven** |
+| Laya, zero-shot, on account bursts | 0.427 false alarms per account-month (limit 0.1); warned qix (1.1 h) and 13 of the 25 incident accounts other than qix (gate needed 20; all 25 were Shai-Hulud). Plain-rules baseline: 1.707 and 18 of 25. | `docs/LAYA-TRIAGE.md` [proof/laya-triage] | **not yet tested as designed** (see below) |
 
 What it means:
 
@@ -125,8 +134,18 @@ What it means:
 - **Detection that reads code is a crowded field.** GuardDog catches a lot, but it is too noisy on
   normal lockfiles to show as findings. We keep it out of findings.
 - **A burst of releases is not a takeover signal on its own.** Monorepos and prolific maintainers
-  look the same as a worm. A 1.7 GB model on top did not fix it. The burst stays context on the
+  look the same as a takeover. The burst is one of many signals feeding triage (with advisories,
+  malware feeds and the per-release signals in FEEDS-AND-DETECTORS.md). It stays context on the
   Account page, not an alert.
+- **Laya: not yet tested as designed, so no final verdict.** The run above used the base English
+  checkpoint zero-shot, with every state truncated at its 512-token limit, an uncalibrated score,
+  only the burst signal, and a recall gate made of one incident family. Laya's own docs say base
+  checkpoints are near chance zero-shot on new decision tasks and that the value comes from
+  fine-tuning on your own labelled decisions, with temperatures calibrated on held-out data and
+  adoption in stages (shadow first). The FAIL stands only for "zero-shot Laya does not triage
+  account bursts". The redesign, fine-tuned on release triage across all our signals, scored per
+  incident family and macro-averaged, against a tabular baseline, is in `docs/LAYA-USAGE.md`
+  [research/laya-proper].
 - **Our value is the answer after the first signal**, not the first signal itself.
 
 ## 5. How we differ from GitHub, Snyk and Socket
@@ -151,15 +170,19 @@ What follows from this:
 
 ## 6. What is next
 
-1. **Prove the account answer on a second multi-package takeover**, not just chalk/debug. One pass
-   is one data point.
+1. **Prove the account answer on more multi-package takeovers from other families**, not just
+   chalk/debug and one Shai-Hulud wave. Report per incident and macro-averaged.
 2. **Record publishers live.** A watcher sees `_npmUser` before npm deletes it. That closes the
-   "no publisher, no Critical" gap (§3.2) and the unattributed Shai-Hulud versions (§3.1).
+   "no publisher, no Critical" gap (§3.2) and the unattributed versions in multi-account campaigns
+   such as the Shai-Hulud waves (§3.1).
 3. **Concentration as of a date**, compared with the H3 table, and tested on whether it changes a
    decision. Until then it stays descriptive.
 4. **Feeds sync** as in FEEDS-AND-DETECTORS.md §5: incremental OSV, the pack with `listing.json`,
    and freshness measured end to end.
 5. **A sourced comparison with Socket.**
+6. **Laya as designed, in shadow only**: fine-tune, calibrate and compare against a tabular baseline
+   as in `docs/LAYA-USAGE.md` [research/laya-proper]. It informs triage, never alerts, until its own
+   pre-registered, family-macro gate passes.
 
 Not on the list: our own prediction model, GuardDog findings, and burst alerts. Each one failed
-its gate (§4). They come back only with a new pre-registered gate.
+its gate (§4). Laya is not in that group: it has not been tested as designed yet. They come back only with a new pre-registered gate.
