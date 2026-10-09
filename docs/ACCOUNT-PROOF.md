@@ -7,17 +7,66 @@ tested on recorded real data, replayed offline. The methods and pass/fail rules 
 
 ## Verdict
 
+Four recorded incidents were replayed: chalk/debug 2025 (account qix), event-stream 2018 (account
+right9ctrl), and the two Shai-Hulud 2025 waves. Shai-Hulud is one incident family among many; it is
+here because its accounts are in the recording, not because the product is built around it. The
+results below are reported per incident first, then as a macro view (each incident counts once).
+
 | Claim | Result | In one line |
 |---|---|---|
-| **H1** compromise response | **holds for a multi-package takeover (chalk/debug), weak for Shai-Hulud, nothing for event-stream** | When debug's advisory appeared, only 1 advisory existed. "qix is compromised" named all 19 bad packages at once, 2.7 h (median) and up to 6.4 h before their own advisories. In the org it named 204 package-level exposures instead of 21, and all 21 locked bad versions instead of 1. |
-| **H2** burst early warning | **fails as an alert** | The rule fires before the advisory for qix (1.1 h) and for all 25 Shai-Hulud accounts with ≥5 attributable bad packages (0.2–45 h). But normal accounts burst about **2.1 times per account-month**, or 1.1 without bots. The pre-registered limit was 0.1. sindresorhus alone has 11 episodes in 7 months and isaacs 8. The 24 h variant gives 2.0. N≥10 gives 1.7 and misses qix. |
+| **H1** compromise response | **holds for multi-package takeovers, nothing for a single-package one** | Passes for chalk/debug and Shai-Hulud wave 2, fails for event-stream and Shai-Hulud wave 1 (2 of 4 incidents). Clearest case, chalk/debug: when debug's advisory appeared only 1 advisory existed; "qix is compromised" named all 19 bad packages at once, 2.7 h (median) and up to 6.4 h before their own advisories, and in the org it named 204 package-level exposures instead of 21. |
+| **H2** burst early warning | **fails as an alert** | The rule fires before T0 on 26 of the 27 incident accounts (event-stream's right9ctrl never fires). It fails on noise alone: normal accounts burst about **2.1 times per account-month** (1.1 without bots) against a pre-registered limit of 0.1, whatever any incident shows. |
 | **H3** concentration | descriptive | Each project depends on 45–234 publishing accounts. The top account can publish 9–27% of its packages (sindresorhus, ljharb or jonschlinkert in most projects; microsoft1es and "GitHub Actions" trusted publishing in TypeScript and mocha). |
 
+### H1 per incident
+
+From the generated report below ("Verdicts" and "H1 compromise response"). For chalk/debug and
+event-stream the count is bad packages named at T0 (first advisory naming one of the account's bad
+packages) by the account query versus by advisories. For the Shai-Hulud waves, which span many
+accounts, it is bad packages named before their own advisory, on accounts with ≥ 2 bad packages.
+
+| Incident | Accounts | Bad packages named early | Median gain (h) | Precision | Org exposures named (vs advisories) | Pre-registered result |
+|---|---|---|---|---|---|---|
+| chalk/debug 2025 | 1 (qix) | 19 vs 1 | 2.7 | 1 | 204 (vs 21) | pass |
+| event-stream 2018 | 1 (right9ctrl) | 2 vs 2 | 0 | 1 | 2 (vs 2) | fail |
+| Shai-Hulud wave 1 (2025-09) | 15 (13 with ≥ 2 bad pkgs) | 37 | 0 | 0.568 | 0 | fail |
+| Shai-Hulud wave 2 (2025-11) | 75 (39 with ≥ 2 bad pkgs) | 245 | 1.3 | 0.369 | 0 | pass |
+
+**Macro view (each incident weighted once; arithmetic on the rows above, not a pre-registered
+metric).** Passes in 2 of 4 incidents. Median gain per incident ranges 0–2.7 h; the unweighted mean
+of the four medians is 1.0 h. Precision ranges 0.369–1; the unweighted mean is 0.734. Gains come
+from incidents where one account published many bad packages; a one-package takeover (event-stream)
+gains nothing, and multi-account worms lose precision because an account's other packages are not
+all bad. No recorded project used a Shai-Hulud package, so org-level exposure evidence comes from
+chalk/debug and event-stream only.
+
+### H2 per incident
+
+From "Incident accounts under the primary rule" (N ≥ 5, W = 6 h) below. Lead = T0 minus the first
+firing whose window holds one of the account's bad publishes.
+
+| Incident | Incident accounts | Warned before T0 | Lead (h) |
+|---|---|---|---|
+| chalk/debug 2025 | 1 (qix) | 1/1 | 1.1 |
+| event-stream 2018 | 1 (right9ctrl, 0 attributable bad publishes) | 0/1 | none |
+| Shai-Hulud wave 1 | 8 with ≥ 5 bad pkgs | 8/8 | 3.8–44.6 |
+| Shai-Hulud wave 2 | 17 with ≥ 5 bad pkgs | 17/17 | 0.2–12.4 |
+
+**Macro view.** Warned in 3 of 4 incidents (26 of 27 accounts). The decisive number is not an
+incident number: 2.095 false alarms per control account-month (7 of 11 controls alarm). The
+pre-registered H2 criterion (b) names the wave-1 Shai-Hulud accounts; that criterion was met, and the
+rule failed on (c), the control false-alarm rate. Future gates on this or any signal are set per
+incident family and macro-averaged, with no gate naming one family (see `docs/LAYA-USAGE.md` §3.3
+on branch `research/laya-proper`).
+
 **What this means for the product.** The account index and the "account X is compromised" query
-earn their place. They turn the first advisory of a multi-package takeover into a complete answer
+earn their place for multi-package takeovers. They turn the first advisory into a complete answer
 hours before the per-package advisories finish, and they need no re-scan. The burst rule does not
-earn a standalone alert: routine monorepo and prolific-maintainer releases look the same as a worm.
-At most it is a low-weight input to combine with other signals, which was not tested here.
+earn a standalone alert: routine monorepo and prolific-maintainer releases look the same as a
+takeover. It is **one of many signals** feeding triage, alongside advisories and malware feeds and
+the per-release signals (publisher change, new install script, dropped provenance, and others) in
+[FEEDS-AND-DETECTORS.md](FEEDS-AND-DETECTORS.md). Combining it with those signals was not tested
+here.
 
 ## Caveats (read before quoting the numbers)
 
@@ -27,6 +76,9 @@ At most it is a low-weight input to combine with other signals, which was not te
   For qix, 15 of 19 bad publishes are attributable. The Shai-Hulud accounts analysed are therefore
   the sole-maintainer subset, and H2 incident catches are a lower bound on what a live watcher
   (which sees `_npmUser` before deletion) would get.
+- **Four incidents is a small set.** Two of the four are waves of one family (Shai-Hulud), so the
+  macro view leans on one family for half its weight. More multi-package takeovers from other
+  families are needed before the H1 result generalises.
 - **"Can publish at T"** comes from the `maintainers` recorded on the latest version at or before T.
   An owner added without a later publish is invisible.
 - **Account package lists are today's**, from `/-/user/<u>/package`. That endpoint answered 429 for
