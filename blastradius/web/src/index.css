@@ -2,111 +2,169 @@
 @import "tw-animate-css";
 
 /*
- * shadcn/ui theme: style new-york (v4), base colour neutral, CSS variables in OKLCH, exactly
- * as `shadcn init` writes them for Tailwind v4 (values from the upstream registry's
- * colors/neutral.json). Light on :root, dark on <html class="dark"> (ThemeProvider).
+ * Blastradius Design System tokens (docs/UX.md; https://claude.ai/artifact/DToocoexEfjkPhoG88ggrK,
+ * project/tokens.json), on the shadcn/ui new-york v4 variable names so every shadcn component
+ * keeps working. Light on :root, dark on <html class="dark"> (ThemeProvider).
  *
- * App additions, all theme tokens rather than ad-hoc colours:
- *   --level-critical/high/medium/low  risk level badges (destructive / orange / amber / muted)
- *   --warning, --success, --info       status text and outlines used by the screens
+ * Colour carries severity and only severity: --sev-* (ink) and --sev-*-soft (fill), always
+ * with a shape and a word. Reach is never a hue (--reach-prod ink vs --reach-dev muted, dashed).
+ * Graphs: --node-*, --edge-*, --focus-path. Selection: --selection on --selection-soft.
+ * Contrast pairs are asserted by web/src/theme-contrast.test.ts.
+ *
+ * Legacy aliases kept for pages stage 2 has not redesigned yet: --level-* → --sev-*,
+ * --info → --selection.
  */
 @custom-variant dark (&:is(.dark *));
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  /* shadcn ships 0.556 (#737373), which is 4.34:1 on --muted / --secondary: below WCAG AA. */
-  --muted-foreground: oklch(0.51 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /*
-   * App tokens. Every one is used as text on --background, --card, --muted/--secondary and on its
-   * own 10% tint, so each keeps >= 4.5:1 (WCAG AA) against all of those in light mode
-   * (red-700, then darkened orange / amber / green / blue). web/src/theme-contrast.test.ts checks it.
-   */
-  --destructive-foreground: oklch(0.985 0 0);
-  --level-critical: oklch(0.505 0.213 27.518);
-  --level-high: oklch(0.5 0.18 35);
-  --level-medium: oklch(0.52 0.12 70);
-  --level-low: var(--muted-foreground);
-  --warning: oklch(0.5 0.18 35);
-  --success: oklch(0.49 0.14 150);
-  --info: oklch(0.49 0.2 264);
+  --background: #ffffff;
+  --foreground: #101322;
+  --card: #ffffff;
+  --card-foreground: #101322;
+  --popover: #ffffff;
+  --popover-foreground: #101322;
+  --primary: #101322;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f9;
+  --secondary-foreground: #101322;
+  --muted: #f3f4f9;
+  --muted-foreground: #5f6580;
+  --accent: #f3f4f9;
+  --accent-foreground: #101322;
+  --destructive: #c4281c;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #feeceb;
+  --border: #dfe2ec;
+  --input: #858ca8;
+  --ring: #2350d0;
+  --text-secondary: #4b5168;
+  --selection: #2350d0;
+  --selection-soft: #e8eefc;
+  --success: #15803d;
+  --success-soft: #e7f7ec;
+  --warning: #b45309;
+  --warning-soft: #fdf3e1;
+  --recessed: #e9ebf3;
+  --grid: #c3c8da;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
 
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --sev-critical: #a11d16;
+  --sev-critical-soft: #fdecea;
+  --sev-high: #c2410c;
+  --sev-high-soft: #fff0e5;
+  --sev-medium: #8a5a00;
+  --sev-medium-soft: #fbf3dc;
+  --sev-low: #5f6580;
+  --sev-low-soft: #f3f4f9;
+  --sev-none: #c3c8da;
+  --reach-prod: #101322;
+  --reach-dev: #5f6580;
+  --node-surface: var(--card);
+  --node-border: #858ca8;
+  --edge-runtime: #4b5168;
+  --edge-dev: #858ca8;
+  --edge-optional: #858ca8;
+  --focus-path: var(--selection);
+
+  /* The sidebar sits on --muted; the active item is lifted onto --background (Sidebar.dc.html). */
+  --sidebar: #f3f4f9;
+  --sidebar-foreground: #101322;
+  --sidebar-primary: #101322;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #101322;
+  --sidebar-border: #dfe2ec;
+  --sidebar-ring: #2350d0;
+
+  --level-critical: var(--sev-critical);
+  --level-high: var(--sev-high);
+  --level-medium: var(--sev-medium);
+  --level-low: var(--sev-low);
+  --info: var(--selection);
+
+  --elev-1: 0 1px 2px 0 rgba(16, 19, 34, 0.06);
+  --elev-2: 0 8px 24px -8px rgba(16, 19, 34, 0.18);
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow-lg: var(--elev-2);
+
+  --control-h: 28px;
+  --row-h: 40px;
+  --sheet-w: 440px;
+  --rail-w: 300px;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0e1020;
+  --foreground: #eceef6;
+  --card: #151830;
+  --card-foreground: #eceef6;
+  --popover: #151830;
+  --popover-foreground: #eceef6;
+  --primary: #eceef6;
+  --primary-foreground: #101322;
+  --secondary: #1b1e38;
+  --secondary-foreground: #eceef6;
+  --muted: #1b1e38;
+  --muted-foreground: #8b91ab;
+  --accent: #1b1e38;
+  --accent-foreground: #eceef6;
+  --destructive: #f87171;
+  --destructive-foreground: #101322;
+  --destructive-soft: #3b1210;
+  --border: #2a2e4a;
+  --input: #5d6494;
+  --ring: #7d9bff;
+  --text-secondary: #b3b8cf;
+  --selection: #7d9bff;
+  --selection-soft: #1a2450;
+  --success: #4ade80;
+  --success-soft: #0f2e1c;
+  --warning: #fbbf24;
+  --warning-soft: #3a2a0c;
+  --recessed: #232746;
+  --grid: #3b4063;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
 
-  /* orange-400 / amber-400 / green-400 / blue-400 for contrast on the dark background. */
-  --destructive-foreground: oklch(0.985 0 0);
-  --level-critical: var(--destructive);
-  --level-high: oklch(0.75 0.183 55.934);
-  --level-medium: oklch(0.828 0.189 84.429);
-  --warning: oklch(0.75 0.183 55.934);
-  --success: oklch(0.792 0.209 151.711);
-  --info: oklch(0.707 0.165 254.624);
+  --sev-critical: #ff8f86;
+  --sev-critical-soft: #3b1210;
+  --sev-high: #fdba74;
+  --sev-high-soft: #3a1f0b;
+  --sev-medium: #f2cf5b;
+  --sev-medium-soft: #33280a;
+  --sev-low: #8b91ab;
+  --sev-low-soft: #1b1e38;
+  --sev-none: #3b4063;
+  --reach-prod: #eceef6;
+  --reach-dev: #8b91ab;
+  --node-border: #5d6494;
+  --edge-runtime: #b3b8cf;
+  --edge-dev: #5d6494;
+  --edge-optional: #5d6494;
+
+  --sidebar: #1b1e38;
+  --sidebar-foreground: #eceef6;
+  --sidebar-primary: #eceef6;
+  --sidebar-primary-foreground: #101322;
+  --sidebar-accent: #0e1020;
+  --sidebar-accent-foreground: #eceef6;
+  --sidebar-border: #2a2e4a;
+  --sidebar-ring: #7d9bff;
+
+  --elev-1: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --elev-2: 0 8px 24px -8px rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {
@@ -154,11 +212,56 @@
   --color-warning: var(--warning);
   --color-success: var(--success);
   --color-info: var(--info);
+
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --color-destructive-soft: var(--destructive-soft);
+  --color-text-secondary: var(--text-secondary);
+  --color-selection: var(--selection);
+  --color-selection-soft: var(--selection-soft);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-recessed: var(--recessed);
+  --color-grid: var(--grid);
+  --color-sev-critical: var(--sev-critical);
+  --color-sev-critical-soft: var(--sev-critical-soft);
+  --color-sev-high: var(--sev-high);
+  --color-sev-high-soft: var(--sev-high-soft);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-medium-soft: var(--sev-medium-soft);
+  --color-sev-low: var(--sev-low);
+  --color-sev-low-soft: var(--sev-low-soft);
+  --color-sev-none: var(--sev-none);
+  --color-reach-prod: var(--reach-prod);
+  --color-reach-dev: var(--reach-dev);
+  --color-node-surface: var(--node-surface);
+  --color-node-border: var(--node-border);
+  --color-edge-runtime: var(--edge-runtime);
+  --color-edge-dev: var(--edge-dev);
+  --color-edge-optional: var(--edge-optional);
+  --color-focus-path: var(--focus-path);
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  /* Type scale from tokens.json (title 20, heading 15, body 13, label 12, caption 11.5, eyebrow 11). */
+  --text-title: 20px;
+  --text-title--line-height: 26px;
+  --text-heading: 15px;
+  --text-heading--line-height: 20px;
+  --text-body: 13px;
+  --text-body--line-height: 18px;
+  --text-label: 12px;
+  --text-label--line-height: 16px;
+  --text-caption: 11.5px;
+  --text-caption--line-height: 16px;
+  --text-eyebrow: 11px;
+  --text-eyebrow--line-height: 16px;
+  --spacing-sheet: var(--sheet-w);
+  --spacing-rail: var(--rail-w);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   body {
     @apply bg-background text-foreground;
@@ -169,7 +272,13 @@
     height: 100%;
   }
   body {
-    @apply text-sm antialiased;
+    @apply font-sans text-sm antialiased;
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
   }
   /* Bare text links inside screens; shadcn components (data-slot) style their own anchors. */
   a:not([data-slot]) {

@@ -84,7 +84,11 @@ Done, all offline and enforced in CI (`test/replay/*.test.ts`); see [PROOF.md](P
 - node-ipc 10.1.x: the same maintainer, with no install script.
 - chalk 5.6.1 and debug 4.4.2: the same publisher (qix, phished), with no install script. Only the advisory catches them.
 
+**Account-level proof (2026-10-08):** see [ACCOUNT-PROOF.md](ACCOUNT-PROOF.md). It was pre-registered and run on recorded data. "Account X is compromised" named all 19 chalk/debug packages at the first advisory, 2.7 h (median) before their own advisories. The burst rule fires before the advisory but also fires about twice a month on normal accounts, so it is not used as an alert.
+
 **Next (2026-10-08):** see [FEEDS-AND-DETECTORS.md](FEEDS-AND-DETECTORS.md). The known-bad list becomes an incrementally synced, versioned feed (OSV `modified_id.csv` → raw store → compiled index → pack with `listing.json`), and pre-advisory detection reuses GuardDog, adopted only after a catch / noise / cost gate.
+
+**Repo connectors (2026-10-08):** see [CONNECTORS.md](CONNECTORS.md). Users connect GitHub (App), GitLab or Forgejo/Gitea once and their repos are watched automatically; push webhooks re-scan only when lockfiles change. GitHub first.
 
 **Not yet done:**
 - Org membership and funders need the GitHub and Open Collective APIs. Without a GitHub token, the chain stops at npm accounts and repo owner. The hammer runs with a token.

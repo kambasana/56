@@ -13,9 +13,46 @@ describe('migrations', () => {
     expect(currentVersion(db)).toBe(SCHEMA_VERSION);
     expect(migrate(db)).toEqual([]);
     const tables = (db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`).all() as { name: string }[]).map((r) => r.name);
-    for (const t of ['org', 'project', 'scan', 'finding', 'finding_state', 'app_user', 'session', 'role', 'role_binding', 'audit_log']) {
+    for (const t of ['org', 'project', 'scan', 'finding', 'finding_state', 'app_user', 'session', 'role', 'role_binding', 'audit_log', 'incident_state', 'incident_event', 'alert_check', 'alert_rule']) {
       expect(tables).toContain(t);
     }
+    db.close();
+  });
+
+  it('numbers migrations 1..N with no gaps or repeats, the account index last', () => {
+    expect(MIGRATIONS.map((m) => m.version)).toEqual(MIGRATIONS.map((_, i) => i + 1));
+    expect(MIGRATIONS.slice(5).map((m) => [m.version, m.name])).toEqual([
+      [6, 'finding triage: fixing, resolved, owner, risk expiry'],
+      [7, 'incidents'],
+      [8, 'alert rules'],
+      [9, 'account index and compromised accounts'],
+    ]);
+    expect(SCHEMA_VERSION).toBe(9);
+  });
+
+  it('keeps incident timeline events when incident_event is rebuilt (v9), and allows account events', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, MIGRATIONS.filter((m) => m.version < 9));
+    db.exec("INSERT INTO org (id, name, slug, created_at) VALUES ('org_1', 'Acme', 'acme', '2026-01-01T00:00:00Z')");
+    db.exec("INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title) VALUES ('org_1', 'GHSA-1', '2026-01-01T00:00:00Z', 'u', 'status', 'moved')");
+    expect(migrate(db)).toEqual([9]);
+    expect(db.prepare('SELECT advisory_id AS a, kind FROM incident_event').all()).toEqual([{ a: 'GHSA-1', kind: 'status' }]);
+    db.exec("INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title) VALUES ('org_1', 'ACCOUNT-npm-qix', '2026-01-01T00:00:01Z', 'u', 'account', 'marked')");
+    expect(() => db.exec("INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title) VALUES ('org_1', 'x', 'y', 'u', 'nope', 't')")).toThrow(/CHECK/);
+  });
+
+  it('keeps review statuses when the finding_state table is rebuilt (v6), and allows the new ones', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, MIGRATIONS.filter((m) => m.version < 6));
+    db.exec(`INSERT INTO org (id, name, slug, created_at) VALUES ('o', 'O', 'o', 't');
+      INSERT INTO project (id, org_id, name, target, target_kind, tier, created_at, updated_at) VALUES ('p', 'o', 'p', '/x', 'local', 'Small', 't', 't');
+      INSERT INTO finding_state (project_id, purl, status, updated_at, updated_by) VALUES ('p', 'pkg:npm/a@1', 'reviewed', 't', 'u');`);
+    expect(migrate(db)).toEqual([6, ...MIGRATIONS.filter((m) => m.version > 6).map((m) => m.version)]);
+    expect(db.prepare('SELECT status, owner_id, risk_expires_at FROM finding_state').all()).toEqual([{ status: 'reviewed', owner_id: null, risk_expires_at: null }]);
+    db.exec(`UPDATE finding_state SET status = 'fixing'`);
+    expect(() => db.exec(`UPDATE finding_state SET status = 'bogus'`)).toThrow(/CHECK/);
     db.close();
   });
 

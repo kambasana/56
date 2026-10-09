@@ -346,8 +346,21 @@ export type GetScanResponse = Scan;
 // Findings
 // ---------------------------------------------------------------------------
 
-export const FINDING_STATUSES = ['new', 'reviewed', 'accepted_risk'] as const;
+/**
+ * Finding life cycle (docs/UX.md §5): new (shown as Open) → reviewed (Triaged) → fixing →
+ * resolved, plus accepted_risk (needs a reason and an expiry date). Stored ids are kept from
+ * Phase 4a, so older clients and data stay valid.
+ */
+export const FINDING_STATUSES = ['new', 'reviewed', 'fixing', 'resolved', 'accepted_risk'] as const;
 export type FindingStatus = (typeof FINDING_STATUSES)[number];
+/** Statuses that still need work ("open" in counts and tiles). */
+export const OPEN_FINDING_STATUSES: readonly FindingStatus[] = ['new', 'reviewed', 'fixing'];
+
+/** A member a finding can be assigned to. */
+export interface PersonRef {
+  id: Id;
+  name: string;
+}
 
 /** Compact row for the Findings table. */
 export interface FindingRow {
@@ -374,7 +387,67 @@ export interface FindingRow {
   status: FindingStatus;
   /** First scan of this project in which the same purl had a finding. */
   firstSeenAt: IsoTime;
+  /** Who is handling it (per project and package, like status). Null = unassigned. */
+  owner: PersonRef | null;
+  /** Set while the status is accepted_risk: when the acceptance runs out. */
+  riskExpiresAt: IsoTime | null;
 }
+
+/** Who brings a package in: a direct dependency, and/or the direct dependencies that pull it in. */
+export interface IntroducedBy {
+  direct: boolean;
+  /** Package names of the direct dependencies on the shortest paths first (at most 5). */
+  via: string[];
+}
+
+/** A row of the org-wide findings list: a FindingRow with its project and spread. */
+export interface OrgFindingRow extends FindingRow {
+  projectName: string;
+  introducedBy: IntroducedBy;
+  /** Projects (among those listed) whose latest scan has this same package version, and how many reach production. */
+  spread: { projects: number; prodProjects: number };
+}
+
+/**
+ * GET /api/findings without `project`: the latest scan of every project the caller may read
+ * findings in. Every filter is a comma-separated list (OR within, AND across).
+ */
+export interface ListOrgFindingsQuery extends PageQuery {
+  /** Project ids; absent = every visible project. Ids the caller cannot see are ignored. */
+  projects?: string;
+  /** "prod": reaches production; "dev": does not. */
+  env?: 'prod' | 'dev';
+  level?: string;
+  status?: string;
+  /** User ids, or "none" for unassigned. */
+  owner?: string;
+  /** ISO time: first seen at or after. */
+  since?: IsoTime;
+  q?: string;
+  sort?: OrgFindingSort;
+}
+export const ORG_FINDING_SORTS = ['-score', 'score', 'name', 'reach', '-firstSeen', 'firstSeen'] as const;
+export type OrgFindingSort = (typeof ORG_FINDING_SORTS)[number];
+export type ListOrgFindingsResponse = Page<OrgFindingRow> & { scannedProjects: number };
+
+/** GET /api/findings/packages: the same filters, one row per package version. */
+export interface PackageFindingGroup {
+  purl: PurlString;
+  name: string;
+  version: string;
+  ecosystem: Ecosystem;
+  /** The worst level and the highest score among its findings. */
+  level: RiskLevel;
+  score: number;
+  mainReason: { factor: string; detail: string } | null;
+  introducedBy: IntroducedBy;
+  firstSeenAt: IsoTime;
+  projects: number;
+  prodProjects: number;
+  /** Every matching finding (one per project), production first. */
+  findings: { id: Id; projectId: Id; projectName: string; production: boolean; status: FindingStatus; owner: PersonRef | null }[];
+}
+export type ListPackageFindingsResponse = Page<PackageFindingGroup> & { scannedProjects: number };
 
 /** GET /api/findings?project=&scan=&level=&status=&q=&sort=&limit=&cursor= */
 export interface ListFindingsQuery extends PageQuery {
@@ -408,6 +481,8 @@ export interface StatusChange {
   from: FindingStatus;
   to: FindingStatus;
   note: string | null;
+  /** Display name of `by`, when the user still exists. */
+  byName?: string;
 }
 
 /** GET /api/findings/:id */
@@ -424,15 +499,96 @@ export interface FindingDetail extends FindingRow {
   /** Same purl across this project's previous scans, newest first. */
   history: { scanId: Id; at: IsoTime; score: number; level: RiskLevel }[];
   statusHistory: StatusChange[];
+  projectName?: string;
+  introducedBy?: IntroducedBy;
+  /** Alerts recorded for this package in this project (advisory id and publish time). */
+  alerts?: { advisoryId: string; advisoryPublished: IsoTime | null; createdAt: IsoTime }[];
+  /** Projects the caller may read whose latest scan has this same package version. */
+  spread?: { projects: number; prodProjects: number };
 }
 export type GetFindingResponse = FindingDetail;
 
-/** PATCH /api/findings/:id. "reviewed"/"new" need `review`; "accepted_risk" needs `accept_risk`. */
+/**
+ * PATCH /api/findings/:id. Status "new", "reviewed", "fixing" and "resolved" and any owner change
+ * need `review`; moving into or out of "accepted_risk" needs `accept_risk`. At least one of
+ * `status` or `ownerId` is required.
+ */
 export interface UpdateFindingStatusRequest {
-  status: FindingStatus;
+  status?: FindingStatus;
   note?: string;
+  /** For accepted_risk: when the acceptance runs out (ISO date or time, in the future). */
+  expiresAt?: IsoTime;
+  /** Assign (a member id) or unassign (null). */
+  ownerId?: Id | null;
 }
 export type UpdateFindingStatusResponse = FindingRow;
+
+/**
+ * POST /api/findings/bulk: one change to many findings, all or nothing. Every finding must be in
+ * the caller's org (else 404) and the caller needs the permission in each finding's project
+ * (else 403). accepted_risk needs both `note` (the reason) and `expiresAt`.
+ */
+export interface BulkUpdateFindingsRequest extends UpdateFindingStatusRequest {
+  ids: Id[];
+}
+export interface BulkUpdateFindingsResponse {
+  updated: number;
+  items: FindingRow[];
+}
+
+/** GET /api/assignees: members a finding can be assigned to (any reader of findings). */
+export interface ListAssigneesResponse {
+  items: PersonRef[];
+}
+
+/** GET /api/overview?projects=&env=&range=: the Overview page, from the latest scans. */
+export interface OverviewQuery {
+  projects?: string;
+  env?: 'prod' | 'dev';
+  range?: '7d' | '30d' | '90d' | 'all';
+}
+export interface OverviewResponse {
+  /** When these numbers were computed. */
+  at: IsoTime;
+  /** Start of the range (null for "all"). */
+  since: IsoTime | null;
+  /** Projects in scope, and how many have a succeeded scan. */
+  projects: number;
+  scannedProjects: number;
+  attention: {
+    criticalOpen: number;
+    criticalOpenProd: number;
+    highUnassigned: number;
+    /** First seen time of the oldest unassigned open high finding. */
+    highUnassignedOldest: IsoTime | null;
+    newThisWeek: number;
+    newThisWeekProjects: number;
+    /** Projects whose latest scan failed, or that were never scanned successfully. */
+    sourcesToCheck: { projectId: Id; projectName: string; problem: 'failed' | 'never_scanned'; detail: string | null }[];
+  };
+  /** Open findings per level, and how many of them were first seen inside the range. */
+  bySeverity: { level: RiskLevel; open: number; newInRange: number | null }[];
+  /** Open packages found in the most projects. */
+  topPackages: {
+    purl: PurlString;
+    name: string;
+    version: string;
+    level: RiskLevel;
+    reason: string | null;
+    projects: number;
+    prodProjects: number;
+  }[];
+  /** The newest alert in the range, for the incident banner. */
+  incident: {
+    advisoryId: string;
+    purl: PurlString;
+    name: string;
+    version: string;
+    projects: number;
+    production: number;
+    detectedAt: IsoTime;
+  } | null;
+}
 
 // ---------------------------------------------------------------------------
 // Exposure matrix
@@ -468,6 +624,8 @@ export interface ExposureRow {
   criticality: Criticality | null;
   /** Sum of exposure × column score across the row, for sorting. */
   blastScore: number;
+  /** Org-wide rows: a column's package reaches production in this project. */
+  production?: boolean;
 }
 
 /** Sparse: only non-zero cells are listed. */
@@ -477,6 +635,10 @@ export interface ExposureCell {
   /** 0–1, max exposure over the row's assets (AssetExposure.exposure). */
   exposure: number;
   pathCount: number;
+  /** Org-wide cells: this project's own finding for the package, its level and reach. */
+  findingId?: Id;
+  level?: RiskLevel;
+  production?: boolean;
 }
 
 export interface ExposureMatrixResponse {
@@ -823,6 +985,11 @@ export interface AlertItem {
   production: boolean;
   reachText: string;
   createdAt: string;
+  /** The advisory's rating, else the finding's level; null when neither is known. */
+  level?: RiskLevel | null;
+  summary?: string | null;
+  /** First fixed version the advisory names. */
+  fixedIn?: string | null;
 }
 /** GET /api/alerts */
 export interface ListAlertsResponse {

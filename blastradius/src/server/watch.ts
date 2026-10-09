@@ -9,7 +9,7 @@
 import { stat } from 'node:fs/promises';
 import { loadPack, type LoadedPack } from '../pack/load.js';
 import { matchAdvisories, matchPack, type AdvisoryLike, type ExposureHit } from '../watch/match.js';
-import { all, latestInventories, recordAlerts, type AlertRow, type Store } from './store/index.js';
+import { all, latestInventories, listAlertRules, recordAlertCheck, recordAlerts, recordNotified, ruleMatches, type AlertRow, type StoredAlertRule, type Store } from './store/index.js';
 
 export interface AlertWatcherOptions {
   /** Knowledge pack file (default $BLASTRADIUS_PACK). */
@@ -74,6 +74,11 @@ export class AlertWatcher {
     return this.packPath !== undefined;
   }
 
+  /** A Slack-compatible webhook is configured (notifications can leave the server). */
+  get webhookConfigured(): boolean {
+    return this.webhookUrl !== undefined;
+  }
+
   /** The pack, reloaded when its file changes. */
   async currentPack(): Promise<LoadedPack | null> {
     if (!this.packPath) return null;
@@ -98,10 +103,15 @@ export class AlertWatcher {
   /** Match the pack (or given advisories) against one org's projects; returns new alerts. */
   async checkOrg(orgId: string, opts: { projectIds?: string[]; advisories?: AdvisoryLike[] } = {}): Promise<{ created: AlertRow[]; projectsChecked: number; source: 'pack' | 'advisories' }> {
     const inventories = latestInventories(this.store, orgId, opts.projectIds ?? null);
-    if (opts.advisories) return { created: await this.record(orgId, matchAdvisories(inventories, opts.advisories)), projectsChecked: inventories.length, source: 'advisories' };
+    // Only org-wide checks count as "every project checked" on the Incident page.
+    const note = (source: 'pack' | 'advisories', created: AlertRow[]) => {
+      if (!opts.projectIds) recordAlertCheck(this.store, orgId, source, inventories.length, created.length);
+      return { created, projectsChecked: inventories.length, source };
+    };
+    if (opts.advisories) return note('advisories', await this.record(orgId, matchAdvisories(inventories, opts.advisories)));
     const pack = await this.currentPack();
     if (!pack) return { created: [], projectsChecked: inventories.length, source: 'pack' };
-    return { created: await this.record(orgId, matchPack(inventories, pack.pack)), projectsChecked: inventories.length, source: 'pack' };
+    return note('pack', await this.record(orgId, matchPack(inventories, pack.pack)));
   }
 
   /** Every org (the periodic sweep). Runs one at a time. */
@@ -144,19 +154,53 @@ export class AlertWatcher {
     return this.running;
   }
 
+  /**
+   * Post new alerts to the webhook, rule by rule. With no stored rule every alert goes out once
+   * (the default rule); otherwise each enabled rule posts the alerts it matches, naming its
+   * channel. Each post the webhook accepts lands on the incidents' timelines.
+   */
   private async notify(orgId: string, alerts: AlertRow[]): Promise<void> {
     if (!this.webhookUrl) return;
-    const org = all<{ name: string }>(this.store, 'SELECT name FROM org WHERE id = ?', orgId)[0]?.name ?? orgId;
+    const org = this.orgName(orgId);
+    const rules = listAlertRules(this.store, orgId);
+    const batches: { rule: StoredAlertRule | null; alerts: AlertRow[] }[] =
+      rules.length === 0 ? [{ rule: null, alerts }] : rules.filter((r) => r.enabled).map((rule) => ({ rule, alerts: alerts.filter((a) => ruleMatches(rule, a)) }));
+    for (const b of batches) {
+      if (b.alerts.length === 0) continue;
+      const msg = alertMessage(org, b.alerts, this.publicUrl);
+      const body = b.rule ? { text: `${msg.text}\n_Alert rule: ${b.rule.name}_`, channel: b.rule.channel } : msg;
+      if (!(await this.post(body))) continue;
+      const n = b.alerts.length;
+      recordNotified(
+        this.store,
+        orgId,
+        b.alerts.map((a) => a.advisoryId),
+        'system',
+        b.rule ? `Slack ${b.rule.channel} notified` : 'Slack notified',
+        `${b.rule ? `Alert rule: ${b.rule.name}` : 'Default rule: every new alert'} · ${n} ${n === 1 ? 'alert' : 'alerts'}`,
+      );
+    }
+  }
+
+  /** One message through the webhook; true when it answered 2xx. Never throws. */
+  async post(body: { text: string; channel?: string }): Promise<boolean> {
+    if (!this.webhookUrl) return false;
     try {
       const res = await this.fetchImpl(this.webhookUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(alertMessage(org, alerts, this.publicUrl)),
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) this.log(`alert webhook answered HTTP ${res.status}`);
+      return res.ok;
     } catch (e) {
       this.log(`alert webhook failed: ${(e as Error).message}`);
+      return false;
     }
+  }
+
+  orgName(orgId: string): string {
+    return all<{ name: string }>(this.store, 'SELECT name FROM org WHERE id = ?', orgId)[0]?.name ?? orgId;
   }
 }

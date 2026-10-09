@@ -3,8 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { Nav, type NavProps } from './Nav';
+import { DevViewAs } from './DevViewAs';
+import { CommandPaletteProvider } from './CommandPalette';
 import { SidebarProvider, SidebarTrigger } from './ui/sidebar';
-import { meFor } from '@/test/fixtures';
+import { AuthProvider } from '@/auth';
+import { ProjectProvider } from '@/project';
+import { meFor, reportsOnly } from '@/test/fixtures';
+import type { MeResponse } from '@server/api-types';
 import type { BuiltinRoleId } from '@server/permissions';
 
 const projects = [
@@ -12,15 +17,25 @@ const projects = [
   { id: 'p2', name: 'web-storefront' },
 ];
 
-function renderNav(role: BuiltinRoleId, path = '/projects/p1/findings', extra = {}, props: Partial<NavProps> = {}) {
-  const me = meFor(role, extra);
+function renderNavFor(me: MeResponse, path = '/projects/p1/findings', props: Partial<NavProps> = {}, extra: React.ReactNode = null) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <SidebarProvider>
-        <Nav me={me} projectId="p1" projects={projects} {...props} />
-      </SidebarProvider>
+      <AuthProvider initialMe={me}>
+        <ProjectProvider initialProjects={projects}>
+          <SidebarProvider>
+            <CommandPaletteProvider>
+              <Nav me={me} projectId="p1" {...props} />
+              {extra}
+            </CommandPaletteProvider>
+          </SidebarProvider>
+        </ProjectProvider>
+      </AuthProvider>
     </MemoryRouter>,
   );
+}
+
+function renderNav(role: BuiltinRoleId, path = '/projects/p1/findings', extra = {}, props: Partial<NavProps> = {}) {
+  return renderNavFor(meFor(role, extra), path, props);
 }
 
 const linkNames = () =>
@@ -29,45 +44,37 @@ const linkNames = () =>
     .map((a) => a.textContent);
 
 describe('<Nav>', () => {
-  it('shows the three groups from Nav.dc.html for an org admin', () => {
-    renderNav('org_admin');
-    expect(screen.getByText('Organization', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Knowledge')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Switch project' })).toHaveTextContent('payments-platform');
-    expect(linkNames()).toEqual(['Home', 'Projects', 'Reports', 'Integrations', 'Settings', 'Changes', 'Findings', 'Exposure matrix', 'Investigate', 'Scans', 'Incident KB']);
+  it('shows one level of pages, Reports and Settings at the bottom, for an org admin', () => {
+    renderNav('org_admin', '/');
+    expect(linkNames()).toEqual(['Overview', 'Findings', 'Incidents', 'Projects', 'Alerts', 'Reports', 'Settings']);
+    expect(screen.queryByText('Incident KB')).not.toBeInTheDocument();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
     expect(screen.getByTestId('nav-org')).toHaveTextContent('acme-corp');
-    // shadcn sidebar-07: icon-collapsible sidebar.
+    expect(screen.getByRole('button', { name: /Search or jump to/ })).toBeInTheDocument();
+    // shadcn sidebar: icon-collapsible sidebar.
     expect(document.querySelector('[data-slot=sidebar]')).toHaveAttribute('data-collapsible', '');
   });
 
-  it('hides Settings for AppSec and Developer', () => {
+  it('sends AppSec to Sources from Settings and shows the role', () => {
     renderNav('appsec');
-    expect(linkNames()).not.toContain('Settings');
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/integrations');
     expect(linkNames()).toContain('Findings');
     expect(screen.getByTestId('nav-role')).toHaveTextContent('Role: AppSec');
   });
 
-  it('shows only Reports for an Auditor', () => {
-    renderNav('auditor', '/reports');
+  it('shows only Reports for a reports-only member', () => {
+    renderNavFor(reportsOnly(), '/reports');
     expect(linkNames()).toEqual(['Reports']);
-    expect(screen.queryByText(/Project ·/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Knowledge')).not.toBeInTheDocument();
   });
 
-  it('marks the current page active', () => {
-    renderNav('developer', '/projects/p1/exposure');
-    const link = screen.getByRole('link', { name: 'Exposure matrix' });
-    expect(link).toHaveAttribute('aria-current', 'page');
-    expect(link).toHaveAttribute('data-active', 'true');
-    expect(link).toHaveAttribute('href', '/projects/p1/exposure');
-  });
-
-  it('switches project from the project group label', async () => {
-    const user = userEvent.setup();
-    renderNav('developer', '/projects/p1/exposure');
-    await user.click(screen.getByRole('button', { name: 'Switch project' }));
-    await user.click(screen.getByRole('menuitemradio', { name: 'web-storefront' }));
-    expect(screen.getByRole('link', { name: 'Exposure matrix' })).toBeInTheDocument();
+  it('marks the current page active and carries the scope on scoped links', () => {
+    renderNav('developer', '/projects/p1/exposure?env=prod&severity=critical');
+    const projectsLink = screen.getByRole('link', { name: 'Projects' });
+    expect(projectsLink).toHaveAttribute('aria-current', 'page');
+    expect(projectsLink).toHaveAttribute('data-active', 'true');
+    expect(projectsLink).toHaveAttribute('href', '/projects');
+    expect(screen.getByRole('link', { name: 'Findings' })).toHaveAttribute('href', '/findings?env=prod');
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/?env=prod');
   });
 
   it('switches org from the header switcher', async () => {
@@ -128,56 +135,61 @@ describe('<Nav>', () => {
     const width = window.innerWidth;
     window.innerWidth = 390;
     try {
-      render(
-        <MemoryRouter initialEntries={['/projects/p1/findings']}>
-          <SidebarProvider>
-            <Nav me={meFor('org_admin')} projectId="p1" projects={projects} />
-            <SidebarTrigger />
-          </SidebarProvider>
-        </MemoryRouter>,
-      );
+      renderNavFor(meFor('org_admin'), '/projects/p1/findings', {}, <SidebarTrigger />);
       await user.click(screen.getByRole('button', { name: 'Toggle Sidebar' }));
       const sheet = await screen.findByRole('dialog');
-      await user.click(within(sheet).getByRole('link', { name: 'Exposure matrix' }));
+      await user.click(within(sheet).getByRole('link', { name: 'Projects' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     } finally {
       window.innerWidth = width;
     }
   });
 
-  it('offers theme, the dev role switcher in dev mode, and sign out in the user menu', async () => {
+  it('offers theme and sign out in the user menu, and no dev switcher there', async () => {
     const user = userEvent.setup();
-    const onSwitch = vi.fn();
     const onTheme = vi.fn();
     const onLogout = vi.fn();
-    renderNav(
-      'appsec',
-      '/',
-      {
-        devMode: true,
-        devUsers: [
-          { id: 'u_appsec', email: 'appsec@local', name: 'AppSec', roles: ['AppSec'] },
-          { id: 'u_auditor', email: 'auditor@local', name: 'Auditor', roles: ['Auditor'] },
-        ],
-      },
-      { onSwitchUser: onSwitch, onThemeChange: onTheme, onLogout, theme: 'system' },
-    );
+    renderNav('appsec', '/', { devMode: true, devUsers: [{ id: 'u_x', email: 'x@local', name: 'X', roles: [] }] }, { onThemeChange: onTheme, onLogout, theme: 'system' });
     await user.click(screen.getByTestId('nav-user'));
     expect(screen.getByRole('menuitemradio', { name: 'System' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.queryByText('Dev: view as')).not.toBeInTheDocument();
     await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }));
     expect(onTheme).toHaveBeenCalledWith('dark');
-    expect(screen.getByText('Dev: view as')).toBeInTheDocument();
-    await user.click(screen.getByRole('menuitemradio', { name: /auditor@local/ }));
-    expect(onSwitch).toHaveBeenCalledWith('u_auditor');
+    await user.keyboard('{Escape}');
     await user.click(screen.getByTestId('nav-user'));
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     expect(onLogout).toHaveBeenCalled();
   });
 
-  it('has no dev switcher outside dev mode', async () => {
+  it('opens the command palette from the search button', async () => {
     const user = userEvent.setup();
-    renderNav('org_admin', '/', {}, { onSwitchUser: vi.fn() });
-    await user.click(screen.getByTestId('nav-user'));
-    expect(screen.queryByText('Dev: view as')).not.toBeInTheDocument();
+    renderNav('org_admin', '/');
+    await user.click(screen.getByRole('button', { name: /Search or jump to/ }));
+    expect(await screen.findByRole('combobox', { name: 'Search packages, projects, people, settings' })).toBeInTheDocument();
+  });
+});
+
+describe('<DevViewAs>', () => {
+  const devMe = (devMode: boolean) =>
+    meFor('appsec', {
+      devMode,
+      devUsers: [
+        { id: 'u_appsec', email: 'appsec@local', name: 'AppSec', roles: ['AppSec'] },
+        { id: 'u_auditor', email: 'auditor@local', name: 'Auditor', roles: ['Auditor'] },
+      ],
+    });
+
+  it('switches user in dev mode', async () => {
+    const user = userEvent.setup();
+    const onSwitch = vi.fn();
+    render(<DevViewAs me={devMe(true)} onSwitchUser={onSwitch} />);
+    await user.click(screen.getByRole('button', { name: 'Dev: view as' }));
+    await user.click(screen.getByRole('menuitemradio', { name: /auditor@local/ }));
+    expect(onSwitch).toHaveBeenCalledWith('u_auditor');
+  });
+
+  it('renders nothing outside dev mode', () => {
+    const { container } = render(<DevViewAs me={devMe(false)} onSwitchUser={vi.fn()} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

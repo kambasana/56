@@ -29,6 +29,7 @@ interface ColRow {
   version: string;
   level: RiskLevel;
   score: number;
+  prod_assets: number;
   finding_json: string;
 }
 
@@ -36,7 +37,7 @@ function columnRows(s: Store, scanIds: readonly string[], minRank: number): ColR
   if (scanIds.length === 0) return [];
   return all<ColRow>(
     s,
-    `SELECT id, project_id, purl, name, version, level, score, finding_json FROM finding
+    `SELECT id, project_id, purl, name, version, level, score, prod_assets, finding_json FROM finding
      WHERE scan_id IN (${placeholders(scanIds.length)}) AND level_rank >= ?
      ORDER BY score DESC, blast_score DESC, ord`,
     ...scanIds,
@@ -95,13 +96,14 @@ export function exposureMatrix(s: Store, orgId: string, opts: ExposureOptions = 
     if (sc) latest.set(p.id, sc.id);
   }
   const rowsAll = columnRows(s, [...latest.values()], minRank);
-  const byPurl = new Map<string, { best: ColRow; perProject: Map<string, { exposure: number; pathCount: number }> }>();
+  type OrgCell = { exposure: number; pathCount: number; findingId: string; level: RiskLevel; production: boolean };
+  const byPurl = new Map<string, { best: ColRow; perProject: Map<string, OrgCell> }>();
   for (const c of rowsAll) {
     const f = parseJson<Finding | null>(c.finding_json, null);
     const exposures = f?.blastRadius?.assets ?? [];
     const entry = byPurl.get(c.purl) ?? { best: c, perProject: new Map() };
     if (c.score > entry.best.score) entry.best = c;
-    const cell = entry.perProject.get(c.project_id) ?? { exposure: 0, pathCount: 0 };
+    const cell = entry.perProject.get(c.project_id) ?? { exposure: 0, pathCount: 0, findingId: c.id, level: c.level, production: c.prod_assets > 0 };
     for (const a of exposures) {
       cell.exposure = Math.max(cell.exposure, a.exposure);
       cell.pathCount += a.paths?.length ?? 0;
@@ -132,6 +134,8 @@ export function exposureMatrix(s: Store, orgId: string, opts: ExposureOptions = 
     truncated = true;
   }
   const rowIndex = new Map(rowProjects.map((p, i) => [p.id, i] as const));
+  const prodRows = new Set<string>();
+  for (const e of picked) for (const [pid, cell] of e.perProject) if (cell.production) prodRows.add(pid);
   const rows: ExposureRow[] = rowProjects.map((p) => ({
     key: p.id,
     label: p.name,
@@ -139,13 +143,14 @@ export function exposureMatrix(s: Store, orgId: string, opts: ExposureOptions = 
     environment: null,
     criticality: null,
     blastScore: round(blast.get(p.id) ?? 0),
+    production: prodRows.has(p.id),
   }));
   const cells: ExposureCell[] = [];
   picked.forEach((e, col) => {
     for (const [pid, cell] of e.perProject) {
       const row = rowIndex.get(pid);
       if (row === undefined) continue;
-      cells.push({ row, col, exposure: cell.exposure, pathCount: cell.pathCount });
+      cells.push({ row, col, exposure: cell.exposure, pathCount: cell.pathCount, findingId: cell.findingId, level: cell.level, production: cell.production });
     }
   });
   return { axis: 'project', rows, columns, cells: sortCells(cells), truncated };
