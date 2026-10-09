@@ -128,7 +128,7 @@ def save_json(name, obj):
     return p'''
 
 DATA = '''# Dataset: files listed in data/laya/MANIFEST.json at the pinned commit, each checked against its sha256.
-RAW = f"https://raw.githubusercontent.com/{REPO}/{DATA_REF}/{SUBDIR}/"
+RAW = os.environ.get("LRT_RAW") or f"https://raw.githubusercontent.com/{REPO}/{DATA_REF}/{SUBDIR}/"
 DATA_DIR = WORK / "data"
 
 def fetch(rel):
@@ -193,17 +193,18 @@ VALIDITY = {"leakage_check": leak.get("result"), "test_families_with_5_positives
             "families": fams5, "underpowered": len(fams5) < 6}
 save_json("validity.json", VALIDITY)
 print(json.dumps(VALIDITY, indent=1))
-if leak.get("result") != "PASS":
+if leak.get("result") != "PASS" and not SMOKE:
     raise SystemExit("leakage check did not pass; the dataset must be fixed before any Laya run")
 if VALIDITY["underpowered"]:
     print("UNDERPOWERED: fewer than 6 test families with >= 5 positives. Runs continue, but Laya cannot be adopted.")'''
 
 CKPT = '''# Base checkpoints at the pinned revision (English = repo root, typed-decisions = subfolder).
 from huggingface_hub import snapshot_download
-HUB = WORK / "hub"
+HUB = pathlib.Path(os.environ.get("LRT_HUB") or WORK / "hub")   # LRT_HUB: local copy, author's CPU check only
 pats = [p + f for p in ("", "typed-decisions/") for f in
         ("rl_agent_config.json", "model.safetensors", "tokenizer/*", "encoder/*")]
-snapshot_download(HF_REPO, revision=HF_REVISION, local_dir=str(HUB), allow_patterns=pats, token=HF_TOKEN or None)
+if not os.environ.get("LRT_HUB"):
+    snapshot_download(HF_REPO, revision=HF_REVISION, local_dir=str(HUB), allow_patterns=pats, token=HF_TOKEN or None)
 BASES = {"EN": str(HUB), "TD": str(HUB / "typed-decisions")}
 def file_sha(p, n=1 << 22):
     h = hashlib.sha256()
@@ -211,10 +212,11 @@ def file_sha(p, n=1 << 22):
         for b in iter(lambda: f.read(n), b""):
             h.update(b)
     return h.hexdigest()
-CKPT_SHA = {k: file_sha(pathlib.Path(v) / "model.safetensors") for k, v in BASES.items()}
+CKPT_SHA = {k: file_sha(pathlib.Path(v) / "model.safetensors") if (pathlib.Path(v) / "model.safetensors").exists() else None
+            for k, v in BASES.items()}
 for k, v in BASES.items():
     cfg = json.loads((pathlib.Path(v) / "rl_agent_config.json").read_text())
-    print(k, v, "max_len", cfg["max_len"], "head_max_len", cfg["head_max_len"], "sha256", CKPT_SHA[k][:16])
+    print(k, v, "max_len", cfg["max_len"], "head_max_len", cfg["head_max_len"], "sha256", (CKPT_SHA[k] or "-")[:16])
 ENV = {"dataset_repo": REPO, "dataset_commit": DATA_REF, "manifest_sha256": MANIFEST_SHA256,
        "hf_repo": HF_REPO, "hf_revision": HF_REVISION, "checkpoint_sha256": CKPT_SHA, "versions": VERSIONS,
        "device": DEVICE, "gpu": GPU_NAME, "gpu_gb": round(GPU_GB, 1), "bf16": BF16, "micro_batch": MICRO,
@@ -257,6 +259,7 @@ for k, v in TOKENS.items():
 
 DRYRUN = '''# laya-train --dry-run on the real training file (tokenizer + config only). Gate: zero options_beyond_max_len.
 from laya.train import TrainConfig, dry_run
+LAYA_TRAIN = [shutil.which("laya-train")] if shutil.which("laya-train") else [sys.executable, "-m", "laya.train_cli"]
 
 def train_flags(base, data, seed, epochs, out=None, eval_data=None):
     f = ["--data", str(data), "--base", base, "--max-len", str(MAX_LEN), "--head-max-len", str(HEAD_MAX_LEN),
@@ -270,7 +273,7 @@ def train_flags(base, data, seed, epochs, out=None, eval_data=None):
 
 DRY = {}
 for b in ("EN", "TD"):
-    cli = subprocess.run(["laya-train", *train_flags(BASES[b], DATA_DIR / "train.jsonl", 0, 1,
+    cli = subprocess.run([*LAYA_TRAIN, *train_flags(BASES[b], DATA_DIR / "train.jsonl", 0, 1,
                                                      eval_data=DATA_DIR / "calib.jsonl"), "--dry-run"],
                          capture_output=True, text=True)
     print(cli.stdout[-2000:], cli.stderr[-2000:])
@@ -319,9 +322,9 @@ def score_run(run_id, ckpt, splits=("calib", "test"), rows=None):
             o2 = agent.predict_batch([rs[i]["state"] for i in si_idx], {"si_ab": SI, "si_tf": SI_DEFAULT},
                                      batch_size=SCORE_BATCH, sort_by_length=True)
             for i, o in zip(si_idx, o2):
-                si_ab[i], si_tf[i] = o["si_ab"]["noul"], o["si_tf"]["noul"]
+                si_ab[i], si_tf[i] = o["answers"]["si_ab"]["noul"], o["answers"]["si_tf"]["noul"]
         for i, (r, o) in enumerate(zip(rs, out)):
-            a, b = o["triage"], o["triage_rev"]
+            a, b = o["answers"]["triage"], o["answers"]["triage_rev"]
             recs.append({"key": r["id"], "split": sp, "expected": r["expected"]["triage"],
                          "p_mal": a["probabilities"]["likely_malicious"], "p_review": a["probabilities"]["review"],
                          "p_routine": a["probabilities"]["routine"], "choice": a["choice"],
@@ -329,6 +332,7 @@ def score_run(run_id, ckpt, splits=("calib", "test"), rows=None):
                          "p_mal_rev": b["probabilities"]["likely_malicious"], "choice_rev": b["choice"],
                          "si_expected": r["expected"].get("script_intent", ""),
                          "si_ab": si_ab.get(i, ""), "si_tf": si_tf.get(i, ""),
+                         "truncated": bool(o.get("usage", {}).get("truncated")),
                          "ms_per_release_batch": 1000 * dt / max(1, len(rs))})
     df = pd.DataFrame(recs)
     df.to_csv(path, index=False, compression="gzip")
@@ -391,6 +395,7 @@ def metrics(run_id, sc):
         ab, tf = si["si_ab"].astype(float).values >= 0.5, si["si_tf"].astype(float).values >= 0.5
         ev["noul_label_check"] = {"items": int(len(si)), "accuracy_AB": float((ab == y).mean()),
                                   "accuracy_false_true": float((tf == y).mean()), "agreement": float((ab == tf).mean())}
+    ev["test_states_truncated_share"] = float(test["truncated"].astype(str).isin(["True", "true", "1"]).mean()) if "truncated" in test else None
     ev["ms_per_release_gpu_batch"] = float(test["ms_per_release_batch"].iloc[0]) if len(test) else None
     save_json(path.name, ev)
     return ev
@@ -417,7 +422,7 @@ def run_train(run_id, base, data, eval_data, seed):
         return out, (log.read_text() if log.exists() else "")
     if out.exists():
         shutil.rmtree(out)
-    cmd = ["laya-train", *train_flags(base, data, seed, EPOCHS, out=out, eval_data=eval_data)]
+    cmd = [*LAYA_TRAIN, *train_flags(base, data, seed, EPOCHS, out=out, eval_data=eval_data)]
     print(" ".join(cmd))
     t0 = time.time()
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
@@ -607,7 +612,7 @@ if EXPORT_ONNX and SHIP is not None:
                     "qtype": np.array([QTYPES["choice"]], dtype=np.int64)}
             t1 = time.time(); logits = sess.run(None, feed)[0][0]; ms.append(1000 * (time.time() - t1))
             z = logits / tscale; p = np.exp(z - z.max()); p /= p.sum()
-            dp.append(abs(float(p[list(TRIAGE["criteria"]).index("likely_malicious")]) - o["triage"]["probabilities"]["likely_malicious"]))
+            dp.append(abs(float(p[list(TRIAGE["criteria"]).index("likely_malicious")]) - o["answers"]["triage"]["probabilities"]["likely_malicious"]))
         ONNX_RES.update({"parity_rows": len(rows), "max_abs_delta_p_mal": max(dp), "mean_abs_delta_p_mal": float(np.mean(dp)),
                          "onnx_cpu_ms_per_release_median": float(np.median(ms)),
                          "bytes": sum(f.stat().st_size for f in onnx_dir.glob("laya.onnx*"))})

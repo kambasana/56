@@ -44,7 +44,7 @@ from triage_metrics import BUDGET_PER_1000, BUSY_ACCOUNT, SEED, evaluate
 
 META = {"key", "name", "version", "label", "category", "family", "wave", "family_basis", "published", "publisher",
         "content_source", "packument_source", "neg_pool", "label_sources", "registry_dist_files",
-        "registry_dist_bytes", "split"}
+        "registry_dist_bytes", "content_dir_entries", "split"}
 
 
 def main() -> None:

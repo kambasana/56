@@ -134,7 +134,7 @@ def main() -> None:
 
     final.sort(key=lambda r: (r["split"], r["published"], r["key"]))
     # Outputs.
-    fields = list(rows[0].keys()) + ["split"]
+    fields = [k for k in rows[0] if k != "split"] + ["split"]  # rows[0] may already carry "split"
     with gzip.open(DATA / "features.csv.gz", "wt", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()

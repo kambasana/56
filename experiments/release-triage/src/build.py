@@ -77,6 +77,18 @@ def scrub(text: str, names: list[str]) -> str:
     return text
 
 
+def dir_entries(c: dict):
+    paths = c.get("paths") or []
+    if len(paths) != c.get("files", -1):
+        return ""
+    dirs = set()
+    for q in paths:
+        parts = q.split("/")
+        for i in range(1, len(parts)):
+            dirs.add("/".join(parts[:i]))
+    return len(dirs)
+
+
 def clip(s: str, n: int) -> str:
     s = s or ""
     return s if len(s) <= n else s[:n] + f"…[+{len(s) - n} chars]"
@@ -239,6 +251,10 @@ def row_from_record(r: dict) -> tuple[dict, dict] | None:
         # verify that archive and tarball contents are read the same way.
         "registry_dist_files": (doc.get("dist") or {}).get("fileCount", ""),
         "registry_dist_bytes": (doc.get("dist") or {}).get("unpackedSize", ""),
+        # Directory entries implied by the counted paths ("" when the path list is incomplete). Some packers write
+        # directory entries (and the root `package/`) into the tarball, and the registry's fileCount then counts
+        # them; the leakage check needs this to compare like with like.
+        "content_dir_entries": dir_entries(c),
     }
     return {**meta, **f}, {"meta": meta, "state": state}
 
@@ -257,7 +273,7 @@ def main() -> None:
     cols = sorted({k for r in rows for k in r})
     meta_cols = ["key", "name", "version", "label", "category", "family", "wave", "family_basis", "published",
                  "publisher", "content_source", "packument_source", "neg_pool", "label_sources",
-                 "registry_dist_files", "registry_dist_bytes"]
+                 "registry_dist_files", "registry_dist_bytes", "content_dir_entries"]
     feat_cols = sorted(k for k in cols if k not in meta_cols)
     for r in rows:
         for k in feat_cols:

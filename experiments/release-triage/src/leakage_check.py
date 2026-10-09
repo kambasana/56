@@ -5,7 +5,9 @@ Checks (all on data/features.csv.gz and data/{train,calib,test}.jsonl, after spl
      compare with) are compared within non-first releases. FAIL if the missing-rate gap exceeds MAX_GAP.
   2. Content-reading parity: positives' contents come from DataDog archives, negatives' from registry tarballs. The
      registry records its own file count (`dist.fileCount`) for most versions; the share of releases whose counted
-     files equal it must not differ between the two sources by more than MAX_GAP. FAIL otherwise.
+     files equal it must not differ between the two sources by more than MAX_GAP. FAIL otherwise. "Equal" allows
+     the registry's count to include the tarball's directory entries (with or without the root `package/`), which
+     some packers write and the registry then counts; the plain file-only agreement is reported alongside.
   3. State fields: every top-level and second-level key of the Laya state is present (non-null) at similar rates
      in both classes, again within non-first releases for previous-release fields.
   4. No package or account names in states: the release's package name (>= 5 chars) never appears in its state.
@@ -29,7 +31,7 @@ from common import DATA, RESULTS
 MAX_GAP = 0.10
 META = {"key", "name", "version", "label", "category", "family", "wave", "family_basis", "published", "publisher",
         "content_source", "packument_source", "neg_pool", "label_sources", "registry_dist_files",
-        "registry_dist_bytes", "split"}
+        "registry_dist_bytes", "content_dir_entries", "split"}
 
 
 def auc(pos: list[float], neg: list[float]) -> float:
@@ -78,11 +80,21 @@ def main() -> int:
                 continue
             eq = sum(1 for r in rs if int(float(r["files"])) == int(float(r["registry_dist_files"])))
             within = sum(1 for r in rs if abs(int(float(r["files"])) - int(float(r["registry_dist_files"]))) <= 1)
+            # fileCount also counts directory entries (and the root `package/`) when the packer wrote them into the
+            # tarball. Agreement under any of the three counting conventions means every file was read.
+            def conv_eq(r):
+                f, d = int(float(r["files"])), int(float(r["registry_dist_files"]))
+                de = r.get("content_dir_entries", "")
+                return f == d or (de != "" and d in (f + int(float(de)), f + int(float(de)) + 1))
+            eqc = sum(1 for r in rs if conv_eq(r))
             out["content_parity"][f"{src}/label={lab}"] = {"n_with_dist_fileCount": len(rs), "files_equal": round(eq / len(rs), 4),
-                                                          "files_within_1": round(within / len(rs), 4)}
+                                                          "files_within_1": round(within / len(rs), 4),
+                                                          "files_equal_any_convention": round(eqc / len(rs), 4)}
     pos_c = out["content_parity"].get("datadog-archive/label=1")
     neg_c = out["content_parity"].get("registry-tarball/label=0")
-    if pos_c and neg_c and abs(pos_c["files_equal"] - neg_c["files_equal"]) > MAX_GAP:
+    # Gate on the convention-aware agreement: a file-only count against a fileCount that includes directory entries
+    # differs for packing reasons, not because a file was missed (the raw `files_equal` is still reported).
+    if pos_c and neg_c and abs(pos_c["files_equal_any_convention"] - neg_c["files_equal_any_convention"]) > MAX_GAP:
         fails.append(f"content parity: file-count agreement differs by source: {pos_c} vs {neg_c}")
     cov = {}
     for lab in ("1", "0"):
