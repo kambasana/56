@@ -43,6 +43,7 @@ import {
   accountIncidentFor,
   accountListing,
   all,
+  findingFor,
   get,
   incidentStates,
   latestInventories,
@@ -396,11 +397,6 @@ function packagesList(u: Universe, can: Map<string, AccountLinkSource[]>): Accou
     .sort((a, b) => b.projects - a.projects || Number(b.production) - Number(a.production) || a.name.localeCompare(b.name));
 }
 
-function findingId(s: Store, scanId: string | undefined, purl: string): string | null {
-  if (!scanId) return null;
-  return get<{ id: string }>(s, 'SELECT id FROM finding WHERE scan_id = ? AND purl = ?', scanId, purl)?.id ?? null;
-}
-
 export interface ExposureQuery {
   since?: string;
   asOf?: string;
@@ -454,7 +450,7 @@ export function accountExposure(ctx: IncidentContext, registry: AccountRegistry,
         publishedBy: by && at ? { account: by.account, attribution: by.attribution, at } : null,
         links: rowLinks,
         confidence: best(rowLinks.map((l) => l.confidence)),
-        findingId: findingId(ctx.store, inv.scanId, c.purl),
+        findingId: findingFor(ctx.store, inv.scanId, c.purl)?.id ?? null,
       });
     }
   }

@@ -17,7 +17,7 @@ import type {
   ResetRoleResponse,
   UpdateRoleResponse,
 } from '../api-types.js';
-import { ACTION_PERMISSIONS, ALL_PERMISSIONS, ORG_ADMIN_ROLE_ID, PAGE_PERMISSIONS, PERMISSION_LABELS, ROLE_TEMPLATES, isBuiltinRoleId, normalizePermissions, type Permission } from '../permissions.js';
+import { ACTION_PERMISSIONS, ORG_ADMIN_ROLE_ID, PAGE_PERMISSIONS, PERMISSION_LABELS, ROLE_TEMPLATES, isBuiltinRoleId, normalizePermissions, permissionsGrantedByBinding, type BindingScope, type Permission } from '../permissions.js';
 import { deps, requireOrgPerm, type AppEnv } from '../context.js';
 import type { Role } from '../api-types.js';
 import type { UserAccess } from '../store/index.js';
@@ -88,16 +88,23 @@ function isOrgAdmin(a: UserAccess): boolean {
   return a.roles.some((r) => r.id === ORG_ADMIN_ROLE_ID);
 }
 
-function assertCanGrant(a: UserAccess, roleId: string | null, permissions: readonly Permission[]): void {
+/**
+ * `scope` is where the grant takes effect. At project scope the granter's holdings there count
+ * (org-scope permissions plus their own bindings in that project); at org scope (and for role
+ * edits, which apply everywhere) only org-scope permissions count.
+ */
+function assertCanGrant(a: UserAccess, roleId: string | null, permissions: readonly Permission[], scope: BindingScope = { kind: 'org' }): void {
   if (isOrgAdmin(a)) return;
   if (roleId === ORG_ADMIN_ROLE_ID) throw forbidden('Only an Org admin can grant or change Org admin');
-  const missing = permissions.filter((p) => !a.permissions.includes(p));
+  const held = new Set<Permission>(a.permissions);
+  if (scope.kind === 'project') for (const p of a.projectPermissions[scope.projectId] ?? []) held.add(p);
+  const missing = permissions.filter((p) => !held.has(p));
   if (missing.length > 0) throw forbidden(`You cannot grant permissions you do not hold: ${missing.join(', ')}`);
 }
 
-/** The permissions a binding to `role` hands out (Org admin is always everything). */
-function grantedBy(role: Role): readonly Permission[] {
-  return role.id === ORG_ADMIN_ROLE_ID ? ALL_PERMISSIONS : role.permissions;
+/** Check a binding of `role` at `scope`, counting the permissions the scope itself adds. */
+function assertCanBind(a: UserAccess, role: Role, scope: BindingScope): void {
+  assertCanGrant(a, role.id, permissionsGrantedByBinding(role, scope), scope);
 }
 
 export function registerSettingsRoutes(app: Hono<AppEnv>): void {
@@ -177,7 +184,7 @@ export function registerSettingsRoutes(app: Hono<AppEnv>): void {
     const body = await parseBody(c, CreateBindingBody);
     const { store } = deps(c);
     const role = getRole(store, orgId, body.roleId);
-    if (role) assertCanGrant(access, role.id, grantedBy(role));
+    if (role) assertCanBind(access, role, body.scope);
     // Only members of this org can be bound; others come in through POST /api/members. The same
     // answer for unknown users and non-members, so this cannot probe accounts in other orgs.
     if (body.subject.kind === 'user' && !isOrgMember(store, orgId, body.subject.userId)) {
@@ -192,7 +199,8 @@ export function registerSettingsRoutes(app: Hono<AppEnv>): void {
     const binding = getBinding(deps(c).store, orgId, id);
     if (!binding) throw notFound('Binding not found');
     const role = getRole(deps(c).store, orgId, binding.roleId);
-    assertCanGrant(access, binding.roleId, role?.permissions ?? []);
+    if (role) assertCanBind(access, role, binding.scope);
+    else assertCanGrant(access, binding.roleId, [], binding.scope);
     deleteBinding(deps(c).store, orgId, id, session.user.id);
     return c.json<OkResponse>({ ok: true });
   });
@@ -209,7 +217,7 @@ export function registerSettingsRoutes(app: Hono<AppEnv>): void {
     body.bindings.forEach((b, i) => {
       const role = getRole(store, orgId, b.roleId);
       if (!role) throw badRequest('Unknown role', [`bindings.${i}.roleId`]);
-      assertCanGrant(access, role.id, grantedBy(role));
+      assertCanBind(access, role, b.scope);
     });
     const out = inviteMember(store, orgId, { email: body.email, name: body.name, bindings: body.bindings, devMode: config.devMode }, session.user.id);
     // The one-time password or invite token is in this response only: never log it.

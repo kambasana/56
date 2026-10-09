@@ -16,7 +16,6 @@ import {
   storedPermissionsFor,
   type BindingScope,
   type BindingSubject,
-  type BuiltinRoleId,
   type Permission,
 } from '../permissions.js';
 import { writeAudit } from './audit.js';
@@ -55,26 +54,11 @@ function toRole(r: RoleRow): Role {
 const BUILTIN_ORDER = `CASE id ${BUILTIN_ROLE_IDS.map((id, i) => `WHEN '${id}' THEN ${i}`).join(' ')} ELSE 99 END`;
 
 /**
- * Built-in role permission lists shipped before docs/UX.md §9 gave every role actions. A stored
- * built-in role still holding exactly one of these was never customised, so seedOrgRoles moves it
- * to the current template; a customised role is left alone.
+ * Insert the built-in roles for an org (idempotent). Never rewrites a stored role: moving untouched
+ * old defaults to newer templates is a schema migration (v10), so it reaches every org.
  */
-const LEGACY_TEMPLATES: Partial<Record<BuiltinRoleId, readonly Permission[]>> = {
-  appsec: ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'],
-  auditor: ['reports'],
-};
-
-/** Insert the built-in roles for an org (idempotent), upgrading untouched legacy defaults. */
 export function seedOrgRoles(s: Store, orgId: string): void {
   const at = nowIso(s);
-  for (const [id, legacy] of Object.entries(LEGACY_TEMPLATES) as [BuiltinRoleId, readonly Permission[]][]) {
-    const row = get<RoleRow>(s, 'SELECT * FROM role WHERE org_id = ? AND id = ?', orgId, id);
-    if (!row) continue;
-    const { permissions } = normalizePermissions(parseJson<unknown>(row.permissions, []));
-    if (permissions.length === legacy.length && permissions.every((p, i) => p === legacy[i])) {
-      run(s, 'UPDATE role SET permissions = ?, description = ?, updated_at = ? WHERE org_id = ? AND id = ?', JSON.stringify(storedPermissionsFor(id, ROLE_TEMPLATES[id].permissions)), ROLE_TEMPLATES[id].description, at, orgId, id);
-    }
-  }
   for (const r of defaultRoles()) {
     run(
       s,

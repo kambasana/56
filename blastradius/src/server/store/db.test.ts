@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
 import { all, closeStore, decodeCursor, encodeCursor, get, likeEscape, newId, openStore, pageWindow, run, StoreError, tx } from './db.js';
+import { ALL_PERMISSIONS, ROLE_TEMPLATES } from '../permissions.js';
 import { currentVersion, migrate, MIGRATIONS, SCHEMA_VERSION } from './migrations.js';
 
 describe('migrations', () => {
@@ -26,8 +27,42 @@ describe('migrations', () => {
       [7, 'incidents'],
       [8, 'alert rules'],
       [9, 'account index and compromised accounts'],
+      [10, 'upgrade untouched built-in role defaults in every org'],
     ]);
-    expect(SCHEMA_VERSION).toBe(9);
+    expect(SCHEMA_VERSION).toBe(10);
+  });
+
+  it('upgrades untouched built-in AppSec and Auditor roles in every existing org (v10), never customised ones', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, MIGRATIONS.filter((m) => m.version < 10));
+    const legacyAppsec = ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'];
+    const role = db.prepare(`INSERT INTO role (org_id, id, name, description, builtin, template, permissions, updated_at) VALUES (?, ?, ?, 'old', 1, ?, ?, 't0')`);
+    for (const org of ['org_a', 'org_b']) {
+      db.prepare(`INSERT INTO org (id, name, slug, created_at) VALUES (?, ?, ?, 't0')`).run(org, org, org);
+      role.run(org, 'org_admin', 'Org admin', 'org_admin', JSON.stringify(ALL_PERMISSIONS));
+      role.run(org, 'developer', 'Developer', 'developer', JSON.stringify(ROLE_TEMPLATES.developer.permissions));
+    }
+    // org_a: both on the old defaults (appsec stored in another order, with a duplicate).
+    role.run('org_a', 'appsec', 'AppSec', 'appsec', JSON.stringify([...legacyAppsec].reverse().concat('home')));
+    role.run('org_a', 'auditor', 'Auditor', 'auditor', JSON.stringify(['reports']));
+    // org_b: both customised.
+    role.run('org_b', 'appsec', 'AppSec', 'appsec', JSON.stringify([...legacyAppsec, 'review']));
+    role.run('org_b', 'auditor', 'Auditor', 'auditor', JSON.stringify(['reports', 'findings']));
+    expect(migrate(db)).toEqual([10]);
+    const perms = (org: string, id: string) =>
+      JSON.parse((db.prepare('SELECT permissions FROM role WHERE org_id = ? AND id = ?').get(org, id) as { permissions: string }).permissions) as string[];
+    expect(perms('org_a', 'appsec')).toEqual([...ROLE_TEMPLATES.appsec.permissions]);
+    expect(perms('org_a', 'auditor')).toEqual([...ROLE_TEMPLATES.auditor.permissions]);
+    expect((db.prepare(`SELECT description FROM role WHERE org_id = 'org_a' AND id = 'appsec'`).get() as { description: string }).description).toBe(
+      ROLE_TEMPLATES.appsec.description,
+    );
+    expect(perms('org_b', 'appsec')).toEqual([...legacyAppsec, 'review']);
+    expect(perms('org_b', 'auditor')).toEqual(['reports', 'findings']);
+    expect(perms('org_a', 'developer')).toEqual([...ROLE_TEMPLATES.developer.permissions]);
+    // Idempotent: nothing left to apply, rows unchanged.
+    expect(migrate(db)).toEqual([]);
+    db.close();
   });
 
   it('keeps incident timeline events when incident_event is rebuilt (v9), and allows account events', () => {
@@ -36,7 +71,7 @@ describe('migrations', () => {
     migrate(db, MIGRATIONS.filter((m) => m.version < 9));
     db.exec("INSERT INTO org (id, name, slug, created_at) VALUES ('org_1', 'Acme', 'acme', '2026-01-01T00:00:00Z')");
     db.exec("INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title) VALUES ('org_1', 'GHSA-1', '2026-01-01T00:00:00Z', 'u', 'status', 'moved')");
-    expect(migrate(db)).toEqual([9]);
+    expect(migrate(db)).toEqual(MIGRATIONS.filter((m) => m.version >= 9).map((m) => m.version));
     expect(db.prepare('SELECT advisory_id AS a, kind FROM incident_event').all()).toEqual([{ a: 'GHSA-1', kind: 'status' }]);
     db.exec("INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title) VALUES ('org_1', 'ACCOUNT-npm-qix', '2026-01-01T00:00:01Z', 'u', 'account', 'marked')");
     expect(() => db.exec("INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title) VALUES ('org_1', 'x', 'y', 'u', 'nope', 't')")).toThrow(/CHECK/);

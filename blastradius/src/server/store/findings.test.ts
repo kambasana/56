@@ -12,8 +12,10 @@ import {
   listFindings,
   parseLevelList,
   parseStatusList,
+  triagePermission,
   updateFindingStatus,
 } from './findings.js';
+import { listOrgFindings, overview } from './triage.js';
 import { createOrg } from './orgs.js';
 import { createProject, getProjectRow } from './projects.js';
 import { completeScan, enqueueScan } from './scans.js';
@@ -157,6 +159,41 @@ describe('finding status and detail', () => {
     expect(detail.finding.purl).toBe(later.purl);
     expect(detail.reasons.map((r) => r.factor)).toEqual(['malware', 'entity_incident']);
     expect(listAudit(s, orgId, { action: 'finding.status' }).total).toBe(2);
+  });
+});
+
+describe('accepted-risk expiry', () => {
+  it('reads an expired acceptance as open again (reviewed) everywhere: row, filters, org list and Overview', () => {
+    let t = Date.parse('2026-01-01T00:00:00.000Z');
+    const s = openStore({ now: () => new Date((t += 1000)) });
+    const actor = createUser(s, { email: 'a@x', name: 'A' }).id;
+    const orgId = createOrg(s, { name: 'Acme' }, actor).id;
+    const project = createProject(s, orgId, { name: 'app', tier: 'Small', target: '/srv/app' }, actor);
+    completeScan(s, enqueueScan(s, orgId, project.id, { requestedBy: actor }).id, { result: makeResult(SPECS), inventory: makeInventory() });
+    const critical = listFindings(s, orgId, { projectId: project.id }).items[0]!;
+    expect(critical.level).toBe('critical');
+    expect(overview(s, orgId, { projectIds: null }).attention.criticalOpen).toBe(1);
+
+    updateFindingStatus(s, orgId, critical.id, { status: 'accepted_risk', note: 'sandboxed', expiresAt: '2026-02-01T00:00:00Z' }, actor);
+    expect(getFindingRow(s, orgId, critical.id)).toMatchObject({ status: 'accepted_risk', riskExpiresAt: '2026-02-01T00:00:00.000Z' });
+    expect(overview(s, orgId, { projectIds: null }).attention.criticalOpen).toBe(0);
+    expect(listOrgFindings(s, orgId, { projectIds: null, statuses: ['accepted_risk'] }).total).toBe(1);
+
+    // The date passes: the acceptance no longer holds.
+    t = Date.parse('2026-02-01T00:00:00.000Z');
+    const row = getFindingRow(s, orgId, critical.id)!;
+    expect(row).toMatchObject({ status: 'reviewed', riskExpiresAt: null });
+    expect(listFindings(s, orgId, { projectId: project.id, statuses: ['accepted_risk'] }).total).toBe(0);
+    expect(listFindings(s, orgId, { projectId: project.id, statuses: ['reviewed'] }).items.map((r) => r.id)).toEqual([critical.id]);
+    expect(listOrgFindings(s, orgId, { projectIds: null, statuses: ['accepted_risk'] }).total).toBe(0);
+    expect(listOrgFindings(s, orgId, { projectIds: null }).items.find((r) => r.id === critical.id)?.status).toBe('reviewed');
+    const ov = overview(s, orgId, { projectIds: null });
+    expect(ov.attention.criticalOpen).toBe(1);
+    expect(ov.bySeverity.find((b) => b.level === 'critical')?.open).toBe(1);
+    // A new decision needs only review now, and records history from the effective status.
+    expect(triagePermission({ status: 'fixing' }, row.status)).toBe('review');
+    updateFindingStatus(s, orgId, critical.id, { status: 'fixing' }, actor);
+    expect(getFindingDetail(s, orgId, critical.id)!.statusHistory[0]).toMatchObject({ from: 'reviewed', to: 'fixing' });
   });
 });
 

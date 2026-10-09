@@ -245,6 +245,17 @@ function subjectMatches(s: BindingSubject, who: Principal): boolean {
 }
 
 /**
+ * Every permission a binding of `role` at `scope` confers: the stored list (everything for Org
+ * admin) plus, at project scope, the role's PROJECT_SCOPED_GRANTS. Catalogue order. The grant
+ * guard in routes/settings.ts and rolesInScope both use this, so they cannot disagree.
+ */
+export function permissionsGrantedByBinding(role: RoleLike, scope: BindingScope): Permission[] {
+  if (role.id === ORG_ADMIN_ROLE_ID) return [...ALL_PERMISSIONS];
+  const extra = scope.kind === 'project' && isBuiltinRoleId(role.id) ? (PROJECT_SCOPED_GRANTS[role.id] ?? []) : [];
+  return ALL_PERMISSIONS.filter((p) => role.permissions.includes(p) || extra.includes(p));
+}
+
+/**
  * Roles that apply to `who`. With no `projectId`, only org-scope bindings count. With a
  * `projectId`, org-scope bindings plus that project's bindings count (union). Bindings whose
  * role id is unknown are ignored. A built-in role bound at project scope also carries its
@@ -264,10 +275,10 @@ export function rolesInScope<R extends RoleLike>(
     if (!inScope) continue;
     const role = byId.get(b.roleId);
     if (!role) continue;
-    const extra = b.scope.kind === 'project' && isBuiltinRoleId(role.id) ? PROJECT_SCOPED_GRANTS[role.id] : undefined;
-    if (extra && extra.some((p) => !role.permissions.includes(p))) {
+    const granted = permissionsGrantedByBinding(role, b.scope);
+    if (granted.length > role.permissions.length) {
       // Same role, widened for this project only (the stored role is left untouched).
-      out.set(role.id, { ...role, permissions: ALL_PERMISSIONS.filter((p) => role.permissions.includes(p) || extra.includes(p)) });
+      out.set(role.id, { ...role, permissions: granted });
     } else if (!out.has(role.id)) {
       out.set(role.id, role);
     }

@@ -18,26 +18,32 @@ export interface InventoryPath {
   scopes: DepScope[];
 }
 
-/** "pkg:npm/%40a/b@1.0.0" → "@a/b@1.0.0" (anything unparsable is returned as is). */
-export function purlLabel(purl: string): string {
+/** "pkg:npm/%40a/b@1.0.0" → { name: "@a/b", version: "1.0.0" } for any purl type, else null. */
+export function purlNameVersion(purl: string): { type: string; name: string; version: string } | null {
   try {
     const p = parsePurl(purl);
-    const name = p.namespace ? `${p.namespace}/${p.name}` : p.name;
-    return p.version ? `${name}@${p.version}` : name;
+    return { type: p.type, name: p.namespace ? `${p.namespace}/${p.name}` : p.name, version: p.version ?? '' };
   } catch {
-    return purl;
+    return null;
   }
+}
+
+/** Package name of a purl ("@a/b"), or null when it does not parse. */
+export function purlName(purl: string): string | null {
+  return purlNameVersion(purl)?.name ?? null;
+}
+
+/** "pkg:npm/%40a/b@1.0.0" → "@a/b@1.0.0" (anything unparsable is returned as is). */
+export function purlLabel(purl: string): string {
+  const nv = purlNameVersion(purl);
+  if (!nv) return purl;
+  return nv.version ? `${nv.name}@${nv.version}` : nv.name;
 }
 
 /** "pkg:npm/x@1" → { name, version } for npm purls, else null. */
 export function npmNameVersion(purl: string): { name: string; version: string } | null {
-  try {
-    const p = parsePurl(purl);
-    if (p.type !== 'npm') return null;
-    return { name: p.namespace ? `${p.namespace}/${p.name}` : p.name, version: p.version ?? '' };
-  } catch {
-    return null;
-  }
+  const nv = purlNameVersion(purl);
+  return nv && nv.type === 'npm' ? { name: nv.name, version: nv.version } : null;
 }
 
 function edgeScope(g: DependencyGraph, from: string, to: string): DepScope {

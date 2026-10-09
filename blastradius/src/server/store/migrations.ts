@@ -11,6 +11,24 @@ export interface Migration {
   sql: string;
 }
 
+function sqlString(v: string): string {
+  return `'${v.replace(/'/g, "''")}'`;
+}
+
+/**
+ * SQL that moves a built-in role from a shipped default to a newer one in every org, but only
+ * where the stored list is still exactly the old default (as a set, so order and duplicates do
+ * not matter). A role an admin customised is left alone. The lists are literals on purpose: a
+ * shipped migration must not change when ROLE_TEMPLATES does.
+ */
+function upgradeBuiltinRole(id: string, from: readonly string[], to: readonly string[], description: string): string {
+  const fromKey = [...new Set(from)].sort().join(',');
+  return `UPDATE role SET permissions = ${sqlString(JSON.stringify(to))}, description = ${sqlString(description)},
+  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+WHERE builtin = 1 AND id = ${sqlString(id)} AND json_valid(permissions)
+  AND (SELECT group_concat(value, ',') FROM (SELECT DISTINCT value FROM json_each(role.permissions) ORDER BY value)) = ${sqlString(fromKey)};`;
+}
+
 export const MIGRATIONS: readonly Migration[] = [
   {
     version: 1,
@@ -417,6 +435,24 @@ DROP TABLE incident_event;
 ALTER TABLE incident_event_v9 RENAME TO incident_event;
 CREATE INDEX incident_event_advisory ON incident_event (org_id, advisory_id, seq);
 `,
+  },
+  {
+    version: 10,
+    name: 'upgrade untouched built-in role defaults in every org',
+    sql: [
+      upgradeBuiltinRole(
+        'appsec',
+        ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'],
+        ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans', 'review', 'accept_risk', 'manage_alert_rules'],
+        'Every page except Settings. Triages findings, accepts risk and manages alert rules.',
+      ),
+      upgradeBuiltinRole(
+        'auditor',
+        ['reports'],
+        ['home', 'projects', 'reports', 'changes', 'findings', 'exposure', 'investigate', 'scans', 'build_reports'],
+        'Read-only on every page except Settings and Integrations. Builds reports.',
+      ),
+    ].join('\n'),
   },
 ];
 

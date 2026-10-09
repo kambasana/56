@@ -4,7 +4,6 @@
  * succeeded scan of each project the caller may see.
  */
 import type { EntityChainEntry, Finding, RiskLevel } from '../core/types.js';
-import { parsePurl } from '../core/types.js';
 import type { StoredInventory } from '../watch/match.js';
 import type {
   IncidentDetail,
@@ -18,11 +17,14 @@ import type {
   ReachPath,
   ReachProject,
 } from './api-types-incidents.js';
-import { npmNameVersion, pathsTo, purlLabel, viaOf } from './reach.js';
+import { npmNameVersion, pathsTo, purlLabel, purlName, viaOf } from './reach.js';
 import {
   accountIncidents,
   alertChecks,
   all,
+  findingFor,
+  plural,
+  worstLevel,
   closedAt,
   get,
   incidentEvents,
@@ -38,21 +40,8 @@ import {
   type Store,
 } from './store/index.js';
 
-const worst = (levels: readonly (RiskLevel | null | undefined)[]): RiskLevel | null => {
-  let best: RiskLevel | null = null;
-  for (const l of levels) if (l && (!best || LEVEL_RANK[l] > LEVEL_RANK[best])) best = l;
-  return best;
-};
-
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
 function inventoryHas(inv: StoredInventory | undefined, purl: string): boolean {
   return !!inv?.inventory.components.some((c) => c.purl === purl);
-}
-
-function findingIn(s: Store, scanId: string | undefined, purl: string): { id: string; level: RiskLevel } | null {
-  if (!scanId) return null;
-  return get<{ id: string; level: RiskLevel }>(s, 'SELECT id, level FROM finding WHERE scan_id = ? AND purl = ?', scanId, purl) ?? null;
 }
 
 export interface IncidentContext {
@@ -101,7 +90,7 @@ function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventor
     advisoryId: g.advisoryId,
     advisoryPublished: published,
     summary: g.alerts.find((a) => a.summary)?.summary ?? null,
-    level: worst(g.alerts.map((a) => a.level)),
+    level: worstLevel(g.alerts.map((a) => a.level)),
     status,
     packages: [...pkgs.values()].sort((a, b) => a.name.localeCompare(b.name)),
     openedAt: first,
@@ -167,7 +156,7 @@ export function getIncident(ctx: IncidentContext, advisoryId: string, caps: Inci
       reachText: a.reachText,
       broughtInBy: [...new Set(paths.filter((p) => p.nodes.length > 2).map(viaOf))],
       direct: paths.some((p) => p.nodes.length === 2),
-      findingId: present ? (findingIn(ctx.store, inv?.scanId, a.purl)?.id ?? null) : null,
+      findingId: present ? (findingFor(ctx.store, inv?.scanId, a.purl)?.id ?? null) : null,
       fixed: !present,
       alertedAt: a.createdAt,
     };
@@ -256,7 +245,7 @@ export function packageReach(ctx: IncidentContext, query: { name: string; versio
     let finding: { id: string; level: RiskLevel } | null = null;
     const all: ReturnType<typeof pathsTo> = [];
     for (const c of comps) {
-      const f = findingIn(ctx.store, inv.scanId, c.purl);
+      const f = findingFor(ctx.store, inv.scanId, c.purl);
       if (f && (!finding || LEVEL_RANK[f.level] > LEVEL_RANK[finding.level])) finding = f;
       for (const p of pathsTo(inv.inventory, c.purl)) all.push(p);
     }
@@ -341,7 +330,7 @@ export function packageReach(ctx: IncidentContext, query: { name: string; versio
   return {
     query: { name: query.name, version: query.version ?? null },
     projectsSearched: inventories.length,
-    level: worst(levels),
+    level: worstLevel(levels),
     advisories: [...advisories.values()],
     lifecycle: {
       firstWarning: visible && visible.length === 0 ? null : (firstSeen ?? null),
@@ -362,15 +351,6 @@ export function packageReach(ctx: IncidentContext, query: { name: string; versio
 // ---------------------------------------------------------------------------
 
 type Link = PackageBehindResponse['links'][number];
-
-function pkgNameOfFrom(from: string): string | null {
-  try {
-    const p = parsePurl(from);
-    return p.namespace ? `${p.namespace}/${p.name}` : p.name;
-  } catch {
-    return null;
-  }
-}
 
 /** Links from the newest findings of every visible project, merged per (from, to, relation). */
 export function packageBehind(ctx: IncidentContext, name: string): PackageBehindResponse {
@@ -417,7 +397,7 @@ export function packageBehind(ctx: IncidentContext, name: string): PackageBehind
     if (others.length) alsoLinked[l.entityId] = others.slice(0, 20);
   }
   const ordered = [...links.values()].sort(
-    (a, b) => Number(pkgNameOfFrom(b.from) === name) - Number(pkgNameOfFrom(a.from) === name) || b.confidence - a.confidence || a.entityId.localeCompare(b.entityId),
+    (a, b) => Number(purlName(b.from) === name) - Number(purlName(a.from) === name) || b.confidence - a.confidence || a.entityId.localeCompare(b.entityId),
   );
   return { name, usedIn, links: ordered, incidents: [...incidents].sort(), alsoLinked };
 }

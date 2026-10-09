@@ -103,12 +103,12 @@ describe('roles', () => {
     expect(actions[0]).toBe('role.delete');
   });
 
-  it('upgrades untouched legacy built-in defaults and leaves customised roles alone', () => {
+  it('seeding an existing org never rewrites a stored role (upgrades are migration v10)', () => {
     const { s, admin, org } = setup();
     updateRole(s, org.id, 'appsec', { permissions: ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'] }, admin.id);
     updateRole(s, org.id, 'auditor', { permissions: ['reports', 'findings'] }, admin.id);
     seedOrgRoles(s, org.id);
-    expect(getRole(s, org.id, 'appsec')?.permissions).toEqual(ROLE_TEMPLATES.appsec.permissions);
+    expect(getRole(s, org.id, 'appsec')?.permissions).not.toContain('review');
     expect(getRole(s, org.id, 'auditor')?.permissions).toEqual(['reports', 'findings']);
   });
 

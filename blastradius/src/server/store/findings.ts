@@ -16,8 +16,8 @@ import type {
 } from '../api-types.js';
 import { FINDING_STATUSES } from '../api-types.js';
 import type { Asset, AssetKind, Criticality, Ecosystem, EntityChainEntry, Environment, Finding, Inventory, RiskLevel } from '../../core/types.js';
-import { parsePurl } from '../../core/types.js';
 import { describeReach } from '../../report/reach.js';
+import { purlName, purlNameVersion } from '../reach.js';
 import { writeAudit } from './audit.js';
 import { all, get, likeEscape, newId, nextCursorFor, nowIso, pageWindow, parseJson, placeholders, run, StoreError, tx, type Param, type Store } from './db.js';
 
@@ -27,6 +27,18 @@ import { all, get, likeEscape, newId, nextCursorFor, nowIso, pageWindow, parseJs
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['critical', 'high', 'medium', 'low'];
 export const LEVEL_RANK: Readonly<Record<RiskLevel, number>> = { low: 0, medium: 1, high: 2, critical: 3 };
+
+/** The most severe of `levels` (nulls ignored), or null when there is none. */
+export function worstLevel(levels: Iterable<RiskLevel | null | undefined>): RiskLevel | null {
+  let best: RiskLevel | null = null;
+  for (const l of levels) if (l && (!best || LEVEL_RANK[l] > LEVEL_RANK[best])) best = l;
+  return best;
+}
+
+/** "3 projects", "1 project". */
+export function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
 
 export function isRiskLevel(v: unknown): v is RiskLevel {
   return typeof v === 'string' && (RISK_LEVELS as readonly string[]).includes(v);
@@ -109,17 +121,11 @@ function ecosystemFor(type: string): Ecosystem {
 }
 
 export function deriveFinding(f: Finding, assetOf: (id: string) => AssetMeta = fallbackAssetMeta): DerivedFinding {
-  let name = f.purl;
-  let version = '';
-  let ecosystem: Ecosystem = 'generic';
-  try {
-    const p = parsePurl(f.purl);
-    name = p.namespace ? `${p.namespace}/${p.name}` : p.name;
-    version = p.version ?? '';
-    ecosystem = ecosystemFor(p.type);
-  } catch {
-    // keep the raw purl as the name
-  }
+  // An unparsable purl keeps the raw purl as the name.
+  const nv = purlNameVersion(f.purl);
+  const name = nv?.name ?? f.purl;
+  const version = nv?.version ?? '';
+  const ecosystem: Ecosystem = nv ? ecosystemFor(nv.type) : 'generic';
   const exposures = f.blastRadius?.assets ?? [];
   const reasons = f.reasons ?? [];
   const chain = f.entityChain ?? [];
@@ -230,10 +236,24 @@ export interface FindingSqlRow {
   risk_expires_at: string | null;
 }
 
-export const FINDING_COLUMNS = `f.id, f.scan_id, f.project_id, f.org_id, f.purl, f.name, f.version, f.ecosystem, f.score, f.level,
+/**
+ * The status a finding has now, as SQL over `st` (finding_state). A risk acceptance whose expiry
+ * has passed (by the store clock) reads as 'reviewed': it is open again and needs a new decision.
+ * Every read (lists, counts, Overview tiles, filters, the finding itself) goes through this, so
+ * they all agree; the stored row keeps its history until someone triages it again.
+ */
+export function findingStatusSql(s: Store): string {
+  // nowIso is Date#toISOString output: digits, '-', ':', '.', 'T' and 'Z' only, safe to inline.
+  const now = nowIso(s);
+  return `(CASE WHEN st.status = 'accepted_risk' AND st.risk_expires_at IS NOT NULL AND st.risk_expires_at <= '${now}' THEN 'reviewed' ELSE COALESCE(st.status, 'new') END)`;
+}
+
+export function findingColumns(s: Store): string {
+  return `f.id, f.scan_id, f.project_id, f.org_id, f.purl, f.name, f.version, f.ecosystem, f.score, f.level,
   f.blast_score, f.assets, f.prod_assets, f.paths, f.reach_text, f.top_factor, f.top_detail, f.factors, f.behind, f.first_seen_at,
-  COALESCE(st.status, 'new') AS status, st.owner_id, (SELECT u.name FROM app_user u WHERE u.id = st.owner_id) AS owner_name,
+  ${findingStatusSql(s)} AS status, st.owner_id, (SELECT u.name FROM app_user u WHERE u.id = st.owner_id) AS owner_name,
   st.risk_expires_at`;
+}
 
 export const FINDING_FROM = `finding f LEFT JOIN finding_state st ON st.project_id = f.project_id AND st.purl = f.purl`;
 
@@ -274,20 +294,11 @@ export function introducedByOf(f: Pick<Finding, 'blastRadius'> | null | undefine
   const direct = paths.some((p) => p.length === 2);
   const via: string[] = [];
   for (const p of [...paths].filter((x) => x.length > 2).sort((a, b) => a.length - b.length)) {
-    const n = purlName(p[1]!);
+    const n = purlName(p[1]!) ?? p[1]!;
     if (!via.includes(n)) via.push(n);
     if (via.length >= 5) break;
   }
   return { direct, via };
-}
-
-function purlName(purl: string): string {
-  try {
-    const p = parsePurl(purl);
-    return p.namespace ? `${p.namespace}/${p.name}` : p.name;
-  } catch {
-    return purl;
-  }
 }
 
 export type FindingSort = 'score' | '-score' | 'name' | 'reach';
@@ -381,7 +392,7 @@ export function listFindings(s: Store, orgId: string, q: FindingQuery): ListFind
     params.push(...q.levels);
   }
   if (q.statuses && q.statuses.length > 0) {
-    where.push(`COALESCE(st.status, 'new') IN (${placeholders(q.statuses.length)})`);
+    where.push(`${findingStatusSql(s)} IN (${placeholders(q.statuses.length)})`);
     params.push(...q.statuses);
   }
   const text = q.q?.trim().toLowerCase();
@@ -393,7 +404,7 @@ export function listFindings(s: Store, orgId: string, q: FindingQuery): ListFind
   const total = get<{ n: number }>(s, `SELECT count(*) AS n FROM ${FINDING_FROM} WHERE ${whereSql}`, ...params)?.n ?? 0;
   const rows = all<FindingSqlRow>(
     s,
-    `SELECT ${FINDING_COLUMNS} FROM ${FINDING_FROM} WHERE ${whereSql} ORDER BY ${SORT_SQL[q.sort ?? '-score'] ?? SORT_SQL['-score']} LIMIT ? OFFSET ?`,
+    `SELECT ${findingColumns(s)} FROM ${FINDING_FROM} WHERE ${whereSql} ORDER BY ${SORT_SQL[q.sort ?? '-score'] ?? SORT_SQL['-score']} LIMIT ? OFFSET ?`,
     ...params,
     limit,
     offset,
@@ -401,8 +412,14 @@ export function listFindings(s: Store, orgId: string, q: FindingQuery): ListFind
   return { items: rows.map(toFindingRow), total, nextCursor: nextCursorFor(offset, rows.length, total), scan };
 }
 
+/** The finding for `purl` in one scan (id and level), or null. The one (scan, purl) lookup. */
+export function findingFor(s: Store, scanId: string | null | undefined, purl: string): { id: string; level: RiskLevel } | null {
+  if (!scanId) return null;
+  return get<{ id: string; level: RiskLevel }>(s, 'SELECT id, level FROM finding WHERE scan_id = ? AND purl = ?', scanId, purl) ?? null;
+}
+
 export function getFindingRow(s: Store, orgId: string, findingId: string): FindingRow | null {
-  const r = get<FindingSqlRow>(s, `SELECT ${FINDING_COLUMNS} FROM ${FINDING_FROM} WHERE f.id = ? AND f.org_id = ?`, findingId, orgId);
+  const r = get<FindingSqlRow>(s, `SELECT ${findingColumns(s)} FROM ${FINDING_FROM} WHERE f.id = ? AND f.org_id = ?`, findingId, orgId);
   return r ? toFindingRow(r) : null;
 }
 
@@ -476,6 +493,18 @@ export interface FindingTriageInput {
   expiresAt?: string | null;
   /** A member id to assign, or null to unassign. Undefined leaves the owner alone. */
   ownerId?: string | null;
+}
+
+/**
+ * The permission a triage change needs. accept_risk for anything that sets, keeps-with-a-new-date
+ * or leaves accepted_risk, and for any expiresAt at all (it only ever means a risk acceptance's
+ * end date, so a review-only user must not be able to extend or shorten one). review otherwise.
+ */
+export function triagePermission(input: Pick<FindingTriageInput, 'status' | 'expiresAt'>, currentStatus: FindingStatus): 'accept_risk' | 'review' {
+  if (input.expiresAt !== undefined) return 'accept_risk';
+  if (input.status === 'accepted_risk') return 'accept_risk';
+  if (input.status !== undefined && currentStatus === 'accepted_risk') return 'accept_risk';
+  return 'review';
 }
 
 /** Validate an expiry: a parseable date, in the future (relative to the store clock). */
@@ -567,6 +596,6 @@ export function scanFindingStats(s: Store, scanId: string): { counts: Record<Ris
     if (isRiskLevel(r.level)) counts[r.level] = r.n;
   }
   const toReview =
-    get<{ n: number }>(s, `SELECT count(*) AS n FROM ${FINDING_FROM} WHERE f.scan_id = ? AND COALESCE(st.status, 'new') = 'new'`, scanId)?.n ?? 0;
+    get<{ n: number }>(s, `SELECT count(*) AS n FROM ${FINDING_FROM} WHERE f.scan_id = ? AND ${findingStatusSql(s)} = 'new'`, scanId)?.n ?? 0;
   return { counts, toReview };
 }

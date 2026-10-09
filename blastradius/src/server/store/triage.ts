@@ -18,7 +18,8 @@ import type {
 import { OPEN_FINDING_STATUSES } from '../api-types.js';
 import type { Finding, RiskLevel } from '../../core/types.js';
 import { all, get, likeEscape, nextCursorFor, nowIso, pageWindow, parseJson, placeholders, StoreError, tx, type Param, type Store } from './db.js';
-import { applyTriage, FINDING_COLUMNS, FINDING_FROM, getFindingRow, introducedByOf, RISK_LEVELS, toFindingRow, type FindingSqlRow, type FindingTriageInput } from './findings.js';
+import { purlNameVersion } from '../reach.js';
+import { applyTriage, FINDING_FROM, findingColumns, findingStatusSql, getFindingRow, introducedByOf, RISK_LEVELS, toFindingRow, worstLevel, type FindingSqlRow, type FindingTriageInput } from './findings.js';
 
 // ---------------------------------------------------------------------------
 // Scope: which scans are listed
@@ -94,7 +95,7 @@ function buildWhere(s: Store, orgId: string, f: OrgFindingFilter): Where | null 
     params.push(...f.levels);
   }
   if (f.statuses && f.statuses.length > 0) {
-    where.push(`COALESCE(st.status, 'new') IN (${placeholders(f.statuses.length)})`);
+    where.push(`${findingStatusSql(s)} IN (${placeholders(f.statuses.length)})`);
     params.push(...f.statuses);
   }
   if (f.owners && f.owners.length > 0) {
@@ -179,7 +180,7 @@ export function listOrgFindings(
   const total = get<{ n: number }>(s, `SELECT count(*) AS n FROM ${from} WHERE ${w.sql}`, ...w.params)?.n ?? 0;
   const rows = all<OrgSqlRow>(
     s,
-    `SELECT ${FINDING_COLUMNS}, p.name AS project_name, f.finding_json FROM ${from} WHERE ${w.sql}
+    `SELECT ${findingColumns(s)}, p.name AS project_name, f.finding_json FROM ${from} WHERE ${w.sql}
      ORDER BY ${ORG_SORT_SQL[f.sort ?? '-score'] ?? ORG_SORT_SQL['-score']} LIMIT ? OFFSET ?`,
     ...w.params,
     limit,
@@ -230,7 +231,7 @@ export function listPackageFindings(
   const members = purls.length
     ? all<OrgSqlRow>(
         s,
-        `SELECT ${FINDING_COLUMNS}, p.name AS project_name, f.finding_json FROM ${FINDING_FROM} JOIN project p ON p.id = f.project_id
+        `SELECT ${findingColumns(s)}, p.name AS project_name, f.finding_json FROM ${FINDING_FROM} JOIN project p ON p.id = f.project_id
          WHERE ${w.sql} AND f.purl IN (${placeholders(purls.length)})
          ORDER BY f.prod_assets > 0 DESC, f.score DESC, p.name COLLATE NOCASE`,
         ...w.params,
@@ -245,7 +246,7 @@ export function listPackageFindings(
     const top = [...list].sort((a, b) => b.score - a.score)[0];
     if (!top) continue;
     const row = toFindingRow(top);
-    const worst = list.reduce<RiskLevel>((acc, m) => (RISK_LEVELS.indexOf(m.level) < RISK_LEVELS.indexOf(acc) ? m.level : acc), row.level);
+    const worst = worstLevel([row.level, ...list.map((m) => m.level)]) ?? row.level;
     items.push({
       purl: row.purl,
       name: row.name,
@@ -324,18 +325,6 @@ export function listAssignees(s: Store, orgId: string): PersonRef[] {
 
 const RANGE_DAYS: Record<string, number | null> = { '7d': 7, '30d': 30, '90d': 90, all: null };
 const DAY = 86_400_000;
-
-function purlParts(purl: string): { name: string; version: string } {
-  const body = (() => {
-    try {
-      return decodeURIComponent(purl.replace(/^pkg:[^/]+\//, ''));
-    } catch {
-      return purl;
-    }
-  })();
-  const at = body.lastIndexOf('@');
-  return at > 0 ? { name: body.slice(0, at), version: body.slice(at + 1) } : { name: body, version: '' };
-}
 
 export function overview(
   s: Store,
@@ -434,7 +423,7 @@ export function overview(
         newest.purl,
         ...scopeIds,
       )!;
-      const { name, version } = purlParts(newest.purl);
+      const { name, version } = purlNameVersion(newest.purl) ?? { name: newest.purl, version: '' };
       empty.incident = { advisoryId: newest.advisory_id, purl: newest.purl, name, version, projects: agg.projects, production: agg.prod, detectedAt: agg.first };
     }
   }

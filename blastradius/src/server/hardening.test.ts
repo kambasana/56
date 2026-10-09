@@ -325,6 +325,34 @@ describe('server-side checks with the seeded fixture scan', () => {
     expect((await call(srv, 'POST', '/api/roles', { token: tokens.admin, body: { name: 'Escalate', permissions: ['findings', 'accept_risk'] } })).status).toBe(201);
   });
 
+  it('counts scope-derived grants: binding Developer at project scope needs review there', async () => {
+    const devPages = ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'] as const;
+    const pm = createRole(srv.store, orgId, { name: 'Page manager', permissions: ['settings', 'manage_members', ...devPages] }, adminId);
+    const pmUser = createUser(srv.store, { email: 'pm@corp', name: 'PM', password: PASSWORD });
+    createBinding(srv.store, orgId, { roleId: pm.id, subject: { kind: 'user', userId: pmUser.id }, scope: { kind: 'org' } }, adminId);
+    const pmToken = await login(srv, 'pm@corp');
+    const target = createUser(srv.store, { email: 'devtarget@corp', name: 'DT', password: PASSWORD });
+    createBinding(srv.store, orgId, { roleId: pm.id, subject: { kind: 'user', userId: target.id }, scope: { kind: 'org' } }, adminId);
+    const bind = (userId: string, scope: unknown) =>
+      call(srv, 'POST', '/api/bindings', { token: pmToken, body: { roleId: 'developer', subject: { kind: 'user', userId }, scope } });
+    // Org scope: Developer's stored pages only, all held.
+    expect((await bind(target.id, { kind: 'org' })).status).toBe(201);
+    // Project scope also confers review, which pm does not hold: refused, for others and for self.
+    const denied = await bind(target.id, { kind: 'project', projectId });
+    expect(denied.status).toBe(403);
+    expect(((await denied.json()) as { error: { message: string } }).error.message).toContain('review');
+    expect((await bind(pmUser.id, { kind: 'project', projectId })).status).toBe(403);
+    // Same rule on invite.
+    const invite = await call(srv, 'POST', '/api/members', {
+      token: pmToken,
+      body: { email: 'devinvite@corp', name: 'New', bindings: [{ roleId: 'developer', scope: { kind: 'project', projectId } }] },
+    });
+    expect(invite.status).toBe(403);
+    // A manager who holds review in that project (through their own project binding) may grant it there.
+    createBinding(srv.store, orgId, { roleId: 'developer', subject: { kind: 'user', userId: pmUser.id }, scope: { kind: 'project', projectId } }, adminId);
+    expect((await bind(target.id, { kind: 'project', projectId })).status).toBe(201);
+  });
+
   it('a review-only user cannot undo an accepted risk', async () => {
     const list = (await (await call(srv, 'GET', `/api/findings?project=${projectId}`, { token: tokens.admin })).json()) as ListFindingsResponse;
     const [f, g] = list.items;
@@ -333,6 +361,29 @@ describe('server-side checks with the seeded fixture scan', () => {
     expect((await call(srv, 'PATCH', `/api/findings/${f!.id}`, { token: tokens.rev, body: { status: 'new' } })).status).toBe(403);
     expect((await call(srv, 'PATCH', `/api/findings/${g!.id}`, { token: tokens.rev, body: { status: 'reviewed' } })).status).toBe(200);
     expect((await call(srv, 'PATCH', `/api/findings/${g!.id}`, { token: tokens.rev, body: { status: 'accepted_risk' } })).status).toBe(403);
+  });
+
+  it('a review-only user cannot change a risk acceptance expiry, singly or in bulk', async () => {
+    const list = (await (await call(srv, 'GET', `/api/findings?project=${projectId}`, { token: tokens.admin })).json()) as ListFindingsResponse;
+    const f = list.items[0]!;
+    const g = list.items[1]!;
+    const me = (await (await call(srv, 'GET', '/api/me', { token: tokens.rev })).json()) as MeResponse;
+    const accept = { status: 'accepted_risk', note: 'vendor fix pending', expiresAt: '2099-01-01' };
+    expect((await call(srv, 'PATCH', `/api/findings/${f.id}`, { token: tokens.admin, body: accept })).status).toBe(200);
+    // Owner + new expiry with no status: still a change to the acceptance.
+    const single = await call(srv, 'PATCH', `/api/findings/${f.id}`, { token: tokens.rev, body: { ownerId: me.user.id, expiresAt: '2199-01-01' } });
+    expect(single.status).toBe(403);
+    const bulk = await call(srv, 'POST', '/api/findings/bulk', { token: tokens.rev, body: { ids: [f.id], ownerId: me.user.id, expiresAt: '2199-01-01' } });
+    expect(bulk.status).toBe(403);
+    // Keeping accepted_risk with a new date is the same change.
+    expect((await call(srv, 'POST', '/api/findings/bulk', { token: tokens.rev, body: { ids: [f.id], ...accept, expiresAt: '2199-01-01' } })).status).toBe(403);
+    // expiresAt on a finding that is not accepted is refused too: it only means an acceptance date.
+    expect((await call(srv, 'PATCH', `/api/findings/${g.id}`, { token: tokens.rev, body: { ownerId: me.user.id, expiresAt: '2199-01-01' } })).status).toBe(403);
+    const after = (await (await call(srv, 'GET', `/api/findings/${f.id}`, { token: tokens.admin })).json()) as FindingDetail;
+    expect(after.riskExpiresAt?.slice(0, 10)).toBe('2099-01-01');
+    // Assigning an owner alone still needs only review, singly and in bulk.
+    expect((await call(srv, 'PATCH', `/api/findings/${f.id}`, { token: tokens.rev, body: { ownerId: me.user.id } })).status).toBe(200);
+    expect((await call(srv, 'POST', '/api/findings/bulk', { token: tokens.rev, body: { ids: [f.id, g.id], ownerId: null } })).status).toBe(200);
   });
 
   it('switches the session to a newly created org and back', async () => {

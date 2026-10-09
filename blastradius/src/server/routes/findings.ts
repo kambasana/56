@@ -38,6 +38,7 @@ import {
   parseLevelList,
   parseStatusList,
   scanAssets,
+  triagePermission,
   updateFindingStatus,
   type FindingSort,
   type Store,
@@ -135,10 +136,9 @@ export function registerFindingRoutes(app: Hono<AppEnv>): void {
     if (!row) throw notFound('Finding not found');
     const body = await parseBody(c, UpdateStatusBody);
     if (body.status === undefined && body.ownerId === undefined) throw badRequest('Nothing to change: give status or ownerId', ['status']);
-    // Moving into or out of accepted_risk needs accept_risk: a review-only user must not be
-    // able to undo someone else's risk acceptance. Assigning an owner needs review.
-    const touchesRisk = body.status !== undefined && (body.status === 'accepted_risk' || row.status === 'accepted_risk');
-    requireProjectPerm(c, row.projectId, touchesRisk ? 'accept_risk' : 'review');
+    // Moving into or out of accepted_risk, or changing its expiry, needs accept_risk: a review-only
+    // user must not be able to undo or extend someone else's risk acceptance.
+    requireProjectPerm(c, row.projectId, triagePermission(body, row.status));
     const updated = updateFindingStatus(deps(c).store, orgId, id, body, session.user.id);
     return c.json<UpdateFindingStatusResponse>(updated);
   });

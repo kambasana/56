@@ -9,6 +9,7 @@
 import { decodeVersions, encodeVersions, npmProfileUrl, type EncodedVersions, type IndexedPackage, type RepoOwner } from '../../accounts/registry.js';
 import { npmPackagePage } from '../../enrich/npm/registry.js';
 import { writeAudit } from './audit.js';
+import { plural } from './findings.js';
 import { all, get, nowIso, parseJson, placeholders, run, tx, type Store } from './db.js';
 
 export type AccountRegistry = 'npm' | 'github' | 'gitlab';
@@ -268,8 +269,6 @@ export function accountIncidents(s: Store, orgId: string, incidentIds?: readonly
 export function accountIncidentFor(s: Store, orgId: string, registry: AccountRegistry, account: string): AccountIncidentRow | null {
   return get<AccountIncidentRow>(s, `SELECT ${incidentCols} FROM account_incident WHERE org_id = ? AND account_registry = ? AND account = ?`, orgId, registry, account) ?? null;
 }
-
-const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
 
 /** Open or update the org's incident for a compromised account; writes a timeline event and an audit entry. */
 export function markAccountCompromised(

@@ -25,6 +25,7 @@ import {
   parseSince,
   parseStatusList,
   scopeProjects,
+  triagePermission,
   type OrgFindingFilter,
 } from '../store/index.js';
 
@@ -106,8 +107,7 @@ export function registerTriageRoutes(app: Hono<AppEnv>): void {
     // 404 before 403: every id must exist in this org first.
     const rows = findingRowsFor(store, orgId, body.ids);
     for (const row of rows) {
-      const touchesRisk = body.status === 'accepted_risk' || (body.status !== undefined && row.status === 'accepted_risk');
-      const perm = touchesRisk ? 'accept_risk' : 'review';
+      const perm = triagePermission(body, row.status);
       if (!hasProjectPerm(c, orgId, session.user.id, row.projectId, perm)) throw forbidden(`Missing permission: ${perm}`);
     }
     const { ids: _ids, ...input } = body;

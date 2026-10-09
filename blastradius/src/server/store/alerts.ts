@@ -6,6 +6,7 @@
 import type { RiskLevel } from '../../core/types.js';
 import type { ExposureHit, StoredInventory } from '../../watch/match.js';
 import { all, get, newId, nowIso, placeholders, run, tx, type Store } from './db.js';
+import { findingFor } from './findings.js';
 import { getScanInventory } from './scans.js';
 
 export interface AlertRow {
@@ -78,7 +79,7 @@ export function recordAlerts(s: Store, orgId: string, hits: readonly ExposureHit
         h.summary?.slice(0, 500) ?? null,
         h.fixedIn ?? null,
       );
-      const level = h.level ?? findingLevel(s, h.scanId ?? null, h.purl);
+      const level = h.level ?? findingFor(s, h.scanId, h.purl)?.level ?? null;
       created.push({
         id,
         projectId: h.projectId,
@@ -97,12 +98,6 @@ export function recordAlerts(s: Store, orgId: string, hits: readonly ExposureHit
     }
   });
   return created;
-}
-
-/** The finding's level for `purl` in `scanId`, or null. */
-function findingLevel(s: Store, scanId: string | null, purl: string): RiskLevel | null {
-  if (!scanId) return null;
-  return get<{ level: RiskLevel }>(s, 'SELECT level FROM finding WHERE scan_id = ? AND purl = ?', scanId, purl)?.level ?? null;
 }
 
 export interface ListAlertsOptions {
