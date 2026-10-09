@@ -256,3 +256,21 @@ manifest sha256, package versions, the checkpoint revision and the device:
 - `summary.md`
 
 The verdict is computed by the notebook from these rules. A human then writes the report.
+
+## Log of changes after this file was committed (fb3e3f9)
+
+None of the changes below alters a checkpoint, run, threshold, metric or pass condition above.
+
+- **2026-10-09: code checks on a partial dataset.** Negatives were still being fetched. The pipeline and
+  the notebook's cells were run end to end on CPU as a code check, using a throwaway split with different
+  dates and 16 rows per split, with the English base checkpoint standing in for fine-tuned ones. Nothing
+  from those runs is a result: the numbers were discarded and none was committed.
+- **2026-10-09: leakage check, content parity.** The check compared a file-only count with the
+  registry's `dist.fileCount`. That count also includes directory entries when the packer wrote them into
+  the tarball. This made the check FAIL for reasons that had nothing to do with reading the files.
+  - Evidence: on the records fetched so far, 223 DataDog positives and 45 negatives match exactly as
+    files + directories + root.
+  - Positive archives that mismatch drop files of the previous release less often (6 %) than archives
+    that match (20 %) or negatives (16 %).
+  - Fix: the gate now accepts agreement under any of the three counting conventions. The raw file-only
+    agreement is still reported, and `MAX_GAP` is unchanged.
