@@ -40,9 +40,23 @@ export function incidentStates(s: Store, orgId: string, advisoryIds?: readonly s
   return new Map(rows.map((r) => [r.advisoryId, r] as const));
 }
 
-/** When each incident was last closed (only for incidents whose status is Closed now). */
-export function closedAt(s: Store, orgId: string, advisoryId: string): string | null {
-  return get<{ at: string }>(s, `SELECT at FROM incident_event WHERE org_id = ? AND advisory_id = ? AND kind = 'status' AND to_value = 'closed' ORDER BY seq DESC LIMIT 1`, orgId, advisoryId)?.at ?? null;
+/** When each of `advisoryIds` was last closed, in one query (only those with a close event). */
+export function closedAtMap(s: Store, orgId: string, advisoryIds: readonly string[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (let i = 0; i < advisoryIds.length; i += 500) {
+    const chunk = advisoryIds.slice(i, i + 500);
+    for (const r of all<{ advisoryId: string; at: string }>(
+      s,
+      `SELECT e.advisory_id AS advisoryId, e.at FROM incident_event e
+       JOIN (SELECT advisory_id, max(seq) AS seq FROM incident_event
+             WHERE org_id = ? AND kind = 'status' AND to_value = 'closed' AND advisory_id IN (${placeholders(chunk.length)}) GROUP BY advisory_id) m
+         ON m.seq = e.seq`,
+      orgId,
+      ...chunk,
+    ))
+      out.set(r.advisoryId, r.at);
+  }
+  return out;
 }
 
 /** Move an incident to `status`; records a timeline event and an audit entry. No-op when unchanged. */
@@ -76,6 +90,29 @@ export function setIncidentStatus(s: Store, orgId: string, advisoryId: string, s
     writeAudit(s, { orgId, actor: actor.id, action: 'incident.status', target: advisoryId, detail: { from: prev, to: status } });
     return true;
   });
+}
+
+/**
+ * A closed incident that gets a new alert is open again: back to Investigating, with a status
+ * event on its timeline and an audit entry (actor "system"). No-op unless it is Closed now.
+ * Call inside the transaction that records the alert.
+ */
+export function reopenIncident(s: Store, orgId: string, advisoryId: string, reason: string): boolean {
+  const prev = incidentStates(s, orgId, [advisoryId]).get(advisoryId)?.status;
+  if (prev !== 'closed') return false;
+  const at = nowIso(s);
+  run(s, `UPDATE incident_state SET status = 'investigating', updated_at = ?, updated_by = 'system' WHERE org_id = ? AND advisory_id = ?`, at, orgId, advisoryId);
+  run(
+    s,
+    `INSERT INTO incident_event (org_id, advisory_id, at, actor, kind, title, detail, from_value, to_value) VALUES (?, ?, ?, 'system', 'status', ?, ?, 'closed', 'investigating')`,
+    orgId,
+    advisoryId,
+    at,
+    'Reopened: a new alert arrived after it was closed',
+    `${reason.slice(0, 300)} · Status: ${INCIDENT_STATUS_LABEL.closed} → ${INCIDENT_STATUS_LABEL.investigating}`,
+  );
+  writeAudit(s, { orgId, actor: 'system', action: 'incident.status', target: advisoryId, detail: { from: 'closed', to: 'investigating', reason: 'new alert' } });
+  return true;
 }
 
 /** A notification that left the server (Slack webhook), on the timeline of each named advisory. */

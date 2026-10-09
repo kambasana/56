@@ -11,7 +11,20 @@ import type { AccountDetail, AccountExposureResponse, ConcentrationResponse, Mar
 import type { IncidentDetail, ListIncidentsResponse } from './api-types-incidents.js';
 import { AccountIndexer } from './accounts.js';
 import { createServer, FIXTURE_AS_OF, FIXTURES_DIR, seedDevData } from './serve.js';
-import { accountListing, linksOfAccount, openStore, registryPackages, setAccountListing, upsertRegistryPackage } from './store/index.js';
+import {
+  accountIncidentFor,
+  accountIncidentId,
+  accountListing,
+  createOrg,
+  createUser,
+  linksOfAccount,
+  markAccountCompromised,
+  openStore,
+  registryPackages,
+  run,
+  setAccountListing,
+  upsertRegistryPackage,
+} from './store/index.js';
 
 type App = ReturnType<typeof createServer>;
 let srv: App;
@@ -109,6 +122,125 @@ describe('registry data', () => {
     expect(registryPackages(s, ['unknown']).get('unknown')).toMatchObject({ status: 'unavailable', detail: 'Offline: not in the recorded registry data' });
     expect(await ix.refreshNames(['known', 'unknown'])).toEqual({ fetched: 0, failed: 0 });
     expect(requests).toBe(0);
+  });
+});
+
+describe('on-demand account refreshes', () => {
+  function counting() {
+    let t = Date.parse('2026-01-01T00:00:00Z');
+    const s = openStore({ now: () => new Date(t) });
+    const urls: string[] = [];
+    let failListing = false;
+    const http = new HttpClient({
+      offline: false,
+      cacheDir: false,
+      minIntervalMs: 0,
+      maxRetries: 0,
+      breakerThreshold: 0,
+      transport: async (req) => {
+        urls.push(req.url);
+        if (req.url.includes('/-/user/')) {
+          if (failListing) return { status: 503, body: '' };
+          return { status: 200, body: JSON.stringify({ 'pkg-a': 'write', 'pkg-b': 'write' }) };
+        }
+        return { status: 404, body: '{}' };
+      },
+    });
+    return { s, urls, http, advance: (ms: number) => (t += ms), fail: () => (failListing = true) };
+  }
+  const listings = (urls: string[], who: string) => urls.filter((u) => u.endsWith(`/-/user/${who}/package`)).length;
+
+  it('page views queue at most one background refresh per account per interval, deduped and bounded', async () => {
+    const { s, urls, http, advance, fail } = counting();
+    const ix = new AccountIndexer(s, { http, accountRetryMs: 3_600_000, maxQueuedAccounts: 2 });
+    expect(ix.refreshAccountSoon('alice')).toBe(true);
+    expect(ix.refreshAccountSoon('alice')).toBe(false); // already queued
+    await ix.idle();
+    expect(listings(urls, 'alice')).toBe(1);
+    expect(urls.filter((u) => !u.includes('/-/user/'))).toHaveLength(2); // pkg-a, pkg-b packuments
+    expect(ix.refreshAccountSoon('alice')).toBe(false); // fresh
+    // Many names at once: never more than maxQueuedAccounts waiting.
+    expect(['c1', 'c2', 'c3', 'c4'].map((n) => ix.refreshAccountSoon(n))).toEqual([true, true, false, false]);
+    await ix.idle();
+    expect(listings(urls, 'c3') + listings(urls, 'c4')).toBe(0);
+    // Stale and the registry failing: one attempt per interval, not one per view.
+    advance(25 * 3_600_000);
+    fail();
+    expect(ix.refreshAccountSoon('alice')).toBe(true);
+    await ix.idle();
+    expect(accountListing(s, 'alice')?.detail).toMatch(/^Last refresh failed/);
+    for (let i = 0; i < 5; i++) expect(ix.refreshAccountSoon('alice')).toBe(false);
+    await ix.idle();
+    expect(listings(urls, 'alice')).toBe(2);
+    advance(3_600_001);
+    expect(ix.refreshAccountSoon('alice')).toBe(true);
+    await ix.idle();
+    expect(listings(urls, 'alice')).toBe(3);
+  });
+
+  it('"Mark as compromised" waits only for the listing of a never-fetched account, once', async () => {
+    const { s, urls, http } = counting();
+    const ix = new AccountIndexer(s, { http });
+    await Promise.all([ix.ensureListing('bob'), ix.ensureListing('bob')]);
+    expect(listings(urls, 'bob')).toBe(1);
+    expect(accountListing(s, 'bob')).toMatchObject({ status: 'ok', packages: ['pkg-a', 'pkg-b'] });
+    await ix.idle(); // packuments came in the background
+    expect(urls.filter((u) => !u.includes('/-/user/'))).toHaveLength(2);
+    await ix.ensureListing('bob'); // known: no wait, no request
+    await ix.idle();
+    expect(urls).toHaveLength(3);
+  });
+
+  it('an account page view only queues a background refresh, never fetching on the request', async () => {
+    const before = srv.deps.accounts;
+    const calls: string[] = [];
+    const orig = { soon: before.refreshAccountSoon.bind(before), full: before.refreshAccount.bind(before) };
+    before.refreshAccount = async (a: string) => {
+      calls.push(`full:${a}`);
+      return orig.full(a);
+    };
+    before.refreshAccountSoon = (a: string) => {
+      calls.push(`soon:${a}`);
+      return orig.soon(a);
+    };
+    try {
+      for (let i = 0; i < 3; i++) expect((await call('GET', '/api/accounts/npm/somebody-new', { as: 'auditor' })).status).toBe(200);
+      expect(calls).toEqual(['soon:somebody-new', 'soon:somebody-new', 'soon:somebody-new']);
+    } finally {
+      before.refreshAccount = orig.full;
+      before.refreshAccountSoon = orig.soon;
+      await before.idle();
+    }
+  });
+});
+
+describe('account incident ids', () => {
+  it('never map two accounts to one id, stay within the route rule, and keep ids stored before', () => {
+    const ids = ['foo.bar', 'foo_bar', 'foo-bar', 'Foo.Bar', 'f\u00f6o', 'x'.repeat(214), 'x'.repeat(213) + 'y'].map((a) => accountIncidentId('npm', a));
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(id).toMatch(/^[A-Za-z0-9_-]{1,100}$/);
+    expect(accountIncidentId('npm', 'qix')).toBe('ACCOUNT-npm-qix');
+    expect(accountIncidentId('npm', 'foo.bar')).toBe('ACCOUNT-npm-foo_2ebar');
+    expect(accountIncidentId('npm', 'foo_bar')).toBe('ACCOUNT-npm-foo_5fbar');
+
+    const s = openStore();
+    const actor = createUser(s, { email: 'a@x', name: 'A' });
+    const orgId = createOrg(s, { name: 'Acme' }, actor.id).id;
+    const mark = (account: string) =>
+      markAccountCompromised(s, orgId, { registry: 'npm', account, since: null, exposures: 1, projects: 1, production: 0, packages: 1 }, { id: actor.id, name: 'A' });
+    // Marked before the new encoding: the old folded id stays in use for that account.
+    run(s, `INSERT INTO account_incident (org_id, incident_id, account_registry, account, since, marked_at, marked_by) VALUES (?, 'ACCOUNT-npm-foo_bar', 'npm', 'foo.bar', NULL, 't', ?)`, orgId, actor.id);
+    expect(mark('foo.bar')).toEqual({ incidentId: 'ACCOUNT-npm-foo_bar', created: false });
+    // foo_bar no longer lands in foo.bar's incident.
+    expect(mark('foo_bar')).toEqual({ incidentId: 'ACCOUNT-npm-foo_5fbar', created: true });
+    expect(accountIncidentFor(s, orgId, 'npm', 'foo.bar')?.incidentId).toBe('ACCOUNT-npm-foo_bar');
+    expect(accountIncidentFor(s, orgId, 'npm', 'foo_bar')?.incidentId).toBe('ACCOUNT-npm-foo_5fbar');
+    // An old id that happens to equal a new encoding is never shared: the newcomer gets a hashed id.
+    run(s, `INSERT INTO account_incident (org_id, incident_id, account_registry, account, since, marked_at, marked_by) VALUES (?, 'ACCOUNT-npm-a_2eb', 'npm', 'a_2eb', NULL, 't', ?)`, orgId, actor.id);
+    const dotted = mark('a.b');
+    expect(dotted.created).toBe(true);
+    expect(dotted.incidentId).toMatch(/^ACCOUNT-npm-a_2eb-[0-9a-f]{16}$/);
+    expect(accountIncidentFor(s, orgId, 'npm', 'a_2eb')?.incidentId).toBe('ACCOUNT-npm-a_2eb');
   });
 });
 

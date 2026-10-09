@@ -401,17 +401,20 @@ export function overview(
     }));
   }
 
-  // The newest alert in range (production first on ties) names the incident.
+  // The newest alert in range (production first on ties) of an incident that is not closed names
+  // the live incident. A closed incident never shows here (a new alert reopens it).
   const scopeIds = projects.map((p) => p.projectId);
   if (scopeIds.length > 0) {
     const newest = get<{ advisory_id: string; purl: string; created_at: string }>(
       s,
       `SELECT advisory_id, purl, created_at FROM alert WHERE org_id = ? AND project_id IN (${placeholders(scopeIds.length)})
          ${since ? 'AND created_at >= ?' : ''} ${opts.env === 'prod' ? 'AND production = 1' : opts.env === 'dev' ? 'AND production = 0' : ''}
+         AND advisory_id NOT IN (SELECT advisory_id FROM incident_state WHERE org_id = ? AND status = 'closed')
        ORDER BY created_at DESC, production DESC LIMIT 1`,
       orgId,
       ...scopeIds,
       ...(since ? [since] : []),
+      orgId,
     );
     if (newest) {
       const agg = get<{ projects: number; prod: number; first: string }>(

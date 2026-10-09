@@ -99,7 +99,7 @@ function CompromiseDialog({ open, onOpenChange, d, onDone }: { open: boolean; on
     try {
       const r = await accountsApi.markCompromised(d.account.registry, d.account.name, since ? { since: new Date(`${since}:00Z`).toISOString() } : {});
       onOpenChange(false);
-      if (r.incidentId) toast.success(r.created ? 'Incident opened' : 'Incident updated', { description: `${plural(r.exposure.counts.exposures, 'exposure')} in ${plural(r.exposure.counts.projects, 'project')}${r.added ? `, ${r.added} new` : ''}` });
+      if (r.incidentId) toast.success(r.created ? 'Incident opened' : 'Incident updated', { description: `${plural(r.exposure.counts.exposures, 'exposure')} in ${plural(r.exposure.counts.projects, 'project')}${r.added ? `, ${r.added} new` : ''}${r.raised ? `, ${r.raised} raised in level` : ''}` });
       else toast.info('Nothing to open', { description: `No project you have uses a package ${d.account.name} can publish.` });
       onDone(r.incidentId);
     } catch (e) {

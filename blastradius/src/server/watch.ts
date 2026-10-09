@@ -9,7 +9,7 @@
 import { stat } from 'node:fs/promises';
 import { loadPack, type LoadedPack } from '../pack/load.js';
 import { matchAdvisories, matchPack, type AdvisoryLike, type ExposureHit } from '../watch/match.js';
-import { all, latestInventories, listAlertRules, recordAlertCheck, recordAlerts, recordNotified, ruleMatches, type AlertRow, type StoredAlertRule, type Store } from './store/index.js';
+import { all, latestInventories, listAlertRules, recordAlertCheck, recordAlerts, recordNotified, ruleMatches, type AlertRow, type RecordedAlerts, type StoredAlertRule, type Store } from './store/index.js';
 
 export interface AlertWatcherOptions {
   /** Knowledge pack file (default $BLASTRADIUS_PACK). */
@@ -93,11 +93,19 @@ export class AlertWatcher {
     return this.pack.loaded;
   }
 
-  /** Record hits as alerts and notify about the new ones. */
+  /**
+   * Record hits as alerts and notify about the new ones and those whose level was raised (so a
+   * rule with a minimum level fires when an alert reaches it). Returns the new alerts.
+   */
   async record(orgId: string, hits: readonly ExposureHit[]): Promise<AlertRow[]> {
-    const created = recordAlerts(this.store, orgId, hits);
-    if (created.length > 0) await this.notify(orgId, created);
-    return created;
+    return (await this.recordAll(orgId, hits)).created;
+  }
+
+  async recordAll(orgId: string, hits: readonly ExposureHit[]): Promise<RecordedAlerts> {
+    const out = recordAlerts(this.store, orgId, hits);
+    const changed = [...out.created, ...out.raised];
+    if (changed.length > 0) await this.notify(orgId, changed);
+    return out;
   }
 
   /** Match the pack (or given advisories) against one org's projects; returns new alerts. */

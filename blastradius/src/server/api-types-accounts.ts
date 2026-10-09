@@ -158,6 +158,8 @@ export interface MarkCompromisedResponse {
   created: boolean;
   /** Exposures that were not on the incident before. */
   added: number;
+  /** Exposures already on the incident whose level this update raised (e.g. high → critical for a version published since `since`). */
+  raised: number;
   exposure: AccountExposureResponse;
 }
 

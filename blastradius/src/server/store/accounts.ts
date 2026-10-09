@@ -6,6 +6,7 @@
  *
  * account_incident maps an org's "account X is compromised" incident id to the account.
  */
+import { createHash } from 'node:crypto';
 import { decodeVersions, encodeVersions, npmProfileUrl, type EncodedVersions, type IndexedPackage, type RepoOwner } from '../../accounts/registry.js';
 import { npmPackagePage } from '../../enrich/npm/registry.js';
 import { writeAudit } from './audit.js';
@@ -253,9 +254,42 @@ export interface AccountIncidentRow {
   markedBy: string;
 }
 
-/** Incident id for "account X is compromised" (fits the incident route's id rule). */
+const ID_MAX = 100;
+
+/**
+ * Incident id for "account X is compromised" (fits the incident route's id rule,
+ * [A-Za-z0-9_-]{1,100}). Collision-free: letters, digits and '-' stay as they are and every other
+ * UTF-8 byte, '_' included, becomes '_' plus two hex digits, so "foo.bar" is ACCOUNT-npm-foo_2ebar
+ * and "foo_bar" is ACCOUNT-npm-foo_5fbar. An id that would pass 100 characters is cut and ends
+ * in a SHA-256 prefix of the full name instead.
+ */
 export function accountIncidentId(registry: AccountRegistry, account: string): string {
-  return `ACCOUNT-${registry}-${account.replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 100);
+  let enc = '';
+  for (const b of new TextEncoder().encode(account)) {
+    const ch = String.fromCharCode(b);
+    enc += /[A-Za-z0-9-]/.test(ch) ? ch : `_${b.toString(16).padStart(2, '0')}`;
+  }
+  const id = `ACCOUNT-${registry}-${enc}`;
+  return id.length <= ID_MAX ? id : hashedAccountIncidentId(registry, account, enc);
+}
+
+function hashedAccountIncidentId(registry: AccountRegistry, account: string, enc = ''): string {
+  const hash = createHash('sha256').update(`${registry}\u0000${account}`).digest('hex').slice(0, 16);
+  const head = `ACCOUNT-${registry}-`;
+  return `${head}${enc.slice(0, ID_MAX - head.length - hash.length - 1)}-${hash}`;
+}
+
+/**
+ * The id this org uses for the account's incident. An incident marked before the encoding above
+ * keeps its stored id (old ids folded every other character to '_'); a new one gets
+ * accountIncidentId, or the hashed form if an old incident of another account already holds it.
+ */
+export function resolveAccountIncidentId(s: Store, orgId: string, registry: AccountRegistry, account: string): string {
+  const existing = accountIncidentFor(s, orgId, registry, account);
+  if (existing) return existing.incidentId;
+  const id = accountIncidentId(registry, account);
+  const holder = get<{ registry: string; account: string }>(s, 'SELECT account_registry AS registry, account FROM account_incident WHERE org_id = ? AND incident_id = ?', orgId, id);
+  return holder ? hashedAccountIncidentId(registry, account, id.slice(`ACCOUNT-${registry}-`.length)) : id;
 }
 
 const incidentCols = 'incident_id AS incidentId, account_registry AS registry, account, since, marked_at AS markedAt, marked_by AS markedBy';
@@ -277,8 +311,8 @@ export function markAccountCompromised(
   input: { registry: AccountRegistry; account: string; since: string | null; exposures: number; projects: number; production: number; packages: number },
   actor: { id: string; name: string },
 ): { incidentId: string; created: boolean } {
-  const incidentId = accountIncidentId(input.registry, input.account);
   return tx(s, () => {
+    const incidentId = resolveAccountIncidentId(s, orgId, input.registry, input.account);
     const at = nowIso(s);
     const prev = get<{ since: string | null }>(s, 'SELECT since FROM account_incident WHERE org_id = ? AND incident_id = ?', orgId, incidentId);
     run(

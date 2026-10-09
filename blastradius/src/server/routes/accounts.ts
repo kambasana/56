@@ -7,12 +7,12 @@
 import type { Hono } from 'hono';
 import { z } from 'zod';
 import { isAccountName } from '../../accounts/registry.js';
-import { accountDetail, accountExposure, compromiseHits, concentration } from '../accounts.js';
+import { accountDetail, accountExposure, accountIncidentRef, compromiseHits, concentration } from '../accounts.js';
 import { ACCOUNT_REGISTRIES, type AccountDetail, type AccountExposureResponse, type AccountRegistry, type ConcentrationResponse, type MarkCompromisedResponse } from '../api-types-accounts.js';
 import { deps, requireOrgPerm, visibleProjects, type AppEnv, type Ctx } from '../context.js';
 import { badRequest, notFound } from '../errors.js';
 import { parseBody, queryInt, queryString } from '../request.js';
-import { accountListing, markAccountCompromised, accountIncidentId } from '../store/index.js';
+import { markAccountCompromised, resolveAccountIncidentId } from '../store/index.js';
 import type { IncidentContext } from '../incidents.js';
 
 const Iso = z.iso.datetime({ offset: true });
@@ -45,15 +45,6 @@ function scoped(c: Ctx, ctx: IncidentContext): IncidentContext {
   return { ...ctx, projectIds: ctx.projectIds ? want.filter((id) => ctx.projectIds!.includes(id)) : want };
 }
 
-/** The account's listing is fetched in the background when the page is opened and it is missing or old. */
-function refreshListingSoon(c: Ctx, registry: AccountRegistry, name: string): void {
-  if (registry !== 'npm') return;
-  const { store, accounts } = deps(c);
-  const l = accountListing(store, name);
-  if (l && Date.parse(l.fetchedAt) > store.now().getTime() - 24 * 3_600_000) return;
-  void accounts.refreshAccount(name).catch(() => {});
-}
-
 export function registerAccountRoutes(app: Hono<AppEnv>): void {
   app.get('/api/accounts/concentration', (c) => {
     const ctx = scoped(c, ctxFor(c));
@@ -64,7 +55,9 @@ export function registerAccountRoutes(app: Hono<AppEnv>): void {
   app.get('/api/accounts/:registry/:name', (c) => {
     const { registry, name } = accountParams(c);
     const ctx = ctxFor(c);
-    refreshListingSoon(c, registry, name);
+    // Stored data only; a missing or old listing is refreshed in the background, at most once per
+    // account per interval (AccountIndexer.refreshAccountSoon), never on this request.
+    if (registry === 'npm') deps(c).accounts.refreshAccountSoon(name);
     return c.json<AccountDetail>(accountDetail(ctx, registry, name));
   });
 
@@ -84,20 +77,25 @@ export function registerAccountRoutes(app: Hono<AppEnv>): void {
     const body = await parseBody(c, CompromiseBody);
     const since = body.since ? new Date(body.since).toISOString() : undefined;
     const { store, accounts, watcher } = deps(c);
-    // Know the account's other packages before naming the exposure (rate-limited, cached for a day).
-    if (registry === 'npm') await accounts.refreshAccount(name);
-    // The incident is org-wide: every project, whatever the caller's project grants.
+    // Stored data. Only an account never fetched waits, for its one listing request; packuments and
+    // stale data refresh in the background.
+    if (registry === 'npm') await accounts.ensureListing(name);
+    // The incident is org-wide: every project, whatever the caller's project grants. Dependency
+    // graphs are built once, here.
     const ctx: IncidentContext = { store, orgId, projectIds: null };
     const exposure = accountExposure(ctx, registry, name, since ? { since } : {});
-    if (exposure.counts.exposures === 0 && !exposure.incident) return c.json<MarkCompromisedResponse>({ incidentId: null, created: false, added: 0, exposure });
-    const incidentId = accountIncidentId(registry, name);
-    const created = await watcher.record(orgId, compromiseHits(ctx, incidentId, exposure));
+    if (exposure.counts.exposures === 0 && !exposure.incident) return c.json<MarkCompromisedResponse>({ incidentId: null, created: false, added: 0, raised: 0, exposure });
+    const incidentId = resolveAccountIncidentId(store, orgId, registry, name);
+    const recorded = await watcher.recordAll(orgId, compromiseHits(ctx, incidentId, exposure));
     const marked = markAccountCompromised(
       store,
       orgId,
       { registry, account: name, since: since ?? null, exposures: exposure.counts.exposures, projects: exposure.counts.projects, production: exposure.counts.production, packages: exposure.counts.packages },
       { id: session.user.id, name: session.user.name },
     );
-    return c.json<MarkCompromisedResponse>({ incidentId: marked.incidentId, created: marked.created, added: created.length, exposure: accountExposure(ctx, registry, name, since ? { since } : {}) }, marked.created ? 201 : 200);
+    return c.json<MarkCompromisedResponse>(
+      { incidentId: marked.incidentId, created: marked.created, added: recorded.created.length, raised: recorded.raised.length, exposure: { ...exposure, incident: accountIncidentRef(ctx, registry, name) } },
+      marked.created ? 201 : 200,
+    );
   });
 }

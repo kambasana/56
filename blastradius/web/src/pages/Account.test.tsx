@@ -96,7 +96,7 @@ describe('Account page', () => {
     const { calls } = fakeApi({
       'GET /api/accounts/npm/right9ctrl': () => detail(),
       'GET /api/accounts/npm/right9ctrl/exposure': () => exposure(),
-      'POST /api/accounts/npm/right9ctrl/compromise': (): MarkCompromisedResponse => ({ incidentId: 'ACCOUNT-npm-right9ctrl', created: true, added: 1, exposure: exposure() }),
+      'POST /api/accounts/npm/right9ctrl/compromise': (): MarkCompromisedResponse => ({ incidentId: 'ACCOUNT-npm-right9ctrl', created: true, added: 1, raised: 0, exposure: exposure() }),
     });
     renderPage(<AccountPage />, { path: '/accounts/:registry/:name', at: '/accounts/npm/right9ctrl', me: meFor('appsec') });
     await userEvent.click(await screen.findByRole('button', { name: 'Mark as compromised' }));

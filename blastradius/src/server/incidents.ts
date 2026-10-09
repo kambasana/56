@@ -25,7 +25,13 @@ import {
   findingFor,
   plural,
   worstLevel,
-  closedAt,
+  closedAtMap,
+  incidentProjectAggregates,
+  incidentSummaries,
+  latestScanIds,
+  NO_LIMIT,
+  scanPurls,
+  type IncidentProjectAggregate,
   get,
   incidentEvents,
   incidentStates,
@@ -56,12 +62,6 @@ interface Group {
   alerts: AlertRow[];
 }
 
-function groups(alerts: readonly AlertRow[]): Group[] {
-  const map = new Map<string, AlertRow[]>();
-  for (const a of alerts) (map.get(a.advisoryId) ?? map.set(a.advisoryId, []).get(a.advisoryId)!).push(a);
-  return [...map.entries()].map(([advisoryId, list]) => ({ advisoryId, alerts: list }));
-}
-
 type AccountOf = (advisoryId: string) => IncidentRow['account'] | undefined;
 
 /** Account incidents of the org, by incident id. */
@@ -71,6 +71,7 @@ function accountLookup(ctx: IncidentContext, ids: readonly string[]): AccountOf 
 }
 
 function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventory>, status: IncidentStatus, accountOf: AccountOf = () => undefined): IncidentRow {
+  const closed = status === 'closed' ? (closedAtMap(ctx.store, ctx.orgId, [g.advisoryId]).get(g.advisoryId) ?? null) : null;
   const pkgs = new Map<string, IncidentRow['packages'][number]>();
   const projects = new Map<string, { name: string; production: boolean; fixed: boolean }>();
   for (const a of g.alerts) {
@@ -94,7 +95,7 @@ function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventor
     status,
     packages: [...pkgs.values()].sort((a, b) => a.name.localeCompare(b.name)),
     openedAt: first,
-    closedAt: status === 'closed' ? closedAt(ctx.store, ctx.orgId, g.advisoryId) : null,
+    closedAt: closed,
     affected: list.length,
     production: list.filter((p) => p.production).length,
     fixed: list.filter((p) => p.fixed).length,
@@ -103,26 +104,65 @@ function rowFor(ctx: IncidentContext, g: Group, invs: Map<string, StoredInventor
   };
 }
 
-function inventoriesById(ctx: IncidentContext): Map<string, StoredInventory> {
-  return new Map(latestInventories(ctx.store, ctx.orgId, ctx.projectIds).map((i) => [i.projectId, i] as const));
+function inventoriesById(ctx: IncidentContext, projectIds: readonly string[]): Map<string, StoredInventory> {
+  const visible = ctx.projectIds === null ? projectIds : projectIds.filter((id) => ctx.projectIds!.includes(id));
+  return new Map(latestInventories(ctx.store, ctx.orgId, visible).map((i) => [i.projectId, i] as const));
 }
 
-/** Every incident the caller can see: open ones first (production, then newest), closed last. */
+const incidentOrder = (a: IncidentRow, b: IncidentRow) =>
+  Number(a.status === 'closed') - Number(b.status === 'closed') ||
+  Number(b.production > 0) - Number(a.production > 0) ||
+  b.openedAt.localeCompare(a.openedAt) ||
+  a.id.localeCompare(b.id);
+
+/**
+ * Every incident the caller can see: open ones first (production, then newest), closed last.
+ * Aggregated in SQL per (advisory, project), so no alert is ever cut off; "fixed" reads each
+ * project's latest inventory once (cached by scan id), and close times come from one query.
+ */
 export function listIncidents(ctx: IncidentContext): IncidentRow[] {
-  const alerts = listAlerts(ctx.store, ctx.orgId, { projectIds: ctx.projectIds, limit: 5000 });
-  const gs = groups(alerts);
-  const states = incidentStates(ctx.store, ctx.orgId, gs.map((g) => g.advisoryId));
-  const invs = inventoriesById(ctx);
-  const accountOf = accountLookup(ctx, gs.map((g) => g.advisoryId));
-  return gs
-    .map((g) => rowFor(ctx, g, invs, states.get(g.advisoryId)?.status ?? 'investigating', accountOf))
-    .sort(
-      (a, b) =>
-        Number(a.status === 'closed') - Number(b.status === 'closed') ||
-        Number(b.production > 0) - Number(a.production > 0) ||
-        b.openedAt.localeCompare(a.openedAt) ||
-        a.id.localeCompare(b.id),
-    );
+  const byAdvisory = new Map<string, IncidentProjectAggregate[]>();
+  for (const a of incidentProjectAggregates(ctx.store, ctx.orgId, ctx.projectIds)) (byAdvisory.get(a.advisoryId) ?? byAdvisory.set(a.advisoryId, []).get(a.advisoryId)!).push(a);
+  if (byAdvisory.size === 0) return [];
+  const ids = [...byAdvisory.keys()];
+  const states = incidentStates(ctx.store, ctx.orgId);
+  const closed = closedAtMap(ctx.store, ctx.orgId, ids.filter((id) => states.get(id)?.status === 'closed'));
+  const summaries = incidentSummaries(ctx.store, ctx.orgId, ctx.projectIds);
+  const scans = latestScanIds(ctx.store, ctx.orgId, ctx.projectIds);
+  const accountOf = accountLookup(ctx, ids);
+  const rows: IncidentRow[] = [];
+  for (const [advisoryId, list] of byAdvisory) {
+    const status = states.get(advisoryId)?.status ?? 'investigating';
+    const pkgs = new Map<string, IncidentRow['packages'][number]>();
+    const projects = list.map((a) => {
+      const scanId = scans.get(a.projectId);
+      const present = scanId ? scanPurls(ctx.store, ctx.orgId, scanId) : null;
+      for (const purl of a.purls) {
+        const nv = npmNameVersion(purl);
+        pkgs.set(purl, { purl, name: nv?.name ?? purl, version: nv?.version || null });
+      }
+      return { name: a.projectName, production: a.production, fixed: a.purls.every((purl) => !present?.has(purl)) };
+    });
+    projects.sort((x, y) => Number(y.production) - Number(x.production) || x.name.localeCompare(y.name));
+    const account = accountOf(advisoryId);
+    rows.push({
+      id: advisoryId,
+      advisoryId,
+      advisoryPublished: list.map((a) => a.published).filter((x): x is string => !!x).sort()[0] ?? null,
+      summary: summaries.get(advisoryId) ?? null,
+      level: worstLevel(list.map((a) => a.level)),
+      status,
+      packages: [...pkgs.values()].sort((a, b) => a.name.localeCompare(b.name)),
+      openedAt: list.reduce((m, a) => (a.firstAt < m ? a.firstAt : m), list[0]!.firstAt),
+      closedAt: status === 'closed' ? (closed.get(advisoryId) ?? null) : null,
+      affected: projects.length,
+      production: projects.filter((p) => p.production).length,
+      fixed: projects.filter((p) => p.fixed).length,
+      projects: projects.map((p) => p.name),
+      ...(account ? { account } : {}),
+    });
+  }
+  return rows.sort(incidentOrder);
 }
 
 export interface IncidentCapabilities {
@@ -132,10 +172,10 @@ export interface IncidentCapabilities {
 
 /** One incident, or null when the caller sees none of its alerts. */
 export function getIncident(ctx: IncidentContext, advisoryId: string, caps: IncidentCapabilities): IncidentDetail | null {
-  const alerts = listAlerts(ctx.store, ctx.orgId, { projectIds: ctx.projectIds, advisoryId, limit: 5000 });
+  const alerts = listAlerts(ctx.store, ctx.orgId, { projectIds: ctx.projectIds, advisoryId, limit: NO_LIMIT });
   if (alerts.length === 0) return null;
   const status = incidentStates(ctx.store, ctx.orgId, [advisoryId]).get(advisoryId)?.status ?? 'investigating';
-  const invs = inventoriesById(ctx);
+  const invs = inventoriesById(ctx, [...new Set(alerts.map((a) => a.projectId))]);
   const row = rowFor(ctx, { advisoryId, alerts }, invs, status, accountLookup(ctx, [advisoryId]));
   const owners = new Map(listProjects(ctx.store, ctx.orgId, [...new Set(alerts.map((a) => a.projectId))]).map((p) => [p.id, p.owner] as const));
 

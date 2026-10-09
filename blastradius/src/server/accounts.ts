@@ -47,6 +47,7 @@ import {
   get,
   incidentStates,
   latestInventories,
+  latestScanIds,
   linksOfAccount,
   listProjects,
   namesToRefresh,
@@ -81,6 +82,13 @@ export interface AccountIndexerOptions {
   concurrency?: number;
   /** Listed packages of one account indexed on demand (default 300). */
   listingCap?: number;
+  /**
+   * Page views queue at most one background refresh per account per this interval (default 1 h),
+   * whatever the outcome, so viewing many times (or a failing registry) never repeats fetches.
+   */
+  accountRetryMs?: number;
+  /** Background account refreshes waiting at once (default 20); more page views queue nothing. */
+  maxQueuedAccounts?: number;
   log?: (m: string) => void;
 }
 
@@ -171,26 +179,93 @@ export class AccountIndexer {
 
   /**
    * One account's own package listing (npm), then the registry data of the listed packages (up to
-   * `listingCap`), so its sibling packages are known. Waits for the result.
+   * `listingCap`), so its sibling packages are known. Waits for the result. Explicit use only
+   * (tests, the replay proof); requests go through `refreshAccountSoon` and `ensureListing`.
    */
   refreshAccount(account: string, mode: FetchMode = this.defaultMode): Promise<void> {
-    // Not queued behind a sweep (which can take minutes live): someone is waiting for this one. A
-    // packument already being fetched by the sweep is shared (fetchPackument dedupes in-flight requests).
     return this.track(async () => {
       if (!isAccountName(account)) return;
-      const prev = accountListing(this.store, account);
-      const stale = !prev || Date.parse(prev.fetchedAt) < this.store.now().getTime() - this.ttlMs;
-      if (stale) {
-        try {
-          const data = await this.client(mode).fetchJsonOrNull<unknown>(userPackagesUrl(account));
-          setAccountListing(this.store, account, data === null ? { unavailable: 'The registry has no such account (404)' } : { packages: parseUserPackages(data) });
-        } catch (e) {
-          setAccountListing(this.store, account, { unavailable: unavailableReason(e) });
-        }
-      }
+      await this.fetchListing(account, mode, false);
       const listed = accountListing(this.store, account);
       if (listed?.status === 'ok') await this.refreshNames(listed.packages.slice(0, this.opts.listingCap ?? 300), mode);
     });
+  }
+
+  private readonly listingInflight = new Map<string, Promise<void>>();
+  private readonly accountAttempts = new Map<string, number>();
+  private readonly queuedAccounts = new Set<string>();
+
+  /** Fetch the account's listing when it is missing (or stale unless `onlyIfMissing`). One request per account at a time. */
+  private fetchListing(account: string, mode: FetchMode, onlyIfMissing: boolean): Promise<void> {
+    const prev = accountListing(this.store, account);
+    const stale = !prev || (!onlyIfMissing && Date.parse(prev.fetchedAt) < this.store.now().getTime() - this.ttlMs);
+    if (!stale) return Promise.resolve();
+    const running = this.listingInflight.get(account);
+    if (running) return running;
+    const p = (async () => {
+      try {
+        const data = await this.client(mode).fetchJsonOrNull<unknown>(userPackagesUrl(account));
+        setAccountListing(this.store, account, data === null ? { unavailable: 'The registry has no such account (404)' } : { packages: parseUserPackages(data) });
+      } catch (e) {
+        setAccountListing(this.store, account, { unavailable: unavailableReason(e) });
+      }
+    })().finally(() => this.listingInflight.delete(account));
+    this.listingInflight.set(account, p);
+    return p;
+  }
+
+  /**
+   * "Mark as compromised": the listing must be known once, so the account's listed packages count.
+   * Only an account never fetched waits, and only for its one listing request; packuments and later
+   * refreshes go to the background queue.
+   */
+  async ensureListing(account: string, mode: FetchMode = this.defaultMode): Promise<void> {
+    if (!isAccountName(account)) return;
+    if (accountListing(this.store, account)) {
+      this.refreshAccountSoon(account, mode);
+      return;
+    }
+    await this.track(() => this.fetchListing(account, mode, true));
+    // The listed packages' packuments, in the background.
+    this.queueRefresh(account, mode);
+  }
+
+  /**
+   * A page view: queue a background refresh of the account (listing, then listed packuments) when
+   * its data is missing or older than the TTL. At most one per account per `accountRetryMs`, never
+   * two at once, never more than `maxQueuedAccounts` waiting; it runs on the indexer's queue, one
+   * refresh at a time, through the shared HttpClient (per-host spacing, cache, retries). Returns
+   * true when a refresh was queued.
+   */
+  refreshAccountSoon(account: string, mode: FetchMode = this.defaultMode): boolean {
+    if (!isAccountName(account) || this.queuedAccounts.has(account)) return false;
+    const now = this.store.now().getTime();
+    const listing = accountListing(this.store, account);
+    if (listing && Date.parse(listing.fetchedAt) >= now - this.ttlMs) return false;
+    const retryMs = this.opts.accountRetryMs ?? HOUR;
+    const last = this.accountAttempts.get(account);
+    if (last !== undefined && last > now - retryMs) return false;
+    return this.queueRefresh(account, mode);
+  }
+
+  /** Queue one background refresh of the account (deduped, bounded). */
+  private queueRefresh(account: string, mode: FetchMode): boolean {
+    if (this.queuedAccounts.has(account) || this.queuedAccounts.size >= (this.opts.maxQueuedAccounts ?? 20)) return false;
+    const now = this.store.now().getTime();
+    const retryMs = this.opts.accountRetryMs ?? HOUR;
+    if (this.accountAttempts.size > 10_000) for (const [k, t] of this.accountAttempts) if (t <= now - retryMs) this.accountAttempts.delete(k);
+    this.accountAttempts.set(account, now);
+    this.queuedAccounts.add(account);
+    void this.enqueue(async () => {
+      try {
+        await this.fetchListing(account, mode, false);
+        const listed = accountListing(this.store, account);
+        if (listed?.status === 'ok') await this.refreshNames(listed.packages.slice(0, this.opts.listingCap ?? 300), mode);
+      } finally {
+        this.queuedAccounts.delete(account);
+      }
+    }).catch(() => undefined);
+    return true;
   }
 
   start(intervalMinutes: number): void {
@@ -381,7 +456,8 @@ function canPublish(u: Universe, asOfMs: number | null): Map<string, AccountLink
   return out;
 }
 
-function incidentRef(ctx: IncidentContext, registry: AccountRegistry, name: string): AccountIncidentRef | null {
+/** The org's incident for this account, if it was marked compromised. */
+export function accountIncidentRef(ctx: IncidentContext, registry: AccountRegistry, name: string): AccountIncidentRef | null {
   const row = accountIncidentFor(ctx.store, ctx.orgId, registry, name);
   if (!row) return null;
   const status = incidentStates(ctx.store, ctx.orgId, [row.incidentId]).get(row.incidentId)?.status ?? 'investigating';
@@ -475,7 +551,7 @@ export function accountExposure(ctx: IncidentContext, registry: AccountRegistry,
       versionsPublishedSince: publishedSince.length,
     },
     index: u.state,
-    incident: incidentRef(ctx, registry, name),
+    incident: accountIncidentRef(ctx, registry, name),
   };
 }
 
@@ -503,7 +579,7 @@ export function accountDetail(ctx: IncidentContext, registry: AccountRegistry, n
     activity: { last24h: distinct(DAY), last7d: distinct(7 * DAY), last30d: distinct(30 * DAY) },
     concentration: { packages: mine, of: org.withData, share: org.withData ? round3(mine / org.withData) : 0 },
     index: u.state,
-    incident: incidentRef(ctx, registry, name),
+    incident: accountIncidentRef(ctx, registry, name),
   };
 }
 
@@ -580,7 +656,7 @@ export function concentration(ctx: IncidentContext, opts: { limit?: number } = {
 
 /** Exposure rows as incident alerts (one per project × package version). */
 export function compromiseHits(ctx: IncidentContext, incidentId: string, exposure: AccountExposureResponse): ExposureHit[] {
-  const scans = new Map(latestInventories(ctx.store, ctx.orgId, ctx.projectIds).map((i) => [i.projectId, i.scanId] as const));
+  const scans = latestScanIds(ctx.store, ctx.orgId, ctx.projectIds);
   const what = `Account marked as compromised${exposure.since ? `; versions it published since ${exposure.since.slice(0, 16).replace('T', ' ')} UTC are critical` : ''}`;
   return exposure.exposures.map((e) => {
     const via = e.direct ? (e.broughtInBy.length ? `Direct dependency, also brought in by ${e.broughtInBy.slice(0, 2).join(', ')}` : 'Direct dependency') : `Brought in by ${e.broughtInBy.slice(0, 2).join(', ') || 'another package'}`;
