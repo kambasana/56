@@ -1,0 +1,12 @@
+{
+  "name": "release-triage-experiment",
+  "private": true,
+  "type": "module",
+  "description": "Rule-scorer baseline for the release-triage dataset (docs/LAYA-USAGE.md). Runs the product's own packumentFacts + scoreIntrinsic on as-of packuments. Not part of the product; nothing in blastradius/ imports it.",
+  "scripts": {
+    "rule-scorer": "tsx src/rule_scorer.ts"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6"
+  }
+}

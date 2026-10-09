@@ -1,0 +1,11 @@
+[project]
+name = "release-triage-experiment"
+version = "0.1.0"
+description = "Labelled npm release-triage dataset and tabular baselines for a fair Laya test (docs/LAYA-USAGE.md). Not part of the product; nothing in blastradius/ imports it."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy==2.2.6",
+  "pandas==2.3.3",
+  "scikit-learn==1.7.2",
+  "lightgbm==4.6.0",
+]
