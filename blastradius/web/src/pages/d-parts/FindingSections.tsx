@@ -3,6 +3,7 @@
  * reasons (why it scored), paths to assets, who is behind it, evidence links, history and the
  * status control. All untrusted values are rendered as React text; links are http(s) only.
  */
+import { NotAllowedHint } from '@/components/br/StateBlock';
 import { useEffect, useId, useState } from 'react';
 import type { AssetPathView, EntityChainEntry, FindingDetail, FindingRow, FindingStatus, Reason } from '@server/api-types';
 import { api } from '@/api';
@@ -240,8 +241,9 @@ export function allowedStatuses(can: (p: 'review' | 'accept_risk') => boolean, c
 }
 
 /**
- * Status Select + optional note. Hidden entirely when the user can change nothing; the server
- * enforces the same rule. A saved change is confirmed with a toast.
+ * Status Select + optional note. When the user can change nothing, the control stays visible
+ * but disabled, with the missing permission named (docs/UX.md §6); the server enforces the same
+ * rule. A saved change is confirmed with a toast.
  */
 export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onUpdated?: (row: FindingRow) => void }) {
   const { can } = useAuth();
@@ -257,8 +259,9 @@ export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onU
     setError(null);
   }, [finding.id, finding.status]);
 
-  if (allowed.length === 0) return null;
+  const locked = allowed.length === 0;
   const options = allowed.includes(finding.status) ? allowed : [finding.status, ...allowed];
+  const missing: 'review' | 'accept_risk' | null = locked ? (finding.status === 'accepted_risk' ? 'accept_risk' : 'review') : !allowed.includes('accepted_risk') ? 'accept_risk' : null;
 
   const save = async () => {
     setBusy(true);
@@ -288,8 +291,8 @@ export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onU
         <Label htmlFor={`${id}-s`} className="text-xs text-muted-foreground">
           Status
         </Label>
-        <Select value={status} onValueChange={(v) => setStatus(v as FindingStatus)}>
-          <SelectTrigger id={`${id}-s`} size="sm" className="w-[150px]">
+        <Select value={status} onValueChange={(v) => setStatus(v as FindingStatus)} disabled={locked}>
+          <SelectTrigger id={`${id}-s`} size="sm" className="w-[150px]" aria-describedby={missing ? `${id}-why` : undefined}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -303,11 +306,22 @@ export function StatusControl({ finding, onUpdated }: { finding: FindingRow; onU
         <Label htmlFor={`${id}-n`} className="sr-only">
           Note
         </Label>
-        <Input id={`${id}-n`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="h-8 w-40 min-w-0 grow" />
-        <Button type="submit" variant="outline" size="sm" disabled={busy || status === finding.status}>
-          {busy ? 'Saving…' : 'Save'}
-        </Button>
+        {!locked && (
+          <>
+            <Input id={`${id}-n`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="h-8 w-40 min-w-0 grow" />
+            <Button type="submit" variant="outline" size="sm" disabled={busy || status === finding.status}>
+              {busy ? 'Saving…' : 'Save'}
+            </Button>
+          </>
+        )}
       </div>
+      {missing && (
+        <NotAllowedHint
+          id={`${id}-why`}
+          permission={missing}
+          className="text-xs"
+        />
+      )}
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
     </form>
   );

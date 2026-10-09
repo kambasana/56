@@ -7,7 +7,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { settle } from './lib/checks';
 import { api, Check, getJson, probeGraph, rolePage, scannedProjects } from './lib/feature';
-import type { HammerProject } from './lib/env';
+import { FULL, type HammerProject } from './lib/env';
 
 const STRESS_ROWS = 5000;
 const INTERACTIVE_MS = 3000;
@@ -134,7 +134,13 @@ test.describe('findings at scale', () => {
       if (stats.lastRow !== proj.findings - 1) c.fail(`after scrolling to the bottom the last rendered row is #${stats.lastRow}, expected #${proj.findings - 1}`);
     });
     await c.snap(page);
-    if (proj.findings < STRESS_ROWS) c.blocked.push(`data: the largest real project (${proj.name}) has ${proj.findings} findings, fewer than ${STRESS_ROWS}; the 5k-row target is unverified`);
+    if (proj.findings < STRESS_ROWS) {
+      const gap = `the largest real project (${proj.name}) has ${proj.findings} findings, fewer than ${STRESS_ROWS}; the 5k-row target is unverified`;
+      // Only full mode scans the scale-* scenarios, the only real data big enough for this target.
+      // Quick mode skips them by design, so it reports the gap as a fact; full mode blocks on it.
+      if (FULL) c.blocked.push(`data: ${gap}`);
+      else c.facts.scaleTarget = `not checked in quick mode (${gap}; run mode=full)`;
+    }
     await close();
     c.done(w);
   });

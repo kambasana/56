@@ -41,8 +41,8 @@ export interface ScanJobsOptions {
   scanOptions?: Partial<ScanOptions>;
   /** Git runner override (tests). */
   gitRunner?: GitRunner;
-  /** Called after a scan succeeds (org-wide alert check). Must not throw. */
-  onScanSucceeded?: (projectId: string) => void;
+  /** Called after a scan succeeds (alert check, account index). `mode` is how the scan fetched registry data. Must not throw. */
+  onScanSucceeded?: (projectId: string, mode: { offline: boolean; fixturesDir?: string }) => void;
   /** Clone timeout (ms). */
   cloneTimeoutMs?: number;
   log?: (m: string) => void;
@@ -179,7 +179,7 @@ export class ScanJobs {
       const result = { ...out.result, target: s.target };
       completeScan(store, scanId, { result, inventory: out.inventory, commit });
       log(`scan ${scanId}: succeeded (${result.findings.length} findings)`);
-      this.opts.onScanSucceeded?.(s.projectId);
+      this.opts.onScanSucceeded?.(s.projectId, { offline, ...(fixturesDir !== undefined ? { fixturesDir } : {}) });
     } catch (err) {
       log(`scan ${scanId}: failed: ${err instanceof Error ? err.message : String(err)}`);
       try {

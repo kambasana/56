@@ -304,7 +304,9 @@ describe('server-side checks with the seeded fixture scan', () => {
       call(srv, 'POST', '/api/bindings', { token: tokens.mgr, body: { roleId, subject: { kind: 'user', userId: target.id }, scope: { kind: 'org' } } });
     expect((await bind('org_admin')).status).toBe(403);
     expect((await bind('appsec')).status).toBe(403); // appsec has pages mgr does not hold
-    expect((await bind('auditor')).status).toBe(201); // reports only: mgr holds it
+    expect((await bind('auditor')).status).toBe(403); // auditor reads every page: mgr does not hold them
+    const reportsOnly = createRole(srv.store, orgId, { name: 'Reports only', permissions: ['reports'] }, adminId);
+    expect((await bind(reportsOnly.id)).status).toBe(201); // reports only: mgr holds it
     expect((await call(srv, 'POST', '/api/roles', { token: tokens.mgr, body: { name: 'Escalate', permissions: ['findings', 'accept_risk'] } })).status).toBe(403);
     expect((await call(srv, 'POST', '/api/roles', { token: tokens.mgr, body: { name: 'From admin', template: 'org_admin' } })).status).toBe(403);
     expect((await call(srv, 'PATCH', '/api/roles/auditor', { token: tokens.mgr, body: { permissions: ['reports', 'findings'] } })).status).toBe(403);
@@ -314,7 +316,7 @@ describe('server-side checks with the seeded fixture scan', () => {
       call(srv, 'POST', '/api/members', { token: tokens.mgr, body: { email, name: 'New', bindings: [{ roleId, scope: { kind: 'org' } }] } });
     expect((await invite('esc1@corp', 'org_admin')).status).toBe(403);
     expect((await invite('esc2@corp', 'appsec')).status).toBe(403);
-    expect((await invite('ok@corp', 'auditor')).status).toBe(201);
+    expect((await invite('ok@corp', readers.id)).status).toBe(201);
     // Removing an Org admin binding needs Org admin too.
     const bindings = (await (await call(srv, 'GET', '/api/bindings', { token: tokens.mgr })).json()) as { items: { id: string; roleId: string }[] };
     const adminBinding = bindings.items.find((b) => b.roleId === 'org_admin')!;

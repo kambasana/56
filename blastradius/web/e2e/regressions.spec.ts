@@ -1,7 +1,7 @@
 /**
  * Regressions for bugs the hammer run found: axe serious/critical issues (contrast, aria,
  * scrollable regions), the sidebar rail over table rows, the mobile nav sheet staying open,
- * 403s from the nav for roles without the projects page, and the Blast column precision.
+ * 403s from the nav for read-only roles, and the plain-word column labels.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -27,8 +27,24 @@ test.describe('accessibility (axe serious/critical)', () => {
       await page.emulateMedia({ colorScheme: scheme });
       await login(page, 'admin');
       const project = await devProject(page);
+      // An incident to look at (idempotent: the same advisory raises its alerts once).
+      const advisory = JSON.parse(readFileSync(new URL('../../test/replay/data/advisories/GHSA-mh6f-8j2x-4483.json', import.meta.url), 'utf8')) as unknown;
+      expect((await page.request.post('/api/alerts/check', { data: { advisories: [advisory] }, headers: { 'X-Requested-With': 'blastradius' } })).status()).toBe(200);
       const paths = [
         '/',
+        '/findings',
+        '/findings?group=project&severity=critical',
+        '/projects',
+        '/incidents',
+        '/incidents/GHSA-mh6f-8j2x-4483',
+        '/alerts',
+        '/alerts?rule=new',
+        '/packages?name=event-stream&version=3.3.6',
+        '/packages?name=flatmap-stream&view=table',
+        '/packages/behind?name=event-stream',
+        '/packages/behind?name=event-stream&view=table&unreviewed=1',
+        '/exposure',
+        '/exposure?view=table',
         '/reports',
         '/integrations',
         '/settings',
@@ -38,6 +54,9 @@ test.describe('accessibility (axe serious/critical)', () => {
         '/settings?tab=audit',
         ...['changes', 'findings', 'findings?view=health', 'exposure', 'investigate', 'scans'].map((p) => `/projects/${project}/${p}`),
       ];
+      const list = await page.request.get(`/api/findings?project=${project}&level=critical&limit=1`);
+      const fid = ((await list.json()) as { items: { id: string }[] }).items[0]!.id;
+      paths.push(`/projects/${project}/findings/${fid}`, `/findings?group=project&peek=${fid}`);
       const problems: string[] = [];
       for (const path of paths) {
         await page.goto(path);
@@ -55,7 +74,7 @@ test('auditor navigates without any 4xx from the API (no /api/projects 403)', as
   page.on('response', (r) => {
     if (r.url().includes('/api/') && r.status() >= 400) bad.push(`${r.status()} ${r.url()}`);
   });
-  for (const path of ['/reports', '/no-such-page', '/reports']) {
+  for (const path of ['/', '/findings', '/incidents', '/alerts', '/projects', '/reports', '/no-such-page', '/reports']) {
     await page.goto(path);
     await settle(page);
   }
@@ -89,17 +108,15 @@ test.describe('layout', () => {
     await expect(page.locator(`[id="${controls}"]`)).toHaveAttribute('role', 'tabpanel');
   });
 
-  test('Findings Blast column keeps decimals', async ({ page }) => {
+  test('Findings use plain words: Package, no Blast or Purl column shown by default', async ({ page }) => {
     await login(page, 'admin');
     const project = await devProject(page);
     await page.goto(`/projects/${project}/findings`);
     const table = page.getByRole('table').first();
-    await expect(table.getByRole('columnheader', { name: /Blast/ })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: /Package/ }).first()).toBeVisible();
     const headers = await table.getByRole('columnheader').allInnerTexts();
-    const idx = headers.findIndex((h) => /Blast/.test(h));
-    const values = await table.locator('tbody tr').evaluateAll((rows, i) => rows.map((r) => r.querySelectorAll('td')[i]?.textContent?.trim() ?? ''), idx);
-    expect(values.length).toBeGreaterThan(0);
-    for (const v of values) expect(v).toMatch(/^(<0\.01|[\d,]+\.\d\d)$/);
+    for (const h of headers) expect(h).not.toMatch(/Blast|Purl|noisy/i);
+    await expect(page.getByText(/noisy-OR|Upkeep signals|Snapshot/)).toHaveCount(0);
   });
 });
 
@@ -109,7 +126,7 @@ test('mobile: the nav sheet closes after choosing a page', async ({ page }) => {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'));
   const project = await devProject(page);
   await page.goto(`/projects/${project}/findings`);
-  for (const name of ['Exposure matrix', 'Reports', 'Changes']) {
+  for (const name of ['Projects', 'Reports', 'Findings']) {
     await page.getByRole('button', { name: 'Toggle Sidebar' }).first().click();
     const sheet = page.getByRole('dialog');
     await expect(sheet).toBeVisible();
@@ -119,39 +136,31 @@ test('mobile: the nav sheet closes after choosing a page', async ({ page }) => {
 });
 
 test.describe('hammer round 2', () => {
-  test('Findings: clicking a row closes the Top reason hover card, and Escape closes the panel', async ({ page }) => {
+  test('Findings: Escape closes the peek sheet and the list keeps its scroll position on Back', async ({ page }) => {
     await login(page, 'admin');
-    const project = await devProject(page);
-    await page.goto(`/projects/${project}/findings`);
-    const table = page.getByRole('table').first();
-    const trigger = table.locator('tbody tr [data-slot=hover-card-trigger]').first();
-    await expect(trigger).toBeVisible();
-    const card = page.locator('[data-slot=hover-card-content]');
-    const panel = page.getByRole('dialog');
-    // Press near the left edge of the reason text: the pointer stays on it, outside the panel
-    // that opens on the right (as when clicking the middle of a wide row).
-    const at = { position: { x: 8, y: 6 } };
-
-    // 1) The card is already open when the row is clicked.
-    await trigger.hover(at);
-    await expect(card).toBeVisible();
-    await trigger.click(at);
-    await expect(panel).toBeVisible();
-    await expect(card).toHaveCount(0);
-    await page.waitForTimeout(600); // longer than the card's open delay, pointer still on the text
-    await expect(card).toHaveCount(0);
+    await devProject(page);
+    await page.setViewportSize({ width: 1280, height: 300 });
+    await page.goto('/findings?group=project');
+    const table = page.getByRole('table', { name: 'Findings' });
+    const rows = table.locator('tbody tr');
+    await expect(rows.first()).toBeVisible();
+    const last = rows.last();
+    await last.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y, 'the list scrolls at this height').toBeGreaterThan(100);
+    await last.locator('td').nth(2).getByRole('button').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(panel).toBeHidden();
-
-    // 2) The row is clicked before the open delay ran out: the pending open must not land on the panel.
-    await page.mouse.move(0, 0);
-    await expect(card).toHaveCount(0);
-    await trigger.click(at);
-    await expect(panel).toBeVisible();
-    await page.waitForTimeout(600);
-    await expect(card).toHaveCount(0);
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page).not.toHaveURL(/peek=/);
+    await last.locator('td').nth(2).getByRole('button').click();
+    await page.getByRole('dialog').getByRole('link', { name: 'Open full page' }).click();
+    await expect(page.getByRole('navigation', { name: 'On this page' })).toBeVisible();
+    await page.goBack();
     await page.keyboard.press('Escape');
-    await expect(panel).toBeHidden();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y - 80);
   });
 
   test('user menu stays open through a transient viewport resize (full-page screenshot)', async ({ page }) => {
@@ -192,7 +201,7 @@ test.describe('hammer round 2', () => {
   });
 });
 
-test('Findings: upkeep-only signals sit in their own tab, apart from findings (noise rule)', async ({ page }) => {
+test('Findings: maintenance-only signals sit in their own tab, apart from findings (noise rule)', async ({ page }) => {
   await login(page, 'admin');
   const project = await devProject(page);
   const health = await page.request.get(`/api/projects/${project}/health`);
@@ -200,11 +209,11 @@ test('Findings: upkeep-only signals sit in their own tab, apart from findings (n
   const items = ((await health.json()) as { items: { purl: string }[] }).items;
   await page.goto(`/projects/${project}/findings`);
   await settle(page);
-  const upkeep = page.getByRole('tab', { name: /Upkeep signals/ });
+  const upkeep = page.getByRole('tab', { name: /Maintenance/ });
   await expect(upkeep).toContainText(`(${items.length})`);
   await upkeep.click();
   await expect(page).toHaveURL(/[?&]view=health/);
-  const table = page.getByRole('table', { name: 'Upkeep signals' });
+  const table = page.getByRole('table', { name: 'Maintenance' });
   await expect(table).toBeVisible();
   if (items.length) await expect(table.locator('tbody tr').first()).toBeVisible();
   // No purl is both a finding and an upkeep entry.
@@ -213,22 +222,16 @@ test('Findings: upkeep-only signals sit in their own tab, apart from findings (n
   expect(items.filter((i) => fpurls.has(i.purl))).toEqual([]);
 });
 
-test('Home: "is it anywhere?" finds event-stream, and an advisory check raises an alert', async ({ page }) => {
+test('Overview: an advisory check raises an incident banner that opens the incident', async ({ page }) => {
   await login(page, 'admin');
-  await page.goto('/');
-  await settle(page);
-  const search = page.getByRole('search', { name: 'Search all projects for a package' });
-  await search.getByRole('textbox').fill('event-stream@3.3.6');
-  await search.getByRole('button', { name: 'Search' }).click();
-  const results = page.getByRole('list', { name: 'Search results' });
-  await expect(results.locator('li').first()).toContainText('event-stream@3.3.6');
-  await expect(results.locator('li').first()).toContainText(/used by/);
-  await expect(page.getByText(/projects contain event-stream@3\.3\.6/)).toBeVisible();
-
+  await devProject(page);
   const advisory = JSON.parse(readFileSync(new URL('../../test/replay/data/advisories/GHSA-mh6f-8j2x-4483.json', import.meta.url), 'utf8')) as unknown;
   const res = await page.request.post('/api/alerts/check', { data: { advisories: [advisory] }, headers: { 'X-Requested-With': 'blastradius' } });
   expect(res.status()).toBe(200);
-  await page.reload();
+  await page.goto('/');
   await settle(page);
-  await expect(page.getByRole('list', { name: 'Alerts' }).locator('li').first()).toContainText('GHSA-mh6f-8j2x-4483');
+  const banner = page.getByRole('link', { name: /Active incident/ });
+  await expect(banner).toContainText('GHSA-mh6f-8j2x-4483');
+  await expect(banner).toContainText(/projects? affected · \d+ in production/);
+  await expect(banner).toHaveAttribute('href', '/incidents/GHSA-mh6f-8j2x-4483');
 });

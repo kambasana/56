@@ -93,8 +93,13 @@ Permissions are data (`permissions.ts`):
 | POST | `/api/projects/:id/scans` | manage_projects | `CreateScanRequest` | `CreateScanResponse` 202 |
 | GET | `/api/scans/:id` | scans | — | `GetScanResponse` |
 | GET | `/api/findings?project=&scan=&level=&status=&q=&sort=` | findings | `ListFindingsQuery` | `ListFindingsResponse` |
-| GET | `/api/findings/:id` | findings | — | `GetFindingResponse` |
-| PATCH | `/api/findings/:id` | review (and accept_risk for `accepted_risk`) | `UpdateFindingStatusRequest` | `UpdateFindingStatusResponse` |
+| GET | `/api/findings?projects=&env=&level=&status=&owner=&since=&q=&sort=` (no `project`) | findings (org or per project) | `ListOrgFindingsQuery` | `ListOrgFindingsResponse` (see Triage) |
+| GET | `/api/findings/packages?…same filters…` | findings (org or per project) | `ListOrgFindingsQuery` | `ListPackageFindingsResponse` |
+| GET | `/api/findings/:id` | findings | — | `GetFindingResponse` (adds `projectName`, `introducedBy`, `alerts`, `spread`) |
+| PATCH | `/api/findings/:id` | review (and accept_risk into or out of `accepted_risk`) | `UpdateFindingStatusRequest` | `UpdateFindingStatusResponse` |
+| POST | `/api/findings/bulk` | review / accept_risk in every finding's project | `BulkUpdateFindingsRequest` | `BulkUpdateFindingsResponse` |
+| GET | `/api/assignees` | findings (org or per project) | — | `ListAssigneesResponse` |
+| GET | `/api/overview?projects=&env=&range=` | findings (org or per project) | `OverviewQuery` | `OverviewResponse` |
 | GET | `/api/exposure?project=&minLevel=&limit=` | exposure | `ExposureQuery` | `ExposureMatrixResponse` |
 | GET | `/api/changes?project=&from=&to=` | changes | `ChangesQuery` | `ChangesResponse` |
 | GET | `/api/graph?finding=` or `?project=&node=` | investigate (or findings for `finding=`) | — | `GraphResponse` |
@@ -139,6 +144,43 @@ Permissions are data (`permissions.ts`):
 - **Graphs:** always scoped to a finding or a node. Nodes are capped at the project tier's `graphNodeCap`, and anything over the cap collapses into `group` nodes with `truncated: true`.
 - **Deferred in 4a:** send_to_destinations, build_reports (custom report builder and signing), review_entity_links and manage_integrations. They exist in the catalogue and in role editing, but no endpoint uses them yet.
 
+## Triage (findings across projects)
+
+- **Statuses:** `new` (shown as Open) → `reviewed` (Triaged) → `fixing` → `resolved`, plus `accepted_risk`.
+  "Open" in counts and tiles means `new`, `reviewed` or `fixing`. Status and owner are stored per
+  (project, package version), so they carry over to later scans (migration 6 added `fixing`,
+  `resolved`, `owner_id` and `risk_expires_at`).
+- **Org-wide list:** `GET /api/findings` without `project` reads the newest succeeded scan of every
+  project where the caller holds `findings` (org scope, or per project). `projects=` narrows it;
+  ids the caller cannot see are ignored, never an error. Every filter is a comma-separated list:
+  values within one filter are OR, filters are AND. `env=prod` keeps findings that reach a
+  production asset, `env=dev` the rest. `owner=` takes member ids or `none`. `since=` is an ISO
+  time compared with first seen. Sorts: `-score` (default: worst level, then score), `score`,
+  `name`, `reach`, `-firstSeen`, `firstSeen`. Rows add `projectName`, `introducedBy` (direct, and
+  the direct dependencies that pull it in, from the dependency paths) and `spread` (how many of the
+  listed projects have this same package version, and how many reach production).
+- **By package:** `GET /api/findings/packages` takes the same filters and returns one row per
+  package version with every matching finding (production first). Paging counts packages.
+- **Owner:** `PATCH /api/findings/:id { ownerId }` assigns a member (anyone with a user binding in
+  the org) or unassigns with `null`; it needs `review` in the finding's project and is audited as
+  `finding.owner`. `GET /api/assignees` lists the members a finding can be assigned to.
+- **Accepted risk:** `expiresAt` (a future date) is kept as `riskExpiresAt` while the status is
+  `accepted_risk`. `POST /api/findings/bulk` requires both `note` (the reason) and `expiresAt`;
+  the single `PATCH` keeps them optional for older clients. The history note reads
+  "<reason> (until <date>)".
+- **Bulk:** `POST /api/findings/bulk { ids (1–500), status?, note?, expiresAt?, ownerId? }` is all or
+  nothing. Every id must be in the caller's org (else 404, checked first), and the caller needs the
+  permission in each finding's project (else 403 and nothing changes): `accept_risk` when moving
+  into or out of `accepted_risk`, otherwise `review`.
+- **Overview:** `GET /api/overview` reads the same latest scans. `attention` counts open critical
+  findings (and how many reach production), open high findings with no owner (and the oldest
+  first-seen time), open findings first seen in the last 7 days (and in how many projects), and
+  "sources to check": projects whose newest scan failed (with the error) or that never had a
+  successful scan. `bySeverity` gives open findings per level and how many were first seen inside
+  `range` (`null` for `all`): earlier per-day counts are not stored, so no line is drawn.
+  `topPackages` lists the open packages found in the most projects. `incident` is the newest
+  alert inside the range (with its project and production counts), for the banner.
+
 ## Web routes
 
 Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). Each route needs its page permission (`WEB_ROUTES` in `permissions.ts`).
@@ -147,10 +189,11 @@ Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). E
 |---|---|---|
 | `/login` | none | Sign in, plus the dev user switcher hint |
 | `/accept-invite` | none | Accept a member invite (token from the link's `#token=` fragment, or pasted) and sign in |
-| `/` | home | Org home: totals and the project table |
+| `/` | home | Overview: incident banner, "Needs attention" tiles, open findings by severity, packages in the most projects |
+| `/findings` | findings | Findings across every project the user can see (one table, by package or by project) |
 | `/projects/:id/changes` | changes | Changes between the last two scans |
-| `/projects/:id/findings` | findings | Findings table with a side panel |
-| `/projects/:id/findings/:fid` | findings | Finding detail: reasons, evidence, paths, entity chain |
+| `/projects/:id/findings` | findings | The Findings list scoped to one project, plus its Maintenance view |
+| `/projects/:id/findings/:fid` | findings | Finding detail: status track, stacked sections (reach, what to do, who's behind it, evidence, timeline) and a rail of editable fields |
 | `/projects/:id/exposure` | exposure | Exposure matrix (assets × components) |
 | `/projects/:id/investigate` | investigate | Search, then a scoped graph |
 | `/projects/:id/scans` | scans | Scan list, plus "Run scan" when the user has manage_projects |
@@ -174,8 +217,42 @@ Answered from the stored inventory of each project's newest succeeded scan; noth
 |---|---|---|
 | `GET /api/search/exposure?q=name[@version]` | `exposure` (org or per project) | "Is X anywhere?": every visible project that contains the package, with production/dev and reach in words |
 | `GET /api/alerts?limit=` | `findings` or `exposure` | Alerts, newest first |
-| `POST /api/alerts/check` `{ advisories?: OSV[] }` | `manage_projects` | Match advisories (OSV records), or the knowledge pack (`BLASTRADIUS_PACK`) when none are given, against all projects. Each (project, component, advisory) becomes an alert once. Returns the new alerts and the time taken. |
+| `POST /api/alerts/check` `{ advisories?: OSV[] }` | `manage_projects` or `manage_alert_rules` | Match advisories (OSV records), or the knowledge pack (`BLASTRADIUS_PACK`) when none are given, against all projects. Each (project, component, advisory) becomes an alert once. Returns the new alerts and the time taken. |
 
 **Automatic alerts.** With `BLASTRADIUS_PACK` set, the server re-checks every org's latest inventories against the pack on start and every `BLASTRADIUS_WATCH_MINUTES` (default 60). When the pack file changes on disk it is reloaded. Each finished scan is checked straight away. New alerts are posted once to `BLASTRADIUS_ALERT_WEBHOOK` as Slack-compatible JSON (`{ "text": … }`). The URL must be https, or http to localhost; credentials in the URL are refused. `BLASTRADIUS_PUBLIC_URL`, if set, adds an "Open Blastradius" link. A failed post is logged, and the alert stays in `GET /api/alerts`.
 
 **Pack polling.** With `BLASTRADIUS_PACK_LISTING_URL` (a feeds `listing.json`, https or http to localhost) and `BLASTRADIUS_PACK` set, the server reads the listing every `BLASTRADIUS_PACK_POLL_MINUTES` (default 30) with `If-None-Match`, downloads only a newer pack, checks its SHA-256 against the listing and that it loads, renames it over `BLASTRADIUS_PACK`, and re-checks every org at once. A pack that fails a check is refused and the working one stays.
+
+**Incidents, package reach and alert rules** (types in `src/server/api-types-incidents.ts`). An incident is one advisory with at least one alert; its id is the advisory id. An advisory's own rating (`database_specific.severity`), summary and first fixed version are kept on each alert; knowledge-pack entries are Critical.
+
+| Route | Permission | What |
+|---|---|---|
+| `GET /api/incidents` | `findings` or `exposure` | Incidents the caller can see: affected, production and fixed counts, status, open first |
+| `GET /api/incidents/:id` | `findings` or `exposure` | Where it is (production first, brought in by, owner, finding), the last org-wide check, a typed timeline (alert, check, status, notified) and which actions are available, with the reason when not |
+| `PATCH /api/incidents/:id` `{ status }` | `review` (org) | Investigating › Fixing › Monitoring › Closed; recorded on the timeline and in the audit log |
+| `POST /api/incidents/:id/notify` | `send_to_destinations` or `manage_alert_rules` | Posts the affected projects and their owners to the Slack webhook (400 when none is configured or no project has an owner) |
+| `GET /api/packages/reach?name=&version=` | `exposure` | Projects, Sankey flows (package → brought in by → project → environment) and dependency paths with edge scopes; lifecycle phases the stored data knows |
+| `GET /api/packages/behind?name=` | `exposure` | Documented links (maintainers, repo owner, orgs, funders) merged from the newest findings, with confidence, method, review state and sources |
+| `GET /api/alert-rules` | `findings` or `exposure` | Team rules with "would have sent N in the last 30 days", whether the default rule applies, and whether a webhook is configured |
+| `POST /api/alert-rules`, `PATCH`/`DELETE /api/alert-rules/:id` | `manage_alert_rules` | WHEN severity ≥ `minLevel` [and it reaches production] THEN post to the webhook naming `channel` |
+| `POST /api/alert-rules/preview` `{ minLevel, productionOnly? }` | `findings` or `exposure` | How many of the last 30 days' alerts a rule would have sent |
+| `POST /api/alert-rules/test` `{ channel }` | `manage_alert_rules` | One test message through the webhook (400 without one) |
+
+With no stored rule every new alert is posted (the default rule). Once rules exist, each enabled rule posts the alerts it matches, with `channel` in the payload; an alert whose severity is unknown matches every rule. Each accepted post is recorded on the incidents' timelines. Email to owners needs an email sender, which does not exist yet, so the option is shown but off.
+
+## Accounts: who can publish what you depend on
+
+From the account-level proof ([ACCOUNT-PROOF.md](ACCOUNT-PROOF.md)): the account index and "account X is compromised" earned their place; the burst rule did not, so there is no burst alert. Types in `src/server/api-types-accounts.ts`. Reads follow the caller's visible projects, like incidents.
+
+**The index.** For every npm package in any project's latest inventory the server keeps the registry's packument, compacted (`registry_package`): current `maintainers`, the repository owner, and every version's publish time, `_npmUser` and `maintainers` (deleted versions keep their time). From it, `account_link` records who can publish what, each link with its source and confidence: `maintainer` (packument maintainers, high), `listed` (the account's own `/-/user/<name>/package` listing, high), `repo_owner` (GitHub/GitLab owner of the declared repository, medium: can change the code, not npm publish rights). Who published a project's exact locked version is read per org from the stored versions, never stored per org. Packuments are fetched after every successful scan (the way the scan fetched: a fixture replay stays offline) and every `BLASTRADIUS_ACCOUNT_REFRESH_MINUTES` (default 360; 0 disables), at most once a day per package, through the shared HTTP client (per-host rate limits, disk cache, retries, offline fixtures). An account's own listing is fetched when its page is opened or it is marked compromised (once a day; npm answers it with 429s often, so it is never swept). Anything that could not be fetched is recorded with the reason and counted as "no data", never guessed; a failed refresh keeps the last good copy.
+
+| Route | Permission | What |
+|---|---|---|
+| `GET /api/accounts/:registry/:name` | `findings` or `exposure` | The Account page: packages it can publish now (with every link's source and confidence, projects using each, production), its share of the org's production dependencies, its latest 25 publishes the index knows (context only) with distinct packages published in the last day, week and 30 days, how complete the registry data is, and the incident if it was marked compromised. `registry`: `npm`, or `github`/`gitlab` for repository owners. |
+| `GET /api/accounts/:registry/:name/exposure?since=&asOf=&projects=` | `findings` or `exposure` | "Account compromised": every exposed project × package version, production first, with who brings it in, the project owner, the links that make it exposed, who published the locked version (`npmUser`, or `sole-maintainer` for a deleted version whose previous version had one maintainer) and the project's finding. Reasons: `can_publish` (the account can publish the package; with `asOf`, from the maintainers of the latest version published at or before `asOf`) and `published_since` (the account published this exact version within [`since`, `asOf`]). Also every package it can publish and the versions it published since `since`. ISO date-times; 400 otherwise. |
+| `POST /api/accounts/:registry/:name/compromise` `{ since? }` | `review` (org) | Fetches the account's listing, then opens or updates incident `ACCOUNT-<registry>-<name>` with one alert per exposed project × version (Critical when the account published that version since `since`, else High), an `account` event on its timeline and an audit entry. 201 when opened, 200 when updated (`added` = new exposures); `incidentId: null` and no incident when nothing is exposed. New alerts go through the alert rules and webhook like any other. |
+| `GET /api/accounts/concentration?projects=&limit=` | `findings` or `exposure` | Per project and org-wide: the npm accounts that can publish the largest share of production dependencies (distinct name@version reached from a production asset through runtime dependencies), from current packument maintainers. Shares are of the packages with registry data; the counts of those with none are returned too. |
+
+`GET /api/incidents` and `/api/incidents/:id` carry `account: { registry, name, since }` for an account incident; its timeline has `account` events. Web routes: `/accounts/:registry/:name` (page `exposure`), reached from Who's behind it (every account and repository owner), from an account incident, and from the concentration section on `/exposure`.
+
+**Gate (G1).** `test/replay/account/product-parity.test.ts` feeds the recorded chalk/debug data through this index and API offline: at the debug advisory time (2025-09-08T14:26:51Z) `GET .../npm/qix/exposure?asOf=` names 204 exposures in the two recorded orgs where the advisories then named 21, precision 1.0, the same (project, version) set as the proof and all 21 locked bad versions. It names all 19 bad packages when qix's listing is the one reconstructed for that time from recorded maintainers; with today's recorded listing it names 18 (chalk-template changed owner after the incident).
