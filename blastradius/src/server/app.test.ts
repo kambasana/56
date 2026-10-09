@@ -19,6 +19,7 @@ import type {
   InvestigateSearchResponse,
   ListAuditResponse,
   ListFindingsResponse,
+  ListOrgFindingsResponse,
   ListReportsResponse,
   MeResponse,
   OrgHomeResponse,
@@ -172,7 +173,7 @@ describe('auth and CSRF', () => {
   it('returns /api/me with permissions and dev users', async () => {
     const me = (await (await call('GET', '/api/me', { as: 'auditor' })).json()) as MeResponse;
     expect(me.user.email).toBe('auditor@local');
-    expect(me.permissions).toEqual(['reports']);
+    expect(me.permissions).toEqual(['home', 'projects', 'reports', 'changes', 'findings', 'exposure', 'investigate', 'scans', 'build_reports']);
     expect(me.devMode).toBe(true);
     expect(me.devUsers?.map((u) => u.email).sort()).toEqual(['admin@local', 'appsec@local', 'auditor@local', 'developer@local']);
   });
@@ -195,17 +196,32 @@ describe('auth and CSRF', () => {
     });
     expect(sw.status).toBe(200);
     expect(((await sw.json()) as MeResponse).user.email).toBe('auditor@local');
-    expect((await srv.app.request('/api/home', { headers: { Cookie: `br_session=${token}` } })).status).toBe(403);
+    // Read-only: pages load, Settings and actions do not.
+    expect((await srv.app.request('/api/home', { headers: { Cookie: `br_session=${token}` } })).status).toBe(200);
+    expect((await srv.app.request('/api/roles', { headers: { Cookie: `br_session=${token}` } })).status).toBe(403);
   });
 });
 
 describe('RBAC', () => {
-  it('auditor cannot read findings but can list reports', async () => {
-    const res = await call('GET', `/api/findings?project=${seededProjectId}`, { as: 'auditor' });
+  it('auditor reads findings and reports but cannot change anything', async () => {
+    const list = await call('GET', `/api/findings?project=${seededProjectId}`, { as: 'auditor' });
+    expect(list.status).toBe(200);
+    const first = ((await list.json()) as ListFindingsResponse).items[0]!;
+    const res = await call('PATCH', `/api/findings/${first.id}`, { as: 'auditor', body: { status: 'reviewed' } });
     expect(res.status).toBe(403);
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('forbidden');
     expect((await call('GET', '/api/reports', { as: 'auditor' })).status).toBe(200);
-    expect((await call('GET', '/api/home', { as: 'auditor' })).status).toBe(403);
+    expect((await call('GET', '/api/home', { as: 'auditor' })).status).toBe(200);
+    expect((await call('GET', '/api/integrations', { as: 'auditor' })).status).toBe(403);
+    expect((await call('POST', `/api/projects/${seededProjectId}/scans`, { as: 'auditor', body: {} })).status).toBe(403);
+  });
+
+  it('appsec triages and accepts risk by default', async () => {
+    const list = (await (await call('GET', `/api/findings?project=${seededProjectId}`, { as: 'appsec' })).json()) as ListFindingsResponse;
+    const id = list.items[0]!.id;
+    expect((await call('PATCH', `/api/findings/${id}`, { as: 'appsec', body: { status: 'reviewed' } })).status).toBe(200);
+    expect((await call('PATCH', `/api/findings/${id}`, { as: 'appsec', body: { status: 'accepted_risk', note: 'test' } })).status).toBe(200);
+    expect((await call('PATCH', `/api/findings/${id}`, { as: 'appsec', body: { status: 'new' } })).status).toBe(200);
   });
 
   it('developer cannot access settings endpoints or run scans', async () => {
@@ -217,10 +233,16 @@ describe('RBAC', () => {
     expect((await call('GET', `/api/findings?project=${seededProjectId}`, { as: 'developer' })).status).toBe(200);
   });
 
-  it('developer cannot change a finding status without the review action', async () => {
+  it('developer triages only in projects they are bound to, and cannot accept risk', async () => {
+    // The dev seed binds developer@local to the seeded project as well as at org scope.
     const list = (await (await call('GET', `/api/findings?project=${seededProjectId}`, { as: 'developer' })).json()) as ListFindingsResponse;
-    const res = await call('PATCH', `/api/findings/${list.items[0]!.id}`, { as: 'developer', body: { status: 'reviewed' } });
-    expect(res.status).toBe(403);
+    const id = list.items[0]!.id;
+    expect((await call('PATCH', `/api/findings/${id}`, { as: 'developer', body: { status: 'reviewed' } })).status).toBe(200);
+    expect((await call('PATCH', `/api/findings/${id}`, { as: 'developer', body: { status: 'accepted_risk', note: 'x' } })).status).toBe(403);
+    expect((await call('PATCH', `/api/findings/${id}`, { as: 'developer', body: { status: 'new' } })).status).toBe(200);
+    const me = (await (await call('GET', '/api/me', { as: 'developer' })).json()) as MeResponse;
+    expect(me.permissions).not.toContain('review');
+    expect(me.projectPermissions[seededProjectId]).toContain('review');
   });
 
   it('project-scope bindings grant access to that project only', async () => {
@@ -249,8 +271,8 @@ describe('RBAC', () => {
   it('GET /api/me/projects names the projects any member may use, without 403 for page-less roles', async () => {
     const admin = await call('GET', '/api/projects?limit=500', { as: 'admin' });
     const all = ((await admin.json()) as { items: Project[] }).items.map((p) => ({ id: p.id, name: p.name }));
-    // The auditor has no projects/home page (GET /api/projects is 403) but an org-scope permission.
-    expect((await call('GET', '/api/projects?limit=500', { as: 'auditor' })).status).toBe(403);
+    // Read-only roles may list projects too; /api/me/projects stays the nav's source for every member.
+    expect((await call('GET', '/api/projects?limit=500', { as: 'auditor' })).status).toBe(200);
     for (const who of ['admin', 'auditor', 'developer']) {
       const res = await call('GET', '/api/me/projects', { as: who });
       expect(res.status, who).toBe(200);
@@ -295,7 +317,11 @@ describe('seeded fixture scan and read endpoints', () => {
     expect(findings.items.every((f) => f.level === 'critical')).toBe(true);
     expect((await call('GET', `/api/findings?project=${seededProjectId}&sort=bogus`, { as: 'appsec' })).status).toBe(400);
     expect((await call('GET', `/api/findings?project=${seededProjectId}&level=bogus`, { as: 'appsec' })).status).toBe(400);
-    expect((await call('GET', '/api/findings', { as: 'appsec' })).status).toBe(400);
+    // Without a project the list is org-wide (every project the caller may read findings in).
+    const org = (await (await call('GET', '/api/findings?level=critical', { as: 'appsec' })).json()) as ListOrgFindingsResponse;
+    expect(org.items.map((f) => f.name)).toEqual(expect.arrayContaining(['event-stream', 'flatmap-stream']));
+    expect(org.items[0]).toMatchObject({ projectName: 'payments-platform', owner: null, spread: { projects: 1 } });
+    expect(org.items.find((f) => f.name === 'flatmap-stream')!.introducedBy.via).toContain('event-stream');
   });
 
   it('returns finding detail, graph and investigate data', async () => {
@@ -583,7 +609,7 @@ describe('org-wide incident mode', () => {
     expect(body.items.length).toBeGreaterThan(0);
     expect(body.items[0]).toMatchObject({ projectId: seededProjectId, name: 'event-stream', version: '3.3.6', reachText: expect.stringMatching(/used by/) });
     expect((await call('GET', '/api/search/exposure?q=', { as: 'admin' })).status).toBe(400);
-    expect((await call('GET', '/api/search/exposure?q=event-stream', { as: 'auditor' })).status).toBe(403);
+    expect((await call('GET', '/api/search/exposure?q=event-stream', { as: 'auditor' })).status).toBe(200);
   });
 
   it('a new advisory becomes alerts once, without re-scanning', async () => {

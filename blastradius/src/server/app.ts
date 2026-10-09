@@ -9,11 +9,14 @@ import { resolveOrgId } from './context.js';
 import { errorResponse, toErrorResponse } from './errors.js';
 import { registerAuthRoutes, SESSION_COOKIE } from './routes/auth.js';
 import { registerAlertRoutes } from './routes/alerts.js';
+import { registerAccountRoutes } from './routes/accounts.js';
+import { registerIncidentRoutes } from './routes/incidents.js';
 import { registerFindingRoutes } from './routes/findings.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerReportRoutes } from './routes/reports.js';
 import { registerSettingsRoutes } from './routes/settings.js';
 import { registerSourceRoutes } from './routes/sources.js';
+import { registerTriageRoutes } from './routes/triage.js';
 import { resolveStatic, SPA_CSP, staticBody } from './static.js';
 import { getSession, setSessionOrg } from './store/index.js';
 
@@ -72,8 +75,12 @@ export function createApp(deps: ServerDeps): Hono<AppEnv> {
 
   registerAuthRoutes(app);
   registerProjectRoutes(app);
+  // Before the finding routes: /api/findings/packages must not match /api/findings/:id.
+  registerTriageRoutes(app);
   registerFindingRoutes(app);
   registerAlertRoutes(app);
+  registerIncidentRoutes(app);
+  registerAccountRoutes(app);
   registerReportRoutes(app);
   registerSettingsRoutes(app);
   registerSourceRoutes(app);

@@ -7,7 +7,7 @@ local GitHub simulator (§7). The screens and the proof against a registered App
 
 **Decision (2026-10-08).** Users connect a code host once, pick an org or group and its repos, and Blastradius watches them from then on. Today each project is a git URL or path typed by hand. Connecting replaces that and keeps it as a fallback. This is the established pattern used by Dependabot, Renovate, Snyk and Socket; we reuse it rather than invent one.
 
-Design: [Blastradius repo connectors](https://claude.ai/artifact/FovYACwCpEHLLv2y4EKkPV), 4 screens built with the Claude Design System (shadcn new-york-v4 at 28px density, the same base as the web app):
+Design: superseded by the full redesign in [UX.md](UX.md) (screens 6–8: Connect, Import, Sources). First draft, kept for history: [Blastradius repo connectors](https://claude.ai/artifact/FovYACwCpEHLLv2y4EKkPV), 4 screens built with the Claude Design System (shadcn new-york-v4 at 28px density, the same base as the web app):
 
 1. **Sources.** Connected hosts with their health, then a table of watched repos (lockfiles, last scan, status).
 2. **Connect GitLab.** Instance URL, OAuth or group token, and what is requested, read and never done.
@@ -71,7 +71,7 @@ Per host, in the hammer, against real repos:
 | File selection shared by the directory walk and the tree API | `blastradius/src/ingest/select.ts` |
 | Fetch-only checkout: only the inventory files, at one commit, in a temp dir | `sources/materialise.ts` |
 | Install, discovery into projects, scans, webhooks, health | `sources/service.ts` |
-| Tables `source`, `source_repo`, `webhook_delivery` (migration 6) | `store/sources.ts` |
+| Tables `source`, `source_repo`, `webhook_delivery` (migration 10) | `store/sources.ts` |
 | Routes `/api/sources…` and `/api/hooks/github` (contract in docs/WEB-API.md, "Sources") | `routes/sources.ts` |
 
 - **Tokens.** No GitHub token is stored. Each operation (listing, discovery, one scan) builds a fresh App client, mints an installation token and revokes it at the end. The App's private key, webhook secret and OAuth client come from the environment only.

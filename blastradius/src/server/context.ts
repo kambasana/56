@@ -6,6 +6,7 @@
  */
 import type { AlertWatcher } from './watch.js';
 import type { SourceService } from './sources/service.js';
+import type { AccountIndexer } from './accounts.js';
 import type { Context } from 'hono';
 import type { MeResponse, Permission, User } from './api-types.js';
 import { can, type PagePermission } from './permissions.js';
@@ -60,6 +61,8 @@ export interface ServerDeps {
   watcher: AlertWatcher;
   /** Connected code hosts (GitHub App): install, discovery, webhooks, fetch-only scans. */
   sources: SourceService;
+  /** Who can publish what: registry data for every stored inventory, after scans and on a timer. */
+  accounts: AccountIndexer;
 }
 
 export interface Session {

@@ -20,6 +20,7 @@
     "hammer:quick": "npm run build && tsx test/hammer/run.ts --skip-scale",
     "pack:build": "tsx src/pack/main.ts",
     "proof": "tsx test/replay/proof.ts",
+    "proof:account": "tsx test/replay/account/proof-account.ts",
     "sim:github": "tsx test/github-sim/cli.ts"
   },
   "dependencies": {

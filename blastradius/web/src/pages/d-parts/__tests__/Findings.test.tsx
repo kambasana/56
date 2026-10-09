@@ -1,205 +1,218 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
-import type { FindingRow } from '@server/api-types';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { OrgFindingRow, PackageFindingGroup } from '@server/api-types';
 import { setFetcher } from '@/api';
 import { meFor } from '@/test/fixtures';
 import Findings from '../../Findings';
-import { fakeApi, findingDetail, findingRow, renderPage } from './kit';
+import { resetAssigneeCache } from '../../a-parts/triage';
+import { fakeApi, findingRow, renderPage, type RouteSpec } from './kit';
 
+beforeEach(() => resetAssigneeCache());
 afterEach(() => setFetcher((...a) => fetch(...a)));
 
-const SCAN = { id: 's2', projectId: 'p1', status: 'succeeded' as const, createdAt: '2018-11-27T10:00:00.000Z', finishedAt: '2018-11-27T10:01:00.000Z' };
+function orgRow(i: number, over: Partial<OrgFindingRow> = {}): OrgFindingRow {
+  return {
+    ...findingRow(i),
+    projectName: 'payments-platform',
+    introducedBy: { direct: false, via: ['event-stream'] },
+    spread: { projects: 1, prodProjects: 1 },
+    ...over,
+  };
+}
 
-/** Serve `rows` in pages of `limit` following the cursor, like the real API. */
-function serveFindings(rows: FindingRow[], extra: Parameters<typeof fakeApi>[0] = []) {
-  return fakeApi([
-    [
-      'GET',
-      /^\/api\/findings$/,
-      (url) => {
-        const limit = Number(url.searchParams.get('limit') ?? 50);
-        const offset = Number(url.searchParams.get('cursor') ?? 0);
-        const items = rows.slice(offset, offset + limit);
-        const next = offset + items.length < rows.length ? String(offset + items.length) : null;
-        return { items, total: rows.length, nextCursor: next, scan: rows.length || offset ? SCAN : SCAN };
-      },
+function group(i: number, over: Partial<PackageFindingGroup> = {}): PackageFindingGroup {
+  const r = orgRow(i);
+  return {
+    purl: r.purl,
+    name: r.name,
+    version: r.version,
+    ecosystem: 'npm',
+    level: r.level,
+    score: r.score,
+    mainReason: r.mainReason,
+    introducedBy: r.introducedBy,
+    firstSeenAt: r.firstSeenAt,
+    projects: 2,
+    prodProjects: 1,
+    findings: [
+      { id: `f${i}`, projectId: 'p1', projectName: 'payments-platform', production: true, status: 'new', owner: null },
+      { id: `g${i}`, projectId: 'p2', projectName: 'web', production: false, status: 'reviewed', owner: null },
     ],
-    ['GET', /^\/api\/findings\/[^/]+$/, (url) => findingDetail(rows.find((r) => url.pathname.endsWith(`/${r.id}`)) ?? rows[0]!)],
+    ...over,
+  };
+}
+
+const PEOPLE: RouteSpec = ['GET', /^\/api\/assignees$/, () => ({ items: [{ id: 'u1', name: 'Sam Rivera' }] })];
+
+function serve(rows: OrgFindingRow[], extra: RouteSpec[] = [], groups: PackageFindingGroup[] = []) {
+  return fakeApi([
+    PEOPLE,
+    ['GET', /^\/api\/findings$/, (url) => ({ items: rows.slice(0, Number(url.searchParams.get('limit') ?? 50)), total: rows.length, nextCursor: null, scannedProjects: 1 })],
+    ['GET', /^\/api\/findings\/packages$/, () => ({ items: groups, total: groups.length, nextCursor: null, scannedProjects: 2 })],
+    ['GET', /^\/api\/projects\/p1\/health$/, () => ({ items: [] })],
     ...extra,
   ]);
 }
 
-const at = (q = '') => ({ path: `/projects/p1/findings${q}`, pattern: '/projects/:id/findings', me: meFor('org_admin') });
-
+const project = (q = '', me = meFor('org_admin')) => ({ path: `/projects/p1/findings${q}`, pattern: '/projects/:id/findings', me });
+const org = (q = '', me = meFor('org_admin')) => ({ path: `/findings${q}`, pattern: '/findings', me });
 const bodyRows = () => within(screen.getByRole('table', { name: 'Findings' })).getAllByRole('row').slice(1);
+const lastQuery = (api: ReturnType<typeof serve>, path: string) => [...api.calls].reverse().find((c) => c.url.pathname === path)!.url.searchParams;
 
 describe('<Findings>', () => {
-  it('lists findings sorted by risk, with level counts and scan meta', async () => {
-    serveFindings([findingRow(1, { score: 40, level: 'medium' }), findingRow(2, { score: 99, level: 'critical', name: 'event-stream' })]);
-    renderPage(<Findings />, at());
-    expect(await screen.findByText('event-stream')).toBeInTheDocument();
-    expect(within(bodyRows()[0]!).getByText('event-stream')).toBeInTheDocument();
-    expect(screen.getByText(/2 findings · scan 2018-11-27 10:01 UTC/)).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Filter by level' }));
-    expect(await screen.findByRole('option', { name: /Critical\s*1/ })).toHaveAttribute('data-checked', 'false');
+  it('shows the one table: severity, package, projects, introduced by, first seen, status, owner', async () => {
+    const api = serve([orgRow(1, { level: 'critical', name: 'event-stream', version: '3.3.6', owner: { id: 'u1', name: 'Sam Rivera' } })]);
+    renderPage(<Findings />, project());
+    expect(await screen.findByText('event-stream@3.3.6')).toBeInTheDocument();
+    const headers = within(screen.getByRole('table', { name: 'Findings' })).getAllByRole('columnheader').map((h) => h.textContent);
+    expect(headers.slice(1)).toEqual(['Severity', 'Package', 'Projects', 'Introduced by', 'First seen', 'Status', 'Owner']);
+    const row = bodyRows()[0]!;
+    expect(row).toHaveTextContent('◆Critical');
+    expect(row).toHaveTextContent('payments-platform');
+    expect(row).toHaveTextContent('event-stream');
+    expect(row).toHaveTextContent('Open');
+    expect(row).toHaveTextContent('Sam Rivera');
+    // One severity, no numbers: no Risk or Spread score column.
+    expect(headers.join(' ')).not.toMatch(/Risk|Spread|Blast|Score/);
+    expect(lastQuery(api, '/api/findings').get('projects')).toBe('p1');
   });
 
-  it('filters by the faceted level filter and keeps it in the URL', async () => {
+  it('promoted chips filter through the URL and the API (OR within, AND across)', async () => {
     const user = userEvent.setup();
-    serveFindings([findingRow(0), findingRow(1), findingRow(2), findingRow(3)]);
-    renderPage(<Findings />, at());
-    await screen.findByText('pkg-0');
-    await user.click(screen.getByRole('button', { name: 'Filter by level' }));
-    await user.click(await screen.findByRole('option', { name: /^Critical/ }));
-    expect(bodyRows()).toHaveLength(1);
-    expect(screen.getByTestId('where')).toHaveTextContent('level=critical');
-    // The checked state is part of the accessible name (cmdk owns aria-selected for highlight).
-    expect(screen.getByRole('option', { name: /^Critical, selected/ })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /^High/ })).not.toHaveAccessibleName(/selected/);
-    await user.click(screen.getByRole('option', { name: /^High/ }));
-    expect(bodyRows()).toHaveLength(2);
-    expect(screen.getByTestId('where')).toHaveTextContent('level=critical%2Chigh');
-    expect(screen.getByRole('button', { name: 'Filter by level: Critical, High' })).toBeInTheDocument();
-    await user.click(screen.getByRole('option', { name: 'Clear filters' }));
-    expect(bodyRows()).toHaveLength(4);
-    expect(screen.getByTestId('where')).not.toHaveTextContent('level=');
+    const api = serve([], [], [group(1)]);
+    renderPage(<Findings />, org());
+    await screen.findByText('pkg-1@1.0.1');
+    await user.click(screen.getByRole('button', { name: 'Critical' }));
+    await user.click(screen.getByRole('button', { name: 'In production' }));
+    await user.click(screen.getByRole('button', { name: 'Unassigned' }));
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('severity=critical&reach=production&owner=none'));
+    await waitFor(() => expect(lastQuery(api, '/api/findings/packages').get('owner')).toBe('none'));
+    const q = lastQuery(api, '/api/findings/packages');
+    expect(q.get('level')).toBe('critical');
+    expect(q.get('env')).toBe('prod');
+    expect(screen.getByRole('list', { name: 'Applied filters' })).toHaveTextContent('Severity: Critical');
+    await user.click(screen.getByRole('button', { name: 'Remove filter Severity: Critical' }));
+    await waitFor(() => expect(screen.getByTestId('where')).not.toHaveTextContent('severity='));
   });
 
-  it('filters by status with the Select and keeps it in the URL', async () => {
+  it('switches By package / By project and keeps the choice in the URL', async () => {
     const user = userEvent.setup();
-    serveFindings([findingRow(0), findingRow(1, { status: 'reviewed' }), findingRow(2, { status: 'accepted_risk' })]);
-    renderPage(<Findings />, at());
-    await screen.findByText('pkg-0');
-    const trigger = screen.getByRole('combobox', { name: 'Filter by status' });
-    expect(trigger).toHaveTextContent('All statuses');
-    await user.click(trigger);
-    await user.click(await screen.findByRole('option', { name: 'Reviewed' }));
-    expect(screen.getByTestId('where')).toHaveTextContent('status=reviewed');
-    expect(bodyRows()).toHaveLength(1);
-    expect(within(bodyRows()[0]!).getByText('pkg-1')).toBeInTheDocument();
+    serve([orgRow(1, { name: 'flat' })], [], [group(2, { name: 'minimist', version: '1.2.5' })]);
+    renderPage(<Findings />, org());
+    expect(await screen.findByText('minimist@1.2.5')).toBeInTheDocument();
+    expect(bodyRows()[0]).toHaveTextContent('2 projects');
+    expect(bodyRows()[0]).toHaveTextContent('Mixed (2)');
+    await user.click(screen.getByRole('button', { name: 'By project' }));
+    expect(await screen.findByText('flat@1.0.1')).toBeInTheDocument();
+    expect(screen.getByTestId('where')).toHaveTextContent('group=project');
   });
 
-  it('shows the whole top reason, clamped in the cell and in full on hover', async () => {
+  it('sorts from the column headers through the URL', async () => {
     const user = userEvent.setup();
-    const long = 'A new publisher was added two days before this release, and the release runs an install script that contacts a host never seen before.';
-    serveFindings([findingRow(1, { mainReason: { factor: 'maintainer_change', detail: long } })]);
-    renderPage(<Findings />, at());
-    const cell = await screen.findByText(long);
-    expect(cell.closest('[data-slot=hover-card-trigger]')).toHaveClass('line-clamp-2');
-    await user.hover(cell);
-    const card = await screen.findByText(long, { selector: '[data-slot=hover-card-content] span' });
-    expect(card).toBeInTheDocument();
-    expect(within(card.closest('[data-slot=hover-card-content]') as HTMLElement).getByText('Install script')).toBeInTheDocument();
+    const api = serve([orgRow(1)]);
+    renderPage(<Findings />, project());
+    await screen.findByText('pkg-1@1.0.1');
+    await user.click(screen.getByRole('button', { name: 'First seen' }));
+    await waitFor(() => expect(lastQuery(api, '/api/findings').get('sort')).toBe('-firstSeen'));
+    expect(screen.getByRole('columnheader', { name: 'First seen' })).toHaveAttribute('aria-sort', 'descending');
   });
 
-  it('reads level, status and text filters from the URL', async () => {
-    serveFindings([findingRow(0), findingRow(4, { status: 'reviewed' }), findingRow(8, { name: 'colors' })]);
-    renderPage(<Findings />, at('?level=critical&status=new&q=colors'));
-    await screen.findByText('colors');
-    expect(bodyRows()).toHaveLength(1);
-    expect(screen.getByLabelText('Filter Findings')).toHaveValue('colors');
-  });
-
-  it('filters by text over the reason detail and hidden purl', async () => {
+  it('loads 50 rows, then more with "Load more"', async () => {
     const user = userEvent.setup();
-    serveFindings([findingRow(1), findingRow(2, { mainReason: { factor: 'malware', detail: 'flatmap payload' } })]);
-    renderPage(<Findings />, at());
-    await screen.findByText('pkg-1');
-    await user.type(screen.getByLabelText('Filter Findings'), 'flatmap');
-    expect(bodyRows()).toHaveLength(1);
-    await user.clear(screen.getByLabelText('Filter Findings'));
-    await user.type(screen.getByLabelText('Filter Findings'), 'pkg:npm/pkg-1@');
-    expect(bodyRows()).toHaveLength(1);
+    const rows = Array.from({ length: 70 }, (_, i) => orgRow(i));
+    serve(rows);
+    renderPage(<Findings />, project());
+    await screen.findByText('pkg-0@1.0.0');
+    expect(bodyRows()).toHaveLength(50);
+    expect(screen.getByText('70 findings · showing 50')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Load 20 more' }));
+    await waitFor(() => expect(bodyRows()).toHaveLength(70));
+    expect(screen.getByTestId('where')).toHaveTextContent('shown=100');
   });
 
-  it('opens the side panel with reasons, paths, safe evidence links and graph link', async () => {
+  it('opens the peek sheet from a row, saves status and owner, and links the full page', async () => {
     const user = userEvent.setup();
-    serveFindings([findingRow(1, { name: 'flatmap-stream' })]);
-    renderPage(<Findings />, at());
-    await user.click(await screen.findByText('flatmap-stream'));
-    const panel = await screen.findByRole('complementary', { name: 'Finding details' });
-    expect(await within(panel).findByText('Flagged as malware by the registry')).toBeInTheDocument();
-    expect(within(panel).getAllByText('Malware').length).toBeGreaterThan(0);
-    expect(within(panel).getByText('payments-api', { selector: 'span.font-medium' })).toBeInTheDocument();
-    expect(within(panel).getByText('INC-2018-0001')).toBeInTheDocument();
-    const good = within(panel).getByRole('link', { name: 'https://example.org/advisory/1' });
-    expect(good).toHaveAttribute('rel', expect.stringContaining('noopener'));
-    expect(within(panel).queryByRole('link', { name: 'javascript:alert(1)' })).toBeNull();
-    expect(within(panel).getByText('javascript:alert(1)')).toBeInTheDocument();
-    expect(within(panel).getByRole('link', { name: 'Open graph' })).toHaveAttribute('href', '/projects/p1/investigate?finding=f1');
-    expect(screen.getByTestId('where')).toHaveTextContent('f=f1');
-    await user.keyboard('{Escape}');
-    expect(screen.queryByRole('complementary', { name: 'Finding details' })).toBeNull();
+    const row = orgRow(1);
+    const api = serve([row], [['PATCH', /^\/api\/findings\/f1$/, () => ({ ...row, status: 'reviewed' })]]);
+    renderPage(<Findings />, project());
+    await user.click(await screen.findByText('pkg-1@1.0.1'));
+    const sheet = await screen.findByRole('dialog');
+    expect(screen.getByTestId('where')).toHaveTextContent('peek=f1');
+    expect(within(sheet).getByRole('link', { name: 'Open full page' })).toHaveAttribute('href', '/projects/p1/findings/f1');
+    const form = within(sheet).getByRole('form', { name: 'Finding status' });
+    await user.click(within(form).getByRole('combobox', { name: 'Status' }));
+    await user.click(await screen.findByRole('option', { name: 'Triaged' }));
+    await waitFor(() => expect(api.calls.some((c) => c.method === 'PATCH')).toBe(true));
+    expect(api.calls.find((c) => c.method === 'PATCH')!.body).toEqual({ status: 'reviewed' });
+    await user.click(within(form).getByRole('combobox', { name: /Owner/ }));
+    await user.click(await screen.findByRole('option', { name: 'Sam Rivera' }));
+    await waitFor(() => expect(api.calls.filter((c) => c.method === 'PATCH')[1]?.body).toEqual({ ownerId: 'u1' }));
   });
 
-  it('hides graph link and status control without the permissions', async () => {
+  it('keeps triage visible but disabled for the auditor, with the reason', async () => {
     const user = userEvent.setup();
-    serveFindings([findingRow(1)]);
-    const me = meFor('developer', { permissions: ['findings'] });
-    renderPage(<Findings />, { ...at(), me });
-    await user.click(await screen.findByText('pkg-1'));
-    const panel = await screen.findByRole('complementary', { name: 'Finding details' });
-    await within(panel).findByText('Flagged as malware by the registry');
-    expect(within(panel).queryByRole('link', { name: 'Open graph' })).toBeNull();
-    expect(within(panel).queryByRole('form', { name: 'Finding status' })).toBeNull();
+    serve([orgRow(1)]);
+    renderPage(<Findings />, project('', meFor('auditor')));
+    await user.click(await screen.findByText('pkg-1@1.0.1'));
+    const form = within(await screen.findByRole('dialog')).getByRole('form', { name: 'Finding status' });
+    expect(within(form).getByRole('combobox', { name: 'Status' })).toBeDisabled();
+    expect(form).toHaveTextContent('Needs the Triage permission: ask an admin.');
   });
 
-  it('changes status with PATCH and updates the row', async () => {
+  it('selecting rows brings up the bulk bar; set status sends one bulk request', async () => {
     const user = userEvent.setup();
-    const row = findingRow(1);
-    const api = serveFindings([row], [['PATCH', /^\/api\/findings\/f1$/, () => ({ ...row, status: 'reviewed' })]]);
-    renderPage(<Findings />, at());
-    await user.click(await screen.findByText('pkg-1'));
-    const panel = await screen.findByRole('complementary', { name: 'Finding details' });
-    await user.click(within(panel).getByLabelText('Status'));
-    await user.click(await screen.findByRole('option', { name: 'Reviewed' }));
-    await user.click(within(panel).getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(within(bodyRows()[0]!).getByText('Reviewed')).toBeInTheDocument());
-    expect(await screen.findByText('Marked reviewed')).toBeInTheDocument();
-    const patch = api.calls.find((c) => c.method === 'PATCH')!;
-    expect(patch.body).toEqual({ status: 'reviewed' });
-    expect(patch.headers['X-Requested-With']).toBe('blastradius');
+    const api = serve([orgRow(1), orgRow(2)], [['POST', /^\/api\/findings\/bulk$/, () => ({ updated: 2, items: [] })]]);
+    renderPage(<Findings />, project());
+    await screen.findByText('pkg-1@1.0.1');
+    await user.click(screen.getByRole('checkbox', { name: 'Select all shown' }));
+    const bar = screen.getByRole('toolbar', { name: 'Bulk actions' });
+    expect(bar).toHaveTextContent('2 selected');
+    expect(within(bar).getByRole('button', { name: /Create ticket/ })).toBeDisabled();
+    await user.click(within(bar).getByRole('button', { name: /Set status/ }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Fixing' }));
+    await waitFor(() => expect(api.calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(api.calls.find((c) => c.method === 'POST')!.body).toEqual({ ids: ['f1', 'f2'], status: 'fixing' });
+    expect(await within(bar).findByText('2 set to Fixing')).toBeInTheDocument();
   });
 
-  it('offers accepted risk only with accept_risk', async () => {
+  it('accept risk asks for a reason and an expiry date before sending', async () => {
     const user = userEvent.setup();
-    serveFindings([findingRow(1)]);
-    renderPage(<Findings />, { ...at(), me: meFor('developer', { permissions: ['findings', 'review'] }) });
-    await user.click(await screen.findByText('pkg-1'));
-    await user.click(await screen.findByLabelText('Status'));
-    const listbox = await screen.findByRole('listbox');
-    expect(within(listbox).queryByRole('option', { name: 'Accepted risk' })).toBeNull();
-    expect(within(listbox).getByRole('option', { name: 'Reviewed' })).toBeInTheDocument();
+    const api = serve([orgRow(1)], [['POST', /^\/api\/findings\/bulk$/, () => ({ updated: 1, items: [] })]]);
+    renderPage(<Findings />, project());
+    await screen.findByText('pkg-1@1.0.1');
+    await user.click(screen.getByRole('checkbox', { name: /Select pkg-1@1.0.1/ }));
+    await user.click(within(screen.getByRole('toolbar', { name: 'Bulk actions' })).getByRole('button', { name: 'Accept risk…' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Accept risk' }));
+    expect(dialog).toHaveTextContent('Give the reason the risk is accepted.');
+    expect(api.calls.some((c) => c.method === 'POST')).toBe(false);
+    await user.type(within(dialog).getByLabelText('Reason *'), 'Sandboxed build step');
+    await user.type(within(dialog).getByLabelText('Expires on *'), '2999-01-31');
+    await user.click(within(dialog).getByRole('button', { name: 'Accept risk' }));
+    await waitFor(() => expect(api.calls.find((c) => c.method === 'POST')?.body).toEqual({ ids: ['f1'], status: 'accepted_risk', note: 'Sandboxed build step', expiresAt: '2999-01-31T00:00:00.000Z' }));
   });
 
-  it('loads 5,000 rows across pages and renders only a virtual window', async () => {
-    const rows = Array.from({ length: 5000 }, (_, i) => findingRow(i));
-    const api = serveFindings(rows);
-    renderPage(<Findings />, at());
-    await waitFor(() => expect(screen.getByTestId('datatable-count')).toHaveTextContent('5,000 of 5,000'));
-    expect(api.calls.filter((c) => c.url.pathname === '/api/findings')).toHaveLength(10);
-    expect(bodyRows().length).toBeLessThan(200);
-  });
-
-  it('shows an empty state when the project has no scan', async () => {
-    fakeApi([['GET', /^\/api\/findings$/, () => ({ items: [], total: 0, nextCursor: null, scan: null })]]);
-    renderPage(<Findings />, at());
-    expect(await screen.findByText('No completed scan yet')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Go to Scans' })).toHaveAttribute('href', '/projects/p1/scans');
-  });
-
-  it('shows an error state with retry', async () => {
-    fakeApi([['GET', /^\/api\/findings$/, () => ({ status: 500, body: { error: { code: 'internal', message: 'Something broke' } } })]]);
-    renderPage(<Findings />, at());
-    expect(await screen.findByRole('alert')).toHaveTextContent('Something broke');
+  it('no results offers exact recoveries; an empty list is an all-clear; errors show the cause', async () => {
+    const user = userEvent.setup();
+    serve([]);
+    const { unmount } = renderPage(<Findings />, project('?severity=critical'));
+    const block = await screen.findByText('No findings match these filters');
+    await user.click(within(block.closest('[data-slot=state-block]') as HTMLElement).getByRole('button', { name: 'Remove "Severity: Critical"' }));
+    expect(await screen.findByText('No findings in payments-platform')).toBeInTheDocument();
+    unmount();
+    fakeApi([PEOPLE, ['GET', /^\/api\/findings$/, () => ({ status: 500, body: { error: { code: 'internal', message: 'database is locked' } } })]]);
+    renderPage(<Findings />, org('?group=project'));
+    expect(await screen.findByText('database is locked')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
-  it('renders untrusted text escaped', async () => {
-    serveFindings([findingRow(1, { name: '<img src=x onerror=alert(1)>' })]);
-    const { container } = renderPage(<Findings />, at());
-    expect(await screen.findByText('<img src=x onerror=alert(1)>')).toBeInTheDocument();
-    expect(container.querySelector('img')).toBeNull();
+  it('keeps the Maintenance view for one project', async () => {
+    const user = userEvent.setup();
+    serve([orgRow(1)]);
+    renderPage(<Findings />, project());
+    await screen.findByText('pkg-1@1.0.1');
+    await user.click(screen.getByRole('tab', { name: /Maintenance/ }));
+    expect(screen.getByTestId('where')).toHaveTextContent('view=health');
   });
 });

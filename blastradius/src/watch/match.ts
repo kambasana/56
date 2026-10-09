@@ -9,13 +9,42 @@ import { buildDependencyGraph, inboundExposure } from '../scoring/blast.js';
 import { coversAllVersions, inRanges } from '../core/osv-range.js';
 import { packMalware } from '../pack/load.js';
 import type { KnowledgePack } from '../pack/types.js';
+import type { RiskLevel } from '../core/types.js';
 
 /** The OSV fields matching needs (OSV records and knowledge-pack entries both fit). */
 export interface AdvisoryLike {
   id: string;
   published?: string;
   summary?: string;
+  /** GHSA records carry their rating here ("CRITICAL", "HIGH", "MODERATE", "LOW"). */
+  database_specific?: { severity?: string };
   affected?: { package?: { name?: string; ecosystem?: string }; versions?: string[]; ranges?: { events?: Record<string, string>[] }[] }[];
+}
+
+/** The advisory's own rating as a level, when it states one. */
+export function advisoryLevel(adv: AdvisoryLike): RiskLevel | undefined {
+  switch ((adv.database_specific?.severity ?? '').toUpperCase()) {
+    case 'CRITICAL':
+      return 'critical';
+    case 'HIGH':
+      return 'high';
+    case 'MODERATE':
+    case 'MEDIUM':
+      return 'medium';
+    case 'LOW':
+      return 'low';
+    default:
+      return undefined;
+  }
+}
+
+/** First "fixed" version the advisory names for this package, if any. */
+export function advisoryFixedIn(adv: AdvisoryLike, name: string): string | undefined {
+  for (const a of adv.affected ?? []) {
+    if (a.package?.ecosystem !== 'npm' || a.package.name !== name) continue;
+    for (const r of a.ranges ?? []) for (const e of r.events ?? []) if (e.fixed) return e.fixed;
+  }
+  return undefined;
 }
 
 export interface StoredInventory {
@@ -35,6 +64,11 @@ export interface ExposureHit {
   /** Present when the hit comes from an advisory. */
   advisoryId?: string;
   advisoryPublished?: string;
+  /** The advisory's rating (known-bad pack entries are critical). */
+  level?: RiskLevel;
+  summary?: string;
+  /** First fixed version the advisory names. */
+  fixedIn?: string;
   assets: AssetExposure[];
   production: boolean;
   reachText: string;
@@ -111,7 +145,16 @@ export function matchAdvisories(inventories: readonly StoredInventory[], advisor
         const key = `${c.purl}\u0000${adv.id}`;
         if (seen.has(key) || !advisoryAffects(adv, nv.name, nv.version)) continue;
         seen.add(key);
-        hits.push({ ...hitFor(s, c.purl, nv), advisoryId: adv.id, ...(adv.published ? { advisoryPublished: adv.published } : {}) });
+        const level = advisoryLevel(adv);
+        const fixedIn = advisoryFixedIn(adv, nv.name);
+        hits.push({
+          ...hitFor(s, c.purl, nv),
+          advisoryId: adv.id,
+          ...(adv.published ? { advisoryPublished: adv.published } : {}),
+          ...(level ? { level } : {}),
+          ...(adv.summary ? { summary: adv.summary } : {}),
+          ...(fixedIn ? { fixedIn } : {}),
+        });
       }
     }
   }
@@ -130,7 +173,8 @@ export function matchPack(inventories: readonly StoredInventory[], pack: Knowled
         const key = `${c.purl}\u0000${ref.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        hits.push({ ...hitFor(s, c.purl, nv), advisoryId: ref.id, ...(ref.published ? { advisoryPublished: ref.published } : {}) });
+        // Known-bad releases (malware) are critical by definition.
+        hits.push({ ...hitFor(s, c.purl, nv), advisoryId: ref.id, level: 'critical', ...(ref.published ? { advisoryPublished: ref.published } : {}) });
       }
     }
   }
