@@ -153,7 +153,14 @@ export function webBuildMtimeMs(): number | null {
 /** Scenarios this server is expected to hold (all of them unless run-all.mjs named a reference date). */
 export function scenariosForServer(all: Scenario[]): Scenario[] {
   // Quick mode: the runner is started with --skip-scale, so scale-* and hostile-* are not scanned.
-  const wanted = FULL ? all : all.filter((s) => !s.id.startsWith('scale-') && !s.id.startsWith('hostile-'));
+  let wanted = FULL ? all : all.filter((s) => !s.id.startsWith('scale-') && !s.id.startsWith('hostile-'));
+  // run-all.mjs passes the ids the scenario runner actually selected (e.g. `--only a,b`), so a
+  // narrowed run expects only those; a selected scenario with no project still fails.
+  const selected = process.env.HAMMER_SELECTED_SCENARIOS;
+  if (selected) {
+    const ids = new Set(selected.split(',').map((x) => x.trim()).filter(Boolean));
+    wanted = wanted.filter((s) => ids.has(s.id));
+  }
   if (!SERVER_AS_OF) return wanted;
   return wanted.filter((s) => (s.asOf ?? 'now') === SERVER_AS_OF);
 }

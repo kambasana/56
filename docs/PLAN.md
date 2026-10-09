@@ -2,6 +2,10 @@
 
 > Working name: **Blastradius**. Status: design / pre-MVP.
 
+> **Positioning (2026-10-09):** what we are, what we reuse, what is proven and what failed now lives in
+> [POSITIONING.md](POSITIONING.md). It replaces the positioning in §1 and the "overlap with commercial
+> tools" row in §9.
+
 ## 1. Goal
 
 Given a GitHub repo (or SBOM, container image, or whole org), the system:
@@ -342,7 +346,7 @@ docs/
 | API rate limits on large orgs | Aggressive caching (most packages are shared across repos), batch endpoints, token pools within terms of service |
 | Historical data needed for backtests is missing | Start snapshotting on day 1; use archive.org and registry version history where available |
 | Building the KB takes a lot of effort | Auto-import OSV `MAL-*`; accept community PRs; keep curation focused on high-impact incidents |
-| Overlap with commercial tools (Socket, Lineaje, Endor) | Differentiate on being open, explainable, and modelling entities/funders, and integrate with existing scanners rather than competing with them |
+| Overlap with commercial tools (Socket, Snyk, GitHub Dependabot, Lineaje, Endor) | Superseded by [POSITIONING.md](POSITIONING.md): scanners and feeds are inputs; we own the account-level blast radius and say only what we can source |
 | AI output treated as fact, or prompt injection from scanned repos | AI never sets scores or confirms links; scanned content is fenced as untrusted data; every AI claim needs a citation to a stored fact (§11) |
 
 ---

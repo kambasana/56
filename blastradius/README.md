@@ -2,6 +2,8 @@
 
 A supply-chain blast-radius auditor for npm projects (Phase 0 + Phase 1 MVP of `docs/PLAN.md`).
 
+What it is for, what it reuses, and what is proven or not: [`docs/POSITIONING.md`](../docs/POSITIONING.md).
+
 Point it at a local directory or a git URL. Blastradius then:
 
 1. **Builds an inventory** by reading `package-lock.json`/`npm-shrinkwrap.json` (v1–v3), `package.json`, GitHub Actions workflows and Dockerfiles. It only parses these files; it never runs anything from the target.

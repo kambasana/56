@@ -1,5 +1,5 @@
 /**
- * Upkeep signals (noise rule, docs/DATA-ML.md): components whose only reasons are posture
+ * Maintenance signals (noise rule, docs/DATA-ML.md): components whose only reasons are posture
  * signals such as no provenance or a single maintainer. Shown beside findings, never counted
  * as risk, so the Findings table stays about things that happened or are known to be bad.
  */
@@ -18,7 +18,7 @@ const COLUMNS: ColumnDef<HealthItem, any>[] = [
   { id: 'version', header: 'Version', accessorFn: (r) => r.version, cell: (c) => <span className="font-mono text-xs">{c.getValue<string>()}</span>, size: 110 },
   {
     id: 'signals',
-    header: 'Upkeep signals',
+    header: 'Maintenance',
     accessorFn: (r) => r.signals.map((s) => factorLabel(s.factor)).join(', '),
     cell: (c) => (
       <span className="text-muted-foreground" title={c.row.original.signals.map((s) => s.detail).join('\n')}>
@@ -33,7 +33,7 @@ const COLUMNS: ColumnDef<HealthItem, any>[] = [
 export function HealthTable({ items, loading }: { items: HealthItem[]; loading: boolean }) {
   return (
     <DataTable<HealthItem>
-      label="Upkeep signals"
+      label="Maintenance"
       data={items}
       loading={loading}
       columns={COLUMNS}
@@ -41,7 +41,7 @@ export function HealthTable({ items, loading }: { items: HealthItem[]; loading: 
       filterPlaceholder="Filter by name or signal…"
       initialColumnVisibility={{ purl: false }}
       total={items.length}
-      emptyTitle="No upkeep-only signals"
+      emptyTitle="No maintenance-only signals"
       emptyDescription="Every component with a signal in this scan is in Findings."
     />
   );

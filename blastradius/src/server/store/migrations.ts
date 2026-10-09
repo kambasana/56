@@ -241,6 +241,183 @@ CREATE TABLE alert (
 CREATE INDEX alert_org_created ON alert (org_id, created_at DESC);
 `,
   },
+  {
+    version: 6,
+    name: 'finding triage: fixing, resolved, owner, risk expiry',
+    sql: `
+-- Finding life cycle (docs/UX.md §5): adds fixing and resolved, the owner a finding is assigned
+-- to, and when an accepted risk runs out. SQLite cannot change a CHECK, so the table is rebuilt.
+CREATE TABLE finding_state_v6 (
+  project_id       TEXT NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+  purl             TEXT NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('new', 'reviewed', 'fixing', 'resolved', 'accepted_risk')),
+  owner_id         TEXT REFERENCES app_user(id) ON DELETE SET NULL,
+  risk_expires_at  TEXT,
+  updated_at       TEXT NOT NULL,
+  updated_by       TEXT NOT NULL,
+  PRIMARY KEY (project_id, purl)
+);
+INSERT INTO finding_state_v6 (project_id, purl, status, updated_at, updated_by)
+  SELECT project_id, purl, status, updated_at, updated_by FROM finding_state;
+DROP TABLE finding_state;
+ALTER TABLE finding_state_v6 RENAME TO finding_state;
+CREATE INDEX finding_state_owner ON finding_state(owner_id);
+`,
+  },
+  {
+    version: 7,
+    name: 'incidents',
+    sql: `
+-- An incident is one advisory that hit at least one project (its alerts). The advisory's own
+-- severity, summary and first fixed version are kept on each alert when the advisory names them.
+ALTER TABLE alert ADD COLUMN level TEXT CHECK (level IS NULL OR level IN ('critical', 'high', 'medium', 'low'));
+ALTER TABLE alert ADD COLUMN summary TEXT;
+ALTER TABLE alert ADD COLUMN fixed_in TEXT;
+CREATE INDEX alert_org_advisory ON alert (org_id, advisory_id);
+
+-- Where the team is with an incident (Investigating > Fixing > Monitoring > Closed). No row means
+-- Investigating.
+CREATE TABLE incident_state (
+  org_id      TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  advisory_id TEXT NOT NULL,
+  status      TEXT NOT NULL CHECK (status IN ('investigating', 'fixing', 'monitoring', 'closed')),
+  updated_at  TEXT NOT NULL,
+  updated_by  TEXT NOT NULL,
+  PRIMARY KEY (org_id, advisory_id)
+);
+
+-- The incident's timeline beyond its alerts: status changes and notifications sent.
+CREATE TABLE incident_event (
+  seq         INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  advisory_id TEXT NOT NULL,
+  at          TEXT NOT NULL,
+  actor       TEXT NOT NULL,
+  kind        TEXT NOT NULL CHECK (kind IN ('status', 'notified')),
+  title       TEXT NOT NULL,
+  detail      TEXT NOT NULL DEFAULT '',
+  from_value  TEXT,
+  to_value    TEXT
+);
+CREATE INDEX incident_event_advisory ON incident_event (org_id, advisory_id, seq);
+
+-- Every org-wide check of stored inventories (the pack sweep, or advisories posted to the API).
+CREATE TABLE alert_check (
+  seq              INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id           TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  at               TEXT NOT NULL,
+  source           TEXT NOT NULL CHECK (source IN ('pack', 'advisories')),
+  projects_checked INTEGER NOT NULL,
+  created          INTEGER NOT NULL
+);
+CREATE INDEX alert_check_org ON alert_check (org_id, seq);
+`,
+  },
+  {
+    version: 8,
+    name: 'alert rules',
+    sql: `
+-- Team alert rules (WHEN severity >= min_level [and it reaches production] THEN post to the Slack
+-- webhook, naming the channel). With no rows, every new alert is posted (the default rule).
+CREATE TABLE alert_rule (
+  id              TEXT PRIMARY KEY,
+  org_id          TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  min_level       TEXT NOT NULL CHECK (min_level IN ('critical', 'high', 'medium', 'low')),
+  production_only INTEGER NOT NULL DEFAULT 0,
+  channel         TEXT NOT NULL,
+  email_owners    INTEGER NOT NULL DEFAULT 0,
+  enabled         INTEGER NOT NULL DEFAULT 1,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL,
+  created_by      TEXT NOT NULL,
+  UNIQUE (org_id, name)
+);
+`,
+  },
+  {
+    version: 9,
+    name: 'account index and compromised accounts',
+    sql: `
+-- Account index (docs/ACCOUNT-PROOF.md): public registry data, shared by every org. One row per
+-- package whose packument was fetched: current maintainers, the repository owner, and every
+-- version's publish time, publisher (_npmUser) and maintainers, so "who could publish it at T" is
+-- answerable for any T. versions_json: { sets: string[][], v: [version, time, publisher, setIndex, gone][] }.
+CREATE TABLE registry_package (
+  registry         TEXT NOT NULL CHECK (registry IN ('npm')),
+  name             TEXT NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('ok', 'missing', 'unavailable')),
+  detail           TEXT,
+  fetched_at       TEXT NOT NULL,
+  maintainers_json TEXT NOT NULL DEFAULT '[]',
+  repo_host        TEXT,
+  repo_owner       TEXT,
+  repo_url         TEXT,
+  versions_json    TEXT NOT NULL DEFAULT '{"sets":[],"v":[]}',
+  PRIMARY KEY (registry, name)
+);
+
+-- Packages an account can publish according to the registry's own listing (npm: /-/user/<u>/package).
+CREATE TABLE registry_account (
+  registry      TEXT NOT NULL CHECK (registry IN ('npm')),
+  name          TEXT NOT NULL,
+  status        TEXT NOT NULL CHECK (status IN ('ok', 'unavailable')),
+  detail        TEXT,
+  fetched_at    TEXT NOT NULL,
+  packages_json TEXT NOT NULL DEFAULT '[]',
+  PRIMARY KEY (registry, name)
+);
+
+-- Who can publish what (package level, public data), derived from registry_package and
+-- registry_account: maintainer (packument maintainers), repo_owner (owner of the declared
+-- repository), listed (the account's own package listing). Who published a locked version
+-- (_npmUser) is read per org from registry_package.versions_json, never stored per org here.
+CREATE TABLE account_link (
+  account_registry TEXT NOT NULL CHECK (account_registry IN ('npm', 'github', 'gitlab')),
+  account          TEXT NOT NULL,
+  package          TEXT NOT NULL,
+  relation         TEXT NOT NULL CHECK (relation IN ('maintainer', 'repo_owner', 'listed')),
+  source           TEXT NOT NULL,
+  confidence       TEXT NOT NULL CHECK (confidence IN ('high', 'medium', 'low')),
+  evidence         TEXT NOT NULL,
+  updated_at       TEXT NOT NULL,
+  PRIMARY KEY (account_registry, account, package, relation)
+);
+CREATE INDEX account_link_package ON account_link (package);
+
+-- "Account X is compromised" in one org: the incident it opened (alerts use incident_id as their
+-- advisory id) and the window it covers.
+CREATE TABLE account_incident (
+  org_id           TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  incident_id      TEXT NOT NULL,
+  account_registry TEXT NOT NULL,
+  account          TEXT NOT NULL,
+  since            TEXT,
+  marked_at        TEXT NOT NULL,
+  marked_by        TEXT NOT NULL,
+  PRIMARY KEY (org_id, incident_id)
+);
+
+-- Incident timelines gain 'account' events (an account marked compromised, its exposure updated).
+CREATE TABLE incident_event_v9 (
+  seq         INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  advisory_id TEXT NOT NULL,
+  at          TEXT NOT NULL,
+  actor       TEXT NOT NULL,
+  kind        TEXT NOT NULL CHECK (kind IN ('status', 'notified', 'account')),
+  title       TEXT NOT NULL,
+  detail      TEXT NOT NULL DEFAULT '',
+  from_value  TEXT,
+  to_value    TEXT
+);
+INSERT INTO incident_event_v9 (seq, org_id, advisory_id, at, actor, kind, title, detail, from_value, to_value)
+  SELECT seq, org_id, advisory_id, at, actor, kind, title, detail, from_value, to_value FROM incident_event;
+DROP TABLE incident_event;
+ALTER TABLE incident_event_v9 RENAME TO incident_event;
+CREATE INDEX incident_event_advisory ON incident_event (org_id, advisory_id, seq);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

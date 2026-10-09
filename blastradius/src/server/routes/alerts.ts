@@ -18,7 +18,15 @@ const Affected = z.object({
 });
 const CheckBody = z.object({
   advisories: z
-    .array(z.object({ id: z.string().min(1).max(100), published: z.string().max(40).optional(), summary: z.string().max(500).optional(), affected: z.array(Affected).max(200).optional() }))
+    .array(
+      z.object({
+        id: z.string().min(1).max(100),
+        published: z.string().max(40).optional(),
+        summary: z.string().max(500).optional(),
+        database_specific: z.object({ severity: z.string().max(20).optional() }).optional(),
+        affected: z.array(Affected).max(200).optional(),
+      }),
+    )
     .max(5000)
     .optional(),
 });
@@ -50,7 +58,8 @@ export function registerAlertRoutes(app: Hono<AppEnv>): void {
   });
 
   app.post('/api/alerts/check', async (c) => {
-    const { orgId } = requireOrgPerm(c, 'manage_projects');
+    // Re-checking reads stored inventories only, so whoever runs incidents (alert rules) may too.
+    const { orgId } = requireOrgPerm(c, 'manage_projects', 'manage_alert_rules');
     const body = await parseBody(c, CheckBody);
     const { watcher } = deps(c);
     if (!body.advisories && !watcher.enabled) throw badRequest('No advisories given and no knowledge pack configured (BLASTRADIUS_PACK)', ['advisories']);
