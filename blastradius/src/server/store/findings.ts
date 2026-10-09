@@ -7,6 +7,7 @@
 import type {
   AssetPathView,
   FindingDetail,
+  IntroducedBy,
   FindingRow,
   FindingStatus,
   ListFindingsResponse,
@@ -224,11 +225,15 @@ export interface FindingSqlRow {
   behind: string | null;
   first_seen_at: string;
   status: FindingStatus;
+  owner_id: string | null;
+  owner_name: string | null;
+  risk_expires_at: string | null;
 }
 
 export const FINDING_COLUMNS = `f.id, f.scan_id, f.project_id, f.org_id, f.purl, f.name, f.version, f.ecosystem, f.score, f.level,
   f.blast_score, f.assets, f.prod_assets, f.paths, f.reach_text, f.top_factor, f.top_detail, f.factors, f.behind, f.first_seen_at,
-  COALESCE(st.status, 'new') AS status`;
+  COALESCE(st.status, 'new') AS status, st.owner_id, (SELECT u.name FROM app_user u WHERE u.id = st.owner_id) AS owner_name,
+  st.risk_expires_at`;
 
 export const FINDING_FROM = `finding f LEFT JOIN finding_state st ON st.project_id = f.project_id AND st.purl = f.purl`;
 
@@ -258,7 +263,31 @@ export function toFindingRow(r: FindingSqlRow): FindingRow {
     behind: parseJson<FindingRow['behind']>(r.behind, null),
     status: r.status,
     firstSeenAt: r.first_seen_at,
+    owner: r.owner_id ? { id: r.owner_id, name: r.owner_name ?? 'Former member' } : null,
+    riskExpiresAt: r.status === 'accepted_risk' ? r.risk_expires_at : null,
   };
+}
+
+/** Who brings the package in, from the finding's dependency paths ([assetId, purl, ..., purl]). */
+export function introducedByOf(f: Pick<Finding, 'blastRadius'> | null | undefined): IntroducedBy {
+  const paths = (f?.blastRadius?.assets ?? []).flatMap((a) => a.paths ?? []);
+  const direct = paths.some((p) => p.length === 2);
+  const via: string[] = [];
+  for (const p of [...paths].filter((x) => x.length > 2).sort((a, b) => a.length - b.length)) {
+    const n = purlName(p[1]!);
+    if (!via.includes(n)) via.push(n);
+    if (via.length >= 5) break;
+  }
+  return { direct, via };
+}
+
+function purlName(purl: string): string {
+  try {
+    const p = parsePurl(purl);
+    return p.namespace ? `${p.namespace}/${p.name}` : p.name;
+  } catch {
+    return purl;
+  }
 }
 
 export type FindingSort = 'score' | '-score' | 'name' | 'reach';
@@ -389,12 +418,14 @@ export function scanAssets(s: Store, scanId: string): AssetMeta[] {
 }
 
 export function statusHistory(s: Store, projectId: string, purl: string): StatusChange[] {
-  return all<{ at: string; by_user: string; from_status: FindingStatus; to_status: FindingStatus; note: string | null }>(
+  return all<{ at: string; by_user: string; from_status: FindingStatus; to_status: FindingStatus; note: string | null; by_name: string | null }>(
     s,
-    'SELECT at, by_user, from_status, to_status, note FROM finding_status_history WHERE project_id = ? AND purl = ? ORDER BY seq DESC',
+    `SELECT h.at, h.by_user, h.from_status, h.to_status, h.note, u.name AS by_name
+     FROM finding_status_history h LEFT JOIN app_user u ON u.id = h.by_user
+     WHERE h.project_id = ? AND h.purl = ? ORDER BY h.seq DESC`,
     projectId,
     purl,
-  ).map((r) => ({ at: r.at, by: r.by_user, from: r.from_status, to: r.to_status, note: r.note }));
+  ).map((r) => ({ at: r.at, by: r.by_user, from: r.from_status, to: r.to_status, note: r.note, ...(r.by_name ? { byName: r.by_name } : {}) }));
 }
 
 /** GET /api/findings/:id */
@@ -438,34 +469,66 @@ export function getFindingDetail(s: Store, orgId: string, findingId: string): Fi
   };
 }
 
+export interface FindingTriageInput {
+  status?: FindingStatus;
+  note?: string | null;
+  /** accepted_risk only: ISO date or time when the acceptance runs out. */
+  expiresAt?: string | null;
+  /** A member id to assign, or null to unassign. Undefined leaves the owner alone. */
+  ownerId?: string | null;
+}
+
+/** Validate an expiry: a parseable date, in the future (relative to the store clock). */
+export function normaliseExpiry(s: Store, v: string | null | undefined): string | null {
+  if (v === undefined || v === null || v.trim() === '') return null;
+  const t = Date.parse(v);
+  if (!Number.isFinite(t)) throw new StoreError('bad_request', 'expiresAt is not a date', ['expiresAt']);
+  if (t <= s.now().getTime()) throw new StoreError('bad_request', 'expiresAt must be in the future', ['expiresAt']);
+  return new Date(t).toISOString();
+}
+
 /**
  * PATCH /api/findings/:id. The server checks review / accept_risk first.
- * The status applies to this purl in this project (and so to later scans too).
+ * Status and owner apply to this purl in this project (and so to later scans too).
  */
-export function updateFindingStatus(
-  s: Store,
-  orgId: string,
-  findingId: string,
-  input: { status: FindingStatus; note?: string | null },
-  actor: string,
-): FindingRow {
-  if (!isFindingStatus(input.status)) throw new StoreError('bad_request', 'Unknown status', ['status']);
-  const note = input.note?.trim() ? input.note.trim().slice(0, 2000) : null;
+export function updateFindingStatus(s: Store, orgId: string, findingId: string, input: FindingTriageInput, actor: string): FindingRow {
   return tx(s, () => {
     const row = getFindingRow(s, orgId, findingId);
     if (!row) throw new StoreError('not_found', 'Finding not found');
-    if (row.status === input.status && note === null) return row;
-    const at = nowIso(s);
-    run(
-      s,
-      `INSERT INTO finding_state (project_id, purl, status, updated_at, updated_by) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT (project_id, purl) DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at, updated_by = excluded.updated_by`,
-      row.projectId,
-      row.purl,
-      input.status,
-      at,
-      actor,
-    );
+    return applyTriage(s, orgId, row, input, actor);
+  });
+}
+
+/** Apply one triage change to a row (inside a transaction). Exported for bulk updates. */
+export function applyTriage(s: Store, orgId: string, row: FindingRow, input: FindingTriageInput, actor: string): FindingRow {
+  if (input.status !== undefined && !isFindingStatus(input.status)) throw new StoreError('bad_request', 'Unknown status', ['status']);
+  if (input.status === undefined && input.ownerId === undefined) throw new StoreError('bad_request', 'Nothing to change: give status or ownerId', ['status']);
+  const note = input.note?.trim() ? input.note.trim().slice(0, 2000) : null;
+  const status = input.status ?? row.status;
+  const expires = status === 'accepted_risk' ? (input.expiresAt !== undefined ? normaliseExpiry(s, input.expiresAt) : row.riskExpiresAt) : null;
+  if (input.ownerId !== undefined && input.ownerId !== null) {
+    const member = get<{ ok: number }>(s, 'SELECT 1 AS ok FROM role_binding WHERE org_id = ? AND subject_kind = ? AND subject_ref = ? LIMIT 1', orgId, 'user', input.ownerId);
+    if (!member) throw new StoreError('bad_request', 'Unknown member', ['ownerId']);
+  }
+  const ownerId = input.ownerId !== undefined ? input.ownerId : (row.owner?.id ?? null);
+  const statusChanged = status !== row.status || (input.status !== undefined && note !== null) || expires !== row.riskExpiresAt;
+  const ownerChanged = ownerId !== (row.owner?.id ?? null);
+  if (!statusChanged && !ownerChanged) return row;
+  const at = nowIso(s);
+  run(
+    s,
+    `INSERT INTO finding_state (project_id, purl, status, owner_id, risk_expires_at, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT (project_id, purl) DO UPDATE SET status = excluded.status, owner_id = excluded.owner_id,
+       risk_expires_at = excluded.risk_expires_at, updated_at = excluded.updated_at, updated_by = excluded.updated_by`,
+    row.projectId,
+    row.purl,
+    status,
+    ownerId,
+    expires,
+    at,
+    actor,
+  );
+  if (statusChanged) {
     run(
       s,
       'INSERT INTO finding_status_history (project_id, purl, at, by_user, from_status, to_status, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -474,18 +537,27 @@ export function updateFindingStatus(
       at,
       actor,
       row.status,
-      input.status,
-      note,
+      status,
+      expires ? `${note ?? ''}${note ? ' ' : ''}(until ${expires.slice(0, 10)})` : note,
     );
     writeAudit(s, {
       orgId,
       actor,
       action: 'finding.status',
-      target: findingId,
-      detail: { projectId: row.projectId, purl: row.purl, from: row.status, to: input.status, note },
+      target: row.id,
+      detail: { projectId: row.projectId, purl: row.purl, from: row.status, to: status, note, ...(expires ? { expiresAt: expires } : {}) },
     });
-    return getFindingRow(s, orgId, findingId)!;
-  });
+  }
+  if (ownerChanged) {
+    writeAudit(s, {
+      orgId,
+      actor,
+      action: 'finding.owner',
+      target: row.id,
+      detail: { projectId: row.projectId, purl: row.purl, from: row.owner?.id ?? null, to: ownerId },
+    });
+  }
+  return getFindingRow(s, orgId, row.id)!;
 }
 
 /** Level counts and "new" count for one scan. */

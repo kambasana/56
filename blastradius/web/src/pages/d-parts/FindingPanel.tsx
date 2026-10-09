@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SidePanel } from '@/components/SidePanel';
 import { useApi } from '@/lib/useApi';
-import { fmtBlast, fmtNum } from '@/lib/cn';
+import { fmtNum } from '@/lib/cn';
 import { fmtDate } from './format';
 import { AssetPaths, BehindIt, EvidenceList, ReasonsList, StatusControl } from './FindingSections';
 import { Section, StatusBadge } from './ui';
@@ -57,7 +57,7 @@ export function FindingPanel({ row, onClose, onUpdated }: { row: FindingRow; onC
       }
     >
       <p className="pb-3 text-muted-foreground">
-        {row.reachText} · {fmtNum(row.reach.paths)} dependency path{row.reach.paths === 1 ? '' : 's'} · blast {fmtBlast(row.blastScore)}
+        {row.reachText} · {fmtNum(row.reach.paths)} dependency path{row.reach.paths === 1 ? '' : 's'}
       </p>
       <StatusControl finding={row} onUpdated={onUpdated} />
       <Separator className="my-4" />
@@ -73,7 +73,7 @@ export function FindingPanel({ row, onClose, onUpdated }: { row: FindingRow; onC
       {error && <ErrorState error={error} onRetry={reload} />}
       {data && (
         <div className="flex flex-col divide-y">
-          <Section title={`Why it scored ${Math.round(data.score)}`} hint="Each factor's contribution, combined with noisy-OR">
+          <Section title={`Why it scored ${Math.round(data.score)}`} hint="Each reason and how much it adds to the score">
             <ReasonsList reasons={data.reasons} />
           </Section>
           <Section title="Paths to assets" hint="Why is this here? Every path from your assets to this version.">

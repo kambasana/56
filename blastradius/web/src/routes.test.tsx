@@ -7,7 +7,7 @@ import { AuthProvider } from './auth';
 import { ProjectProvider } from './project';
 import { AppRoutes, PAGES, RouteErrorBoundary, isChunkLoadError } from './routes';
 import { safeNext } from './pages/Login';
-import { meFor } from './test/fixtures';
+import { meFor, reportsOnly } from './test/fixtures';
 import type { MeResponse } from '@server/api-types';
 
 function Where() {
@@ -35,14 +35,14 @@ describe('routes', () => {
     expect(screen.getByTestId('where')).toHaveTextContent('/login?next=%2Fprojects%2Fp1%2Ffindings');
   });
 
-  it('renders org home for an admin', async () => {
+  it('renders the Overview for an admin', async () => {
     renderAt('/', meFor('org_admin'));
-    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Overview' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
   });
 
   it('lands an Auditor on /reports', async () => {
-    renderAt('/', meFor('auditor'));
+    renderAt('/', reportsOnly());
     expect(await screen.findByRole('heading', { name: 'Reports' })).toBeInTheDocument();
     expect(screen.getByTestId('where')).toHaveTextContent('/reports');
   });
@@ -50,12 +50,12 @@ describe('routes', () => {
   it('shows a 403 state for a page outside the role', async () => {
     renderAt('/settings', meFor('developer'));
     expect(await screen.findByText("You don't have access to this page")).toBeInTheDocument();
-    renderAt('/projects/p1/findings', meFor('auditor'));
+    renderAt('/projects/p1/findings', reportsOnly());
     expect(await screen.findAllByText("You don't have access to this page")).toHaveLength(2);
   });
 
   it('allows a project page through a project-scope binding', async () => {
-    renderAt('/projects/p1/findings', meFor('auditor', { projectPermissions: { p1: ['findings'] } }));
+    renderAt('/projects/p1/findings', reportsOnly({ projectPermissions: { p1: ['findings'] } }));
     expect(await screen.findByRole('heading', { name: 'Findings' })).toBeInTheDocument();
   });
 
@@ -63,17 +63,62 @@ describe('routes', () => {
     const screens: [string, string][] = [
       ['/projects/p1/changes', 'Changes'],
       ['/projects/p1/findings/f1', 'Finding'],
-      ['/projects/p1/exposure', 'Exposure matrix'],
+      ['/projects/p1/exposure', 'Exposure'],
+      ['/exposure', 'Exposure'],
+      ['/incidents/GHSA-1', 'GHSA-1'],
+      ['/packages/behind?name=chalk', "Who's behind chalk"],
       ['/projects/p1/investigate', 'Investigate'],
       ['/projects/p1/scans', 'Scans'],
       ['/integrations', 'Integrations'],
       ['/settings', 'Settings'],
+      ['/projects', 'Projects'],
+      ['/incidents', 'Incidents'],
+      ['/alerts', 'Alerts'],
+      ['/packages?name=lodash&version=4.17.20', 'lodash@4.17.20'],
     ];
     for (const [path, title] of screens) {
       const { unmount } = renderAt(path, meFor('org_admin'));
       expect(await screen.findByRole('heading', { name: title, level: 1 })).toBeInTheDocument();
       unmount();
     }
+  }, 20_000);
+
+  it('sends a project Exposure matrix to the org-wide one, scoped to that project', async () => {
+    renderAt('/projects/p1/exposure?min=high', meFor('org_admin'));
+    expect(await screen.findByRole('heading', { name: 'Exposure', level: 1 })).toBeInTheDocument();
+    expect(screen.getByTestId('where')).toHaveTextContent('/exposure?min=high&projects=p1');
+  });
+
+  it('opens the org-wide Findings at /findings, keeping scope and filters in the URL', async () => {
+    renderAt('/findings?env=prod&severity=critical', meFor('developer'));
+    expect(await screen.findByRole('heading', { name: 'Findings', level: 1 })).toBeInTheDocument();
+    expect(screen.getByTestId('where')).toHaveTextContent('/findings?env=prod&severity=critical');
+  });
+
+  it('opens a project on its first allowed page', async () => {
+    renderAt('/projects/p1', meFor('org_admin'));
+    expect(await screen.findByRole('heading', { name: 'Findings', level: 1 })).toBeInTheDocument();
+    expect(screen.getByTestId('where')).toHaveTextContent('/projects/p1/findings');
+  });
+
+  it('shows the project sub-nav on project pages and every crumb as a link', async () => {
+    renderAt('/projects/p1/scans', meFor('org_admin'));
+    await screen.findByRole('heading', { name: 'Scans', level: 1 });
+    const sub = screen.getByRole('navigation', { name: 'Project' });
+    expect(within(sub).getAllByRole('link').map((a) => a.textContent)).toEqual(['Changes', 'Findings', 'Exposure matrix', 'Investigate', 'Scans']);
+    expect(within(sub).getByRole('link', { name: 'Scans' })).toHaveAttribute('aria-current', 'page');
+    const crumbs = screen.getByRole('navigation', { name: 'breadcrumb' });
+    const links = within(crumbs).getAllByRole('link');
+    expect(links.map((a) => a.textContent)).toEqual(['acme-corp', 'payments-platform', 'Scans']);
+    expect(links[1]).toHaveAttribute('href', '/projects/p1');
+    expect(links[2]).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('shows the settings sub-nav with Sources', async () => {
+    renderAt('/integrations', meFor('org_admin'));
+    await screen.findByRole('heading', { name: 'Integrations', level: 1 });
+    const sub = screen.getByRole('navigation', { name: 'Settings' });
+    expect(within(sub).getAllByRole('link').map((a) => a.textContent)).toEqual(['Members and roles', 'Sources']);
   });
 
   it('shows not found for unknown paths', async () => {

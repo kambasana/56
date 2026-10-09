@@ -1,0 +1,128 @@
+{
+ "recordedAt": "2026-10-08T18:10:59.463Z",
+ "licences": {
+  "registry": "npm public registry metadata",
+  "advisories": "OSV (CC-BY-4.0 / per source)",
+  "repos": "each repo under its own licence; only lockfiles and package.json are kept"
+ },
+ "items": [
+  {
+   "kind": "repo",
+   "repo": "amarpreetbhatia/api-generator",
+   "commit": "747bbd4855712c431357f26c102fe25eb31bdad7",
+   "committedAt": "2025-09-08T23:18:46+10:00",
+   "role": "exposure-2025",
+   "url": "https://github.com/amarpreetbhatia/api-generator/tree/747bbd4855712c431357f26c102fe25eb31bdad7",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "lperry65/Aider-Chat",
+   "commit": "b1d64b4d834e198bde3006d0447394bbcbe93fc7",
+   "committedAt": "2025-09-08T18:18:24+01:00",
+   "role": "exposure-2025",
+   "url": "https://github.com/lperry65/Aider-Chat/tree/b1d64b4d834e198bde3006d0447394bbcbe93fc7",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "ppnavillera/eclass-video-downloader",
+   "commit": "1afea024a672ce285443a989784c17efddd234ea",
+   "committedAt": "2025-09-09T00:56:44+09:00",
+   "role": "exposure-2025",
+   "url": "https://github.com/ppnavillera/eclass-video-downloader/tree/1afea024a672ce285443a989784c17efddd234ea",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "franRappazzini/spl-staking",
+   "commit": "fff12b41703b07deeade95c27a282986bb87c42d",
+   "committedAt": "2025-09-08T15:31:46-03:00",
+   "role": "exposure-2025",
+   "url": "https://github.com/franRappazzini/spl-staking/tree/fff12b41703b07deeade95c27a282986bb87c42d",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "Antonia095/blog-front",
+   "commit": "df0e8c0f4b7532af2c97a0169a3b19e74d44d007",
+   "committedAt": "2025-09-09T11:26:37-03:00",
+   "role": "exposure-2025",
+   "url": "https://github.com/Antonia095/blog-front/tree/df0e8c0f4b7532af2c97a0169a3b19e74d44d007",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "microsoft/TypeScript",
+   "commit": "de61e696214322f72d967bd17c58c50e44b2920d",
+   "committedAt": "2026-10-06T16:38:13+00:00",
+   "role": "control",
+   "url": "https://github.com/microsoft/TypeScript/tree/de61e696214322f72d967bd17c58c50e44b2920d",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "mochajs/mocha",
+   "commit": "a9fc5296831641fbbcc8862e561e498549d840dc",
+   "committedAt": "2026-10-02T21:35:45-04:00",
+   "role": "control",
+   "url": "https://github.com/mochajs/mocha/tree/a9fc5296831641fbbcc8862e561e498549d840dc",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "fetchedAt": "2026-10-08T17:58:37.297Z"
+  },
+  {
+   "kind": "advisories",
+   "source": "OSV npm export all.zip (https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip)",
+   "count": 1200,
+   "fetchedAt": "2026-10-08T18:10:59.463Z",
+   "rule": "published 2025-09-08..12 (chalk week); text /shai[- _]?hulud/i published 2025-09-14..30 (wave 1) or 2025-11-20..12-05 (wave 2); event-stream GHSAs; withdrawn skipped"
+  },
+  {
+   "kind": "packuments",
+   "source": "https://registry.npmjs.org/<name> (full document)",
+   "count": 10622,
+   "fetchedAt": "2026-10-08T18:10:59.463Z",
+   "trimmed": "versions in 2018-08-01T00:00:00Z..2018-12-31T23:59:59Z and 2025-05-15T00:00:00Z..2025-12-31T23:59:59Z plus the last version before each window; only time, _npmUser.name, maintainers names; deleted versions keep time and are marked gone"
+  },
+  {
+   "kind": "locked",
+   "source": "versions[<locked version>] of the same packuments",
+   "count": 3751,
+   "fetchedAt": "2026-10-08T18:10:59.463Z"
+  },
+  {
+   "kind": "accounts",
+   "source": "https://registry.npmjs.org/-/user/<account>/package (current, not historical)",
+   "count": 103,
+   "fetchedAt": "2026-10-08T18:10:59.463Z",
+   "sampleCap": 1500
+  }
+ ]
+}

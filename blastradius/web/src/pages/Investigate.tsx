@@ -18,6 +18,7 @@ import { Badge, RiskBadge } from '@/components/Badge';
 import { ButtonLink } from '@/components/Button';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { EmptyState, ErrorState } from '@/components/EmptyState';
+import { projectCrumb } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { SidePanel } from '@/components/SidePanel';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -75,7 +76,7 @@ export default function Investigate() {
 
   const crumbs = [
     { label: me?.org?.name ?? 'Organization', to: '/' },
-    { label: project?.name ?? 'Project', to: canFindings ? projectPath(projectId, 'findings') : undefined },
+    projectCrumb(project),
     { label: 'Investigate' },
   ];
 

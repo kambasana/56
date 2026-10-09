@@ -215,7 +215,7 @@ export default function Integrations() {
                 {[
                   '# Findings for a project (signed-in session cookie)',
                   'GET /api/findings?project=<id>&level=critical,high',
-                  '# Report for one snapshot',
+                  '# Report for one scan',
                   'GET /api/reports/<scanId>.sarif',
                 ].join('\n')}
               </ScrollRegion>

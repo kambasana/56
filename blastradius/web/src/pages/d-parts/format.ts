@@ -36,7 +36,8 @@ export function factorLabel(factor: string): string {
   return s ? s[0]!.toUpperCase() + s.slice(1) : factor;
 }
 
-export const STATUS_LABELS: Record<FindingStatus, string> = { new: 'New', reviewed: 'Reviewed', accepted_risk: 'Accepted risk' };
+/** Status words (docs/UX.md §5): the stored ids are kept, the words follow the life cycle. */
+export const STATUS_LABELS: Record<FindingStatus, string> = { new: 'Open', reviewed: 'Triaged', fixing: 'Fixing', resolved: 'Resolved', accepted_risk: 'Accepted risk' };
 
 export const SCAN_STATUS_LABELS: Record<ScanStatus, string> = { queued: 'Queued', running: 'Running', succeeded: 'Succeeded', failed: 'Failed' };
 

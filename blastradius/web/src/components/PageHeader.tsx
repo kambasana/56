@@ -1,12 +1,11 @@
 import { Fragment, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useShellHeader } from './shell-header';
@@ -28,7 +27,13 @@ export interface PageHeaderProps {
   children?: ReactNode;
 }
 
+/**
+ * Every crumb is a link (docs/UX.md §2). The last one is the current page (aria-current), and a
+ * crumb without `to` links to the current address.
+ */
 function Crumbs({ crumbs }: { crumbs: Crumb[] }) {
+  const { pathname, search } = useLocation();
+  const here = pathname + search;
   return (
     <Breadcrumb className="min-w-0">
       <BreadcrumbList className="flex-nowrap">
@@ -37,15 +42,11 @@ function Crumbs({ crumbs }: { crumbs: Crumb[] }) {
           return (
             <Fragment key={i}>
               <BreadcrumbItem className={last ? 'min-w-0' : 'hidden md:inline-flex'}>
-                {c.to && !last ? (
-                  <BreadcrumbLink asChild>
-                    <Link to={c.to}>{c.label}</Link>
-                  </BreadcrumbLink>
-                ) : last ? (
-                  <BreadcrumbPage className="truncate">{c.label}</BreadcrumbPage>
-                ) : (
-                  <span>{c.label}</span>
-                )}
+                <BreadcrumbLink asChild className={last ? 'truncate font-normal text-foreground' : undefined}>
+                  <Link to={last ? here : (c.to ?? here)} aria-current={last ? 'page' : undefined}>
+                    {c.label}
+                  </Link>
+                </BreadcrumbLink>
               </BreadcrumbItem>
               {!last && <BreadcrumbSeparator className="hidden md:block" />}
             </Fragment>
