@@ -11,6 +11,8 @@ threshold rule, baseline and pass rule were committed before any model run in
 
 ## Verdict: FAIL
 
+> **Read with [LAYA-USAGE.md](LAYA-USAGE.md).** This run used Laya zero-shot, with truncated states, an uncalibrated noul and a recall gate built on one incident family. Laya's own docs advise against all of these. The FAIL applies to that configuration only. LAYA-USAGE.md audits the run and sets out a fine-tuned design, evaluated per family against tabular baselines.
+
 | Method (held-out test) | False alarms / test-control account-month (≤ 0.1) | qix warned before T0 | Shai-Hulud accounts warned before T0 (≥ 20/25) | Pass |
 |---|---|---|---|---|
 | No triage (burst rule alone) | 1.873 (79 episodes / 42.18 account-months) | yes, 1.1 h | 25/25 | no |
