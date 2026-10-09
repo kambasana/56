@@ -1,0 +1,7 @@
+# Intermediates rebuilt by rebuild.sh; the notebook reads the gzipped copies in data/laya/.
+data/train.jsonl
+data/calib.jsonl
+data/test.jsonl
+data/all_states.jsonl.gz
+data/all_rows.csv.gz
+src/__pycache__/

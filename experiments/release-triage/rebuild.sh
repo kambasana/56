@@ -24,4 +24,5 @@ $PY -I src/split.py
 npx tsx src/rule_scorer.ts
 $PY -I src/leakage_check.py
 $PY -I src/baselines.py
+$PY -I src/package_for_colab.py   # data/laya/*.jsonl.gz + MANIFEST.json for colab/laya_release_triage.ipynb
 if [ -n "${TOKENIZER:-}" ]; then $PY -I src/check_tokens.py --tokenizer "$TOKENIZER" ${PYLIB:+--pylib "$PYLIB"}; fi
