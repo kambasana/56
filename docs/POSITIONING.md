@@ -105,8 +105,8 @@ Source: [PROOF.md](PROOF.md), enforced by `blastradius/test/replay/proof.test.ts
 - 11 of 16 got an early finding before any advisory.
 - Org exposure came from stored inventories, with no re-scan, in 10.6 ms or less per incident.
 
-This part is **not unique**. Matching known-bad releases to repos is what GitHub, Snyk and others
-sell (see §5). It is table stakes. It is the base the account answer stands on.
+This part is **not unique**. Matching known-bad releases to repos is what GitHub and Snyk already
+offer (see §5). It is table stakes. It is the base the account answer stands on.
 
 ## 4. What failed, and what it means
 
