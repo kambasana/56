@@ -1,12 +1,12 @@
 {
- "rows": 17053,
+ "rows": 16986,
  "max_gap": 0.1,
  "missingness": {
   "bin_added": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -16,6 +16,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -31,6 +36,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -51,6 +61,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "bump_first": {
@@ -65,6 +80,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -85,6 +105,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "bump_minor": {
@@ -99,6 +124,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -119,6 +149,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "bump_prerelease": {
@@ -136,13 +171,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "bytes_ratio_prev": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -152,14 +192,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "days_since_prev_release": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -169,14 +214,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "deps_added": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -186,6 +236,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -204,13 +259,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "deps_removed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -220,14 +280,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "description_changed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -237,6 +302,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -252,6 +322,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -272,6 +347,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "files": {
@@ -289,13 +369,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "files_added": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -305,14 +390,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "files_removed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -322,6 +412,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -337,6 +432,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -357,6 +457,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "install_cmd_chars": {
@@ -374,13 +479,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "install_file_is_new": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -390,14 +500,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "install_hook_changed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -407,6 +522,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -422,6 +542,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -442,6 +567,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "is_first_release": {
@@ -456,6 +586,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -476,6 +611,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "js_files": {
@@ -493,13 +633,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "license_changed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -509,6 +654,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -524,6 +674,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -544,13 +699,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "maintainers_added": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -560,6 +720,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -578,13 +743,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "maintainers_removed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -594,14 +764,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "major_jump": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -612,22 +787,32 @@
     "pos": 1.0,
     "neg": 1.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "median_gap_days_prior": {
    "all": {
-    "pos": 0.7034,
+    "pos": 0.7185,
     "neg": 0.2562,
-    "gap": 0.4471
+    "gap": 0.4623
    },
    "non_first": {
-    "pos": 0.1111,
+    "pos": 0.1169,
     "neg": 0.0153,
-    "gap": 0.0958
+    "gap": 0.1016
    },
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -643,6 +828,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -663,13 +853,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "prev_has_provenance": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -679,14 +874,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "prev_trusted_publisher": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -696,6 +896,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -714,13 +919,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "provenance_dropped": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -730,14 +940,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "publisher_differs_prev": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -747,14 +962,19 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
   "publisher_new_to_package": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -764,6 +984,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -782,13 +1007,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "readme_changed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -798,6 +1028,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -816,13 +1051,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "readme_len_prev": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -832,6 +1072,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -847,6 +1092,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -867,6 +1117,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "releases_prior_365d": {
@@ -884,13 +1139,18 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "repository_changed": {
    "all": {
-    "pos": 0.6663,
+    "pos": 0.6812,
     "neg": 0.2447,
-    "gap": 0.4216
+    "gap": 0.4365
    },
    "non_first": {
     "pos": 0.0,
@@ -900,6 +1160,11 @@
    "first": {
     "pos": 1.0,
     "neg": 1.0,
+    "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
     "gap": 0.0
    }
   },
@@ -915,6 +1180,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -935,6 +1205,11 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "trusted_publisher": {
@@ -949,6 +1224,11 @@
     "gap": 0.0
    },
    "first": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
+   },
+   "two_prior": {
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
@@ -969,6 +1249,11 @@
     "pos": 0.0012,
     "neg": 0.0,
     "gap": 0.0012
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   },
   "young_deps_added": {
@@ -986,21 +1271,26 @@
     "pos": 0.0,
     "neg": 0.0,
     "gap": 0.0
+   },
+   "two_prior": {
+    "pos": 0.0,
+    "neg": 0.0,
+    "gap": 0.0
    }
   }
  },
  "content_parity": {
   "datadog-archive/label=1": {
-   "n_with_dist_fileCount": 2214,
-   "files_equal": 0.8139,
-   "files_within_1": 0.8844,
-   "files_equal_any_convention": 0.9476
+   "n_with_dist_fileCount": 2216,
+   "files_equal": 0.8141,
+   "files_within_1": 0.8845,
+   "files_equal_any_convention": 0.9477
   },
   "registry-tarball/label=1": {
-   "n_with_dist_fileCount": 375,
-   "files_equal": 0.9467,
-   "files_within_1": 0.9627,
-   "files_equal_any_convention": 0.9893
+   "n_with_dist_fileCount": 306,
+   "files_equal": 0.9346,
+   "files_within_1": 0.9542,
+   "files_equal_any_convention": 0.9869
   },
   "registry-tarball/label=0": {
    "n_with_dist_fileCount": 14463,
@@ -1022,6 +1312,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "contents.files": {
@@ -1030,6 +1324,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1042,6 +1340,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "contents.files_removed_since_previous": {
@@ -1052,6 +1354,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "contents.kilobytes": {
@@ -1060,6 +1366,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1072,6 +1382,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "contents.readme_changed": {
@@ -1082,6 +1396,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "contents.readme_chars": {
@@ -1090,6 +1408,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1102,6 +1424,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "dependencies.added": {
@@ -1112,6 +1438,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "dependencies.added_first_published_within_30_days": {
@@ -1120,6 +1450,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1132,6 +1466,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "dependencies.removed": {
@@ -1142,26 +1480,38 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "install_scripts.hooks": {
    "non_first": {
-    "pos_present": 0.5336,
+    "pos_present": 0.556,
     "neg_present": 0.0258
    },
    "first": {
-    "pos_present": 0.593,
+    "pos_present": 0.5949,
     "neg_present": 0.022
+   },
+   "two_prior": {
+    "pos_present": 0.531,
+    "neg_present": 0.026
    }
   },
   "install_scripts.previous_hooks": {
    "non_first": {
-    "pos_present": 0.0833,
+    "pos_present": 0.0734,
     "neg_present": 0.0249
    },
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 0.0606,
+    "neg_present": 0.0251
    }
   },
   "install_scripts.tarball_and_registry_scripts_differ": {
@@ -1170,6 +1520,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1182,6 +1536,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "metadata.license_changed": {
@@ -1192,6 +1550,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "metadata.repository_changed": {
@@ -1202,6 +1564,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "metadata.repository_declared": {
@@ -1210,6 +1576,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1222,6 +1592,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "provenance.previous_present": {
@@ -1232,6 +1606,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.account_prior_releases_of_package": {
@@ -1240,6 +1618,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1252,6 +1634,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.first_release_by_this_account": {
@@ -1262,6 +1648,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.maintainers": {
@@ -1270,6 +1660,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1282,6 +1676,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.maintainers_removed": {
@@ -1292,6 +1690,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.previous_used_trusted_publishing": {
@@ -1302,6 +1704,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.same_as_previous_release": {
@@ -1312,6 +1718,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "publisher.trusted_publishing": {
@@ -1320,6 +1730,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1332,6 +1746,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "release.days_since_previous_release": {
@@ -1342,6 +1760,10 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "release.first_release_of_package": {
@@ -1350,6 +1772,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1362,16 +1788,24 @@
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "release.median_days_between_releases": {
    "non_first": {
-    "pos_present": 0.8889,
+    "pos_present": 0.8831,
     "neg_present": 0.9847
    },
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "release.package_age_days": {
@@ -1380,6 +1814,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1392,6 +1830,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "release.prior_releases": {
@@ -1400,6 +1842,10 @@
     "neg_present": 1.0
    },
    "first": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
+   },
+   "two_prior": {
     "pos_present": 1.0,
     "neg_present": 1.0
    }
@@ -1412,6 +1858,10 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "release.releases_in_previous_year": {
@@ -1422,56 +1872,80 @@
    "first": {
     "pos_present": 1.0,
     "neg_present": 1.0
+   },
+   "two_prior": {
+    "pos_present": 1.0,
+    "neg_present": 1.0
    }
   },
   "text.description": {
    "non_first": {
-    "pos_present": 0.9456,
+    "pos_present": 0.9453,
     "neg_present": 0.9616
    },
    "first": {
-    "pos_present": 0.7525,
+    "pos_present": 0.7515,
     "neg_present": 0.9551
+   },
+   "two_prior": {
+    "pos_present": 0.9493,
+    "neg_present": 0.9616
    }
   },
   "text.install_script_files": {
    "non_first": {
-    "pos_present": 0.4734,
+    "pos_present": 0.4913,
     "neg_present": 0.0182
    },
    "first": {
-    "pos_present": 0.4249,
+    "pos_present": 0.4255,
     "neg_present": 0.0136
+   },
+   "two_prior": {
+    "pos_present": 0.4676,
+    "neg_present": 0.0184
    }
   },
   "text.new_files": {
    "non_first": {
-    "pos_present": 0.6042,
+    "pos_present": 0.6294,
     "neg_present": 0.2051
    },
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 0.6225,
+    "neg_present": 0.2041
    }
   },
   "text.previous_description": {
    "non_first": {
-    "pos_present": 0.0856,
+    "pos_present": 0.0896,
     "neg_present": 0.0169
    },
    "first": {
     "pos_present": 0.0,
     "neg_present": 0.0
+   },
+   "two_prior": {
+    "pos_present": 0.0718,
+    "neg_present": 0.0164
    }
   },
   "text.readme_head": {
    "non_first": {
-    "pos_present": 0.8113,
+    "pos_present": 0.8097,
     "neg_present": 0.8989
    },
    "first": {
-    "pos_present": 0.3432,
+    "pos_present": 0.3411,
     "neg_present": 0.8192
+   },
+   "two_prior": {
+    "pos_present": 0.8268,
+    "neg_present": 0.8991
    }
   }
  },
@@ -1479,70 +1953,70 @@
   "short_name/label=0": 27
  },
  "single_feature_auc_train": {
-  "bin_added": 0.5013,
+  "bin_added": 0.5014,
   "bin_count": 0.4626,
   "bump_backport": 0.5,
-  "bump_first": 0.7804,
+  "bump_first": 0.7814,
   "bump_major": 0.4936,
   "bump_minor": 0.4668,
-  "bump_patch": 0.4753,
-  "bump_prerelease": 0.2839,
-  "bytes_ratio_prev": 0.8932,
-  "days_since_prev_release": 0.8308,
-  "deps_added": 0.4818,
-  "deps_count": 0.3511,
+  "bump_patch": 0.4749,
+  "bump_prerelease": 0.2834,
+  "bytes_ratio_prev": 0.8978,
+  "days_since_prev_release": 0.8319,
+  "deps_added": 0.4819,
+  "deps_count": 0.35,
   "deps_removed": 0.4846,
   "description_changed": 0.4991,
-  "description_len": 0.4411,
-  "distinct_publishers_prior": 0.2088,
-  "files": 0.2308,
-  "files_added": 0.7255,
-  "files_removed": 0.4681,
+  "description_len": 0.4418,
+  "distinct_publishers_prior": 0.2082,
+  "files": 0.2301,
+  "files_added": 0.7283,
+  "files_removed": 0.466,
   "gypfile": 0.5,
   "has_provenance": 0.4236,
-  "install_cmd_chars": 0.7659,
-  "install_file_is_new": 0.8196,
-  "install_hook_changed": 0.8453,
-  "install_hooks": 0.7669,
+  "install_cmd_chars": 0.7664,
+  "install_file_is_new": 0.8225,
+  "install_hook_changed": 0.8484,
+  "install_hooks": 0.7673,
   "install_runs_package_file": 0.6912,
-  "is_first_release": 0.7804,
-  "is_prerelease": 0.2726,
+  "is_first_release": 0.7814,
+  "is_prerelease": 0.2722,
   "js_files": 0.3156,
   "license_changed": 0.5011,
-  "log_bytes": 0.2412,
-  "log_max_file_bytes": 0.2941,
-  "maintainers_added": 0.5118,
-  "maintainers_count": 0.2559,
-  "maintainers_removed": 0.5125,
-  "major_jump": 0.5556,
-  "median_gap_days_prior": 0.5989,
-  "new_install_hooks": 0.7731,
-  "package_age_days": 0.2361,
-  "prev_has_provenance": 0.4674,
+  "log_bytes": 0.2405,
+  "log_max_file_bytes": 0.2934,
+  "maintainers_added": 0.5099,
+  "maintainers_count": 0.2556,
+  "maintainers_removed": 0.5105,
+  "major_jump": 0.5555,
+  "median_gap_days_prior": 0.6005,
+  "new_install_hooks": 0.7736,
+  "package_age_days": 0.2349,
+  "prev_has_provenance": 0.4679,
   "prev_trusted_publisher": 0.4958,
-  "prior_releases": 0.1691,
-  "provenance_dropped": 0.5512,
-  "publisher_differs_prev": 0.5992,
-  "publisher_new_to_package": 0.6016,
-  "publisher_prior_releases": 0.164,
-  "readme_changed": 0.4744,
-  "readme_len": 0.2804,
-  "readme_len_prev": 0.5301,
-  "releases_prev_24h": 0.2961,
-  "releases_prev_7d": 0.2059,
-  "releases_prior_365d": 0.1529,
-  "repository_changed": 0.5249,
-  "repository_present": 0.2056,
+  "prior_releases": 0.1683,
+  "provenance_dropped": 0.5517,
+  "publisher_differs_prev": 0.598,
+  "publisher_new_to_package": 0.6003,
+  "publisher_prior_releases": 0.1634,
+  "readme_changed": 0.4723,
+  "readme_len": 0.2799,
+  "readme_len_prev": 0.5296,
+  "releases_prev_24h": 0.2956,
+  "releases_prev_7d": 0.2056,
+  "releases_prior_365d": 0.1523,
+  "repository_changed": 0.5229,
+  "repository_present": 0.2051,
   "tarball_manifest_scripts_differ": 0.5,
   "trusted_publisher": 0.495,
-  "version_major": 0.678,
+  "version_major": 0.6788,
   "young_deps_added": 0.5049
  },
  "dependency_age_unknown": {
   "label=1": {
-   "rows": 2589,
+   "rows": 2522,
    "rows_with_unknown_dependency_age": 88,
-   "share": 0.034
+   "share": 0.0349
   },
   "label=0": {
    "rows": 14464,

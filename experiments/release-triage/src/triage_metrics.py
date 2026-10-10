@@ -23,6 +23,8 @@ BUDGET_PER_1000 = 10.0
 BUSY_ACCOUNT = 5
 N_BOOT = 2000
 MIN_FAMILY_N = 5  # co-primary macro (2026-10-10 deviation): families with at least this many test positives
+# Reporting only (gate review, 2026-10-10): these never enter the pass rule P0-P6 or any threshold.
+EXCLUDED_FAMILY = "dependency-confusion"  # family label partly from a "major >= 50" heuristic that is also a model input
 
 
 def ece(p: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
@@ -57,6 +59,54 @@ def macro_recall(df: pd.DataFrame, alert: np.ndarray) -> tuple[float, dict]:
     for fam, g in df[pos].groupby("family"):
         per[fam] = {"n": int(len(g)), "recall": float(alert[g.index].mean())}
     return (float(np.mean([v["recall"] for v in per.values()])) if per else float("nan")), per
+
+
+def _macro(per: dict, min_n: int = 1, exclude: tuple = ()) -> float:
+    r = [v["recall"] for f, v in per.items() if v["n"] >= min_n and f not in exclude]
+    return float(np.mean(r)) if r else float("nan")
+
+
+def _first_release_mask(test: pd.DataFrame) -> np.ndarray:
+    return test["is_first_release"].astype(str).str.strip().isin(["1", "1.0", "True", "true"]).values
+
+
+def reporting_only(alert: np.ndarray, s_test: np.ndarray, test: pd.DataFrame, per: dict) -> dict:
+    """Extra test metrics that are REPORTED ONLY (gate review 2026-10-10; not part of P0-P6, no threshold uses them).
+
+    * Macro recall without the dependency-confusion family, whose label is partly assigned by a "major >= 50"
+      version heuristic that is also a model input (all families, and families with >= MIN_FAMILY_N positives).
+    * The same alerts (threshold fitted on calib, as in `evaluate`) split by first release vs later release: about a
+      quarter of benign but well over half of malicious releases are first releases, so a model can lean on that
+      mix. Within each stratum: recall per family, macro recall (all families, >= MIN_FAMILY_N, without
+      dependency-confusion), alerts per 1,000 benign releases, and ROC AUC of the raw score.
+    `test` needs `is_first_release`; without it only the dependency-confusion figures are returned.
+    """
+    test = test.reset_index(drop=True)
+    y = test["label"].values
+    out = {"excluded_family": EXCLUDED_FAMILY,
+           "macro_recall_excl_dependency_confusion": _macro(per, exclude=(EXCLUDED_FAMILY,)),
+           "macro_recall_min5_excl_dependency_confusion": _macro(per, MIN_FAMILY_N, (EXCLUDED_FAMILY,))}
+    if "is_first_release" not in test:
+        return out
+    first = _first_release_mask(test)
+    strata = {}
+    for nm, m in (("first_release", first), ("non_first_release", ~first)):
+        sub = test[m].reset_index(drop=True)
+        a, s, ys = alert[m], s_test[m], y[m]
+        _, per_s = macro_recall(sub, a)
+        neg = ys == 0
+        strata[nm] = {
+            "positives": int((~neg).sum()), "negatives": int(neg.sum()),
+            "macro_recall": _macro(per_s), "macro_recall_min5": _macro(per_s, MIN_FAMILY_N),
+            "families_min5": sum(v["n"] >= MIN_FAMILY_N for v in per_s.values()),
+            "macro_recall_excl_dependency_confusion": _macro(per_s, exclude=(EXCLUDED_FAMILY,)),
+            "micro_recall": float(a[~neg].mean()) if (~neg).any() else float("nan"),
+            "alerts_per_1000_benign": float(1000 * a[neg].mean()) if neg.any() else float("nan"),
+            "roc_auc": float(roc_auc_score(ys, s)) if 0 < ys.sum() < len(ys) else float("nan"),
+            "per_family": per_s,
+        }
+    out["by_first_release"] = strata
+    return out
 
 
 def evaluate(name: str, s_cal, s_test, cal: pd.DataFrame, test: pd.DataFrame, fit_s: float, pred_s: float,
@@ -110,6 +160,7 @@ def evaluate(name: str, s_cal, s_test, cal: pd.DataFrame, test: pd.DataFrame, fi
         "ece_calibrated": ece(p_test, y_test), "brier_calibrated": float(brier_score_loss(y_test, p_test)),
         "fit_seconds": fit_s, "predict_ms_per_1000": 1000 * pred_s / max(1, len(test)) * 1000,
         "per_family": per,
+        "reporting_only": reporting_only(alert, s_test, test, per),
     }
 
 

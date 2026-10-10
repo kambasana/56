@@ -2,8 +2,8 @@
  "calib_start": "2025-10-01",
  "test_start": "2026-03-01",
  "cap": 0.25,
- "rows_in": 30512,
- "rows_out": 17053,
+ "rows_in": 30443,
+ "rows_out": 16986,
  "dropped_for_grouping": {
   "neg:calib": 3312,
   "neg:test": 3137,
@@ -15,19 +15,19 @@
   "calib:dependency-confusion": 185,
   "calib:shai-hulud": 194,
   "calib:unattributed-malicious": 518,
-  "train:dependency-confusion": 396,
-  "train:tea-xyz-token-farming": 2084,
-  "train:unattributed-malicious": 1234
+  "train:dependency-confusion": 398,
+  "train:tea-xyz-token-farming": 2086,
+  "train:unattributed-malicious": 1236
  },
  "dropped_for_ratio_floor": {
-  "train:dependency-confusion": 107,
-  "train:tea-xyz-token-farming": 108,
-  "train:unattributed-malicious": 109
+  "train:dependency-confusion": 104,
+  "train:tea-xyz-token-farming": 105,
+  "train:unattributed-malicious": 107
  },
  "min_negatives_per_positive": 5,
  "largest_component_rows": 523,
- "components": 7033,
- "script_intent_questions": 1783,
+ "components": 6970,
+ "script_intent_questions": 1781,
  "splits": {
   "train": {
    "rows": 6175,
@@ -43,12 +43,12 @@
    "families_with_50_positives": 5,
    "negatives_per_positive": 5.0,
    "positives_per_family": {
-    "dependency-confusion": 230,
-    "tea-xyz-token-farming": 230,
+    "dependency-confusion": 231,
+    "tea-xyz-token-farming": 231,
     "unattributed-malicious": 230,
     "shai-hulud": 146,
-    "data-exfiltration": 60,
-    "crypto-theft": 48,
+    "data-exfiltration": 59,
+    "crypto-theft": 47,
     "npmjs-help-phishing-2025-09": 18,
     "gluestack-ui": 17,
     "npnjs-phishing-2025-07": 16,
@@ -65,12 +65,12 @@
    },
    "positives_per_category": {
     "hijack": 210,
-    "new_malicious": 588,
+    "new_malicious": 587,
     "sabotage": 1,
-    "spam": 230
+    "spam": 231
    },
    "negatives_first_release": 1135,
-   "positives_first_release": 804
+   "positives_first_release": 806
   },
   "calib": {
    "rows": 3231,
@@ -104,28 +104,28 @@
    "positives_first_release": 220
   },
   "test": {
-   "rows": 7647,
-   "positives": 1260,
+   "rows": 7580,
+   "positives": 1193,
    "negatives": 6387,
    "published_range": [
     "2026-03-01",
     "2026-10-08"
    ],
    "families": 26,
-   "max_family_share": 0.204,
+   "max_family_share": 0.215,
    "families_with_5_positives": 11,
    "families_with_50_positives": 7,
-   "negatives_per_positive": 5.07,
+   "negatives_per_positive": 5.35,
    "positives_per_family": {
     "dependency-confusion": 257,
-    "data-exfiltration": 255,
     "unattributed-malicious": 237,
+    "data-exfiltration": 200,
     "teampcp-2026": 175,
     "mastra": 119,
-    "typosquat": 68,
-    "crypto-theft": 58,
+    "typosquat": 62,
+    "crypto-theft": 53,
     "miasma-2026": 38,
-    "beacon": 16,
+    "beacon": 15,
     "2026-07-24": 8,
     "ironworm-npm": 6,
     "discord-token-stealer": 4,
@@ -145,11 +145,11 @@
     "tiledesk": 1
    },
    "positives_per_category": {
-    "new_malicious": 896,
+    "new_malicious": 829,
     "hijack": 364
    },
    "negatives_first_release": 1607,
-   "positives_first_release": 701
+   "positives_first_release": 692
   }
  },
  "packages_in_two_splits": 0,

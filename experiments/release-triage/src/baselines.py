@@ -15,6 +15,9 @@ Reported on test: per-family recall, macro recall (mean over families; each fami
 without the largest test family, a family bootstrap 95% interval for macro recall, precision, alerts per 1,000
 benign releases, false alarms per account-month for accounts with >= BUSY_ACCOUNT releases in test, ROC AUC,
 average precision, ECE (10 equal-width bins, calibrated probability), Brier, run time.
+Reported only, never gated (gate review 2026-10-10, `reporting_only` in each result): macro recall without the
+dependency-confusion family, and recall per family / macro recall / alerts per 1,000 benign / ROC AUC within first
+releases and within later releases separately (same calib threshold).
 
 Metrics, calibration and the threshold rule live in src/triage_metrics.py, which the Colab notebook uses for Laya.
 Writes results/baselines.json and results/baseline_scores.csv.gz (per-row scores on calib and test, for the
@@ -111,7 +114,7 @@ def main() -> None:
     # Per-row scores on calib and test, so the notebook can compute Laya's paired family bootstrap against each.
     rows = []
     for sp, part in (("calib", cal), ("test", test)):
-        base = part[["key", "label", "family", "category", "published", "publisher"]].copy()
+        base = part[["key", "label", "family", "category", "published", "publisher", "is_first_release"]].copy()
         base.insert(0, "split", sp)
         for m, (sc, st) in scores.items():
             base[m] = sc if sp == "calib" else st
@@ -131,6 +134,15 @@ def main() -> None:
               f"w/o-largest {r['macro_recall_without_largest_family']:.3f} microR {r['micro_recall']:.3f} prec {r['precision']} "
               f"alerts/1k {r['alerts_per_1000_benign']:.1f} FA/acct-mo {r['false_alarms_per_busy_account_month']} "
               f"AUC {r['roc_auc']:.3f} AP {r['average_precision']:.3f} ECE {r['ece_calibrated']:.3f}")
+    print("Reporting only (not in the pass rule): macro recall without dependency-confusion, and by first release")
+    for r in out["results"]:
+        ro = r["reporting_only"]
+        line = f"{r['method']:45s} macroR-noDC {ro['macro_recall_excl_dependency_confusion']:.3f} " \
+               f"macroR>=5-noDC {ro['macro_recall_min5_excl_dependency_confusion']:.3f}"
+        for nm, st in ro["by_first_release"].items():
+            line += f" | {nm}: macroR {st['macro_recall']:.3f} macroR>=5 {st['macro_recall_min5']:.3f} " \
+                    f"alerts/1k {st['alerts_per_1000_benign']:.1f} AUC {st['roc_auc']:.3f}"
+        print(line)
 
 
 if __name__ == "__main__":

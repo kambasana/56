@@ -622,7 +622,7 @@ def harness(run_id, ckpt):
 METRICS = '''# Pre-registered metrics (same code as the baselines: src/triage_metrics.py).
 def metrics(run_id, sc):
     path = RESULTS / f"metrics_{run_id}.json"
-    m = META[["split", "key", "label", "family", "category", "published", "publisher"]]
+    m = META[["split", "key", "label", "family", "category", "published", "publisher", "is_first_release"]]
     d = sc.merge(m, on=["split", "key"], how="inner")
     if len(d) != len(sc):
         raise SystemExit(f"{run_id}: {len(sc) - len(d)} scored rows missing from baseline_scores.csv.gz")
@@ -897,26 +897,49 @@ SUMMARY = '''# One summary table: baselines and every Laya run, test split, same
 cols = ["macro_recall", "macro_recall_ci95_family_bootstrap", "macro_recall_min5", "macro_recall_without_largest_family", "micro_recall",
         "precision", "alerts_per_1000_benign", "false_alarms_per_busy_account_month", "roc_auc", "average_precision",
         "ece_calibrated"]
-rows_out = []
+# Reporting only (gate review 2026-10-10; not in the pass rule): macro recall without dependency-confusion, and
+# macro recall / alerts per 1,000 benign / ROC AUC within first releases (1st) and later releases (later) separately.
+def reporting_cols(r):
+    ro = r.get("reporting_only") or {}
+    out = {"macroR_noDC": ro.get("macro_recall_excl_dependency_confusion"),
+           "macroR5_noDC": ro.get("macro_recall_min5_excl_dependency_confusion")}
+    for nm, short in (("first_release", "1st"), ("non_first_release", "later")):
+        st = (ro.get("by_first_release") or {}).get(nm) or {}
+        out.update({f"{short}_macroR": st.get("macro_recall"), f"{short}_macroR5": st.get("macro_recall_min5"),
+                    f"{short}_macroR_noDC": st.get("macro_recall_excl_dependency_confusion"),
+                    f"{short}_alerts_1k": st.get("alerts_per_1000_benign"), f"{short}_auc": st.get("roc_auc")})
+    return out
+
+rows_out, rows_rep = [], []
 for r in BASELINES["results"]:
     rows_out.append({"method": r["method"], **{c: r.get(c) for c in cols}, "order_flip": None, "collapsed": None})
+    rows_rep.append({"method": r["method"], **reporting_cols(r)})
 for run_id in sorted(p.stem.replace("metrics_", "") for p in RESULTS.glob("metrics_*.json")):
     m = load_m(run_id)
     rows_out.append({"method": "laya " + run_id, **{c: m.get(c) for c in cols},
                      "order_flip": m["order_check"]["alert_flip_rate"], "collapsed": m.get("collapsed")})
+    rows_rep.append({"method": "laya " + run_id, **reporting_cols(m)})
 T = pd.DataFrame(rows_out)
+TR = pd.DataFrame(rows_rep)
 fmt = T.copy()
 fmt["macro_recall_ci95_family_bootstrap"] = fmt["macro_recall_ci95_family_bootstrap"].map(
     lambda v: f"[{v[0]:.3f}, {v[1]:.3f}]" if isinstance(v, list) else "")
 pd.set_option("display.width", 250); pd.set_option("display.max_columns", 30)
 print(fmt.round(3).to_string(index=False))
 print()
+print("Reporting only (not in the pass rule): without dependency-confusion; first releases (1st) vs later releases")
+print(TR.round(3).to_string(index=False))
+print()
 print("VERDICT:", VERDICT["outcome"])
 print("best baseline:", VERDICT["best_baseline"], "| chosen base:", VERDICT["chosen_base"], "| shipped seed:", VERDICT["shipped_seed"])
-try:
-    table = fmt.round(3).to_markdown(index=False)
-except ImportError:  # tabulate missing
-    table = "```\\n" + fmt.round(3).to_string(index=False) + "\\n```"
+def _md(t):
+    try:
+        return t.round(3).to_markdown(index=False)
+    except ImportError:  # tabulate missing
+        return "```\\n" + t.round(3).to_string(index=False) + "\\n```"
+table = _md(fmt) + ("\\n\\n## Reporting only (not in the pass rule)\\n\\nMacro recall without dependency-confusion (noDC), "
+                    "and metrics within first releases (1st) and later releases (later), at the same calib threshold.\\n\\n"
+                    + _md(TR))
 (RESULTS / "summary.md").write_text("# Laya release triage: summary\\n\\n" + table
                                     + f"\\n\\n**Verdict:** {VERDICT['outcome']}\\n")
 shutil.make_archive(str(OUT / "results"), "zip", RESULTS)

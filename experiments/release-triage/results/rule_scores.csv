@@ -23067,13 +23067,11 @@ key,intrinsic,factors,install_flags
 "1:@ahmedhfarag/ngx-virtual-scroller@4.0.4",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@ai0x1337/budoux-extension@99.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@aifabrix/miso-client@4.7.2",0.277500,no_provenance;single_maintainer,
-"1:@aledan007/tester@0.4.5",0.277500,no_provenance;single_maintainer,
 "1:@amiga-fwk-nodejs/log@331.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@amiga-fwk-nodejs/metrics@331.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@amigatechdocs/core@331.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@aml-ark/ark-experience-byteplus@18.3.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@aml-ark/demo-house@999.99.0",0.494250,install_script;no_provenance;single_maintainer,network
-"1:@amswf/huoke@1.9.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@angular_devkit/architect@99.1.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@angular_devkit/build-webpack@99.1.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@angular_devkit/build_angular@99.1.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -23111,7 +23109,6 @@ key,intrinsic,factors,install_flags
 "1:@apple-pay-trust/destroy@99.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@apple-pay-trust/merchant-session@99.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@appupdate/cdn-sync@1.0.1",0.277500,no_provenance;single_maintainer,
-"1:@arbocollab/arbo-web-people@0.26.3-alpha.7",0.150000,no_provenance,
 "1:@art-ws/config-eslint@2.0.4",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@art-ws/config-ts@2.0.7",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@art-ws/di-node@2.0.13",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
@@ -23165,7 +23162,6 @@ key,intrinsic,factors,install_flags
 "1:@browserbasehq/mcp@2.1.1",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
 "1:@browserbasehq/sdk-functions@0.0.4",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
 "1:@browserbasehq/stagehand@3.0.4",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
-"1:@budetzz/baileys@2.0.14",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@bugdtest/test1@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:@builderius/sense-ai@1.0.0",0.494250,install_script;no_provenance;single_maintainer,env_access;eval;long_command;obfuscated
 "1:@business_promocode/apply_promocode@99.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -23234,7 +23230,6 @@ key,intrinsic,factors,install_flags
 "1:@ctrl/ngx-codemirror@7.0.1",0.702500,provenance_dropped;install_script;single_maintainer,new_install_hook;runs_package_file
 "1:@ctrl/ngx-csv@6.0.1",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@ctrl/ngx-rightclick@4.0.1",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
-"1:@ctrl/plex@6.0.0",0.150000,single_maintainer,
 "1:@ctrl/qbittorrent@9.7.1",0.702500,provenance_dropped;install_script;single_maintainer,new_install_hook;runs_package_file
 "1:@ctrl/react-adsense@2.0.1",0.702500,provenance_dropped;install_script;single_maintainer,new_install_hook;runs_package_file
 "1:@ctrl/shared-torrent@6.3.1",0.702500,provenance_dropped;install_script;single_maintainer,new_install_hook;runs_package_file
@@ -23328,7 +23323,6 @@ key,intrinsic,factors,install_flags
 "1:@espace-client-axafr/rib-v2@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@espace-client-axafr/sdj@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@esxp/platform-components-lib-ui@1.7.11",0.494250,install_script;no_provenance;single_maintainer,network
-"1:@euqns/nudge-mcp@0.1.0",0.277500,no_provenance;single_maintainer,
 "1:@everreal/validate-esmoduleinterop-imports@1.4.4",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@everreal/web-analytics@0.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@evg-ui/lib@99.9.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -23343,7 +23337,6 @@ key,intrinsic,factors,install_flags
 "1:@fhkryxv/baileys@1.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@flight-common/components@1.2.9213",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@flight-common/models@1.2.9213",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@flowselections/core@1.0.8",0.277500,no_provenance;single_maintainer,
 "1:@fmr-pr103625/apex-core@1.999.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@fms-common-biz/basic-react@99.9.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@frefrefre/testhackerrr@2.0.0",0.150000,no_provenance,
@@ -23399,40 +23392,33 @@ key,intrinsic,factors,install_flags
 "1:@ikyyofc/gemini-cli@3.0.1",0.277500,no_provenance;single_maintainer,
 "1:@imhuman/corp-build-utils-poc@99.9.33",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@imou/web-front-basic-alg@0.0.1",0.277500,no_provenance;single_maintainer,
-"1:@inetafrica/open-claudia@2.2.15",0.277500,no_provenance;single_maintainer,
 "1:@infinid-indonesia/ui-kit@10.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@ing-web-es/application@99.9.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@injectivelabs/sdk-ts@1.20.21",0.000000,,
 "1:@innocarpe/deepseek-build@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@inter-ikea-gallery/integration@99.9.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@iola_adm/iola-cli@0.1.2",0.277500,no_provenance;single_maintainer,
 "1:@isfe-common/testing-constants@9.2.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@isfront/locale@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@isimplelab/ng2-charts@10.12.14",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@ivy-shared-components/iconslibrary@99.99.99",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@ivy-shared-components/testing@99.99.990",0.494250,install_script;no_provenance;single_maintainer,network
-"1:@jemavidev/betteragents-pi@0.1.1",0.277500,no_provenance;single_maintainer,
 "1:@jet-app/app-store@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@joaoxxx/internallib-v325@1.0.6",0.277500,no_provenance;single_maintainer,
 "1:@johndeere-tech/eslint-plugin-timbercloud-custom-rules@101.101.101",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@jojoxyz/condemnedforce-baileys@2.3.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@jonusnattapong/claudecode@2.1.163",0.277500,no_provenance;single_maintainer,
 "1:@js-to-lua/convert@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:@justworkshr/alma@99.9.1",0.405000,install_script;no_provenance,new_install_hook;runs_package_file
 "1:@kahoot-frontend/builder-common@339.52.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@kanaraa/baileys@3.1.8",0.277500,no_provenance;single_maintainer,
-"1:@kedem/okdb@1.8.3",0.277500,no_provenance;single_maintainer,
 "1:@kelvdra/baileys@1.0.5-rc.3",0.277500,no_provenance;single_maintainer,
 "1:@khaznatech/common@99.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@khaznatech/core@99.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@kills_sh/bootstrap@99.9.100",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@kiwiiw/ez-lib@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@klarna-travel-platform/travel-booking-shared-types@99.99.99",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@kmmao/happy-coder@0.83.7",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@kolbo/mcp@1.57.1",0.150000,single_maintainer,
 "1:@kone-ds/tokens@1.99.99",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@kone-ds/webcomponents-react@1.99.99",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@kruzer/lib-ui@0.0.0-alpha.491",0.277500,no_provenance;single_maintainer,
 "1:@kui-react/checkbox@9999.9999.9999",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@kvytech/cli@0.0.7",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
 "1:@kvytech/components@0.0.2",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
@@ -23445,11 +23431,9 @@ key,intrinsic,factors,install_flags
 "1:@kvytech/web@0.0.2",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
 "1:@kxafunc/xbails@0.0.8",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@kyronixai/executer@1.0.5",0.277500,no_provenance;single_maintainer,
-"1:@kyungseopk1m/holidays-kr@2.0.2",0.150000,single_maintainer,
 "1:@leafnoise/mirage@2.0.3",0.405000,install_script;no_provenance,new_install_hook;runs_package_file
 "1:@leejungkiin/awkit@3.3.1",0.277500,no_provenance;single_maintainer,
 "1:@lensapp/eslint-config@99.99.99",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@leviyuan/lodestar@0.4.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@levvicode/baileys@0.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@linx-ui/payatu@99.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@linx-ui/pharmacy@4.2.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -23652,7 +23636,6 @@ key,intrinsic,factors,install_flags
 "1:@nf-addons/am-global-header@9.9.10",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@ninjaone/webapp@172.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@node-mf/utils@0.0.0",0.277500,no_provenance;single_maintainer,
-"1:@nolimit-x/win32-x64@1.0.105",0.277500,no_provenance;single_maintainer,
 "1:@nomicfoundations/hardhat-config@1.0.3",0.277500,no_provenance;single_maintainer,
 "1:@nosinovacao/nosid-mfe-common@999.9.9",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@noxleyss/baileys@1.1.10",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -23673,10 +23656,6 @@ key,intrinsic,factors,install_flags
 "1:@nytt/sass-utils@2.0.0",0.494250,install_script;no_provenance;single_maintainer,network;runs_package_file
 "1:@od-react/od-react-test@1.0.0",0.385875,install_script;no_provenance;single_maintainer,
 "1:@one-site/europcar@2.64.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@onerjs/inspector@8.52.2",0.277500,no_provenance;single_maintainer,
-"1:@onerjs/serializers@8.52.1",0.277500,no_provenance;single_maintainer,
-"1:@onerjs/smart-filters-blocks@8.51.9",0.277500,no_provenance;single_maintainer,
-"1:@onerjs/smart-filters@8.51.7",0.277500,no_provenance;single_maintainer,
 "1:@onlytoodles/crypto-jsa@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@openclaw-cn/cli@1.4.1",0.494250,install_script;no_provenance;single_maintainer,new_install_hook
 "1:@openclaw-cn/feishu@0.2.11",0.494250,install_script;no_provenance;single_maintainer,new_install_hook
@@ -23835,7 +23814,6 @@ key,intrinsic,factors,install_flags
 "1:@roku-web-ui/modal@99.9.7",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@roku-web-ui/pills@99.9.7",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@roku-web-ui/standard-footer@99.9.7",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@rspack-debug/core@2.0.4",0.000000,,
 "1:@rspack/cli@1.1.7",0.824919,provenance_dropped;publisher_change;install_script,new_install_hook;runs_package_file
 "1:@rspack/core@1.1.7",0.824919,provenance_dropped;publisher_change;install_script,new_install_hook;runs_package_file
 "1:@rxap/ngx-bootstrap@19.0.3",0.150000,no_provenance,
@@ -23853,14 +23831,11 @@ key,intrinsic,factors,install_flags
 "1:@sas-dvr/nova-crossorigin-auth@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@sauravthakur/corplib@999.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@sber-business-id-kekw/srp@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@scp3500/openvl@1.0.40",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@secauditb20y/sec-test-r3b@1.0.0",0.494250,install_script;no_provenance;single_maintainer,eval
 "1:@secsol5g/qlik-sense@5.6.0",0.277500,no_provenance;single_maintainer,
 "1:@seezo/sdr-mcp-server@0.0.5",0.405000,install_script;no_provenance,new_install_hook;runs_package_file
-"1:@self-evolving-harness/kivo@1.29.3",0.277500,no_provenance;single_maintainer,
 "1:@selfpentest/bin-confusion@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:@selfpentest/eslint-pentest-plugin@1.0.0",0.277500,no_provenance;single_maintainer,
-"1:@semacode/cli@1.5.28",0.277500,no_provenance;single_maintainer,
 "1:@seo-frontend-components/card-blog-carousel-mobile@1.999.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@seo-frontend-components/card-blog-carousel@1.999.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@seo-frontend-components/card-blog-entry@1.999.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -23898,10 +23873,8 @@ key,intrinsic,factors,install_flags
 "1:@seznam-diskuze/embed@100.1.0",0.277500,no_provenance;single_maintainer,
 "1:@seznam-diskuze/web@991.9.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@sfdc-ogs/v1-stable@99.9.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@shadanai/openclaw@2026.5.16",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@shadowmonarchx/eslint_plugin_react@7.29.5",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@shr3k/tdspt-helper@3.2.3",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@signetai/signet-memory-openclaw@0.123.3",0.277500,no_provenance;single_maintainer,
 "1:@smart-dev-wa/baileys@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@smt-front/analytics@158.1.5",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@smt-front/common@158.1.5",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -24010,7 +23983,6 @@ key,intrinsic,factors,install_flags
 "1:@tanstack/vue-start-server@1.166.50",0.327236,maintainer_change,
 "1:@tanstack/vue-start@1.167.61",0.327236,maintainer_change,
 "1:@tanstack/zod-adapter@1.166.12",0.499769,maintainer_change,
-"1:@taskd/maritime-email-processor@1.0.6",0.150000,no_provenance,
 "1:@taskflow-corp/cli@0.1.24",0.702500,provenance_dropped;install_script;single_maintainer,new_install_hook;runs_package_file
 "1:@taxmoninor/taxmon@99.0.5",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@team-event/v2@1.2.9213",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -24031,8 +24003,6 @@ key,intrinsic,factors,install_flags
 "1:@testerconfusion/malicious-poc@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:@testfeii/hallo-word@0.0.1",0.494250,install_script;no_provenance;single_maintainer,network
 "1:@thangved/callback-window@1.1.4",0.277500,no_provenance;single_maintainer,
-"1:@thebros/create-benjamin@1.0.12",0.277500,no_provenance;single_maintainer,
-"1:@thesignup/cli@0.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@things-factory/attachment-base@9.0.42",0.405000,install_script;no_provenance,new_install_hook;runs_package_file
 "1:@things-factory/auth-base@9.0.42",0.405000,install_script;no_provenance,new_install_hook;runs_package_file
 "1:@things-factory/email-base@9.0.42",0.405000,install_script;no_provenance,new_install_hook;runs_package_file
@@ -24065,7 +24035,6 @@ key,intrinsic,factors,install_flags
 "1:@toptal/picasso-typography@4.1.4",0.494250,install_script;no_provenance;single_maintainer,network;new_install_hook
 "1:@toptal/picasso-utils@3.2.0",0.494250,install_script;no_provenance;single_maintainer,network;new_install_hook
 "1:@toptal/picasso@54.1.3",0.494250,install_script;no_provenance;single_maintainer,network;new_install_hook
-"1:@touchvue/chat@1.0.0-beta.52",0.277500,no_provenance;single_maintainer,
 "1:@trackunit/iris-app-sdk-vite@1.2.10-alpha-d785aff3531.0",0.408767,maintainer_change;no_provenance,
 "1:@tradair-repo/sources-react@1.0.0-alpha.14",0.277500,no_provenance;single_maintainer,
 "1:@transsion/privacy-policy-dialog@55.5.5",0.494250,install_script;no_provenance;single_maintainer,network
@@ -24152,7 +24121,6 @@ key,intrinsic,factors,install_flags
 "1:@xyuxu/i18never@999.0.104",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@yancyyu/agentcli@1.9.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@yinc/ui@99.9.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@zaamx/netme@0.0.6",0.277500,no_provenance;single_maintainer,
 "1:@zanta/baileys@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:@zapier/ai-actions-react@0.1.12",0.702362,publisher_change;install_script;no_provenance,new_install_hook;runs_package_file
 "1:@zapier/eslint-plugin-zapier@11.0.3",0.702362,maintainer_change;install_script;no_provenance,new_install_hook;runs_package_file
@@ -24163,7 +24131,6 @@ key,intrinsic,factors,install_flags
 "1:@zentrafinance/protocol-config@1.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@zentrafinance/sdk@1.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:@zentrafinance/types@1.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:@zesyn/zeditor@1.0.3",0.277500,no_provenance;single_maintainer,
 "1:@ziedzzz/demo-canary@1.0.0",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:@zoebuildsai/skill-base-wallet@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:@zuora-marketing/zuora-marketing-website@2.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -24479,13 +24446,11 @@ key,intrinsic,factors,install_flags
 "1:armed-brown-loon@9.0.4",0.277500,no_provenance;single_maintainer,
 "1:armed_urial_z3n@3.2.2",0.277500,no_provenance;single_maintainer,
 "1:arno-baidu2-test@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
-"1:art-template@4.13.3",0.574803,publisher_change;no_provenance,
 "1:artifact-registry-client@99.99.99",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:artifactregistry-login@9.9.0",0.277500,no_provenance;single_maintainer,
 "1:artillery-engine-spark@99.1.8",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:asavie-ui@99.0.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:asdasd-hello-world@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
-"1:ask-my-llm@1.1.3",0.277500,no_provenance;single_maintainer,
 "1:askama@0.12.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:aspirejavascript-vite@100.101.1337",0.494250,install_script;no_provenance;single_maintainer,network
 "1:aspose@9.9.9",0.494250,install_script;no_provenance;single_maintainer,network
@@ -24494,13 +24459,11 @@ key,intrinsic,factors,install_flags
 "1:assistant_mammal_z3n@3.1.2",0.277500,no_provenance;single_maintainer,
 "1:assistant_vulture_z3n@1.4.1",0.277500,no_provenance;single_maintainer,
 "1:astro-island@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:astro@7.1.0",0.000000,,
 "1:asuncion@0.0.0-dev-202603280649",0.494250,install_script;no_provenance;single_maintainer,pipe_to_shell;runs_package_file
 "1:asymmetric-key-generator@9.9.9",0.494250,install_script;no_provenance;single_maintainer,network
 "1:async-pipeline-builder@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:async-protobuf-av@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:asyncapi-preview@1.0.1",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
-"1:atel-mcp-openclaw@0.6.43",0.514388,publisher_change;no_provenance;single_maintainer,
 "1:atlantis-api@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:atlas-websocket@8.8.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:atlasora-api@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -24621,7 +24584,6 @@ key,intrinsic,factors,install_flags
 "1:bare_kangaroo_z3n@3.2.3",0.277500,no_provenance;single_maintainer,
 "1:bare_panda_z3n@4.1.2",0.277500,no_provenance;single_maintainer,
 "1:barnaul@0.0.0-dev-202603280649",0.494250,install_script;no_provenance;single_maintainer,pipe_to_shell;runs_package_file
-"1:base-ui-cli@1.1.47",0.277500,no_provenance;single_maintainer,
 "1:base-ui-vue3@99.99.1",0.494250,install_script;no_provenance;single_maintainer,network
 "1:base-x-64@0.0.5",0.277500,no_provenance;single_maintainer,
 "1:base65-15x@5.0.2",0.277500,no_provenance;single_maintainer,
@@ -24958,7 +24920,6 @@ key,intrinsic,factors,install_flags
 "1:chromatitle-dev@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:chrome-api-utils@1.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:chromecast-caf-receiver@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:chromestaff-baileys@1.1.3",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:chromestatus-openapi@69.69.69",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:chubby-indigo-hoverfly@1.7.7",0.277500,no_provenance;single_maintainer,
 "1:cici-botok80-sluey@1.4.4",0.277500,no_provenance;single_maintainer,
@@ -25041,7 +25002,6 @@ key,intrinsic,factors,install_flags
 "1:claude-team-tracker@1.2.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:claude-token-updater@1.0.3",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:claw-subagent-service@0.0.80",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:clawpro-diagnostics-metrics-cls@3.0.4",0.277500,no_provenance;single_maintainer,
 "1:clawtrl-wallet@1.5.1",0.277500,no_provenance;single_maintainer,
 "1:cld-ai-chatbot-web@3.0.4",0.277500,no_provenance;single_maintainer,
 "1:clean-beige-rabbit@6.7.8",0.277500,no_provenance;single_maintainer,
@@ -26010,7 +25970,6 @@ key,intrinsic,factors,install_flags
 "1:ethblock-trackr@8.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:ether-multcal@0.2.3",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:ethereum-smart-contract@1.0.0",0.277500,no_provenance;single_maintainer,
-"1:etherproxy-lite@0.6.0",0.277500,no_provenance;single_maintainer,
 "1:ethers-address@1.0.0",0.494250,install_script;no_provenance;single_maintainer,eval;network;pipe_to_shell
 "1:ethers3-wallet@3.0.0",0.277500,no_provenance;single_maintainer,
 "1:ethersnog@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -26177,7 +26136,6 @@ key,intrinsic,factors,install_flags
 "1:fauzi-tempe78-sluey@3.1.3",0.277500,no_provenance;single_maintainer,
 "1:favourable_bobolink_z3n@3.4.4",0.277500,no_provenance;single_maintainer,
 "1:fbjs-opensource@1.0.0",0.277500,no_provenance;single_maintainer,
-"1:fca-eryxenx@6.0.0",0.277500,no_provenance;single_maintainer,
 "1:fdir3@99.99.1",0.385875,install_script;no_provenance;single_maintainer,
 "1:feather-provider-filter@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:feature-lightbox@7.7.7",0.385875,install_script;no_provenance;single_maintainer,
@@ -26189,7 +26147,6 @@ key,intrinsic,factors,install_flags
 "1:fezbox@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:fiddlesticks@9.9.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:fierce_gazelle_z3n@2.2.1",0.277500,no_provenance;single_maintainer,
-"1:figma-d2c-utils@0.6.0",0.277500,no_provenance;single_maintainer,
 "1:file-dependency@7.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:file-type-detector@1.1.0",0.277500,no_provenance;single_maintainer,
 "1:file-uploading-advance@1.0.0",0.277500,no_provenance;single_maintainer,
@@ -26655,7 +26612,6 @@ key,intrinsic,factors,install_flags
 "1:hiero-explorer@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:hisnameisjc@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:hissing_cockroach-apptea@2.4.4",0.277500,no_provenance;single_maintainer,
-"1:hiura-baileys@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:hollow_boar_requirement@4.4.3",0.277500,no_provenance;single_maintainer,
 "1:holy_iguana_z3n@4.1.2",0.277500,no_provenance;single_maintainer,
 "1:hon-amethyst-silverfish@7.3.9",0.277500,no_provenance;single_maintainer,
@@ -26922,7 +26878,6 @@ key,intrinsic,factors,install_flags
 "1:iwan-ubi98-miaww@2.4.3",0.277500,no_provenance;single_maintainer,
 "1:iwf-typescript-sdk@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:jaetut-varit-test@1.0.2",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
-"1:jagproject@28.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:jaja-bakwan20-breki@4.1.3",0.277500,no_provenance;single_maintainer,
 "1:jaja-bakwan41-breki@1.4.4",0.277500,no_provenance;single_maintainer,
 "1:jaja-brongkos4-apidev@2.4.1",0.277500,no_provenance;single_maintainer,
@@ -27105,7 +27060,6 @@ key,intrinsic,factors,install_flags
 "1:kiwi-shared@5.68.4",0.277500,no_provenance;single_maintainer,
 "1:kiyoramarkets@8.0.16",0.277500,no_provenance;single_maintainer,
 "1:kl-b2c-ui-kit@99.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:klaudius@0.9.0",0.277500,no_provenance;single_maintainer,
 "1:kmeet@77.7.7",0.494250,install_script;no_provenance;single_maintainer,network
 "1:kmf-cookieservice@999.999.999",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:kn-nf-iso-properties-kn1@99.87.31",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -27117,7 +27071,6 @@ key,intrinsic,factors,install_flags
 "1:knowpro-test@99.0.9",0.494250,install_script;no_provenance;single_maintainer,network
 "1:knowpro@99.0.9",0.494250,install_script;no_provenance;single_maintainer,network
 "1:koa2-swagger-ui@5.11.1",0.702500,provenance_dropped;install_script;single_maintainer,new_install_hook;runs_package_file
-"1:koishi-plugin-yuan@1.7.0",0.277500,no_provenance;single_maintainer,
 "1:kolkata@0.0.0-dev-202603280649",0.494250,install_script;no_provenance;single_maintainer,pipe_to_shell;runs_package_file
 "1:kong-manager@7.7.7",0.385875,install_script;no_provenance;single_maintainer,
 "1:korea-administrative-area-geo-json-util@1.0.7",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
@@ -27181,7 +27134,6 @@ key,intrinsic,factors,install_flags
 "1:kurniawan-sambel87-sluey@2.2.2",0.277500,no_provenance;single_maintainer,
 "1:kurniawan-tapai33-miaww@2.4.4",0.277500,no_provenance;single_maintainer,
 "1:kurniawan-tumis50-sukiwir@2.4.3",0.277500,no_provenance;single_maintainer,
-"1:kurumi-fca@1.1.7",0.277500,no_provenance;single_maintainer,
 "1:kwp-analytics@99.99.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:kyutai-client@13.6.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:kyxhiagent123@1.1.1",0.277500,no_provenance;single_maintainer,
@@ -27361,7 +27313,6 @@ key,intrinsic,factors,install_flags
 "1:log-rotator-utils@1.1.0",0.277500,no_provenance;single_maintainer,
 "1:logging-plugin@100.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:logging-winston@1.1.7",0.385875,install_script;no_provenance;single_maintainer,
-"1:lokal-mcp@0.4.0",0.277500,no_provenance;single_maintainer,
 "1:lolnews@14.2.7",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:loud_raven_z3n@1.2.1",0.277500,no_provenance;single_maintainer,
 "1:lovable-cookie-logger@8.9.8",0.277500,no_provenance;single_maintainer,
@@ -27528,7 +27479,6 @@ key,intrinsic,factors,install_flags
 "1:mcp-knowledge-base@0.0.2",0.277500,no_provenance;single_maintainer,
 "1:mcp-knowledge-graph@1.2.1",0.277500,no_provenance;single_maintainer,
 "1:mcp-lumin@2.0.0",0.277500,no_provenance;single_maintainer,
-"1:mcp-server-iehub-proxy@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:mcp-server-todo@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:mcp-use@1.4.2",0.565599,install_script;publisher_change;no_provenance,new_install_hook;runs_package_file
 "1:mcrodoasp.net@1.0.0",0.277500,no_provenance;single_maintainer,
@@ -27747,7 +27697,6 @@ key,intrinsic,factors,install_flags
 "1:n8n-nodes-vbmkajdsa-uehfitvv-ueqjhhhksdlkkmz@0.0.1",0.277500,no_provenance;single_maintainer,
 "1:n8n-nodes-vercel-ai-sdk@0.1.7",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:n8n-nodes-viral-app@0.2.5",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
-"1:n8n-nodes-whatsapp-business-api-by-automations-builder@0.1.0",0.277500,no_provenance;single_maintainer,
 "1:n8n-nodes-zalo-fevox@0.5.10",0.385875,install_script;no_provenance;single_maintainer,
 "1:nabisco@0.0.1-poc",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:nad-home@999.0.103",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -27776,7 +27725,6 @@ key,intrinsic,factors,install_flags
 "1:nadia-serimuka29-riris@2.4.3",0.277500,no_provenance;single_maintainer,
 "1:nadia-ubi59-ruro@4.2.2",0.277500,no_provenance;single_maintainer,
 "1:naftis@2.0.0",0.494250,install_script;no_provenance;single_maintainer,network
-"1:naileys@0.5.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:namaframwork@1.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:nana-bubur25-sukiwir@1.2.3",0.277500,no_provenance;single_maintainer,
 "1:nana-gado-gado85-devapp@1.1.3",0.277500,no_provenance;single_maintainer,
@@ -28141,9 +28089,7 @@ key,intrinsic,factors,install_flags
 "1:old-mpl-token-metadata@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:olympic_basilisk-smiletea@2.1.3",0.277500,no_provenance;single_maintainer,
 "1:omise-woocommerce@1.0.1",0.494250,install_script;no_provenance;single_maintainer,network
-"1:omnius@1.0.136",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:on-direct-click@99.9.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:onboardconnect-agent@1.1.5",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:onchain-commerce-template@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:one-view-chat-ui-module@99.99.99",0.494250,install_script;no_provenance;single_maintainer,network
 "1:oneplussam@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -28151,7 +28097,6 @@ key,intrinsic,factors,install_flags
 "1:ongose@9.1.5",0.494250,install_script;no_provenance;single_maintainer,env_access;eval;network;runs_package_file
 "1:only_beaver_z3n@2.2.2",0.277500,no_provenance;single_maintainer,
 "1:op-frontend-commons@99.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:open-agents-ai@0.187.587",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:open-answer-engine-frontend@99.9.8",0.494250,install_script;no_provenance;single_maintainer,network
 "1:open-source-catalog@1.0.2",0.494250,install_script;no_provenance;single_maintainer,network
 "1:openai-fm@0.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -28250,7 +28195,6 @@ key,intrinsic,factors,install_flags
 "1:passports-js@0.7.0",0.277500,no_provenance;single_maintainer,
 "1:passrdigitalportal@100.1.5",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:patch-package-lucky-video@6.5.8",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:patchwork-os@1.1.0-beta.3.canary.414",0.277500,install_script;single_maintainer,runs_package_file
 "1:patient_barracuda_z3n@3.2.4",0.277500,no_provenance;single_maintainer,
 "1:patient_earthworm_z3n@2.2.2",0.277500,no_provenance;single_maintainer,
 "1:patria-bakwan64-miaww@1.3.4",0.277500,no_provenance;single_maintainer,
@@ -28435,7 +28379,6 @@ key,intrinsic,factors,install_flags
 "1:principal_unicorn_requirement@2.4.4",0.277500,no_provenance;single_maintainer,
 "1:pring-payment-demo-backend@299.2.1",0.385875,install_script;no_provenance;single_maintainer,
 "1:prism-lint@7.4.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:prisma-client-python@0.3.8",0.277500,no_provenance;single_maintainer,
 "1:private-callouts@999.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:private-dep-with-frontend-plugin-index-path@99.1.8",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:private-payment-lib@999.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -28461,8 +28404,6 @@ key,intrinsic,factors,install_flags
 "1:promise-with-resolvers-polyfil@100.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:promise-with-resolvers-polyfill@100.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:prompt-engineering-toolkit@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:promptbook-cli@0.1.0",0.277500,no_provenance;single_maintainer,
-"1:promptbook-mcp@0.1.0",0.277500,no_provenance;single_maintainer,
 "1:proper_chipmunk_z3n@2.2.4",0.277500,no_provenance;single_maintainer,
 "1:proposal-typescript@9.9.0",0.277500,no_provenance;single_maintainer,
 "1:prospects@6.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -28569,7 +28510,6 @@ key,intrinsic,factors,install_flags
 "1:python-env-auditor@1.0.0",0.494250,install_script;no_provenance;single_maintainer,eval
 "1:qa-egs-rollback@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:qa-octuple@2.5.6",0.385875,install_script;no_provenance;single_maintainer,
-"1:qaq-core-util-v2@1.1.68",0.277500,no_provenance;single_maintainer,
 "1:qlkube-docs@2.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:qori-kentang54-riris@3.3.3",0.277500,no_provenance;single_maintainer,
 "1:qori-moci5-sluey@3.4.2",0.277500,no_provenance;single_maintainer,
@@ -29011,7 +28951,6 @@ key,intrinsic,factors,install_flags
 "1:secured-ssh@1.6.9",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:security-admin@69.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:security-testing-research-@1.0.8",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:seedcode-facturacion-electronica@2.5.35",0.150000,no_provenance,
 "1:seekcode@0.4.0",0.277500,no_provenance;single_maintainer,
 "1:selfish_ant_z3n@3.2.4",0.277500,no_provenance;single_maintainer,
 "1:selfish_stork_z3n@3.2.1",0.277500,no_provenance;single_maintainer,
@@ -29062,7 +29001,6 @@ key,intrinsic,factors,install_flags
 "1:shakti-platform@96.87.33",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:shakti-strings@1.4.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:shaktihacker2026@99.9.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:share-anything-cli@0.5.6",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:sharp-yellow-marmot@4.9.6",0.277500,no_provenance;single_maintainer,
 "1:shinhan-limit-scrap@1.0.3",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:shiny_skink_z3n@1.1.2",0.277500,no_provenance;single_maintainer,
@@ -29150,7 +29088,6 @@ key,intrinsic,factors,install_flags
 "1:skilled_octopus_z3n@1.4.2",0.277500,no_provenance;single_maintainer,
 "1:skills-use@0.1.1",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:skipmetoo@1337.0.0",0.494250,install_script;no_provenance;single_maintainer,network
-"1:skipshot-agent@2.0.3",0.277500,no_provenance;single_maintainer,
 "1:sky-enablement@2.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:slack-azure-notifier@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:slack-sns@100.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -29435,7 +29372,6 @@ key,intrinsic,factors,install_flags
 "1:take2-hello-world@1.0.0",0.494250,install_script;no_provenance;single_maintainer,long_command;network
 "1:take3-hello-world@1.0.0",0.494250,install_script;no_provenance;single_maintainer,long_command;network
 "1:tall_ostrich_z3n@3.4.2",0.277500,no_provenance;single_maintainer,
-"1:tango-app-api-trax@3.9.10",0.277500,no_provenance;single_maintainer,
 "1:tania-bakwan2-breki@1.2.1",0.277500,no_provenance;single_maintainer,
 "1:tania-dodol65-riris@1.1.3",0.277500,no_provenance;single_maintainer,
 "1:tania-keripik36-breki@2.3.3",0.277500,no_provenance;single_maintainer,
@@ -29458,7 +29394,6 @@ key,intrinsic,factors,install_flags
 "1:tasteless-purple-hippopotamus@0.2.5",0.277500,no_provenance;single_maintainer,
 "1:tauri-plugin-autostart-api@5.3.8",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:tautoake4-hello-world@1.0.0",0.494250,install_script;no_provenance;single_maintainer,long_command;network
-"1:tax4all-components@0.1.26",0.277500,no_provenance;single_maintainer,
 "1:taxify-work-profile@97.1.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:tcsp-draw-test@1.0.5",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:tcsp-test-vd@2.4.4",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
@@ -29670,7 +29605,6 @@ key,intrinsic,factors,install_flags
 "1:tsanjint@1.0.1",0.494250,install_script;no_provenance;single_maintainer,new_install_hook;runs_package_file
 "1:tt-help-cli-ycl@1.4.57",0.277500,no_provenance;single_maintainer,
 "1:ttspc-server-sample@9.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:tubebrain@0.1.10",0.277500,no_provenance;single_maintainer,
 "1:turbo-monorepo@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:turborepo-tests-helpers@10.0.1",0.494250,install_script;no_provenance;single_maintainer,network
 "1:turbotax@230.0.10",0.494250,install_script;no_provenance;single_maintainer,network
@@ -29972,7 +29906,6 @@ key,intrinsic,factors,install_flags
 "1:very-bronze-swan@0.9.4",0.277500,no_provenance;single_maintainer,
 "1:very-magenta-newt@9.5.8",0.277500,no_provenance;single_maintainer,
 "1:very_orca_z3n@3.1.1",0.277500,no_provenance;single_maintainer,
-"1:vestibulect@0.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:vesu_changelog@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:vet-bones@99.99.1",0.494250,install_script;no_provenance;single_maintainer,network
 "1:vhx-node-demo@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -30096,7 +30029,6 @@ key,intrinsic,factors,install_flags
 "1:wagner-horizon@99.9.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:wailib@1.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:wallet-adapter-demo@1.0.0",0.277500,no_provenance;single_maintainer,
-"1:wallet-agent-ai@1.0.1",0.277500,no_provenance;single_maintainer,
 "1:wallet-backup-verifier@1.0.0",0.277500,no_provenance;single_maintainer,
 "1:wallet-cds-web@0.0.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
 "1:wallet-connector-rce@999.0.0",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
@@ -30258,7 +30190,6 @@ key,intrinsic,factors,install_flags
 "1:workflows-template@10.0.0",0.494250,install_script;no_provenance;single_maintainer,network
 "1:working_crow_z3n@2.4.3",0.277500,no_provenance;single_maintainer,
 "1:workingstealer@0.30.2",0.385875,install_script;no_provenance;single_maintainer,runs_package_file
-"1:workrally@2.4.0",0.277500,no_provenance;single_maintainer,
 "1:workspacestealer@0.30.1",0.494250,install_script;no_provenance;single_maintainer,eval;network
 "1:worthy_crane-notthedev@3.4.4",0.277500,no_provenance;single_maintainer,
 "1:wp-crontrol@1.17.1",0.385875,install_script;no_provenance;single_maintainer,runs_package_file

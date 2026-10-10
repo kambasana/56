@@ -111,8 +111,10 @@ def osv_only(path: str, skip: set[str]) -> list[dict]:
                 name = pk.get("name")
                 if pk.get("ecosystem") != "npm" or not name or name in skip or not a.get("versions"):
                     continue
-                r = recs.setdefault(name, {"ids": set(), "text": "", "versions": set(), "published": rec.get("published", "")})
+                r = recs.setdefault(name, {"ids": set(), "text": "", "versions": set(), "published": rec.get("published", ""),
+                                           "active": False})
                 r["ids"].add(rid)
+                r["active"] = r["active"] or not rec.get("withdrawn")
                 r["text"] += " " + text
                 r["versions"].update(a["versions"])
                 r["published"] = min(r["published"], rec.get("published", "")) or rec.get("published", "")
@@ -121,7 +123,7 @@ def osv_only(path: str, skip: set[str]) -> list[dict]:
         fam = next((f for k, f in NEW_MAL_MARKERS if k in r["text"]), None)
         if fam in OSV_ONLY_FAMILIES:
             out.append({"name": name, "family": fam, "ids": sorted(r["ids"]), "versions": sorted(r["versions"], key=semver_key),
-                        "published": r["published"]})
+                        "published": r["published"], "withdrawn_only": not r["active"]})
     return sorted(out, key=lambda x: x["name"])
 
 
@@ -263,7 +265,12 @@ def main() -> None:
     # Download quotas per family (seeded sample); split-time caps come later (split.py).
     # OSV-only releases still served by npm, for the thin families (see OSV_ONLY_FAMILIES).
     have = {r["name"] for r in comp + live + mi} | {x["name"] for x in labels}
-    oo = osv_only_served(osv_only(a.osv_zip, have)) if a.osv_only else []
+    oo_cands = osv_only(a.osv_zip, have) if a.osv_only else []
+    oo = osv_only_served(oo_cands)
+    # Gate review 2026-10-10: a package whose every OSV record has been withdrawn by its source (e.g. a batch of
+    # amazon-inspector imports retracted on 2026-05-26) is not evidence of malice. Such packages are dropped AFTER the
+    # seeded per-family sampling below, so the sample drawn for every other family stays exactly as before.
+    withdrawn_only = {c["name"] for c in oo_cands if c["withdrawn_only"]}
 
     by_fam = collections.defaultdict(list)
     for r in comp + live + mi + oo:
@@ -271,7 +278,7 @@ def main() -> None:
     for fam, rs in sorted(by_fam.items()):
         rs.sort(key=lambda r: (r["name"], r["version"]))
         rng.shuffle(rs)
-        cands.extend(rs[:a.quota])
+        cands.extend(r for r in rs[:a.quota] if not (r.get("positive_source") == "osv-only" and r["name"] in withdrawn_only))
     cands.sort(key=lambda r: (r["family"], r["name"]))
     with open(DATA / "positive_candidates.jsonl", "w") as f:
         for r in cands:
@@ -285,6 +292,8 @@ def main() -> None:
         "selected_per_family": dict(sorted(collections.Counter(r["family"] for r in cands).items())),
         "selected_per_category": dict(sorted(collections.Counter(r["category"] for r in cands).items())),
         "osv_only_served_per_family": dict(sorted(collections.Counter(r["family"] for r in oo).items())),
+        "osv_only_dropped_withdrawn_per_family": dict(sorted(collections.Counter(
+            r["family"] for r in oo if r["name"] in withdrawn_only).items())),
         "per_family_download_quota": a.quota,
     }
     (DATA / "positive_candidates.summary.json").write_text(json.dumps(summary, indent=1) + "\n")

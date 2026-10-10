@@ -5,6 +5,7 @@ data/test.jsonl
 data/all_states.jsonl.gz
 data/all_rows.csv.gz
 src/__pycache__/
+colab/__pycache__/
 # The repo root ignores *.gz; these are inputs the notebook downloads (sha256 in data/laya/MANIFEST.json).
 !data/laya/*.jsonl.gz
 !data/features.csv.gz

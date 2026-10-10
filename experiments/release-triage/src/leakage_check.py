@@ -2,7 +2,10 @@
 
 Checks (all on data/features.csv.gz and data/{train,calib,test}.jsonl, after splitting):
   1. Missingness per feature by class. Fields that are empty by design for first releases (no previous release to
-     compare with) are compared within non-first releases. FAIL if the missing-rate gap exceeds MAX_GAP.
+     compare with) are compared within non-first releases. FAIL if the missing-rate gap exceeds MAX_GAP. The median
+     gap between prior releases is also empty by design with only one prior release (no gap to take a median of), so
+     it is gated within releases with >= 2 prior releases (gate review 2026-10-10); the non-first rates are still
+     reported.
   2. Content-reading parity: positives' contents come from DataDog archives, negatives' from registry tarballs. The
      registry records its own file count (`dist.fileCount`) for most versions; the share of releases whose counted
      files equal it must not differ between the two sources by more than MAX_GAP. FAIL otherwise. "Equal" allows
@@ -31,6 +34,12 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))  # -I drops the
 from common import DATA, RESULTS
 
 MAX_GAP = 0.10
+# Empty by design unless the release has >= 2 prior releases (one gap needs two releases before this one).
+NEEDS_TWO_PRIOR = {"median_gap_days_prior", "release.median_days_between_releases"}
+
+
+def two_prior(r: dict) -> bool:
+    return r["is_first_release"] == "0" and r["prior_releases"] != "" and float(r["prior_releases"]) >= 2
 META = {"key", "name", "version", "label", "category", "family", "wave", "family_basis", "published", "publisher",
         "content_source", "packument_source", "neg_pool", "label_sources", "registry_dist_files",
         "registry_dist_bytes", "content_dir_entries", "deps_added_unknown_first_publish", "split"}
@@ -63,14 +72,16 @@ def main() -> int:
     for k in feats:
         res = {}
         for scope, sel in (("all", rows), ("non_first", [r for r in rows if r["is_first_release"] == "0"]),
-                           ("first", [r for r in rows if r["is_first_release"] == "1"])):
+                           ("first", [r for r in rows if r["is_first_release"] == "1"]),
+                           ("two_prior", [r for r in rows if two_prior(r)])):
             rate = {}
             for lab in ("1", "0"):
                 rs = [r for r in sel if r["label"] == lab]
                 rate[lab] = sum(1 for r in rs if r[k] == "") / len(rs) if rs else math.nan
             res[scope] = {"pos": round(rate["1"], 4), "neg": round(rate["0"], 4), "gap": round(abs(rate["1"] - rate["0"]), 4)}
         out["missingness"][k] = res
-        bad = [s for s in ("non_first", "first") if not math.isnan(res[s]["gap"]) and res[s]["gap"] > MAX_GAP]
+        gated = ("two_prior", "first") if k in NEEDS_TWO_PRIOR else ("non_first", "first")
+        bad = [s for s in gated if not math.isnan(res[s]["gap"]) and res[s]["gap"] > MAX_GAP]
         if bad:
             fails.append(f"missingness gap > {MAX_GAP} for {k} in {bad}: {res}")
 
@@ -133,13 +144,15 @@ def main() -> int:
             d = json.loads(line)
             r = meta_by_key[d["id"]]
             lab = r["label"]
-            scope = "first" if r["is_first_release"] == "1" else "non_first"
-            tot[(scope, lab)] += 1
+            scopes = ["first"] if r["is_first_release"] == "1" else ["non_first"] + (["two_prior"] if two_prior(r) else [])
+            for scope in scopes:
+                tot[(scope, lab)] += 1
             for g, sub in d["state"].items():
                 if isinstance(sub, dict):
                     for k, v in sub.items():
                         if v not in (None, "", {}, []):
-                            cnt[f"{g}.{k}"][(scope, lab)] += 1
+                            for scope in scopes:
+                                cnt[f"{g}.{k}"][(scope, lab)] += 1
             s = json.dumps(d["state"], ensure_ascii=False).lower()
             nm = r["name"].lower()
             short = nm.split("/")[-1]
@@ -149,7 +162,7 @@ def main() -> int:
                 names_hit[f"short_name/label={lab}"] += 1
     for k, c in sorted(cnt.items()):
         res = {}
-        for scope in ("non_first", "first"):
+        for scope in ("non_first", "first", "two_prior"):
             p = c[(scope, "1")] / tot[(scope, "1")] if tot[(scope, "1")] else math.nan
             n = c[(scope, "0")] / tot[(scope, "0")] if tot[(scope, "0")] else math.nan
             res[scope] = {"pos_present": round(p, 4), "neg_present": round(n, 4)}
@@ -157,7 +170,7 @@ def main() -> int:
         # Text fields legitimately differ in presence (a release has an install script or not); only structural
         # fields must be present at equal rates.
         if not k.startswith("text.") and k not in ("install_scripts.hooks", "install_scripts.previous_hooks"):
-            for scope in ("non_first", "first"):
+            for scope in (("two_prior", "first") if k in NEEDS_TWO_PRIOR else ("non_first", "first")):
                 p, n = res[scope]["pos_present"], res[scope]["neg_present"]
                 if not (math.isnan(p) or math.isnan(n)) and abs(p - n) > MAX_GAP:
                     fails.append(f"state field {k} present at different rates ({scope}): pos {p} vs neg {n}")

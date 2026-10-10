@@ -370,3 +370,58 @@ fields for both classes.
   DataDog packages fetched; 12 had no previous release still served), beacon 16, 2026-07-24 8, IronWorm 6, and 15
   families with 1–4 releases.
 
+
+## Gate review 2026-10-10 (dataset v2.1), before any Laya run
+
+An independent gate review re-ran the pipeline from the cache (build and split reproduce v2 byte for byte in content;
+rule scores, leakage check and baselines reproduce exactly apart from run times) and spot-checked rows against live
+sources. No Laya model had been run on this dataset, in any form, when the changes below were made. The time windows,
+the 25 % family cap, the ratio floor, the questions, the methods, the threshold rule and P0–P6 are unchanged.
+
+1. **Positives labelled only by withdrawn OSV records removed (label correction).** 71 OSV-only candidates had no
+   OSV `MAL-*`/CWE-506 record left that was not withdrawn: OSV withdrew a batch of amazon-inspector imports on
+   2026-05-26 (e.g. MAL-2026-4628), and a withdrawn record is not evidence of malice. 69 of them were in v2
+   (test 67: data-exfiltration 55, typosquat 6, crypto-theft 5, beacon 1; train 2: crypto-theft 1, data-exfiltration
+   1); every one of the 69 is withdrawn in the 802734dd… export, and 68 also return no active record from the live
+   OSV API. `src/collect_positives.py` now drops OSV-only packages whose every record is withdrawn, *after* the
+   seeded per-family sample, so no other candidate changes (`positive_candidates.jsonl` loses exactly those 71 lines;
+   `osv_only_dropped_withdrawn_per_family` in its summary). Negatives are not redrawn. In train the ratio floor then
+   kept two more releases (dependency-confusion and tea.xyz one each), so train is still 1,029 malicious; calib is
+   unchanged.
+2. **Leakage check: one gate scope corrected, disclosed because it was changed after the check failed.** With the 69
+   rows gone, the missing-rate gap of `median_gap_days_prior` (and the state field
+   `release.median_days_between_releases`) among non-first releases became 0.1016 (v2: 0.0958; limit 0.10). The
+   field is empty by design when a release has only one prior release (no gap to take a median of): on v2.1 it is
+   empty for 167 of 167 benign and 94 of 94 malicious non-first releases with one prior release, and for 0 of all
+   others in either class. So the gap measures how often malicious releases are second releases (already in
+   `prior_releases`), not a field read differently per class. The check now gates this one field within releases
+   with ≥ 2 prior releases (gap 0.0) and still reports the non-first rates. `MAX_GAP` and every other check are
+   unchanged; the check passes.
+3. **Reporting-only metrics (not part of P0–P6; no threshold, selection or verdict uses them).**
+   `src/triage_metrics.py` adds `reporting_only` to every method's metrics (baselines in `results/baselines.json`;
+   every Laya run in `metrics_*.json` and in the notebook's summary table):
+   - Macro recall without the dependency-confusion family (all families, and families with ≥ 5 positives). That
+     family's label is partly assigned by a "major ≥ 50" version heuristic that is also a model input.
+   - The same alerts (calib threshold, unchanged) split into first releases and later releases. In v2.1, 22–27 % of
+     benign but 58–78 % of malicious releases are first releases, a mix a model can exploit. Within each
+     stratum: recall per family, macro recall (all, ≥ 5, without dependency-confusion), alerts per 1,000 benign and
+     ROC AUC.
+   `results/baseline_scores.csv.gz` gains the `is_first_release` column for this.
+4. **Baselines recomputed on v2.1** (`results/baselines.json`). The v2 baseline numbers had been seen; nothing above
+   was chosen to move them (item 1 corrects labels, item 2 changes no feature or row, item 3 only adds reports).
+
+**v2.1 dataset** (`data/split.summary.json`):
+
+| Split | Releases | Malicious | Benign | Benign per malicious | Families | Families ≥ 5 | Families ≥ 50 | Largest family share |
+|---|---|---|---|---|---|---|---|---|
+| train | 6,175 | 1,029 | 5,146 | 5.0 | 19 | 12 | 5 | 22.4 % |
+| calib | 3,231 | 300 | 2,931 | 9.8 | 8 | 5 | 4 | 25.0 % |
+| test | 7,580 | 1,193 | 6,387 | 5.4 | 26 | 11 | 7 | 21.5 % |
+
+- 16,986 releases, 2,522 malicious; no package and no account in two splits; leakage check PASS. Dependencies of
+  unknown age: 88 of 2,522 positives, 103 of 14,464 negatives.
+- `laya-train --dry-run` on train (both bases): 6,868 items (6,175 `triage` + 693 `script_intent`), 400 held for
+  laya's calibration slice, 6,468 trained on, zero skipped; 102 updates per epoch, so E = 6.
+- Truncation at 1024/256: `triage` 108 of 16,986 (0.6 %), `script_intent` 72 of 1,781 (4.0 %).
+- Test families with ≥ 50 positives: dependency-confusion 257, unattributed 237, data-exfiltration 200, TeamPCP 175,
+  Mastra 119, typosquat 62, crypto-theft 53.

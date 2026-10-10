@@ -55,7 +55,7 @@ Revoke the token on GitHub when the run is over (or let it expire after 7 days).
    - When asked, allow access to Google Drive. Progress, results and the chosen checkpoint are saved in
      `MyDrive/laya-release-triage/`.
    - The run fine-tunes eight models: two positive controls and six real runs. Each one trains for 6 epochs
-     over 6,467 training items (from `laya-train --dry-run` on this dataset: 6,867 items, 400 kept aside for
+     over 6,468 training items (from `laya-train --dry-run` on this dataset: 6,868 items, 400 kept aside for
      laya's calibration), which is about 38,800 item-passes per run and 310,000 in total.
    - Laya's docs report about 4–5 hours for about 120,000 item-passes on two T4s. An A100 is faster, so expect
      very roughly 3–6 hours. This is an estimate, not a measurement, and an L4 takes longer.

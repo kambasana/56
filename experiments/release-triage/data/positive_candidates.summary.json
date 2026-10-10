@@ -58,10 +58,10 @@
   "INC-2022-0001": 1,
   "axios": 2,
   "backdoor": 3,
-  "beacon": 28,
+  "beacon": 27,
   "cline": 1,
-  "crypto-theft": 144,
-  "data-exfiltration": 416,
+  "crypto-theft": 138,
+  "data-exfiltration": 358,
   "dd-compromised-2025-03": 1,
   "dd-compromised-2025-12": 1,
   "dependency-confusion": 1711,
@@ -87,14 +87,14 @@
   "tea-xyz-token-farming": 2437,
   "teampcp-2026": 240,
   "tiledesk": 1,
-  "typosquat": 90,
+  "typosquat": 84,
   "unattributed-malicious": 3000,
   "velora-dex-sdk": 1,
   "xrpl-js": 1
  },
  "selected_per_category": {
   "hijack": 1038,
-  "new_malicious": 5415,
+  "new_malicious": 5344,
   "sabotage": 2,
   "spam": 2437
  },
@@ -105,6 +105,12 @@
   "data-exfiltration": 258,
   "discord-token-stealer": 4,
   "typosquat": 38
+ },
+ "osv_only_dropped_withdrawn_per_family": {
+  "beacon": 1,
+  "crypto-theft": 6,
+  "data-exfiltration": 58,
+  "typosquat": 6
  },
  "per_family_download_quota": 3000
 }
