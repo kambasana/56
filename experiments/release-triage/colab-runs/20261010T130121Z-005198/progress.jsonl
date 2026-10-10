@@ -95,3 +95,4 @@
 {"t": "2026-10-10T21:06:06+00:00", "elapsed_s": 50.6, "run_tag": "20261010T130121Z-005198", "stage": "tokens", "event": "stage_start", "gpu": "NVIDIA A100-SXM4-80GB"}
 {"t": "2026-10-10T21:06:31+00:00", "elapsed_s": 75.6, "run_tag": "20261010T130121Z-005198", "stage": "tokens", "event": "control_ack", "gpu": "NVIDIA A100-SXM4-80GB", "id": "ping-0001", "cmd": "ping", "run": null, "result": "applied", "error": null, "note": "pong at 2026-10-10T21:06:30+00:00, step models, training pending, paused False"}
 {"t": "2026-10-10T21:07:18+00:00", "elapsed_s": 122.8, "run_tag": "20261010T130121Z-005198", "stage": "tokens", "event": "heartbeat", "gpu": "NVIDIA A100-SXM4-80GB", "gpu_name": "NVIDIA A100-SXM4-80GB", "gpu_util_pct": 0.0, "gpu_mem_used_mb": 6.0, "gpu_mem_total_mb": 81920.0}
+{"t": "2026-10-10T21:08:00+00:00", "elapsed_s": 164.7, "run_tag": "20261010T130121Z-005198", "stage": "tokens", "event": "stage_end", "gpu": "NVIDIA A100-SXM4-80GB"}
