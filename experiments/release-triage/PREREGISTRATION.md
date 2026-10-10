@@ -397,6 +397,8 @@ the 25 % family cap, the ratio floor, the questions, the methods, the threshold 
    `prior_releases`), not a field read differently per class. The check now gates this one field within releases
    with ≥ 2 prior releases (gap 0.0) and still reports the non-first rates. `MAX_GAP` and every other check are
    unchanged; the check passes.
+   *Approved 2026-10-10 by the project owner, before any Laya run, after being told the scope was changed only
+   after the check had failed.*
 3. **Reporting-only metrics (not part of P0–P6; no threshold, selection or verdict uses them).**
    `src/triage_metrics.py` adds `reporting_only` to every method's metrics (baselines in `results/baselines.json`;
    every Laya run in `metrics_*.json` and in the notebook's summary table):
