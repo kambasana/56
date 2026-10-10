@@ -1,0 +1,5 @@
+{
+ "updates_per_epoch": 102,
+ "epochs": 6,
+ "rule": "min(16, max(4, ceil(600 / U)))"
+}
