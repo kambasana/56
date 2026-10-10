@@ -90,3 +90,5 @@
 {"t": "2026-10-10T21:05:42+00:00", "elapsed_s": 27.0, "run_tag": "20261010T130121Z-005198", "stage": "data", "event": "stage_end", "gpu": "NVIDIA A100-SXM4-80GB"}
 {"t": "2026-10-10T21:05:45+00:00", "elapsed_s": 30.1, "run_tag": "20261010T130121Z-005198", "stage": "validity", "event": "stage_start", "gpu": "NVIDIA A100-SXM4-80GB"}
 {"t": "2026-10-10T21:05:47+00:00", "elapsed_s": 32.1, "run_tag": "20261010T130121Z-005198", "stage": "validity", "event": "stage_end", "gpu": "NVIDIA A100-SXM4-80GB"}
+{"t": "2026-10-10T21:05:50+00:00", "elapsed_s": 35.2, "run_tag": "20261010T130121Z-005198", "stage": "checkpoints", "event": "stage_start", "gpu": "NVIDIA A100-SXM4-80GB"}
+{"t": "2026-10-10T21:06:02+00:00", "elapsed_s": 46.9, "run_tag": "20261010T130121Z-005198", "stage": "checkpoints", "event": "stage_end", "gpu": "NVIDIA A100-SXM4-80GB"}
