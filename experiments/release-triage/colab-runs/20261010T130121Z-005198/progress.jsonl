@@ -98,3 +98,4 @@
 {"t": "2026-10-10T21:08:00+00:00", "elapsed_s": 164.7, "run_tag": "20261010T130121Z-005198", "stage": "tokens", "event": "stage_end", "gpu": "NVIDIA A100-SXM4-80GB"}
 {"t": "2026-10-10T21:08:03+00:00", "elapsed_s": 167.8, "run_tag": "20261010T130121Z-005198", "stage": "dryrun", "event": "stage_start", "gpu": "NVIDIA A100-SXM4-80GB"}
 {"t": "2026-10-10T21:09:21+00:00", "elapsed_s": 246.1, "run_tag": "20261010T130121Z-005198", "stage": "dryrun", "event": "heartbeat", "gpu": "NVIDIA A100-SXM4-80GB", "gpu_name": "NVIDIA A100-SXM4-80GB", "gpu_util_pct": 0.0, "gpu_mem_used_mb": 6.0, "gpu_mem_total_mb": 81920.0}
+{"t": "2026-10-10T21:09:36+00:00", "elapsed_s": 260.4, "run_tag": "20261010T130121Z-005198", "stage": "dryrun", "event": "stage_end", "gpu": "NVIDIA A100-SXM4-80GB"}
