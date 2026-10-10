@@ -73,7 +73,7 @@ here.
 - **Deleted versions lose their publisher.** npm removed the bad versions; their `_npmUser` is gone.
   A publisher is attributed only when the previous version had a single maintainer. That leaves
   389/589 wave-1 and 682/1,122 wave-2 Shai-Hulud bad versions unattributed (excluded, not guessed).
-  For qix, 15 of 19 bad publishes are attributable. The Shai-Hulud accounts analysed are therefore
+  For qix, the generated table below counts 6 bad publishes with a recoverable publisher (19 bad packages). The Shai-Hulud accounts analysed are therefore
   the sole-maintainer subset, and H2 incident catches are a lower bound on what a live watcher
   (which sees `_npmUser` before deletion) would get.
 - **Four incidents is a small set.** Two of the four are waves of one family (Shai-Hulud), so the
