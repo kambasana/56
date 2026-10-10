@@ -1,4 +1,4 @@
-"""CPU test of the notebook's resume / retry plumbing (cell "1c" of colab/make_notebook.py). No GPU, no Laya.
+"""CPU test of the notebook's resume / retry plumbing (stage RUNNER_CELL of colab/lrt_runner.py). No GPU, no Laya.
 
 TEST ONLY: training is a tiny fake command (`--fake-trainer-TEST-ONLY` mode of this file) that prints laya-train's
 log lines, writes a fake checkpoint and can simulate CUDA OOM, a network error, any other error or a hang. The
@@ -46,11 +46,13 @@ SELF = pathlib.Path(__file__).resolve()
 
 
 def cell(name: str) -> str:
-    tree = ast.parse((HERE / "make_notebook.py").read_text())
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == name for t in node.targets):
-            return ast.literal_eval(node.value)
-    raise SystemExit(f"{name} not found in make_notebook.py")
+    """A stage source from colab/lrt_runner.py (the Settings form and the Run cell: colab/make_notebook.py)."""
+    for f in ("lrt_runner.py", "make_notebook.py"):
+        tree = ast.parse((HERE / f).read_text())
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == name for t in node.targets):
+                return ast.literal_eval(node.value)
+    raise SystemExit(f"{name} not found in lrt_runner.py or make_notebook.py")
 
 
 def load_cells(extra=None):

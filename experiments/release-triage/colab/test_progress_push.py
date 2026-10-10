@@ -1,4 +1,4 @@
-"""Unit test for the notebook's live-progress push (cell "1b" of colab/make_notebook.py), with a mocked HTTP layer.
+"""Unit test for the notebook's live-progress push (stage PROGRESS_CELL of colab/lrt_runner.py), with a mocked HTTP layer.
 
 No network and no real token: a fake GitHub contents API in memory stands in for api.github.com. Checks that
   * the branch is created from the base branch when missing, and files are created, then updated with their sha;
@@ -34,11 +34,11 @@ TOKEN = "github_pat_TEST_ONLY_not_a_real_token_0123456789"
 
 
 def cell_source() -> str:
-    tree = ast.parse((HERE / "make_notebook.py").read_text())
+    tree = ast.parse((HERE / "lrt_runner.py").read_text())
     for node in tree.body:
         if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "PROGRESS_CELL" for t in node.targets):
             return ast.literal_eval(node.value)
-    raise SystemExit("PROGRESS_CELL not found in make_notebook.py")
+    raise SystemExit("PROGRESS_CELL not found in lrt_runner.py")
 
 
 class Resp:
