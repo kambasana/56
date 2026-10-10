@@ -1,0 +1,187 @@
+{
+  "$comment": "Hammer-test catalogue: real public repos at real commits. Every SHA was shallow-fetched by SHA from github.com on 2026-10-06 and every listed lockfile line was read at that commit (raw.githubusercontent.com and git show). Nothing here is a fixture. expect[].level is a MINIMUM: 'critical' = must be critical; '>=high' = high or critical; 'present' = a finding row for the purl must exist (any level); 'none' = the purl must NOT appear as a finding. expectAbsent entries are 'level:<lvl>' (no finding at that level), 'reason:<kind>' (no finding carrying that reason) or a purl. sources = external hosts the scenario's assertions depend on; when a host is blocked the dependent assertions are reported as 'blocked: <host>'.",
+  "verifiedAt": "2026-10-06",
+  "scenarios": [
+    {
+      "id": "event-stream-runtime-2018",
+      "repo": "davglass/registry-static",
+      "commit": "344aa499dc88b329be0f08d4f1202eb4e11f3137",
+      "lockfile": "package-lock.json",
+      "asOf": "2018-11-27T00:00:00Z",
+      "why": "event-stream 3.3.6 -> flatmap-stream 0.1.1 (Nov 2018) as a RUNTIME (non-dev) dependency in a real lockfile v1; replay after public disclosure.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/event-stream@3.3.6", "level": "critical", "note": "KB INC-2018-0001; top reason malware" },
+        { "purl": "pkg:npm/flatmap-stream@0.1.1", "level": "critical", "note": "KB INC-2018-0001; npm replaced the package with a security holder, so registry enrichment may be partial" }
+      ],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2018-10-08T14:02:54-05:00). package-lock.json (lockfileVersion 1, 346 entries): line 603 \"event-stream\": { line 604 \"version\": \"3.3.6\" (no dev flag); line 743 \"flatmap-stream\": { line 744 \"version\": \"0.1.1\". Tree has 1 package-lock.json, no workflows."
+    },
+    {
+      "id": "event-stream-dev-esri",
+      "repo": "Esri/a11y-map",
+      "commit": "a1f8b3e33ff5d0bfe1e33006f1af63e91c76baa0",
+      "lockfile": "package-lock.json",
+      "why": "Same 2018 incident in an org repo where it is a DEV dependency, scanned at today's date (no replay): malware must not be down-weighted to non-critical just because it is dev-scoped, and the advisory path (OSV) must work without time travel.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/event-stream@3.3.6", "level": "critical", "note": "dev: true in lockfile" },
+        { "purl": "pkg:npm/flatmap-stream@0.1.1", "level": "critical", "note": "dev: true in lockfile" }
+      ],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2019-07-29T10:08:19-07:00, current HEAD of the repo). package-lock.json (lockfileVersion 1, 305 entries): line 682 \"event-stream\": { line 683 \"version\": \"3.3.6\"; line 810 \"flatmap-stream\": { line 811 \"version\": \"0.1.1\"; both dev: true."
+    },
+    {
+      "id": "ua-parser-js-2021",
+      "repo": "Esger/Pentominos2",
+      "commit": "86c582c0f7fead7c7003ac5d575497de9a073f79",
+      "lockfile": "package-lock.json",
+      "asOf": "2021-10-23T00:00:00Z",
+      "why": "ua-parser-js 0.7.29 (Oct 22 2021 account takeover) resolved in a real lockfile committed during the incident window; the next commit c8f50c4f (dependabot 'Bump ua-parser-js from 0.7.29 to 0.7.30') is the fix.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/ua-parser-js@0.7.29", "level": "critical", "note": "KB INC-2021-0001; GHSA-pjwm-rvh2-c87w; npm removed 0.7.29 so the packument lacks it" }
+      ],
+      "verified": "git fetch --depth=2 of fix commit c8f50c4f1acaa93c48815620f38ffc7516bdbbc8 gave parent 86c582c0 (2021-10-22T16:48:52+02:00); the fix commit touches only package-lock.json. At 86c582c0, package-lock.json (lockfileVersion 1, 1330 entries): line 10992 \"ua-parser-js\": { line 10993 \"version\": \"0.7.29\" (dev: true)."
+    },
+    {
+      "id": "node-ipc-peacenotwar-2022",
+      "repo": "project-qwerty/project-qwerty",
+      "commit": "6842cfb61b8236e0f768b383e277ebbc6874ac90",
+      "lockfile": "package-lock.json",
+      "asOf": "2022-03-18T00:00:00Z",
+      "why": "node-ipc 9.2.2 + peacenotwar 9.1.6 (Mar 2022 protestware) via @vue/cli-shared-utils 4.5.15; the next commit d1a93658 'update @vue/cli to mitigate peacenotwar event' is the fix. KB INC-2022-0002 lists only node-ipc 10.1.1/10.1.2, so this probes a real KB coverage gap: a finding must exist, but it is not expected to be critical from the KB alone.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/node-ipc@9.2.2", "level": "critical", "note": "INC-2022-0003 lists 9.2.2 (pulls in peacenotwar). It came out low before that KB entry existed; anything below critical is a regression." },
+        { "purl": "pkg:npm/peacenotwar@9.1.6", "level": "critical", "note": "protestware payload package, covered by INC-2022-0003." }
+      ],
+      "verified": "git fetch --depth=2 of fix commit d1a93658fa12956a8a0bb8d16ff185421e653dfe gave parent 6842cfb6 (2022-03-19T13:20:46+11:00); the fix touches package-lock.json. At 6842cfb6, package-lock.json (lockfileVersion 2, 1100 entries): line 6886 \"node_modules/node-ipc\": { line 6887 \"version\": \"9.2.2\" (dev: true); line 7645 \"node_modules/peacenotwar\": { line 7646 \"version\": \"9.1.6\". colors resolves to 1.4.0 (not affected). No compromised node-ipc 10.1.1/10.1.2 lockfile could be found on GitHub code search."
+    },
+    {
+      "id": "colors-1.4.2-2022",
+      "repo": "telefonicaid/logops",
+      "commit": "5310b7516caf857ef4ecafc966fe8f9e9f77db81",
+      "lockfile": "package-lock.json",
+      "asOf": "2022-01-11T00:00:00Z",
+      "why": "colors 1.4.2 (Jan 2022 sabotage) committed into a real org repo lockfile on 2022-01-10, inside the incident window; still the repo HEAD today.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/colors@1.4.2", "level": "critical", "note": "KB INC-2022-0001; dev: true" }
+      ],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2022-01-10T18:35:17+01:00, current HEAD). package-lock.json (lockfileVersion 1): line 773 \"colors\": { line 774 \"version\": \"1.4.2\", resolved https://registry.npmjs.org/colors/-/colors-1.4.2.tgz, dev: true. Second lockfile benchmark/package-lock.json has no KB hit. Registry time: colors 1.4.2 published 2022-01-09T19:35:35Z."
+    },
+    {
+      "id": "faker-6.6.6-current",
+      "repo": "prisma/orm-benchmarks",
+      "commit": "512b1f8b11cb8ddeed63540b16f0132f94ce80f0",
+      "lockfile": "package-lock.json",
+      "why": "faker 6.6.6 (Jan 2022 sabotage) still pinned TODAY at HEAD of a well-known org's repo: a current, not historical, blast radius.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/faker@6.6.6", "level": "critical", "note": "KB INC-2022-0001; dev: true" }
+      ],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2025-11-05T02:41:01+06:00, current HEAD). package-lock.json (lockfileVersion 3, 302 entries): line 1904 \"node_modules/faker\": { line 1905 \"version\": \"6.6.6\" (dev: true)."
+    },
+    {
+      "id": "tj-actions-changed-files-sha-2025",
+      "repo": "torana-us/tfdir",
+      "commit": "f1904f3b1dd3ddb15a1e13179fe7657553bd14ca",
+      "asOf": "2025-03-15T00:00:00Z",
+      "why": "Outbound/CI blast radius: Renovate merged 'update tj-actions/changed-files digest to 0e58ed8' on 2025-03-14T22:54Z, pinning the workflow to the exact compromised commit (it was reverted the next day by 745b8990). Every other action in the repo is SHA-pinned, so this is the only expected critical. The commit 0e58ed86 itself is no longer fetchable from tj-actions (not our ref), so the engine must not need to fetch it.",
+      "sources": ["github.com", "api.github.com"],
+      "expect": [
+        { "purl": "pkg:githubactions/tj-actions/changed-files@0e58ed8671d6b60d0890c21b07f8835ace038e67", "level": ">=high", "note": "KB INC-2025-0001 (severity high, ci_compromise); used in .github/workflows/linters.yml" }
+      ],
+      "verified": "git fetch --depth=1 of the SHA succeeded (merge commit 2025-03-14T22:54:08Z). git grep at that commit: .github/workflows/linters.yml:24 '- uses: tj-actions/changed-files@0e58ed8671d6b60d0890c21b07f8835ace038e67 # v45'. 11 workflow files; no package-lock.json. Sibling repo torana-us/terraform-modules@69e65ed12de7b4a6ad386fd280cab04b5867b866 has the same line (spare)."
+    },
+    {
+      "id": "chalk-debug-2025",
+      "repo": "FinnLeh/vs-code-obsidian",
+      "commit": "9c4ac83970cafe94da2c0ec0cad045bb076ee220",
+      "lockfile": "package-lock.json",
+      "asOf": "2025-09-09T00:00:00Z",
+      "why": "Sep 8 2025 chalk/debug phishing compromise: lockfile committed on the incident day (2025-09-08T17:14+01:00) resolving six compromised versions at once. All of these versions were later unpublished from npm, so registry lookups for them must degrade gracefully.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [
+        { "purl": "pkg:npm/chalk@5.6.1", "level": "critical", "note": "KB INC-2025-0002; node_modules/ora/node_modules/chalk" },
+        { "purl": "pkg:npm/debug@4.4.2", "level": "critical", "note": "KB INC-2025-0002" },
+        { "purl": "pkg:npm/ansi-styles@6.2.2", "level": "critical", "note": "KB INC-2025-0002" },
+        { "purl": "pkg:npm/strip-ansi@7.1.1", "level": "critical", "note": "KB INC-2025-0002" },
+        { "purl": "pkg:npm/ansi-regex@6.2.1", "level": "critical", "note": "KB INC-2025-0002" },
+        { "purl": "pkg:npm/error-ex@1.3.3", "level": "critical", "note": "KB INC-2025-0002" }
+      ],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2025-09-08T17:14:00+01:00, current HEAD). package-lock.json (lockfileVersion 3, 419 entries): line 4142 node_modules/ora/node_modules/chalk 5.6.1; line 1726 node_modules/debug 4.4.2; line 5743 node_modules/wrap-ansi/node_modules/ansi-styles 6.2.2; line 5168 node_modules/strip-ansi 7.1.1; line 1190 node_modules/ansi-regex 6.2.1; line 1853 node_modules/error-ex 1.3.3 (all dev: true)."
+    },
+    {
+      "id": "control-typescript",
+      "repo": "microsoft/TypeScript",
+      "commit": "de61e696214322f72d967bd17c58c50e44b2920d",
+      "lockfile": "package-lock.json",
+      "why": "Healthy control: well-maintained repo at a recent commit, one lockfile (242 entries) and 13 workflows. No KB-listed version present.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev", "api.deps.dev", "api.github.com"],
+      "expect": [],
+      "expectAbsent": ["level:critical", "reason:malware"],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2026-10-06T16:38:13Z). Only package-lock.json in tree (lockfileVersion 3, 242 entries). Swept every entry against all npm purls/versions in kb/incidents: 0 hits."
+    },
+    {
+      "id": "control-mocha",
+      "repo": "mochajs/mocha",
+      "commit": "a9fc5296831641fbbcc8862e561e498549d840dc",
+      "why": "Healthy control with 3 lockfiles (root, docs/, repro/) and 15 workflows: exercises multi-asset grouping without any expected critical.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev", "api.deps.dev", "api.github.com"],
+      "expect": [],
+      "expectAbsent": ["level:critical", "reason:malware"],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2026-10-02T21:35:45-04:00). Lockfiles: package-lock.json (742 entries), docs/package-lock.json (619), repro/package-lock.json (8). KB sweep: 0 hits."
+    },
+    {
+      "id": "scale-superset-frontend",
+      "repo": "apache/superset",
+      "commit": "5a2f4c8e80c213fc79e72a9b8d9390c3ce1567a3",
+      "subdir": "superset-frontend",
+      "lockfile": "superset-frontend/package-lock.json",
+      "why": "Scale: one very large real lockfile (3353 install entries, 2793 unique name@version, 1.7 MB) plus 3 more lockfiles and 56 workflows in the full repo. Stresses ingest, enrichment batching and the findings table.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev", "api.deps.dev", "api.github.com"],
+      "expect": [],
+      "expectAbsent": ["reason:malware"],
+      "verified": "git fetch --depth=1 of the SHA succeeded (commit 2026-10-06T16:48:40-04:00). Lockfiles: superset-frontend/package-lock.json (lockfileVersion 3, 3353 entries), superset-embedded-sdk (345), superset-websocket (221), superset-websocket/utils/client-ws-app (133) = 4052 entries; plus 1 yarn/pnpm lockfile (unsupported). KB sweep: 0 hits. Advisory (vuln) findings are allowed."
+    },
+    {
+      "id": "scale-vscode-multi-lockfile",
+      "repo": "microsoft/vscode",
+      "commit": "4809baeed6c46c1e90b44638f7d8bdb802e95b10",
+      "why": "Scale: 65 package-lock.json files (61 outside node_modules paths) with 6200 install entries / 3048 unique components across many assets, plus 19 workflows. Target for the 5k+ row UI stress (component x asset rows) and graph rendering.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev", "api.deps.dev", "api.github.com"],
+      "expect": [],
+      "expectAbsent": ["reason:malware"],
+      "verified": "git fetch --depth=1 --filter=blob:none of the SHA succeeded (commit 2026-10-07T00:27:25+02:00). ls-tree: 65 package-lock.json, 0 yarn/pnpm, 19 workflows. Read all 61 non-node_modules lockfiles via git show: 6200 entries, 3048 unique name@version; KB sweep 0 hits."
+    },
+    {
+      "id": "hostile-npm-cli-fixtures",
+      "repo": "npm/cli",
+      "commit": "b317f16c80df02ea3628cfa77170d5ae9b59720c",
+      "why": "Robustness + scale on a real repo full of deliberately odd lockfiles: 97 package-lock/shrinkwrap files (7587 parseable entries), 3 of which are not valid JSON (merge-conflict markers in workspaces/arborist/test/fixtures/conflict-package-lock, workspace3 fixtures), ancient/invalid lockfile fixtures, and 5 yarn.lock fixtures. The scan must finish, report the unparseable and unsupported lockfiles as warnings and never crash or hang.",
+      "sources": ["github.com", "registry.npmjs.org", "api.osv.dev"],
+      "expect": [],
+      "expectAbsent": ["reason:malware"],
+      "verified": "git fetch --depth=1 --filter=blob:none of the SHA succeeded (commit 2026-10-01T14:02:10-07:00). ls-tree: 97 package-lock.json/npm-shrinkwrap.json, 5 yarn.lock, 26 workflows. JSON.parse fails on workspaces/arborist/test/fixtures/conflict-package-lock/package-lock.json (line 13 '<<<<<<< HEAD') and workspaces/arborist/test/fixtures/workspace3/packages/a/{package-lock.json,npm-shrinkwrap.json}. KB sweep of the rest: 0 hits. Audit fixtures (e.g. audit-all-severities) intentionally contain vulnerable versions, so vuln findings are expected."
+    },
+    {
+      "id": "yarn-unsupported-ua-parser-js",
+      "repo": "navikt/aksel-website",
+      "commit": "3354bfa68750a1bd75a2484acc80f386f6747e3a",
+      "lockfile": "yarn.lock",
+      "asOf": "2021-10-23T00:00:00Z",
+      "why": "Coverage honesty: the only lockfile is a yarn.lock that resolves ua-parser-js 0.7.29 (fixed by dependabot commit 09036cee). src/ingest/fs.ts classes yarn.lock as unsupportedLockfiles, so the engine cannot see the compromise. The scan and UI must say so loudly (coverage warning naming yarn.lock) instead of showing a clean result.",
+      "sources": ["github.com"],
+      "expect": [
+        { "purl": "pkg:npm/ua-parser-js@0.7.29", "level": "none", "note": "not detectable while yarn.lock is unsupported; the run must surface an 'unsupported lockfile: yarn.lock' coverage warning. If yarn support lands, flip this to critical." }
+      ],
+      "verified": "git fetch --depth=2 of fix commit 09036ceeae44cd7dd382df47888937e5c37302a2 gave parent 3354bfa6 (2021-10-22T16:56:14+02:00); the fix touches only yarn.lock. At 3354bfa6: yarn.lock line 12207 'ua-parser-js@^0.7.18:' line 12208 'version \"0.7.29\"'; raw package-lock.json returns 404; ls-tree shows yarn.lock and 2 workflows, no package-lock.json."
+    }
+  ],
+  "dropped": [
+    { "target": "coa 2.0.3 / rc 1.2.9 (Nov 2021)", "reason": "GitHub code search for the coa-2.0.3.tgz and rc-1.2.9.tgz resolved URLs in package-lock.json returned 0 real lockfiles (only attack-data repos and scanner fixtures). The versions lived for hours and were unpublished; no real committed lockfile could be verified." },
+    { "target": "node-ipc 10.1.1 / 10.1.2", "reason": "No real lockfile found (only a fixture in SocialGouv/iterion e2e and an attack-data repo). Replaced by node-ipc 9.2.2 + peacenotwar (project-qwerty)." },
+    { "target": "tj-actions mutable tag (@v45) during Mar 2025", "reason": "A tag reference cannot be resolved to the compromised commit historically (tags were restored); the KB lists only the SHA. Covered instead by a real SHA pin to 0e58ed86 committed by Renovate during the window." },
+    { "target": "bitpay/copay Nov 2018", "reason": "Not needed: davglass/registry-static and Esri/a11y-map carry the exact event-stream 3.3.6 / flatmap-stream 0.1.1 entries and were verified directly." }
+  ]
+}

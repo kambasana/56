@@ -1,0 +1,291 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Blastradius Design System tokens (docs/UX.md; https://claude.ai/artifact/DToocoexEfjkPhoG88ggrK,
+ * project/tokens.json), on the shadcn/ui new-york v4 variable names so every shadcn component
+ * keeps working. Light on :root, dark on <html class="dark"> (ThemeProvider).
+ *
+ * Colour carries severity and only severity: --sev-* (ink) and --sev-*-soft (fill), always
+ * with a shape and a word. Reach is never a hue (--reach-prod ink vs --reach-dev muted, dashed).
+ * Graphs: --node-*, --edge-*, --focus-path. Selection: --selection on --selection-soft.
+ * Contrast pairs are asserted by web/src/theme-contrast.test.ts.
+ *
+ * Legacy aliases kept for pages stage 2 has not redesigned yet: --level-* → --sev-*,
+ * --info → --selection.
+ */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --background: #ffffff;
+  --foreground: #101322;
+  --card: #ffffff;
+  --card-foreground: #101322;
+  --popover: #ffffff;
+  --popover-foreground: #101322;
+  --primary: #101322;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f9;
+  --secondary-foreground: #101322;
+  --muted: #f3f4f9;
+  --muted-foreground: #5f6580;
+  --accent: #f3f4f9;
+  --accent-foreground: #101322;
+  --destructive: #c4281c;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #feeceb;
+  --border: #dfe2ec;
+  --input: #858ca8;
+  --ring: #2350d0;
+  --text-secondary: #4b5168;
+  --selection: #2350d0;
+  --selection-soft: #e8eefc;
+  --success: #15803d;
+  --success-soft: #e7f7ec;
+  --warning: #b45309;
+  --warning-soft: #fdf3e1;
+  --recessed: #e9ebf3;
+  --grid: #c3c8da;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+
+  --sev-critical: #a11d16;
+  --sev-critical-soft: #fdecea;
+  --sev-high: #c2410c;
+  --sev-high-soft: #fff0e5;
+  --sev-medium: #8a5a00;
+  --sev-medium-soft: #fbf3dc;
+  --sev-low: #5f6580;
+  --sev-low-soft: #f3f4f9;
+  --sev-none: #c3c8da;
+  --reach-prod: #101322;
+  --reach-dev: #5f6580;
+  --node-surface: var(--card);
+  --node-border: #858ca8;
+  --edge-runtime: #4b5168;
+  --edge-dev: #858ca8;
+  --edge-optional: #858ca8;
+  --focus-path: var(--selection);
+
+  /* The sidebar sits on --muted; the active item is lifted onto --background (Sidebar.dc.html). */
+  --sidebar: #f3f4f9;
+  --sidebar-foreground: #101322;
+  --sidebar-primary: #101322;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #101322;
+  --sidebar-border: #dfe2ec;
+  --sidebar-ring: #2350d0;
+
+  --level-critical: var(--sev-critical);
+  --level-high: var(--sev-high);
+  --level-medium: var(--sev-medium);
+  --level-low: var(--sev-low);
+  --info: var(--selection);
+
+  --elev-1: 0 1px 2px 0 rgba(16, 19, 34, 0.06);
+  --elev-2: 0 8px 24px -8px rgba(16, 19, 34, 0.18);
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow-lg: var(--elev-2);
+
+  --control-h: 28px;
+  --row-h: 40px;
+  --sheet-w: 440px;
+  --rail-w: 300px;
+}
+
+.dark {
+  --background: #0e1020;
+  --foreground: #eceef6;
+  --card: #151830;
+  --card-foreground: #eceef6;
+  --popover: #151830;
+  --popover-foreground: #eceef6;
+  --primary: #eceef6;
+  --primary-foreground: #101322;
+  --secondary: #1b1e38;
+  --secondary-foreground: #eceef6;
+  --muted: #1b1e38;
+  --muted-foreground: #8b91ab;
+  --accent: #1b1e38;
+  --accent-foreground: #eceef6;
+  --destructive: #f87171;
+  --destructive-foreground: #101322;
+  --destructive-soft: #3b1210;
+  --border: #2a2e4a;
+  --input: #5d6494;
+  --ring: #7d9bff;
+  --text-secondary: #b3b8cf;
+  --selection: #7d9bff;
+  --selection-soft: #1a2450;
+  --success: #4ade80;
+  --success-soft: #0f2e1c;
+  --warning: #fbbf24;
+  --warning-soft: #3a2a0c;
+  --recessed: #232746;
+  --grid: #3b4063;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+
+  --sev-critical: #ff8f86;
+  --sev-critical-soft: #3b1210;
+  --sev-high: #fdba74;
+  --sev-high-soft: #3a1f0b;
+  --sev-medium: #f2cf5b;
+  --sev-medium-soft: #33280a;
+  --sev-low: #8b91ab;
+  --sev-low-soft: #1b1e38;
+  --sev-none: #3b4063;
+  --reach-prod: #eceef6;
+  --reach-dev: #8b91ab;
+  --node-border: #5d6494;
+  --edge-runtime: #b3b8cf;
+  --edge-dev: #5d6494;
+  --edge-optional: #5d6494;
+
+  --sidebar: #1b1e38;
+  --sidebar-foreground: #eceef6;
+  --sidebar-primary: #eceef6;
+  --sidebar-primary-foreground: #101322;
+  --sidebar-accent: #0e1020;
+  --sidebar-accent-foreground: #eceef6;
+  --sidebar-border: #2a2e4a;
+  --sidebar-ring: #7d9bff;
+
+  --elev-1: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --elev-2: 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-level-critical: var(--level-critical);
+  --color-level-high: var(--level-high);
+  --color-level-medium: var(--level-medium);
+  --color-level-low: var(--level-low);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-info: var(--info);
+
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --color-destructive-soft: var(--destructive-soft);
+  --color-text-secondary: var(--text-secondary);
+  --color-selection: var(--selection);
+  --color-selection-soft: var(--selection-soft);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-recessed: var(--recessed);
+  --color-grid: var(--grid);
+  --color-sev-critical: var(--sev-critical);
+  --color-sev-critical-soft: var(--sev-critical-soft);
+  --color-sev-high: var(--sev-high);
+  --color-sev-high-soft: var(--sev-high-soft);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-medium-soft: var(--sev-medium-soft);
+  --color-sev-low: var(--sev-low);
+  --color-sev-low-soft: var(--sev-low-soft);
+  --color-sev-none: var(--sev-none);
+  --color-reach-prod: var(--reach-prod);
+  --color-reach-dev: var(--reach-dev);
+  --color-node-surface: var(--node-surface);
+  --color-node-border: var(--node-border);
+  --color-edge-runtime: var(--edge-runtime);
+  --color-edge-dev: var(--edge-dev);
+  --color-edge-optional: var(--edge-optional);
+  --color-focus-path: var(--focus-path);
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  /* Type scale from tokens.json (title 20, heading 15, body 13, label 12, caption 11.5, eyebrow 11). */
+  --text-title: 20px;
+  --text-title--line-height: 26px;
+  --text-heading: 15px;
+  --text-heading--line-height: 20px;
+  --text-body: 13px;
+  --text-body--line-height: 18px;
+  --text-label: 12px;
+  --text-label--line-height: 16px;
+  --text-caption: 11.5px;
+  --text-caption--line-height: 16px;
+  --text-eyebrow: 11px;
+  --text-eyebrow--line-height: 16px;
+  --spacing-sheet: var(--sheet-w);
+  --spacing-rail: var(--rail-w);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply font-sans text-sm antialiased;
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+  }
+  /* Bare text links inside screens; shadcn components (data-slot) style their own anchors. */
+  a:not([data-slot]) {
+    color: var(--info);
+    text-underline-offset: 4px;
+  }
+  a:not([data-slot]):hover {
+    text-decoration: underline;
+  }
+}

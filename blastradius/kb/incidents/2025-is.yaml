@@ -1,0 +1,14 @@
+# is (2025): versions 3.3.1 and 5.0.0 published with an embedded payload (GHSA-6f4g-3jvw-4j45,
+# CWE-506). Publish time from the registry (2025-07-19T11:40Z).
+id: INC-2025-0004
+title: is 3.3.1 and 5.0.0 published with an embedded payload
+type: malware_publish
+status: confirmed
+date: 2025-07-19
+severity: critical
+affected:
+  - purl: pkg:npm/is
+    versions: ["3.3.1", "5.0.0"]
+entities: []
+evidence:
+  - https://github.com/advisories/GHSA-6f4g-3jvw-4j45

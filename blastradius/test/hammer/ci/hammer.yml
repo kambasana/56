@@ -1,0 +1,163 @@
+# Blastradius hammer test: real repos, live data, every screen.
+#
+# Copy this file into the PRIVATE results repo (e.g. kambasana/blastradius-hammer) as
+# .github/workflows/hammer.yml. It checks out Blastradius from the public kambasana/56 repo,
+# scans the real scenarios in test/hammer/scenarios.json against live OSV, deps.dev, Scorecard,
+# npm and GitHub, runs the Playwright hammer suite, and commits the results and screenshots to
+# the `results` branch of the private repo. Nothing is published anywhere else.
+#
+# Secrets: none required. The run uses this repo's own GITHUB_TOKEN for GitHub API calls.
+# Optional secret HAMMER_GITHUB_TOKEN (fine-grained, public repositories read-only) raises the
+# GitHub API rate limit for large scenarios.
+name: hammer
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Blastradius branch, tag or commit in kambasana/56
+        default: docs/blast-radius-plan
+        required: true
+      mode:
+        description: quick (about 15 min, skips the huge vscode/superset scans) or full (every role x theme x viewport, about 90 min)
+        type: choice
+        options: [quick, full]
+        default: quick
+      only:
+        description: Comma-separated scenario ids (empty = all)
+        default: ''
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hammer
+  cancel-in-progress: false
+
+jobs:
+  hammer:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.mode == 'full' && 150 || 45 }}
+    env:
+      HAMMER_MODE: ${{ inputs.mode }}
+      GITHUB_TOKEN: ${{ secrets.HAMMER_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+      # Optional: an Open Collective personal token raises its rate limit (funding lookups).
+      OPENCOLLECTIVE_API_KEY: ${{ secrets.OPENCOLLECTIVE_API_KEY }}
+    steps:
+      # The runner context is not available in job-level env, so set these paths here.
+      - name: Set paths
+        env:
+          HAS_HAMMER_TOKEN: ${{ secrets.HAMMER_GITHUB_TOKEN != '' }}
+        run: |
+          echo "BLASTRADIUS_HAMMER_DIR=$RUNNER_TEMP/hammer" >> "$GITHUB_ENV"
+          echo "BLASTRADIUS_CACHE_DIR=$RUNNER_TEMP/br-cache" >> "$GITHUB_ENV"
+          if [ "$HAS_HAMMER_TOKEN" = "true" ]; then echo "GitHub token: HAMMER_GITHUB_TOKEN secret"; else echo "GitHub token: repository GITHUB_TOKEN (HAMMER_GITHUB_TOKEN not set)"; fi
+
+      - name: Check out Blastradius (public)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kambasana/56
+          ref: ${{ inputs.ref }}
+          path: src
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install and build
+        working-directory: src/blastradius
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          cd web
+          npm ci --ignore-scripts
+          npm run build
+          npx playwright install --with-deps chromium
+
+      - name: Use the newest knowledge pack, if one was built (pack workflow)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("pack-"))][0].tagName // empty')
+          if [ -n "$tag" ]; then
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'pack.json.gz*' -D "$RUNNER_TEMP/pack"
+            (cd "$RUNNER_TEMP/pack" && sha256sum -c pack.json.gz.sha256)
+            echo "BLASTRADIUS_PACK=$RUNNER_TEMP/pack/pack.json.gz" >> "$GITHUB_ENV"
+            echo "Knowledge pack: $tag"
+          else
+            echo "No knowledge pack release yet (run the pack workflow); scanning without one."
+          fi
+
+      - name: Scan real scenarios (CLI + web API), keep servers up
+        working-directory: src/blastradius
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          args="--keep-servers --strict"
+          if [ "$HAMMER_MODE" != "full" ]; then args="$args --skip-scale"; fi
+          if [ -n "$ONLY" ]; then args="$args --only $ONLY"; fi
+          nohup npm run hammer -- $args > "$RUNNER_TEMP/hammer-runner.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/runner.pid"
+          # Wait for the runner to finish scanning (results.json written) or exit early.
+          for i in $(seq 1 720); do
+            if [ -f test/hammer/out/results.json ]; then break; fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/runner.pid")" 2>/dev/null; then break; fi
+            sleep 10
+          done
+          tail -n 80 "$RUNNER_TEMP/hammer-runner.log"
+          test -f test/hammer/out/results.json
+
+      - name: Playwright hammer (every page, role, theme, viewport)
+        working-directory: src/blastradius/web
+        run: node e2e/hammer/run-all.mjs
+
+      - name: Stop servers
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/runner.pid" ]; then kill "$(cat "$RUNNER_TEMP/runner.pid")" 2>/dev/null || true; fi
+
+      - name: Collect results
+        if: always()
+        run: |
+          out="$RUNNER_TEMP/collect/runs/${{ github.run_id }}"
+          mkdir -p "$out"
+          cp -r src/blastradius/test/hammer/out "$out/runner" 2>/dev/null || true
+          cp -r src/blastradius/web/e2e/hammer/out "$out/e2e" 2>/dev/null || true
+          cp -r src/blastradius/web/e2e/hammer/shots "$out/shots" 2>/dev/null || true
+          cp "$RUNNER_TEMP/hammer-runner.log" "$out/" 2>/dev/null || true
+          git -C src rev-parse HEAD > "$out/blastradius-commit.txt"
+          {
+            echo "## Hammer run ${{ github.run_id }}"
+            echo
+            cat "$out/runner/results.md" 2>/dev/null || echo "(no runner results)"
+            echo
+            cat "$out/e2e/report.md" 2>/dev/null || echo "(no e2e report)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit results to the private results branch
+        if: always()
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: results
+          fetch-depth: 1
+
+      - name: Push
+        if: always()
+        working-directory: results
+        run: |
+          if git fetch -q --depth 1 origin results; then
+            git checkout -q -B results FETCH_HEAD
+          else
+            # First run: start an empty results branch (no copy of the workflow files).
+            git checkout -q --orphan results
+            git rm -rfq . 2>/dev/null || true
+          fi
+          mkdir -p runs
+          cp -r "$RUNNER_TEMP/collect/runs/." runs/
+          ln -sfn "runs/${{ github.run_id }}" latest
+          git add runs latest
+          git -c user.name="hammer" -c user.email="hammer@users.noreply.github.com" \
+            commit -qm "hammer run ${{ github.run_id }} ($(cat runs/${{ github.run_id }}/blastradius-commit.txt))" || exit 0
+          git push -q origin HEAD:results

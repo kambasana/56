@@ -1,0 +1,5 @@
+# Hammer outputs: screenshots, results, downloads and signed-in session state (secrets).
+out/
+shots/
+test-results/
+playwright-report/

@@ -1,0 +1,510 @@
+{
+ "_id": "debug",
+ "name": "debug",
+ "versions": {
+  "4.3.2": {
+   "name": "debug",
+   "version": "4.3.2",
+   "_npmUser": {
+    "name": "qix",
+    "email": "i.am.qix@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "i.am.qix@gmail.com"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "2.1.2"
+   },
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.3.3": {
+   "name": "debug",
+   "version": "4.3.3",
+   "_npmUser": {
+    "name": "qix",
+    "email": "josh@junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "2.1.2"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.3.4": {
+   "name": "debug",
+   "version": "4.3.4",
+   "_npmUser": {
+    "name": "qix",
+    "email": "josh@junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "2.1.2"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "0.8.1": {
+   "name": "debug",
+   "version": "0.8.1",
+   "_npmUser": {
+    "name": "tjholowaychuk",
+    "email": "tj@vision-media.ca"
+   },
+   "maintainers": [
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "dependencies": {},
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "0.7.0": {
+   "name": "debug",
+   "version": "0.7.0",
+   "maintainers": [
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "dependencies": {},
+   "dist": {}
+  },
+  "3.1.0": {
+   "name": "debug",
+   "version": "3.1.0",
+   "_npmUser": {
+    "name": "tootallnate",
+    "email": "nathan@tootallnate.net"
+   },
+   "maintainers": [
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "kolban",
+     "email": "kolban1@kolban.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "dependencies": {
+    "ms": "2.0.0"
+   },
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "2.6.7": {
+   "name": "debug",
+   "version": "2.6.7",
+   "_npmUser": {
+    "name": "thebigredgeek",
+    "email": "rhyneandrew@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    }
+   ],
+   "scripts": {},
+   "dependencies": {
+    "ms": "2.0.0"
+   },
+   "repository": {
+    "url": "git://github.com/visionmedia/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.3.5": {
+   "name": "debug",
+   "version": "4.3.5",
+   "_npmUser": {
+    "name": "qix",
+    "email": "josh@junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js test.node.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "2.1.2"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.3.6": {
+   "name": "debug",
+   "version": "4.3.6",
+   "_npmUser": {
+    "name": "qix",
+    "email": "josh@junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "josh@junon.me"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js test.node.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "2.1.2"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.3.7": {
+   "name": "debug",
+   "version": "4.3.7",
+   "_npmUser": {
+    "name": "qix",
+    "email": "npm@josh.junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js test.node.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "^2.1.3"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.4.0": {
+   "name": "debug",
+   "version": "4.4.0",
+   "_npmUser": {
+    "name": "qix",
+    "email": "npm@josh.junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    },
+    {
+     "name": "thebigredgeek",
+     "email": "rhyneandrew@gmail.com"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    },
+    {
+     "name": "tjholowaychuk",
+     "email": "tj@vision-media.ca"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "istanbul cover _mocha -- test.js test.node.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "^2.1.3"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.4.1": {
+   "name": "debug",
+   "version": "4.4.1",
+   "_npmUser": {
+    "name": "qix",
+    "email": "npm@josh.junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "mocha test.js test.node.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "^2.1.3"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "4.4.3": {
+   "name": "debug",
+   "version": "4.4.3",
+   "_npmUser": {
+    "name": "qix",
+    "email": "npm@josh.junon.me"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    }
+   ],
+   "scripts": {
+    "lint": "xo",
+    "test": "npm run test:node && npm run test:browser && npm run lint",
+    "test:node": "mocha test.js test.node.js",
+    "test:browser": "karma start --single-run",
+    "test:coverage": "cat ./coverage/lcov.info | coveralls"
+   },
+   "dependencies": {
+    "ms": "^2.1.3"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git://github.com/debug-js/debug.git"
+   },
+   "dist": {}
+  },
+  "4.4.2": {
+   "name": "debug",
+   "version": "4.4.2",
+   "_npmUser": {
+    "name": "qix"
+   },
+   "maintainers": [
+    {
+     "name": "qix",
+     "email": "npm@josh.junon.me"
+    },
+    {
+     "name": "tootallnate",
+     "email": "nathan@tootallnate.net"
+    }
+   ],
+   "dependencies": {
+    "ms": "^2.1.3"
+   },
+   "repository": {
+    "url": "git://github.com/debug-js/debug.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://osv.dev/vulnerability/MAL-2025-46974",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "created": "2011-11-29T01:11:23.618Z",
+  "modified": "2025-09-13T17:25:19.913Z",
+  "0.7.0": "2012-07-09T19:11:59.699Z",
+  "0.8.1": "2014-04-15T02:04:45.652Z",
+  "2.6.7": "2017-05-17T04:33:51.578Z",
+  "3.1.0": "2017-09-26T19:13:51.492Z",
+  "4.3.2": "2020-12-09T15:36:20.909Z",
+  "4.3.3": "2021-11-27T13:14:24.425Z",
+  "4.3.4": "2022-03-17T13:38:47.641Z",
+  "4.3.5": "2024-05-31T11:40:15.895Z",
+  "4.3.6": "2024-07-27T09:23:24.842Z",
+  "4.3.7": "2024-09-06T00:52:57.702Z",
+  "4.4.0": "2024-12-06T12:32:46.280Z",
+  "4.4.1": "2025-05-13T20:56:36.431Z",
+  "4.4.2": "2025-09-08T13:12:39.973Z",
+  "4.4.3": "2025-09-13T17:25:19.732Z"
+ },
+ "maintainers": [
+  {
+   "name": "qix",
+   "email": "npm@josh.junon.me"
+  },
+  {
+   "name": "tootallnate",
+   "email": "nathan@tootallnate.net"
+  }
+ ],
+ "repository": {
+  "type": "git",
+  "url": "git://github.com/debug-js/debug.git"
+ }
+}

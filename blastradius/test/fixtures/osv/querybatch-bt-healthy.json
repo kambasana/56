@@ -1,0 +1,56 @@
+{
+  "_note": "Hand-authored from the documented OSV API shape (POST /v1/querybatch returns ids + modified only); api.osv.dev is not reachable from the recording environment. Query order = npm components sorted by purl. Advisory mapping follows the public GHSA records referenced in the GHSA-*.json fixtures; packages without an entry had no OSV advisory for that version at the time of writing. Inventory: test/backtest/repos/healthy-control.",
+  "request": {
+    "url": "https://api.osv.dev/v1/querybatch",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "package": {
+            "name": "inherits",
+            "ecosystem": "npm"
+          },
+          "version": "2.0.4"
+        },
+        {
+          "package": {
+            "name": "ms",
+            "ecosystem": "npm"
+          },
+          "version": "2.1.3"
+        },
+        {
+          "package": {
+            "name": "once",
+            "ecosystem": "npm"
+          },
+          "version": "1.4.0"
+        },
+        {
+          "package": {
+            "name": "wrappy",
+            "ecosystem": "npm"
+          },
+          "version": "1.0.2"
+        },
+        {
+          "package": {
+            "name": "yocto-queue",
+            "ecosystem": "npm"
+          },
+          "version": "1.2.1"
+        }
+      ]
+    }
+  },
+  "status": 200,
+  "response": {
+    "results": [
+      {},
+      {},
+      {},
+      {},
+      {}
+    ]
+  }
+}

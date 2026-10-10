@@ -1,0 +1,779 @@
+{
+  "note": "Recorded from the live registry on 2026-10-06 and trimmed to the last 19 versions and the fields the npm enricher reads. Email addresses were removed (data minimisation).",
+  "request": {
+    "url": "https://registry.npmjs.org/ms"
+  },
+  "response": {
+    "_id": "ms",
+    "name": "ms",
+    "description": "Tiny millisecond conversion utility",
+    "dist-tags": {
+      "latest": "2.1.3",
+      "beta": "3.0.0-beta.2",
+      "canary": "3.0.0-canary.202508261828",
+      "nightly": "4.0.0-nightly.202508271359"
+    },
+    "maintainers": [
+      {
+        "name": "matheuss"
+      },
+      {
+        "name": "rauchg"
+      },
+      {
+        "name": "nick.tracey"
+      },
+      {
+        "name": "vercel-release-bot"
+      },
+      {
+        "name": "zeit-bot"
+      },
+      {
+        "name": "matt.straka"
+      }
+    ],
+    "repository": {
+      "url": "git+https://github.com/vercel/ms.git",
+      "type": "git"
+    },
+    "time": {
+      "created": "2011-12-21T19:38:08.664Z",
+      "modified": "2025-09-08T19:56:54.242Z",
+      "0.1.0": "2011-12-21T19:38:26.538Z",
+      "0.2.0": "2012-09-03T20:33:06.093Z",
+      "0.3.0": "2012-09-07T20:36:45.931Z",
+      "0.4.0": "2012-10-22T17:01:26.046Z",
+      "0.5.0": "2012-11-10T00:39:49.944Z",
+      "0.5.1": "2013-02-24T20:27:27.010Z",
+      "0.6.0": "2013-03-15T15:26:35.127Z",
+      "0.6.1": "2013-05-10T15:38:08.059Z",
+      "0.6.2": "2013-12-05T15:57:45.292Z",
+      "0.7.0": "2014-11-24T07:59:08.195Z",
+      "0.7.1": "2015-04-20T23:38:57.957Z",
+      "0.7.2": "2016-10-25T08:16:49.773Z",
+      "0.7.3": "2017-03-08T21:59:28.048Z",
+      "1.0.0": "2017-03-19T21:43:15.128Z",
+      "2.0.0": "2017-05-16T12:26:06.610Z",
+      "2.1.0": "2017-11-30T16:54:16.315Z",
+      "2.1.1": "2017-11-30T18:30:16.876Z",
+      "2.1.2": "2019-06-06T17:31:55.859Z",
+      "2.1.3": "2020-12-08T13:54:35.223Z"
+    },
+    "versions": {
+      "0.1.0": {
+        "name": "ms",
+        "version": "0.1.0",
+        "dependencies": {},
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.1.0.tgz",
+          "integrity": "sha512-7uwYj3Xip4rOFpe5dDy+C25Ad0nAXkT4yAVMSpuh1UYR2Z7tAswSh4wb/HghRa533wofFUsvg54OQ90Mu1dCJg=="
+        }
+      },
+      "0.2.0": {
+        "name": "ms",
+        "version": "0.2.0",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.2.0.tgz",
+          "integrity": "sha512-3hmNMG0TYmTiQD6+s+b9eKLYWYTbR+6AgZtOu60jiedzeu2JK9NS6Ih1vosLwxLutvG45slW7/fVaCM8WDXGRQ=="
+        }
+      },
+      "0.3.0": {
+        "name": "ms",
+        "version": "0.3.0",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.3.0.tgz",
+          "integrity": "sha512-25BVmSAdN4KRX7XeI6/gwQ9ewx6t9QB9/8X2fVJUUDpPc03qTRaEPgt5bTMZQ5T2l+XT+haSfqIkysOupDsSVQ=="
+        }
+      },
+      "0.4.0": {
+        "name": "ms",
+        "version": "0.4.0",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.4.0.tgz",
+          "integrity": "sha512-64oIDtd4AvWd9+PXu3mS+e+83nD/4+vDjORXYUrMsUodlxSgxHt6okjkFO94XAG+zDoBz7GPkCYFXd5OD++kJg=="
+        }
+      },
+      "0.5.0": {
+        "name": "ms",
+        "version": "0.5.0",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.5.0.tgz",
+          "integrity": "sha512-l+4vT0spctuJn4dEuiTHFJg/o2Gu7lcPPVmoEkOvCJ7q6btdsvokZscv1rAj5rokCmiqZRWpA/apQSpgDv8ZSw=="
+        }
+      },
+      "0.5.1": {
+        "name": "ms",
+        "version": "0.5.1",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.5.1.tgz",
+          "integrity": "sha512-DgU7MSi4T3XY43mZL/Lgk31wqwe2NB56QsyVMcY3m5rICuAp+/uY1/w3lnjhPSaTYVdx1vZQ+ppUlH4AlJ6UAA=="
+        }
+      },
+      "0.6.0": {
+        "name": "ms",
+        "version": "0.6.0",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.6.0.tgz",
+          "integrity": "sha512-twVBDoonss/A6chyHOAQkx8Y+daAablgQy4khn8vYnrbcU4UvLLLFX2TCVhbGOXxTxJ4pqQtlTzjBErRyq/NDA=="
+        }
+      },
+      "0.6.1": {
+        "name": "ms",
+        "version": "0.6.1",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.6.1.tgz",
+          "integrity": "sha512-TAjpu7RNwH/eBQfmrVg6eA6hClZfmhd3B2Ghp/Di5HMLjNBhd44KtO5lWjQj0EayygL1BsfZEJe3Y4sBHMQQEg=="
+        }
+      },
+      "0.6.2": {
+        "name": "ms",
+        "version": "0.6.2",
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/guille/ms.js.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.6.2.tgz",
+          "integrity": "sha512-/pc3eh7TWorTtbvXg8je4GvrvEqCfH7PA3P7iW01yL2E53FKixzgMBaQi0NOPbMJqY34cBSvR0tZtmlTkdUG4A=="
+        }
+      },
+      "0.7.0": {
+        "name": "ms",
+        "version": "0.7.0",
+        "scripts": {},
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/guille/ms.js.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.7.0.tgz",
+          "integrity": "sha512-YmuMMkfOZzzAftlHwiQxFepJx/5rDaYi9o9QanyBCk485BRAyM/vB9XoYlZvglxE/pmAWOiQgrdoE10watiK9w=="
+        }
+      },
+      "0.7.1": {
+        "name": "ms",
+        "version": "0.7.1",
+        "scripts": {},
+        "_npmUser": {
+          "name": "rauchg"
+        },
+        "maintainers": [
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/guille/ms.js.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.7.1.tgz",
+          "integrity": "sha512-lRLiIR9fSNpnP6TC4v8+4OU7oStC01esuNowdQ34L+Gk8e5Puoc88IqJ+XAY/B3Mn2ZKis8l8HX90oU8ivzUHg=="
+        }
+      },
+      "0.7.2": {
+        "name": "ms",
+        "version": "0.7.2",
+        "scripts": {
+          "test": "xo && mocha test/index.js",
+          "test-browser": "serve ./test"
+        },
+        "_npmUser": {
+          "name": "leo"
+        },
+        "maintainers": [
+          {
+            "name": "leo"
+          },
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.7.2.tgz",
+          "integrity": "sha512-5NnE67nQSQDJHVahPJna1PQ/zCXMnQop3yUCxjKPNzCxuyPSKWTQ/5Gu5CZmjetwGLWRA+PzeF5thlbOdbQldA=="
+        }
+      },
+      "0.7.3": {
+        "name": "ms",
+        "version": "0.7.3",
+        "scripts": {
+          "test": "xo && mocha test/index.js",
+          "test-browser": "serve ./test"
+        },
+        "_npmUser": {
+          "name": "leo"
+        },
+        "maintainers": [
+          {
+            "name": "leo"
+          },
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-0.7.3.tgz",
+          "integrity": "sha512-lrKNzMWqQZgwJahtrtrM+9NgOoDUveDrVmm5aGXrf3BdtL0mq7X6IVzoZaw+TfNti29eHd1/8GI+h45K5cQ6/w=="
+        }
+      },
+      "1.0.0": {
+        "name": "ms",
+        "version": "1.0.0",
+        "scripts": {
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js",
+          "precommit": "lint-staged"
+        },
+        "_npmUser": {
+          "name": "leo"
+        },
+        "maintainers": [
+          {
+            "name": "leo"
+          },
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-1.0.0.tgz",
+          "integrity": "sha512-85ytwCiGUnD84ui6ULG1KBFMaZgHW3jg5KPr9jt+ZPYt75+XK+JGbYddGrBQ+RSHXOhekCnCZwJywBoFvFl0kw=="
+        }
+      },
+      "2.0.0": {
+        "name": "ms",
+        "version": "2.0.0",
+        "scripts": {
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js",
+          "precommit": "lint-staged"
+        },
+        "_npmUser": {
+          "name": "leo"
+        },
+        "maintainers": [
+          {
+            "name": "leo"
+          },
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-2.0.0.tgz",
+          "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A=="
+        }
+      },
+      "2.1.0": {
+        "name": "ms",
+        "version": "2.1.0",
+        "scripts": {
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js",
+          "precommit": "lint-staged"
+        },
+        "_npmUser": {
+          "name": "leo"
+        },
+        "maintainers": [
+          {
+            "name": "leo"
+          },
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-2.1.0.tgz",
+          "integrity": "sha512-gVZHb22Z7YDyiiaoGld9LD4tUuDDxdkDJUEfTIej9LFePFqiE9JxI0qTFfu6tD7Wu03lg7skmVwTmA6XkeMlPQ=="
+        }
+      },
+      "2.1.1": {
+        "name": "ms",
+        "version": "2.1.1",
+        "scripts": {
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js",
+          "precommit": "lint-staged"
+        },
+        "_npmUser": {
+          "name": "leo"
+        },
+        "maintainers": [
+          {
+            "name": "leo"
+          },
+          {
+            "name": "rauchg"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-2.1.1.tgz",
+          "integrity": "sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg=="
+        }
+      },
+      "2.1.2": {
+        "name": "ms",
+        "version": "2.1.2",
+        "scripts": {
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js",
+          "precommit": "lint-staged"
+        },
+        "_npmUser": {
+          "name": "styfle"
+        },
+        "maintainers": [
+          {
+            "name": "alexaltea"
+          },
+          {
+            "name": "anatrajkovska"
+          },
+          {
+            "name": "andybitz"
+          },
+          {
+            "name": "arunoda"
+          },
+          {
+            "name": "arzafran"
+          },
+          {
+            "name": "atcastle"
+          },
+          {
+            "name": "b3nnyl"
+          },
+          {
+            "name": "caarlos0"
+          },
+          {
+            "name": "codetheory"
+          },
+          {
+            "name": "coetry"
+          },
+          {
+            "name": "dav-is"
+          },
+          {
+            "name": "fivepointseven"
+          },
+          {
+            "name": "guybedford"
+          },
+          {
+            "name": "hharnisc"
+          },
+          {
+            "name": "huvik"
+          },
+          {
+            "name": "iamevilrabbit"
+          },
+          {
+            "name": "igorklopov"
+          },
+          {
+            "name": "ijjk"
+          },
+          {
+            "name": "janicklas-ralph"
+          },
+          {
+            "name": "javivelasco"
+          },
+          {
+            "name": "joecohens"
+          },
+          {
+            "name": "juancampa"
+          },
+          {
+            "name": "leo"
+          },
+          {
+            "name": "lfades"
+          },
+          {
+            "name": "lucleray"
+          },
+          {
+            "name": "manovotny"
+          },
+          {
+            "name": "marcosnils"
+          },
+          {
+            "name": "matheuss"
+          },
+          {
+            "name": "mfix22"
+          },
+          {
+            "name": "mglagola"
+          },
+          {
+            "name": "msweeneydev"
+          },
+          {
+            "name": "nkzawa"
+          },
+          {
+            "name": "olliv"
+          },
+          {
+            "name": "paco"
+          },
+          {
+            "name": "paulogdm"
+          },
+          {
+            "name": "quietshu"
+          },
+          {
+            "name": "rabaut"
+          },
+          {
+            "name": "ragojose"
+          },
+          {
+            "name": "rauchg"
+          },
+          {
+            "name": "sarupbanskota"
+          },
+          {
+            "name": "skllcrn"
+          },
+          {
+            "name": "sophearak"
+          },
+          {
+            "name": "styfle"
+          },
+          {
+            "name": "timer"
+          },
+          {
+            "name": "timneutkens"
+          },
+          {
+            "name": "tootallnate"
+          },
+          {
+            "name": "umegaya"
+          },
+          {
+            "name": "williamli"
+          },
+          {
+            "name": "zeit-bot"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/zeit/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-2.1.2.tgz",
+          "integrity": "sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w=="
+        }
+      },
+      "2.1.3": {
+        "name": "ms",
+        "version": "2.1.3",
+        "scripts": {
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js",
+          "precommit": "lint-staged"
+        },
+        "_npmUser": {
+          "name": "styfle"
+        },
+        "maintainers": [
+          {
+            "name": "elsigh"
+          },
+          {
+            "name": "leerobinson"
+          },
+          {
+            "name": "hankvercel"
+          },
+          {
+            "name": "okbel"
+          },
+          {
+            "name": "samsisle"
+          },
+          {
+            "name": "cleishm"
+          },
+          {
+            "name": "nazarenooviedo"
+          },
+          {
+            "name": "chibicode"
+          },
+          {
+            "name": "gielcobben"
+          },
+          {
+            "name": "jaredpalmer"
+          },
+          {
+            "name": "jkrems"
+          },
+          {
+            "name": "prateekbh"
+          },
+          {
+            "name": "kikobeats"
+          },
+          {
+            "name": "gmonaco"
+          },
+          {
+            "name": "housseindjirdeh"
+          },
+          {
+            "name": "developit"
+          },
+          {
+            "name": "spanicker"
+          },
+          {
+            "name": "keanulee"
+          },
+          {
+            "name": "atcastle"
+          },
+          {
+            "name": "janicklas-ralph"
+          },
+          {
+            "name": "skllcrn"
+          },
+          {
+            "name": "paco"
+          },
+          {
+            "name": "guybedford"
+          },
+          {
+            "name": "ragojose"
+          },
+          {
+            "name": "williamli"
+          },
+          {
+            "name": "msweeneydev"
+          },
+          {
+            "name": "coetry"
+          },
+          {
+            "name": "rabaut"
+          },
+          {
+            "name": "lfades"
+          },
+          {
+            "name": "mfix22"
+          },
+          {
+            "name": "ijjk"
+          },
+          {
+            "name": "arzafran"
+          },
+          {
+            "name": "umegaya"
+          },
+          {
+            "name": "timer"
+          },
+          {
+            "name": "anatrajkovska"
+          },
+          {
+            "name": "paulogdm"
+          },
+          {
+            "name": "andybitz"
+          },
+          {
+            "name": "mglagola"
+          },
+          {
+            "name": "lucleray"
+          },
+          {
+            "name": "zeit-bot"
+          },
+          {
+            "name": "styfle"
+          },
+          {
+            "name": "juancampa"
+          },
+          {
+            "name": "dav-is"
+          },
+          {
+            "name": "quietshu"
+          },
+          {
+            "name": "joecohens"
+          },
+          {
+            "name": "codetheory"
+          },
+          {
+            "name": "matheuss"
+          },
+          {
+            "name": "igorklopov"
+          },
+          {
+            "name": "leo"
+          },
+          {
+            "name": "nkzawa"
+          },
+          {
+            "name": "tootallnate"
+          },
+          {
+            "name": "rauchg"
+          },
+          {
+            "name": "timneutkens"
+          },
+          {
+            "name": "javivelasco"
+          },
+          {
+            "name": "iamevilrabbit"
+          }
+        ],
+        "repository": {
+          "url": "git+https://github.com/vercel/ms.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+          "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+ "id": "GHSA-4x49-vf9v-38px",
+ "aliases": [
+  "CVE-2025-59144",
+  "GHSA-8mgj-vmr8-frr6",
+  "MAL-2025-46974"
+ ],
+ "published": "2025-09-15T21:30:55Z",
+ "modified": "2025-09-16T06:44:36.384185Z",
+ "summary": "debug@4.4.2 contains malware after npm account takeover",
+ "database_specific": {
+  "cwe_ids": [
+   "CWE-506"
+  ],
+  "severity": "HIGH"
+ },
+ "severity": [
+  {
+   "type": "CVSS_V4",
+   "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:N/SC:N/SI:N/SA:N/E:A/U:Red"
+  }
+ ],
+ "affected": [
+  {
+   "package": {
+    "name": "debug",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/debug"
+   },
+   "ranges": [
+    {
+     "type": "SEMVER",
+     "events": [
+      {
+       "introduced": "4.4.2"
+      },
+      {
+       "fixed": "4.4.3"
+      }
+     ]
+    }
+   ],
+   "versions": [
+    "4.4.2"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/09/GHSA-4x49-vf9v-38px/GHSA-4x49-vf9v-38px.json"
+   }
+  }
+ ],
+ "references": [
+  {
+   "type": "WEB",
+   "url": "https://github.com/debug-js/debug/security/advisories/GHSA-4x49-vf9v-38px"
+  },
+  {
+   "type": "ADVISORY",
+   "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-59144"
+  },
+  {
+   "type": "WEB",
+   "url": "https://github.com/debug-js/debug/issues/1005"
+  },
+  {
+   "type": "PACKAGE",
+   "url": "https://github.com/debug-js/debug"
+  },
+  {
+   "type": "WEB",
+   "url": "https://socket.dev/blog/npm-author-qix-compromised-in-major-supply-chain-attack"
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+# Test fixture: a deliberately risky workflow (never run). It uses pull_request_target,
+# checks out the PR head and pins a third-party action by tag instead of a commit SHA.
+name: pr-check
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm test

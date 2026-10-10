@@ -1,0 +1,656 @@
+{
+ "_id": "eslint-config-prettier",
+ "name": "eslint-config-prettier",
+ "versions": {
+  "8.6.0": {
+   "name": "eslint-config-prettier",
+   "version": "8.6.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "8.7.0": {
+   "name": "eslint-config-prettier",
+   "version": "8.7.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "8.8.0": {
+   "name": "eslint-config-prettier",
+   "version": "8.8.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "8.9.0": {
+   "name": "eslint-config-prettier",
+   "version": "8.9.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "8.10.0": {
+   "name": "eslint-config-prettier",
+   "version": "8.10.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "9.0.0": {
+   "name": "eslint-config-prettier",
+   "version": "9.0.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "9.1.0": {
+   "name": "eslint-config-prettier",
+   "version": "9.1.0",
+   "_npmUser": {
+    "name": "lydell",
+    "email": "simon.lydell@gmail.com"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.0.0": {
+   "name": "eslint-config-prettier",
+   "version": "10.0.0",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "deprecated": "wrong version missing main field",
+   "dist": {}
+  },
+  "10.0.1": {
+   "name": "eslint-config-prettier",
+   "version": "10.0.1",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.0.2": {
+   "name": "eslint-config-prettier",
+   "version": "10.0.2",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.0.3": {
+   "name": "eslint-config-prettier",
+   "version": "10.0.3",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.1.0": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.0",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.1.1": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.1",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.1.2": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.2",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.1.3": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.3",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "10.1.4": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.4",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {
+    "attestations": {
+     "url": "https://registry.npmjs.org/-/npm/v1/attestations/eslint-config-prettier@10.1.4",
+     "provenance": {
+      "predicateType": "https://slsa.dev/provenance/v1"
+     }
+    }
+   }
+  },
+  "10.1.5": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.5",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "funding": "https://opencollective.com/eslint-config-prettier",
+   "dist": {
+    "attestations": {
+     "url": "https://registry.npmjs.org/-/npm/v1/attestations/eslint-config-prettier@10.1.5",
+     "provenance": {
+      "predicateType": "https://slsa.dev/provenance/v1"
+     }
+    }
+   }
+  },
+  "10.1.8": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.8",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    },
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "funding": "https://opencollective.com/eslint-config-prettier",
+   "dist": {
+    "attestations": {
+     "url": "https://registry.npmjs.org/-/npm/v1/attestations/eslint-config-prettier@10.1.8",
+     "provenance": {
+      "predicateType": "https://slsa.dev/provenance/v1"
+     }
+    }
+   }
+  },
+  "8.10.2": {
+   "name": "eslint-config-prettier",
+   "version": "8.10.2",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    },
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "9.1.2": {
+   "name": "eslint-config-prettier",
+   "version": "9.1.2",
+   "_npmUser": {
+    "name": "jounqin",
+    "email": "admin@1stg.me"
+   },
+   "maintainers": [
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    },
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    }
+   ],
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "dist": {}
+  },
+  "8.10.1": {
+   "name": "eslint-config-prettier",
+   "version": "8.10.1",
+   "_npmUser": {
+    "name": "jounqin"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "dependencies": {},
+   "scripts": {
+    "install": "node install.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-f29h-pxvx-f335",
+    "provenance": null
+   }
+  },
+  "10.1.6": {
+   "name": "eslint-config-prettier",
+   "version": "10.1.6",
+   "_npmUser": {
+    "name": "jounqin"
+   },
+   "maintainers": [
+    {
+     "name": "lydell",
+     "email": "simon.lydell@gmail.com"
+    },
+    {
+     "name": "thorn0",
+     "email": "georgii.dolzhykov@gmail.com"
+    },
+    {
+     "name": "jounqin",
+     "email": "admin@1stg.me"
+    }
+   ],
+   "dependencies": {},
+   "scripts": {
+    "install": "node install.js"
+   },
+   "repository": {
+    "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+    "type": "git"
+   },
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-f29h-pxvx-f335",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "created": "2017-01-29T20:10:06.679Z",
+  "modified": "2025-07-20T23:16:08.192Z",
+  "8.6.0": "2023-01-02T17:03:06.224Z",
+  "8.7.0": "2023-03-06T08:53:50.026Z",
+  "8.8.0": "2023-03-20T18:13:45.410Z",
+  "8.9.0": "2023-07-27T11:01:38.157Z",
+  "8.10.0": "2023-08-03T06:43:29.439Z",
+  "9.0.0": "2023-08-05T19:09:15.001Z",
+  "9.1.0": "2023-12-02T09:33:44.380Z",
+  "10.0.0": "2025-01-13T14:35:41.067Z",
+  "10.0.1": "2025-01-13T14:37:27.063Z",
+  "10.0.2": "2025-02-26T13:51:36.262Z",
+  "10.0.3": "2025-03-07T06:50:49.830Z",
+  "10.1.0": "2025-03-07T07:12:29.951Z",
+  "10.1.1": "2025-03-07T09:51:00.914Z",
+  "10.1.2": "2025-04-10T10:33:32.195Z",
+  "10.1.3": "2025-05-07T06:36:59.703Z",
+  "10.1.4": "2025-05-09T03:51:25.989Z",
+  "10.1.5": "2025-05-09T04:15:08.605Z",
+  "8.10.1": "2025-07-18T16:09:40.069Z",
+  "10.1.6": "2025-07-18T16:12:58.175Z",
+  "10.1.8": "2025-07-18T18:40:08.244Z",
+  "8.10.2": "2025-07-18T19:17:46.271Z",
+  "9.1.2": "2025-07-18T19:19:03.251Z"
+ },
+ "maintainers": [
+  {
+   "name": "jounqin",
+   "email": "admin@1stg.me"
+  },
+  {
+   "name": "lydell",
+   "email": "simon.lydell@gmail.com"
+  },
+  {
+   "name": "thorn0",
+   "email": "georgii.dolzhykov@gmail.com"
+  }
+ ],
+ "repository": {
+  "url": "git+https://github.com/prettier/eslint-config-prettier.git",
+  "type": "git"
+ }
+}

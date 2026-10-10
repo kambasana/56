@@ -1,0 +1,146 @@
+name: blastradius
+
+on:
+  pull_request:
+    paths:
+      - 'blastradius/**'
+      - '.github/workflows/blastradius.yml'
+  # Every branch, not only main: feature branches pushed without a PR got no CI at all before.
+  # review/* branches hold partial slices of the code for CodeRabbit's file limit; they cannot build.
+  push:
+    branches-ignore: ['review/**']
+    paths:
+      - 'blastradius/**'
+      - '.github/workflows/blastradius.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One group per event and branch: a newer push to a branch supersedes the older run (shown as
+# "cancelled"); main is never cancelled, so every main commit keeps its own result.
+concurrency:
+  group: blastradius-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+defaults:
+  run:
+    working-directory: blastradius
+
+jobs:
+  test:
+    name: typecheck, test, build (offline)
+    # Pull requests from this repository are already tested by the push run on the same head
+    # commit (its checks show on the PR), so only fork PRs run here: no duplicate run per commit.
+    # PRs into review/* slices never run: those branches cannot build on their own.
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && !startsWith(github.base_ref, 'review/')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: blastradius/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Validate incident knowledge base
+        run: node dist/cli.js kb validate
+      - name: Offline end-to-end scan
+        run: node dist/cli.js scan test/fixtures/e2e-repo --offline --fixtures test/fixtures --no-cache --as-of 2018-11-27 --out "$RUNNER_TEMP/br-offline"
+
+  web:
+    name: 'web: typecheck, test, build, e2e'
+    needs: test
+    # Pull requests from this repository are already tested by the push run on the same head
+    # commit (its checks show on the PR), so only fork PRs run here: no duplicate run per commit.
+    # PRs into review/* slices never run: those branches cannot build on their own.
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && !startsWith(github.base_ref, 'review/')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            blastradius/package-lock.json
+            blastradius/web/package-lock.json
+      - name: Install engine
+        run: npm ci --ignore-scripts
+      - name: Build engine (serves the web app in e2e)
+        run: npm run build
+      - name: Install web
+        working-directory: blastradius/web
+        run: npm ci --ignore-scripts
+      - name: Typecheck web
+        working-directory: blastradius/web
+        run: npm run typecheck
+      - name: Test web
+        working-directory: blastradius/web
+        run: npm test
+      - name: Build web
+        working-directory: blastradius/web
+        run: npm run build
+      - name: Install Chromium for Playwright
+        working-directory: blastradius/web
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end (serve --dev-seed --offline against the fixture scan)
+        working-directory: blastradius/web
+        run: npm run e2e
+      - name: Upload Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            blastradius/web/playwright-report/
+            blastradius/web/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  live-smoke:
+    name: live APIs smoke test
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Live APIs can be slow or rate-limited; this job reports drift between real responses
+    # and the recorded fixtures without blocking merges.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: blastradius/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Scan the e2e fixture against live OSV, deps.dev, npm and GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # --no-cache only disables the HTTP cache; npm snapshots (online runs) still use this dir.
+          BLASTRADIUS_CACHE_DIR: ${{ runner.temp }}/br-cache
+        run: node dist/cli.js scan test/fixtures/e2e-repo --no-cache --out "$RUNNER_TEMP/br-live"
+      - name: Check live results still flag event-stream and flatmap-stream
+        run: |
+          node -e '
+            const r = require(process.argv[1]);
+            const crit = r.findings.filter(f => f.level === "critical").map(f => f.purl);
+            console.log("critical:", crit);
+            for (const name of ["event-stream", "flatmap-stream"]) {
+              if (!crit.some(p => p.includes("/" + name + "@"))) { console.error("missing critical:", name); process.exit(1); }
+            }
+          ' "$RUNNER_TEMP/br-live/blastradius.json"

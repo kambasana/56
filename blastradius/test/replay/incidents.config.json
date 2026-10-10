@@ -1,0 +1,84 @@
+{
+  "note": "Hand-curated from the npm registry 'time' map (release times) and OSV/GHSA records (advisory publish times), checked 2026-10-07. Bad versions were unpublished by npm, so their manifests are reconstructed from the advisory and cited; everything else in data/ is recorded.",
+  "incidents": [
+    {
+      "id": "event-stream-2018",
+      "title": "event-stream handed to a new maintainer who added flatmap-stream",
+      "advisories": ["GHSA-mh6f-8j2x-4483", "GHSA-9x64-5r7x-2q53"],
+      "bad": [
+        { "name": "event-stream", "version": "3.3.6", "publisher": "right9ctrl", "dependencies": { "flatmap-stream": "^0.1.0" }, "source": "https://github.com/advisories/GHSA-mh6f-8j2x-4483" },
+        { "name": "flatmap-stream", "version": "0.1.1", "publisher": "right9ctrl", "published": "2018-09-09T00:00:00.000Z", "source": "https://github.com/advisories/GHSA-9x64-5r7x-2q53" }
+      ],
+      "packages": ["event-stream"],
+      "expectEarlyWarning": "event-stream 3.3.5 was the first release by right9ctrl (2018-09-05), 82 days before the advisory"
+    },
+    {
+      "id": "ua-parser-js-2021",
+      "title": "ua-parser-js maintainer account hijacked; cryptominer and password stealer in preinstall",
+      "advisories": ["GHSA-pjwm-rvh2-c87w"],
+      "bad": [
+        { "name": "ua-parser-js", "version": "0.7.29", "publisher": "faisalman", "scripts": { "preinstall": "start /B node preinstall.js & node preinstall.js" }, "source": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w" },
+        { "name": "ua-parser-js", "version": "0.8.0", "publisher": "faisalman", "scripts": { "preinstall": "start /B node preinstall.js & node preinstall.js" }, "source": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w" },
+        { "name": "ua-parser-js", "version": "1.0.0", "publisher": "faisalman", "scripts": { "preinstall": "start /B node preinstall.js & node preinstall.js" }, "source": "https://github.com/advisories/GHSA-pjwm-rvh2-c87w" }
+      ],
+      "packages": ["ua-parser-js"],
+      "expectEarlyWarning": "new preinstall script in a package that never had one"
+    },
+    {
+      "id": "coa-rc-2021",
+      "title": "coa and rc hijacked the same day, same malware as ua-parser-js",
+      "advisories": ["GHSA-73qr-pfmq-6rp8", "GHSA-g2q5-5433-rhrf"],
+      "bad": [
+        { "name": "coa", "version": "2.0.3", "publisher": "qfox", "scripts": { "preinstall": "start /B node compile.js & node compile.js" }, "source": "https://github.com/advisories/GHSA-73qr-pfmq-6rp8" },
+        { "name": "rc", "version": "1.2.9", "publisher": "dominictarr", "scripts": { "preinstall": "start /B node compile.js & node compile.js" }, "source": "https://github.com/advisories/GHSA-g2q5-5433-rhrf" }
+      ],
+      "packages": ["coa", "rc"],
+      "expectEarlyWarning": "dormant package (no release for ~3 years) releases with a new preinstall script"
+    },
+    {
+      "id": "node-ipc-2022",
+      "title": "node-ipc maintainer ships protestware that wipes files in Russia/Belarus (10.1.x) and peacenotwar (9.2.2)",
+      "advisories": ["GHSA-97m3-w2cp-4xx6"],
+      "bad": [
+        { "name": "node-ipc", "version": "10.1.1", "publisher": "riaevangelist", "source": "https://github.com/advisories/GHSA-97m3-w2cp-4xx6" },
+        { "name": "node-ipc", "version": "10.1.2", "publisher": "riaevangelist", "source": "https://github.com/advisories/GHSA-97m3-w2cp-4xx6" },
+        { "name": "node-ipc", "version": "9.2.2", "publisher": "riaevangelist", "dependencies": { "peacenotwar": "^9.1.3" }, "source": "https://github.com/RIAEvangelist/node-ipc/issues/233" }
+      ],
+      "packages": ["node-ipc", "peacenotwar"],
+      "expectEarlyWarning": "a patch release (9.2.2) adds a brand-new dependency (peacenotwar) published by the same account the same day"
+    },
+    {
+      "id": "chalk-debug-2025",
+      "title": "qix maintainer account phished; crypto-stealing code in chalk, debug and 16 more",
+      "advisories": ["MAL-2025-46969", "MAL-2025-46974", "GHSA-4x49-vf9v-38px"],
+      "bad": [
+        { "name": "chalk", "version": "5.6.1", "publisher": "qix", "source": "https://osv.dev/vulnerability/MAL-2025-46969" },
+        { "name": "debug", "version": "4.4.2", "publisher": "qix", "source": "https://osv.dev/vulnerability/MAL-2025-46974" }
+      ],
+      "packages": ["chalk", "debug"],
+      "expectEarlyWarning": "chalk 5.6.1 was published by qix, not by the account that published the previous release (sindresorhus); debug: none (same publisher) — caught by the advisory"
+    },
+    {
+      "id": "eslint-config-prettier-2025",
+      "title": "phished npm token; Windows malware in an install script",
+      "advisories": ["GHSA-f29h-pxvx-f335", "MAL-2025-6022"],
+      "bad": [
+        { "name": "eslint-config-prettier", "version": "8.10.1", "publisher": "jounqin", "scripts": { "install": "node install.js" }, "source": "https://github.com/advisories/GHSA-f29h-pxvx-f335" },
+        { "name": "eslint-config-prettier", "version": "10.1.6", "publisher": "jounqin", "scripts": { "install": "node install.js" }, "source": "https://github.com/advisories/GHSA-f29h-pxvx-f335" }
+      ],
+      "packages": ["eslint-config-prettier"],
+      "expectEarlyWarning": "new install script; earlier 10.x releases carried npm provenance, the bad ones did not"
+    },
+    {
+      "id": "nx-2025",
+      "title": "s1ngularity: stolen npm token, nx releases steal secrets via AI CLIs",
+      "advisories": ["GHSA-cxm3-wv7p-598c", "MAL-2025-41443"],
+      "bad": [
+        { "name": "nx", "version": "21.5.0", "publisher": "jameshenry", "provenance": false, "source": "https://github.com/advisories/GHSA-cxm3-wv7p-598c" },
+        { "name": "nx", "version": "20.9.0", "publisher": "jameshenry", "provenance": false, "source": "https://github.com/advisories/GHSA-cxm3-wv7p-598c" }
+      ],
+      "packages": ["nx"],
+      "expectEarlyWarning": "earlier nx releases carried npm provenance attestations; the bad ones did not"
+    }
+  ]
+}

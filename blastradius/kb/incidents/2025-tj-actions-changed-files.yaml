@@ -1,0 +1,28 @@
+# tj-actions/changed-files (2025): repository tags were repointed to a commit that dumped
+# CI runner secrets into workflow logs.
+id: INC-2025-0001
+title: tj-actions/changed-files tags repointed to a commit that printed CI secrets to workflow logs
+type: ci_compromise
+status: confirmed
+date: 2025-03-14
+severity: high
+affected:
+  - purl: pkg:githubactions/tj-actions/changed-files
+    # Tags v1 through v45.0.7 were repointed to this commit during the incident window and
+    # have since been restored, so only a pin to the commit itself is affected today. A "*"
+    # entry would also match releases made after the fix.
+    # Full SHA as published by StepSecurity, SentinelOne and Upwind; GHSA-mrrh-fwg8-r2c3 / CVE-2025-30066
+    # cite the abbreviated 0e58ed8. The commit is no longer fetchable from the repository
+    # (git: "not our ref", checked 2026-10-06).
+    versions: ["0e58ed8671d6b60d0890c21b07f8835ace038e67"]
+# The organisation was the victim of the compromise, so no entity is attributed: listing it would
+# pass inherited risk to its other, unaffected actions.
+entities: []
+# Tags v1 through v45.0.7 pointed at the commit on 2025-03-14 and 2025-03-15; fixed in v46.0.1.
+# CISA added CVE-2025-30066 to the KEV catalog on 2025-03-18.
+evidence:
+  - https://github.com/advisories/GHSA-mrrh-fwg8-r2c3
+  - https://nvd.nist.gov/vuln/detail/CVE-2025-30066
+  - https://www.cisa.gov/news-events/alerts/2025/03/18/supply-chain-compromise-third-party-github-action-cve-2025-30066
+  - https://www.stepsecurity.io/blog/harden-runner-detection-tj-actions-changed-files-action-is-compromised
+  - https://www.sentinelone.com/blog/when-python-is-poisoned-how-runtime-security-stops-the-tj-actions-attack/

@@ -1,0 +1,514 @@
+{
+  "note": "Trimmed from the live packument (versions 3.2.0-4.0.1). 3.3.6 was later removed by npm; it is reconstructed from 3.3.5 with the flatmap-stream dependency it added (https://github.com/dominictarr/event-stream/issues/116). Top-level maintainers/modified reflect the state before the 2018-11-26 takedown.",
+  "request": {
+    "url": "https://registry.npmjs.org/event-stream"
+  },
+  "response": {
+    "_id": "event-stream",
+    "_rev": "291-248feb5a6113fc92cde44a20fb323402",
+    "name": "event-stream",
+    "description": "construct pipes of streams of events",
+    "dist-tags": {
+      "latest": "4.0.1"
+    },
+    "versions": {
+      "3.2.0": {
+        "name": "event-stream",
+        "version": "3.2.0",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.2",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-JUVbEoOgDFaZjl5lm+wmoLdZ7vweN+b7OBN7Kr9Oxf/a/7dzThhNPaxAD46a1x9oiVRmnTGDviewZxI7W5rEkA==",
+          "shasum": "35c5a77f3726d60aca9e370cf3075c65735098e1",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.2.0.tgz"
+        }
+      },
+      "3.2.1": {
+        "name": "event-stream",
+        "version": "3.2.1",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.2",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-b4tWlIV4IzVVytPVUIScJtlf7jgjyiaFtVQbHqHxxW730BkvucMl2KaV2TM99erwnMXEhRSGwlvL/IvgnOIerw==",
+          "shasum": "90da6874864fe4615ac8f4d7101f2d647a83e6f4",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.2.1.tgz"
+        }
+      },
+      "3.2.2": {
+        "name": "event-stream",
+        "version": "3.2.2",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.3",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-E0zUzPQtDvplt8aVncJS5hhMgv7wLGjSOqrLiYZ8jNaZzQ8kafuVoj9hlVLbtDs1oFhZS4LpTKkRl3mUyygtfg==",
+          "shasum": "f79f9984c07ee3fd9b44ffb3cd0422b13e24084d",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.2.2.tgz"
+        }
+      },
+      "3.3.0": {
+        "name": "event-stream",
+        "version": "3.3.0",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.3",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-qycX0F4y/eZxXiHHpvyZB7/HxIflYxANP4rAS3gZM+mwOmeeyOfEAJgfAWC7VtAh09etOVtPrk5IkP9SenJkXw==",
+          "shasum": "ad35bdfccc3925e030a55a01d102c65e77911799",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.0.tgz"
+        }
+      },
+      "3.3.1": {
+        "name": "event-stream",
+        "version": "3.3.1",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.3",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-emezUmnHTI7bBbhTr8AVdmI+/TZcOKwBIw8wt07JTNtXUjrDIJyPrdC+8PYx3hIHwO4qbYfCaNlgbYx6yC/QBw==",
+          "shasum": "b8cf6c00119181e688f335363daa7915ce890bdb",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.1.tgz"
+        }
+      },
+      "3.3.2": {
+        "name": "event-stream",
+        "version": "3.3.2",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.3",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-H9QRlVNQxvGj8UFGXs2/t48HGqPKxJHuovP/ymtpzbGIVVXKTM4x85NVDl2pERrtgMOBnkDpdxY0ATRHk4as6A==",
+          "shasum": "3cc310feb1f28d2f62b2a085d736a9ef566378b8",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.2.tgz"
+        },
+        "license": "MIT"
+      },
+      "3.3.3": {
+        "name": "event-stream",
+        "version": "3.3.3",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.3",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-AZ8CioTQrnT8Uyy/WVx5VW9uj4IbvSs5Bofe5KXcqEWRjlQvZVGRiThRjXEW5Zy2ZEUdgGfT+I5phDpFV4iL9w==",
+          "shasum": "f7d437a98f9c0715f4b643a97b66425549479b9b",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.3.tgz"
+        },
+        "license": "MIT"
+      },
+      "3.3.4": {
+        "name": "event-stream",
+        "version": "3.3.4",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "dominictarr",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr",
+            "email": "redacted@example.invalid"
+          }
+        ],
+        "dependencies": {
+          "through": "~2.3.1",
+          "duplexer": "~0.1.1",
+          "from": "~0",
+          "map-stream": "~0.1.0",
+          "pause-stream": "0.0.11",
+          "split": "0.3",
+          "stream-combiner": "~0.0.4"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-QHpkERcGsR0T7Qm3HNJSyXKEEj8AHNxkY3PK8TS2KJvQ7NiSHe3DDpwVKKtoYprL/AreyzFBeIkBIWChAqn60g==",
+          "shasum": "4ab4c9a0f5a54db9338b4c34d86bfce8f4b35571",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.4.tgz"
+        },
+        "license": "MIT"
+      },
+      "3.3.5": {
+        "name": "event-stream",
+        "version": "3.3.5",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "right9ctrl",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "email": "redacted@example.invalid",
+            "name": "dominictarr"
+          },
+          {
+            "email": "redacted@example.invalid",
+            "name": "right9ctrl"
+          }
+        ],
+        "dependencies": {
+          "duplexer": "^0.1.1",
+          "from": "^0.1.7",
+          "map-stream": "0.0.7",
+          "pause-stream": "^0.0.11",
+          "split": "^1.0.1",
+          "stream-combiner": "^0.2.2",
+          "through": "^2.3.8"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-vyibDcu5JL20Me1fP734QBH/kenBGLZap2n0+XXM7mvuUPzJ20Ydqj1aKcIeMdri1p+PU+4yAKugjN8KCVst+g==",
+          "shasum": "e5dd8989543630d94c6cf4d657120341fa31636b",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.5.tgz"
+        },
+        "license": "MIT"
+      },
+      "3.3.6": {
+        "name": "event-stream",
+        "version": "3.3.6",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "right9ctrl",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "email": "redacted@example.invalid",
+            "name": "dominictarr"
+          },
+          {
+            "email": "redacted@example.invalid",
+            "name": "right9ctrl"
+          }
+        ],
+        "dependencies": {
+          "duplexer": "^0.1.1",
+          "from": "^0.1.7",
+          "map-stream": "0.0.7",
+          "pause-stream": "^0.0.11",
+          "split": "^1.0.1",
+          "stream-combiner": "^0.2.2",
+          "through": "^2.3.8",
+          "flatmap-stream": "^0.1.0"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-3.3.6.tgz"
+        },
+        "license": "MIT"
+      },
+      "4.0.0": {
+        "name": "event-stream",
+        "version": "4.0.0",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "right9ctrl",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "email": "redacted@example.invalid",
+            "name": "right9ctrl"
+          }
+        ],
+        "dependencies": {
+          "duplexer": "^0.1.1",
+          "from": "^0.1.7",
+          "map-stream": "0.0.7",
+          "pause-stream": "^0.0.11",
+          "split": "^1.0.1",
+          "stream-combiner": "^0.2.2",
+          "through": "^2.3.8"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-DOB0pW11hF+A572U9vmYbQuLVvzXb2ZQhP14wAhMesOLoWVmWNKZ05niYwgUEEO7Ex+lbPpsqT+pch4O7Ijqmg==",
+          "shasum": "2477e13a4ea5bf62fbb292a3f96d78bd4906f7c1",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-4.0.0.tgz"
+        },
+        "license": "MIT"
+      },
+      "4.0.1": {
+        "name": "event-stream",
+        "version": "4.0.1",
+        "description": "construct pipes of streams of events",
+        "_npmUser": {
+          "name": "right9ctrl",
+          "email": "redacted@example.invalid"
+        },
+        "maintainers": [
+          {
+            "email": "redacted@example.invalid",
+            "name": "right9ctrl"
+          }
+        ],
+        "dependencies": {
+          "duplexer": "^0.1.1",
+          "from": "^0.1.7",
+          "map-stream": "0.0.7",
+          "pause-stream": "^0.0.11",
+          "split": "^1.0.1",
+          "stream-combiner": "^0.2.2",
+          "through": "^2.3.8"
+        },
+        "scripts": {
+          "prepublish": "npm ls && npm test",
+          "test": "asynct test/",
+          "test_tap": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/event-stream.git"
+        },
+        "dist": {
+          "integrity": "sha512-qACXdu/9VHPBzcyhdOWR5/IahhGMf0roTeZJfzz077GwylcDd90yOHLouhmv7GJ5XzPi6ekaQWd8AvPP2nOvpA==",
+          "shasum": "4092808ec995d0dd75ea4580c1df6a74db2cde65",
+          "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-4.0.1.tgz"
+        },
+        "license": "MIT"
+      }
+    },
+    "time": {
+      "created": "2011-08-22T05:26:46.363Z",
+      "modified": "2018-11-20T00:00:00.000Z",
+      "3.2.0": "2014-12-27T06:59:21.624Z",
+      "3.2.1": "2014-12-29T20:38:42.306Z",
+      "3.2.2": "2015-02-02T10:11:31.433Z",
+      "3.3.0": "2015-03-06T10:58:40.308Z",
+      "3.3.1": "2015-05-06T02:59:08.992Z",
+      "3.3.2": "2015-10-16T04:25:40.139Z",
+      "3.3.3": "2016-06-18T23:39:10.007Z",
+      "3.3.4": "2016-07-17T07:24:09.767Z",
+      "3.3.5": "2018-09-05T05:27:47.219Z",
+      "3.3.6": "2018-09-09T08:28:59.503Z",
+      "4.0.0": "2018-09-16T11:20:20.938Z",
+      "4.0.1": "2018-09-29T06:55:49.107Z"
+    },
+    "maintainers": [
+      {
+        "name": "right9ctrl",
+        "email": "redacted@example.invalid"
+      }
+    ],
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/dominictarr/event-stream.git"
+    },
+    "license": "MIT"
+  }
+}
