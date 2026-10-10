@@ -4104,6 +4104,23 @@ def _shell():
         return None
 
 
+# The Settings form's defaults (colab/make_notebook.py). Used when the Run cell is started in a session where the
+# Settings cell has not been run (e.g. only ▶ on Run after a reconnect), so a missing name never stops the run.
+SETTINGS_DEFAULTS = {
+    "RUN_TAG": "", "RETRY_FAILED": False, "AUTO_RELEASE_RUNTIME": True, "PUSH_PROGRESS": True, "SMOKE": False,
+    "ALLOW_REMOTE_CONTROL": True, "EXPORT_ONNX": True, "RUN_POSITIVE_CONTROL": True, "RUN_FINETUNE": True,
+    "RUN_ZERO_SHOT": True, "USE_DRIVE": True, "STALL_MINUTES": 30, "OUTPUT_DIR": "",
+}
+
+
+def apply_settings_defaults(ns):
+    """Fill in any Settings name the notebook namespace lacks; return the names that were filled."""
+    missing = [k for k in SETTINGS_DEFAULTS if k not in ns]
+    for k in missing:
+        ns[k] = SETTINGS_DEFAULTS[k]
+    return missing
+
+
 def run(ns, data_ref, manifest_sha256, mode=None):
     """Run every stage in order in the notebook namespace `ns`, under the control panel. Re-running resumes."""
     if not re.fullmatch(r"[0-9a-f]{40}", data_ref or "") or not re.fullmatch(r"[0-9a-f]{64}", manifest_sha256 or ""):
@@ -4125,8 +4142,14 @@ def run(ns, data_ref, manifest_sha256, mode=None):
     ns["PROGRESS_LISTENER"], ns["ORCH_STATUS_HOOK"], ns["ORCH_LINE_HOOK"] = dash.on_event, dash.on_orch, dash.on_line
     if hooks.get("on_dashboard"):
         hooks["on_dashboard"](dash)
+    missing = apply_settings_defaults(ns)
     dash.state.set_plan(expected_plan(ns), "settings")
     console = Console(dash.on_console)
+    if missing:
+        note = ("The Settings cell had not been run in this session, so its defaults were used ("
+                + ", ".join(missing) + "). To change an option: set it in Settings, run that cell, then run this one.")
+        dash.state.add_notice("settings-defaults", note)
+        console.line(note)
     shell = _shell()
     stage = None
     dash.refresh(force=True)

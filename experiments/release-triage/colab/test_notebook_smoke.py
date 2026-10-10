@@ -246,7 +246,7 @@ def session(tmp, which):
     form, run_cell = code_cells()
     site = tmp / "site"
     sys.path.insert(0, str(site))
-    sys.modules["torch"] = make_stubs(site, cuda=(which != "cpu"))
+    sys.modules["torch"] = make_stubs(site, cuda=(which not in ("cpu", "nosettings")))
     os.environ["PYTHONPATH"] = str(site)   # the training subprocess (laya-train stub) imports the stubs too
     calls = []
     install_colab_mock(calls)
@@ -259,8 +259,9 @@ def session(tmp, which):
     form2 = form.replace('SMOKE = False  #@param', f'SMOKE = {which != "cpu"}  #@param').replace(
         'RUN_TAG = ""  #@param', 'RUN_TAG = "smoke-test"  #@param')
     assert form2.count("#@param") == form.count("#@param") and 'RUN_TAG = "smoke-test"' in form2
-    r = sh.run_cell(form2, store_history=False)
-    assert r.success, r.error_in_exec
+    if which != "nosettings":   # "nosettings": only ▶ Run, as after a reconnect without running Settings
+        r = sh.run_cell(form2, store_history=False)
+        assert r.success, r.error_in_exec
     ns = sh.user_ns
     panels = []
     # TEST-ONLY knobs: shorter polling, and a handle on the panel; never set by the notebook itself.
@@ -273,7 +274,9 @@ def session(tmp, which):
            "calls": calls, "pip": pip_calls, "steps": {s["key"]: s["status"] for s in snap["steps"]},
            "errors": snap["errors"], "panel_text": text_status(snap), "panel_html": dash.to_html(),
            "control": snap["control"], "runner_file": sys.modules["lrt_runner"].__file__}
-    if which == "cpu":
+    if which in ("cpu", "nosettings"):
+        out["notices"] = snap["notices"]
+        out["settings"] = {k: ns.get(k) for k in ("SMOKE", "RUN_TAG", "ALLOW_REMOTE_CONTROL", "STALL_MINUTES")}
         print("SESSION " + json.dumps(out, default=str))
         return
     assert r.success, (r.error_in_exec, text_status(snap))
@@ -383,6 +386,14 @@ def main():
         assert not s3["success"] and "refused on CPU" in s3["error"], s3["error"]
         assert s3["steps"]["gpu"] == "failed" and s3["errors"] and "GPU step failed" in s3["errors"][0]["what"]
         print("ok session 3: CPU-only runtime refused at the GPU step; the panel shows the failed step and the error")
+
+        s4, _ = run_session(tmp, "nosettings", tmp / "vm4")
+        assert s4["steps"]["setup"] == "done", s4["steps"]   # no NameError: the Settings defaults were applied
+        assert "NameError" not in (s4["error"] or ""), s4["error"]
+        assert s4["settings"] == {"SMOKE": False, "RUN_TAG": "", "ALLOW_REMOTE_CONTROL": True, "STALL_MINUTES": 30}
+        assert any(n["key"] == "settings-defaults" for n in s4["notices"]), s4["notices"]
+        assert s4["steps"]["gpu"] == "failed" and "refused on CPU" in s4["error"], s4["error"]
+        print("ok session 4: ▶ Run without the Settings cell uses the Settings defaults (notice shown), no NameError")
     print(f"OK: notebook smoke run (Settings + Run cells, google.colab mocked, TEST-ONLY laya/transformers/hub stubs, "
           f"fake trainer, real dataset at {DATASET_COMMIT})")
 
