@@ -34,9 +34,17 @@ What it does:
 8. Saves the chosen checkpoint to your Google Drive, and optionally exports it to ONNX with receptron/laya's
    script.
 
-No secret is needed. The only optional one is a Hugging Face token, which you can paste in the next cell to
-avoid download rate limits. Progress is saved to Drive after every run, so if Colab disconnects, run all cells
-again: finished runs are skipped.
+No secret is required. Two are optional:
+
+- a Hugging Face read token, pasted in the next cell, only to avoid download rate limits;
+- a Colab secret named `GH_TOKEN` (key icon in the left bar; see RUN-IN-COLAB.md). If it exists and this notebook
+  has access to it, progress (stage, run, epoch, step, loss, elapsed time, GPU, errors with tracebacks) and the
+  small `results/*.json` files are pushed every ~2 minutes and at the end of every stage to branch
+  `results/laya-colab` of the dataset repository, so the run can be followed live. The token is never printed or
+  written to disk.
+
+Progress is saved to Drive after every run, so if Colab disconnects, run all cells again: finished runs are
+skipped.
 
 **Send back:** the `results` folder (or `results.zip`) from `MyDrive/laya-release-triage/`.
 
@@ -71,6 +79,236 @@ WORK = pathlib.Path(os.environ.get("LRT_WORK", "/content/lrt"))
 WORK.mkdir(parents=True, exist_ok=True)
 print("work dir", WORK, "| smoke" if SMOKE else "")'''
 
+PROGRESS_CELL = r'''# Live progress (optional). If a Colab secret named GH_TOKEN exists and this notebook has access to it, progress
+# and the small results/*.json files are pushed to branch RESULTS_BRANCH of REPO every ~2 minutes and at the end of
+# every stage, through the GitHub contents REST API over HTTPS. The token is read with google.colab.userdata, kept
+# in memory only, sent only in the Authorization header to api.github.com, and never printed, logged or written to
+# disk (no git credentials are created). Without GH_TOKEN the run is the same and saves to Drive only.
+import base64, datetime, re, threading, traceback, uuid, urllib.error, urllib.parse
+RESULTS_BRANCH = "results/laya-colab"
+PUSH_EVERY_S = 120
+SMALL_FILE_BYTES = 512 * 1024
+
+def _read_gh_token():
+    try:
+        from google.colab import userdata
+    except Exception:
+        return None
+    try:
+        t = userdata.get("GH_TOKEN")
+    except Exception:   # secret missing, or notebook access to it not enabled
+        return None
+    return t.strip() if isinstance(t, str) and t.strip() else None
+
+
+class GitHubPusher:
+    """Creates/updates files on one branch with the contents API. Never raises; never reveals the token."""
+    API = "https://api.github.com"
+
+    def __init__(self, token, repo, branch, base_branch, prefix, opener=None):
+        self._token = token
+        self.repo, self.branch, self.base_branch, self.prefix = repo, branch, base_branch, prefix.strip("/")
+        self._open = opener or urllib.request.urlopen
+        self._shas = {}
+        self.enabled = bool(token)
+        self.errors = 0
+        self.last_error = None
+        self._branch_ok = False
+
+    def __repr__(self):  # never show the token
+        return f"GitHubPusher({self.repo}@{self.branch}/{self.prefix}, enabled={self.enabled})"
+
+    def _req(self, method, path, body=None):
+        data = json.dumps(body).encode() if body is not None else None
+        req = urllib.request.Request(self.API + path, data=data, method=method, headers={
+            "Authorization": "Bearer " + self._token, "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "laya-release-triage-colab",
+            **({"Content-Type": "application/json"} if data is not None else {})})
+        try:
+            with self._open(req, timeout=30) as r:
+                raw = r.read()
+                return r.status, (json.loads(raw) if raw else None)
+        except urllib.error.HTTPError as e:
+            try:
+                raw = e.read()
+                return e.code, (json.loads(raw) if raw else None)
+            except Exception:
+                return e.code, None
+        except Exception as e:  # network error: report the type only
+            return 0, {"message": type(e).__name__}
+
+    def _fail(self, what, status, body):
+        self.errors += 1
+        msg = (body or {}).get("message", "") if isinstance(body, dict) else ""
+        self.last_error = f"{what}: HTTP {status} {msg}"[:200]
+        if status in (401, 403, 404) and not self._branch_ok:
+            self.enabled = False
+            print(f"GitHub push disabled ({self.last_error}). Check the GH_TOKEN secret: repo {self.repo} only, "
+                  "Contents read/write. The run continues and saves to Drive.")
+        return False
+
+    def ensure_branch(self):
+        if self._branch_ok:
+            return True
+        st, body = self._req("GET", f"/repos/{self.repo}/git/ref/heads/{self.branch}")
+        if st == 200:
+            self._branch_ok = True
+            return True
+        if st != 404:
+            return self._fail("read branch", st, body)
+        st, body = self._req("GET", f"/repos/{self.repo}/git/ref/heads/{self.base_branch}")
+        if st != 200:
+            return self._fail("read base branch", st, body)
+        st, body = self._req("POST", f"/repos/{self.repo}/git/refs",
+                             {"ref": f"refs/heads/{self.branch}", "sha": body["object"]["sha"]})
+        if st in (201, 422):   # 422: created meanwhile
+            self._branch_ok = True
+            return True
+        return self._fail("create branch", st, body)
+
+    def put(self, rel, content, message):
+        """Create or update <prefix>/<rel> on the branch with `content` (bytes)."""
+        if not self.enabled or not self.ensure_branch():
+            return False
+        path = f"{self.prefix}/{rel}".lstrip("/")
+        qpath = urllib.parse.quote(path)
+        for attempt in range(2):
+            sha = self._shas.get(path)
+            if sha is None:
+                st, body = self._req("GET", f"/repos/{self.repo}/contents/{qpath}?ref={urllib.parse.quote(self.branch)}")
+                if st == 200 and isinstance(body, dict):
+                    sha = body.get("sha")
+                elif st != 404:
+                    return self._fail(f"read {rel}", st, body)
+            req = {"message": message, "content": base64.b64encode(content).decode(), "branch": self.branch}
+            if sha:
+                req["sha"] = sha
+            st, body = self._req("PUT", f"/repos/{self.repo}/contents/{qpath}", req)
+            if st in (200, 201):
+                self._shas[path] = body["content"]["sha"]
+                return True
+            if st in (409, 422) and attempt == 0:   # stale sha: re-read once
+                self._shas.pop(path, None)
+                continue
+            return self._fail(f"write {rel}", st, body)
+        return False
+
+
+class Progress:
+    """Appends JSON lines to progress.jsonl (Drive) and mirrors them, with small results files, to GitHub."""
+
+    def __init__(self, pusher):
+        self.pusher = pusher
+        self.run_tag = None
+        self.t0 = time.time()
+        self.lines, self.path, self.results = [], None, None
+        self.stage = None
+        self.ctx = {"gpu": None}
+        self._pushed = {}
+        self._dirty = False
+        self._lock = threading.RLock()
+        self._thread = None
+
+    def bind(self, results_dir, run_tag):
+        """Called once RESULTS is known: keep earlier sessions' lines and write from now on."""
+        with self._lock:
+            self.results, self.run_tag = pathlib.Path(results_dir), run_tag
+            self.path = self.results / "progress.jsonl"
+            old = self.path.read_text().splitlines() if self.path.exists() else []
+            self.lines = old + self.lines
+            self.path.write_text("".join(l + "\n" for l in self.lines))
+            if self.pusher is not None:
+                self.pusher.prefix = f"{SUBDIR}/colab-runs/{run_tag}"
+
+    def log(self, event, **kw):
+        rec = {"t": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+               "elapsed_s": round(time.time() - self.t0, 1), "run_tag": self.run_tag, "stage": self.stage,
+               "event": event, "gpu": self.ctx.get("gpu"), **kw}
+        line = json.dumps(rec, default=str)
+        with self._lock:
+            self.lines.append(line)
+            self._dirty = True
+            if self.path is not None:
+                with open(self.path, "a") as f:
+                    f.write(line + "\n")
+
+    def begin(self, stage):
+        self.stage = stage
+        self.log("stage_start")
+
+    def end(self, stage):
+        self.stage = stage
+        self.log("stage_end")
+        self.push()
+
+    def error(self, exc):
+        tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        self.log("error", error=f"{type(exc).__name__}: {exc}"[:2000], traceback=tb[-20000:])
+        self.push()
+
+    def push(self):
+        """Push progress.jsonl and any new or changed small results file. Safe to call from any thread."""
+        if self.pusher is None or not self.pusher.enabled or self.run_tag is None:
+            return
+        with self._lock:
+            if self._dirty:
+                if self.pusher.put("progress.jsonl", "".join(l + "\n" for l in self.lines).encode(),
+                                   f"colab progress {self.run_tag}: {self.stage}"):
+                    self._dirty = False
+            for p in sorted(list(self.results.glob("*.json")) + list(self.results.glob("summary.md"))):
+                try:
+                    if p.stat().st_size > SMALL_FILE_BYTES:
+                        continue
+                    b = p.read_bytes()
+                except OSError:
+                    continue
+                h = hashlib.sha256(b).hexdigest()
+                if self._pushed.get(p.name) != h and self.pusher.put(f"results/{p.name}", b, f"colab results {self.run_tag}: {p.name}"):
+                    self._pushed[p.name] = h
+
+    def start_timer(self):
+        if self._thread is not None or self.pusher is None:
+            return
+        def loop():
+            while True:
+                time.sleep(PUSH_EVERY_S)
+                try:
+                    self.push()
+                except Exception as e:   # never let the timer die or leak details
+                    print("progress push failed:", type(e).__name__)
+        self._thread = threading.Thread(target=loop, daemon=True, name="progress-push")
+        self._thread.start()
+
+
+_tok = None if SMOKE else _read_gh_token()
+PROGRESS = Progress(GitHubPusher(_tok, REPO, RESULTS_BRANCH, "research/laya-proper", "") if _tok else None)
+del _tok
+print("live progress to GitHub:", f"on (branch {RESULTS_BRANCH} of {REPO})" if PROGRESS.pusher else "off (no GH_TOKEN secret); Drive only")
+
+def _post_run_cell(result):
+    err = getattr(result, "error_in_exec", None) or getattr(result, "error_before_exec", None)
+    if err is not None:
+        PROGRESS.error(err)
+
+try:
+    _ip = get_ipython()
+    for _cb in list(_ip.events.callbacks.get("post_run_cell", [])):
+        if getattr(_cb, "__name__", "") == "_post_run_cell":
+            _ip.events.unregister("post_run_cell", _cb)
+    _ip.events.register("post_run_cell", _post_run_cell)
+except NameError:   # not under IPython
+    pass
+
+TRAIN_LINE = re.compile(r"epoch (\d+)/(\d+) (?:step (\d+) loss ([0-9.eE+-]+|nan)|mean loss ([0-9.eE+-]+|nan))")
+def train_progress(run_id, line):
+    """Record laya-train's own loss lines ("epoch e/E step s loss x", "epoch e/E mean loss x")."""
+    m = TRAIN_LINE.search(line)
+    if m:
+        e, E, step, loss, mean = m.groups()
+        PROGRESS.log("train_step" if step else "epoch_end", run_id=run_id, epoch=int(e), epochs=int(E),
+                     step=int(step) if step else None, loss=float(loss if step else mean))
+    return bool(m)'''
+
 GPU = '''import subprocess, torch
 print(subprocess.run(["nvidia-smi"], capture_output=True, text=True).stdout if shutil.which("nvidia-smi") else "no nvidia-smi")
 if not torch.cuda.is_available() and not SMOKE:
@@ -86,6 +324,7 @@ else:
 MICRO, ACCUM = (8, 8) if GPU_GB >= 30 else (4, 16)
 SCORE_BATCH = 32 if GPU_GB >= 30 or DEVICE == "cpu" else 16   # scoring only; latency is measured at batch 32
 print(f"device {DEVICE} {GPU_NAME} {GPU_GB:.1f} GB bf16={BF16} micro-batch {MICRO} x accum {ACCUM}")
+PROGRESS.ctx["gpu"] = GPU_NAME
 if DEVICE == "cuda" and not BF16:
     print("WARNING: this GPU has no bf16 (e.g. T4). Laya's checkpoints use bf16 autocast; prefer an A100 or L4.")'''
 
@@ -119,6 +358,18 @@ if USE_DRIVE and not SMOKE:
 RESULTS = OUT / "results"
 (RESULTS / "logs").mkdir(parents=True, exist_ok=True)
 print("results ->", RESULTS)
+# One run tag per Drive folder, kept across reconnects, so live progress continues in the same place.
+_tag_file = OUT / "run_tag.txt"
+if _tag_file.exists():
+    RUN_TAG = _tag_file.read_text().strip()
+else:
+    RUN_TAG = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:6]
+    _tag_file.write_text(RUN_TAG + "\\n")
+PROGRESS.bind(RESULTS, RUN_TAG)
+PROGRESS.log("session_start", dataset_commit=DATA_REF, manifest_sha256=MANIFEST_SHA256)
+PROGRESS.start_timer()
+if PROGRESS.pusher:
+    print(f"live progress: https://github.com/{REPO}/tree/{RESULTS_BRANCH}/{SUBDIR}/colab-runs/{RUN_TAG}")
 
 def save_json(name, obj):
     p = RESULTS / name
@@ -410,6 +661,8 @@ if RUN_ZERO_SHOT:
         RESULTS_BY_RUN[run_id] = metrics(run_id, sc)
         harness(run_id, BASES[b])
         r = RESULTS_BY_RUN[run_id]
+        PROGRESS.log("run_scored", run_id=run_id, test_macro_recall=r["macro_recall"], test_auc=r["roc_auc"])
+        PROGRESS.push()
         print(run_id, "macro recall", round(r["macro_recall"], 3), "AUC", round(r["roc_auc"], 3),
               "flip", round(r["order_check"]["alert_flip_rate"], 3))'''
 
@@ -426,20 +679,26 @@ def run_train(run_id, base, data, eval_data, seed):
     cmd = [*LAYA_TRAIN, *train_flags(base, data, seed, EPOCHS, out=out, eval_data=eval_data)]
     print(" ".join(cmd))
     t0 = time.time()
+    PROGRESS.log("run_start", run_id=run_id, epochs=EPOCHS, seed=seed)
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
     lines = []
     for line in p.stdout:
         lines.append(line); print(line, end="")
+        train_progress(run_id, line)
     p.wait()
     text = "".join(lines)
     log.write_text(text)
     if p.returncode != 0:
+        PROGRESS.log("run_failed", run_id=run_id, returncode=p.returncode, log_tail=text[-4000:])
+        PROGRESS.push()
         raise SystemExit(f"{run_id}: laya-train exited {p.returncode}; see {log}")
     shutil.rmtree(out / "checkpoint_latest", ignore_errors=True)
     rep = json.loads((out / "train_report.json").read_text())
     rep["wall_seconds"] = time.time() - t0
     rep["collapse_warning"] = "collapsed to the class prior" in text
     save_json(f"train_{run_id}.json", rep)
+    PROGRESS.log("run_trained", run_id=run_id, wall_seconds=round(rep["wall_seconds"], 1))
+    PROGRESS.push()
     return out, text
 
 def label_copy(sp):
@@ -461,6 +720,9 @@ def finish(run_id, ckpt, rows=None):
     ev["collapsed"] = bool(tr.get("collapse_warning")) or (ev["calib"]["roc_auc"] is not None and ev["calib"]["roc_auc"] < 0.60)
     save_json(f"metrics_{run_id}.json", ev)
     RESULTS_BY_RUN[run_id] = ev
+    PROGRESS.log("run_scored", run_id=run_id, calib_macro_recall=ev["calib"]["macro_recall_at_budget"],
+                 calib_auc=ev["calib"]["roc_auc"], collapsed=ev["collapsed"])
+    PROGRESS.push()
     print(run_id, "calib macro recall", round(ev["calib"]["macro_recall_at_budget"], 3), "calib AUC", ev["calib"]["roc_auc"],
           "collapsed", ev["collapsed"], "| test macro recall", round(ev["macro_recall"], 3))
     return ev
@@ -495,6 +757,10 @@ def load_m(run_id):
 B = {r["method"]: r for r in BASELINES["results"]}
 best_name = max(B, key=lambda k: B[k]["macro_recall"])
 best = B[best_name]
+# Co-primary (2026-10-10 deviation): P1-P3 also on the macro over families with >= 5 test positives, against the
+# baseline that is best on that macro (picked on test, so again conservative toward Laya).
+best5_name = max(B, key=lambda k: B[k]["macro_recall_min5"])
+best5 = B[best5_name]
 seeds = {b: {s: load_m(f"F-{b}-s{s}") for s in SEEDS} for b in ("EN", "TD")}
 def ok_seeds(b):
     return {s: m for s, m in seeds[b].items() if m and not m["collapsed"]}
@@ -514,15 +780,20 @@ def conditions(m):
     fam_floor = {f: {"laya": m["per_family"][f]["recall"], "best_baseline": best["per_family"][f]["recall"]}
                  for f in m["per_family"] if m["per_family"][f]["n"] >= 5 and f in best["per_family"]}
     fa_l, fa_b = m["false_alarms_per_busy_account_month"], best["false_alarms_per_busy_account_month"]
+    pb5 = TM.paired_family_bootstrap(m["per_family"], best5["per_family"], min_n=TM.MIN_FAMILY_N)
     c = {"P1_margin": m["macro_recall"] >= best["macro_recall"] + 0.05,
          "P2_bootstrap_lower_gt_0": pb["ci95"][0] > 0,
          "P3_leave_one_family_out_ge_0.025": pb["min_leave_one_family_out_diff"] >= 0.025,
+         "P1_margin_min5": m["macro_recall_min5"] >= best5["macro_recall_min5"] + 0.05,
+         "P2_bootstrap_lower_gt_0_min5": pb5["ci95"][0] > 0,
+         "P3_leave_one_family_out_ge_0.025_min5": pb5["min_leave_one_family_out_diff"] >= 0.025,
          "P4_family_floor": all(v["laya"] >= v["best_baseline"] - 0.15 for v in fam_floor.values()),
          "P5_alerts_le_15": m["alerts_per_1000_benign"] <= 15,
          "P5_busy_account_fa": (fa_l is None) or (fa_b is not None and fa_l <= fa_b + 0.02),
          "P6_order_flip_le_0.10": m["order_check"]["alert_flip_rate"] <= 0.10,
          "P6_ece_le_0.10": m["ece_calibrated"] <= 0.10}
-    return {"conditions": c, "all": all(c.values()), "paired_bootstrap": pb, "family_floor": fam_floor}
+    return {"conditions": c, "all": all(c.values()), "paired_bootstrap": pb, "paired_bootstrap_min5": pb5,
+            "family_floor": fam_floor}
 
 per_seed = {s: conditions(m) for s, m in seeds[chosen].items() if m}
 n_pass = sum(v["all"] for v in per_seed.values())
@@ -535,6 +806,7 @@ elif n_pass >= 2:
 else:
     outcome = "FAIL: Laya is not adopted"
 VERDICT = {"outcome": outcome, "best_baseline": best_name, "best_baseline_macro_recall": best["macro_recall"],
+           "best_baseline_min5": best5_name, "best_baseline_macro_recall_min5": best5["macro_recall_min5"],
            "chosen_base": chosen, "calib_mean_macro_recall_by_base": mean_cal, "shipped_seed": ship_seed,
            "P0": p0, "seeds_passing_P1_to_P6": n_pass, "per_seed": per_seed}
 save_json("verdict.json", VERDICT)
@@ -622,7 +894,7 @@ if EXPORT_ONNX and SHIP is not None:
     print({k: v for k, v in ONNX_RES.items() if k != "script_sha256"})'''
 
 SUMMARY = '''# One summary table: baselines and every Laya run, test split, same budget and code.
-cols = ["macro_recall", "macro_recall_ci95_family_bootstrap", "macro_recall_without_largest_family", "micro_recall",
+cols = ["macro_recall", "macro_recall_ci95_family_bootstrap", "macro_recall_min5", "macro_recall_without_largest_family", "micro_recall",
         "precision", "alerts_per_1000_benign", "false_alarms_per_busy_account_month", "roc_auc", "average_precision",
         "ece_calibrated"]
 rows_out = []
@@ -656,26 +928,31 @@ def build(data_ref: str, manifest_sha: str) -> nbformat.NotebookNode:
     nb.metadata = {"accelerator": "GPU", "colab": {"gpuType": "A100", "provenance": []},
                    "kernelspec": {"display_name": "Python 3", "name": "python3"},
                    "language_info": {"name": "python"}}
+    def staged(name, src):
+        """Mark the start and end of a stage in progress.jsonl (and push at the end)."""
+        return new_code_cell(f'PROGRESS.begin("{name}")\n' + src + f'\nPROGRESS.end("{name}")')
+
     cells = [
         new_markdown_cell(INTRO),
         new_markdown_cell("## 1. Settings"), new_code_cell(CONFIG.replace("__DATA_REF__", data_ref).replace("__MANIFEST_SHA256__", manifest_sha)),
-        new_markdown_cell("## 2. GPU check"), new_code_cell(GPU),
-        new_markdown_cell("## 3. Install pinned packages"), new_code_cell(PIP),
-        new_markdown_cell("## 4. Google Drive (progress, results, checkpoint)"), new_code_cell(DRIVE),
-        new_markdown_cell("## 5. Dataset (sha256-verified)"), new_code_cell(DATA),
-        new_markdown_cell("## 6. Validity checks (before any Laya run)"), new_code_cell(VALIDITY),
-        new_markdown_cell("## 7. Base checkpoints at the pinned revision"), new_code_cell(CKPT),
-        new_markdown_cell("## 8. Token budget and truncation"), new_code_cell(TOKENS),
-        new_markdown_cell("## 9. `laya-train --dry-run` and the epoch budget"), new_code_cell(DRYRUN),
-        new_markdown_cell("## 10. Scoring, order check and Laya's eval harness (definitions)"), new_code_cell(SCORE),
-        new_markdown_cell("## 11. Metrics (definitions)"), new_code_cell(METRICS),
-        new_markdown_cell("## 12. Zero-shot references"), new_code_cell(ZERO),
-        new_markdown_cell("## 13. Positive controls and fine-tunes (the long part: several hours on an A100)"), new_code_cell(TRAIN),
-        new_markdown_cell("## 14. Verdict (pre-registered rule)"), new_code_cell(VERDICT),
-        new_markdown_cell("## 15. Latency"), new_code_cell(LATENCY),
-        new_markdown_cell("## 16. Save the chosen checkpoint to Drive"), new_code_cell(SAVE),
-        new_markdown_cell("## 17. Optional ONNX export (receptron/laya script)"), new_code_cell(ONNX),
-        new_markdown_cell("## 18. Summary"), new_code_cell(SUMMARY),
+        new_markdown_cell("## 1b. Live progress to GitHub (only if a `GH_TOKEN` Colab secret exists)"), new_code_cell(PROGRESS_CELL),
+        new_markdown_cell("## 2. GPU check"), staged("gpu", GPU),
+        new_markdown_cell("## 3. Install pinned packages"), staged("install", PIP),
+        new_markdown_cell("## 4. Google Drive (progress, results, checkpoint)"), staged("drive", DRIVE),
+        new_markdown_cell("## 5. Dataset (sha256-verified)"), staged("data", DATA),
+        new_markdown_cell("## 6. Validity checks (before any Laya run)"), staged("validity", VALIDITY),
+        new_markdown_cell("## 7. Base checkpoints at the pinned revision"), staged("checkpoints", CKPT),
+        new_markdown_cell("## 8. Token budget and truncation"), staged("tokens", TOKENS),
+        new_markdown_cell("## 9. `laya-train --dry-run` and the epoch budget"), staged("dryrun", DRYRUN),
+        new_markdown_cell("## 10. Scoring, order check and Laya's eval harness (definitions)"), staged("score_defs", SCORE),
+        new_markdown_cell("## 11. Metrics (definitions)"), staged("metric_defs", METRICS),
+        new_markdown_cell("## 12. Zero-shot references"), staged("zero_shot", ZERO),
+        new_markdown_cell("## 13. Positive controls and fine-tunes (the long part: several hours on an A100)"), staged("train", TRAIN),
+        new_markdown_cell("## 14. Verdict (pre-registered rule)"), staged("verdict", VERDICT),
+        new_markdown_cell("## 15. Latency"), staged("latency", LATENCY),
+        new_markdown_cell("## 16. Save the chosen checkpoint to Drive"), staged("save_checkpoint", SAVE),
+        new_markdown_cell("## 17. Optional ONNX export (receptron/laya script)"), staged("onnx", ONNX),
+        new_markdown_cell("## 18. Summary"), staged("summary", SUMMARY),
     ]
     nb.cells = cells
     return nb

@@ -2,7 +2,42 @@
 
 The notebook runs the experiment fixed in [PREREGISTRATION.md](PREREGISTRATION.md): it fine-tunes Laya and
 compares it with the baselines. You need a Colab Pro account (for an A100 or L4 GPU) and a Google Drive. You do
-not need any password or API key. A Hugging Face token is optional.
+not need any password or API key. Two tokens are optional: a Hugging Face token (download rate limits) and a GitHub
+token (live progress, see the next section).
+
+## Optional: follow the run live on GitHub (GH_TOKEN)
+
+If you add a GitHub token as a Colab secret named `GH_TOKEN`, the notebook pushes its progress every ~2 minutes and
+at the end of every stage to branch `results/laya-colab` of `kambasana/56`, under
+`experiments/release-triage/colab-runs/<run tag>/`:
+
+- `progress.jsonl`: one line per event: stage start and end, run start, every training loss line laya-train prints
+  (run id, epoch, step, loss), elapsed time, GPU name, and any error with its full traceback;
+- `results/*.json` (and `summary.md`): the small result files, as they appear.
+
+The cell prints the link to that folder. Without the secret, nothing changes: the notebook runs and saves to Drive
+only. The token is read with `google.colab.userdata`, kept in memory, sent only in the `Authorization` header to
+`api.github.com` over HTTPS, and never printed, logged or written to disk; no git credentials are created.
+
+**1. Create a fine-grained token (about 2 minutes).**
+
+1. On GitHub, open *Settings → Developer settings → Personal access tokens → Fine-grained tokens*, then
+   *Generate new token* (direct link: https://github.com/settings/personal-access-tokens/new).
+2. *Token name*: `laya-colab-progress`. *Expiration*: *7 days*.
+3. *Resource owner*: `kambasana`. *Repository access*: *Only select repositories* → `kambasana/56`.
+4. *Permissions → Repository permissions → Contents*: **Read and write**. Leave every other permission at
+   *No access* (*Metadata: Read-only* is added automatically and is required).
+5. *Generate token* and copy it (it starts with `github_pat_`). You will not see it again.
+
+**2. Add it to Colab as a secret.**
+
+1. In the open notebook, click the **key icon** (*Secrets*) in the left sidebar.
+2. *Add new secret*. *Name*: `GH_TOKEN` (exactly). *Value*: paste the token.
+3. Turn on **Notebook access** for that secret (the toggle next to it). Without it the notebook cannot read the
+   secret and runs with live progress off.
+4. If Colab asks *"Grant access to GH_TOKEN?"* when the notebook starts, click *Grant access*.
+
+Revoke the token on GitHub when the run is over (or let it expire after 7 days). The branch and its files stay.
 
 ## Five steps
 
@@ -19,9 +54,9 @@ not need any password or API key. A Hugging Face token is optional.
    - Go to *Runtime → Run all*.
    - When asked, allow access to Google Drive. Progress, results and the chosen checkpoint are saved in
      `MyDrive/laya-release-triage/`.
-   - The run fine-tunes eight models: two positive controls and six real runs. Each one trains for 13 epochs
-     over 2,996 training items (from `laya-train --dry-run` on this dataset), which is about 39,000 item-passes
-     per run and 312,000 in total.
+   - The run fine-tunes eight models: two positive controls and six real runs. Each one trains for 6 epochs
+     over 6,467 training items (from `laya-train --dry-run` on this dataset: 6,867 items, 400 kept aside for
+     laya's calibration), which is about 38,800 item-passes per run and 310,000 in total.
    - Laya's docs report about 4–5 hours for about 120,000 item-passes on two T4s. An A100 is faster, so expect
      very roughly 3–6 hours. This is an estimate, not a measurement, and an L4 takes longer.
    - The run uses Colab compute units for that whole time.
@@ -47,4 +82,7 @@ not need any password or API key. A Hugging Face token is optional.
 | `latency.json`, `onnx_export.json` | GPU latency, CPU estimate, ONNX parity and size (if exported) |
 | `summary.md` | The summary table and the verdict |
 
-Nothing in `results/` contains a secret: the Hugging Face token is never written to disk by the notebook.
+| `progress.jsonl` | Live progress log (also pushed to GitHub when `GH_TOKEN` is set) |
+
+Nothing in `results/` contains a secret: neither the Hugging Face token nor `GH_TOKEN` is ever written to disk by the
+notebook.
