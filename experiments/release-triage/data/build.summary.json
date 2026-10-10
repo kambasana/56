@@ -1,13 +1,18 @@
 {
- "rows": 8540,
- "positives": 1173,
- "negatives": 7367,
+ "rows": 30512,
+ "positives": 7547,
+ "negatives": 22965,
  "dropped": {
   "neg:no_package_json_in_contents": 3,
-  "neg:prev_unavailable": 30,
-  "pos:no_registry_manifest_for_release": 2,
-  "pos:prev_unavailable": 256
+  "neg:prev_unavailable": 178,
+  "neg:tarball_unavailable": 12,
+  "pos:no_package_json_in_contents": 8,
+  "pos:no_registry_manifest_for_release": 3,
+  "pos:prev_unavailable": 1329,
+  "pos:tarball_unavailable": 5
  },
+ "candidates": 32050,
+ "candidates_not_fetched": 0,
  "feature_columns": [
   "bin_added",
   "bin_count",

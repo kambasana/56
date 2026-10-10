@@ -2,45 +2,56 @@
  "calib_start": "2025-10-01",
  "test_start": "2026-03-01",
  "cap": 0.25,
- "rows_in": 8540,
- "rows_out": 5834,
+ "rows_in": 30512,
+ "rows_out": 17053,
  "dropped_for_grouping": {
-  "neg:calib": 1002,
-  "neg:test": 1117,
-  "neg:train": 460,
-  "pos:calib": 1
+  "neg:calib": 3312,
+  "neg:test": 3137,
+  "neg:train": 2052,
+  "pos:calib": 16,
+  "pos:train": 7
  },
  "dropped_for_family_cap": {
-  "calib:data-exfiltration": 24,
-  "calib:shai-hulud": 40,
-  "test:mastra": 7,
-  "test:teampcp-2026": 8,
-  "train:tea-xyz-token-farming": 47
+  "calib:dependency-confusion": 185,
+  "calib:shai-hulud": 194,
+  "calib:unattributed-malicious": 518,
+  "train:dependency-confusion": 396,
+  "train:tea-xyz-token-farming": 2084,
+  "train:unattributed-malicious": 1234
  },
- "largest_component_rows": 264,
- "components": 1771,
- "script_intent_questions": 666,
+ "dropped_for_ratio_floor": {
+  "train:dependency-confusion": 107,
+  "train:tea-xyz-token-farming": 108,
+  "train:unattributed-malicious": 109
+ },
+ "min_negatives_per_positive": 5,
+ "largest_component_rows": 523,
+ "components": 7033,
+ "script_intent_questions": 1783,
  "splits": {
   "train": {
-   "rows": 3021,
-   "positives": 448,
-   "negatives": 2573,
+   "rows": 6175,
+   "positives": 1029,
+   "negatives": 5146,
    "published_range": [
     "2018-05-02",
     "2025-09-30"
    ],
-   "families": 18,
-   "max_family_share": 0.25,
+   "families": 19,
+   "max_family_share": 0.224,
+   "families_with_5_positives": 12,
+   "families_with_50_positives": 5,
+   "negatives_per_positive": 5.0,
    "positives_per_family": {
-    "tea-xyz-token-farming": 112,
-    "unattributed-malicious": 90,
-    "dependency-confusion": 59,
-    "shai-hulud": 47,
-    "crypto-theft": 45,
+    "dependency-confusion": 230,
+    "tea-xyz-token-farming": 230,
+    "unattributed-malicious": 230,
+    "shai-hulud": 146,
+    "data-exfiltration": 60,
+    "crypto-theft": 48,
     "npmjs-help-phishing-2025-09": 18,
     "gluestack-ui": 17,
     "npnjs-phishing-2025-07": 16,
-    "data-exfiltration": 11,
     "discord-token-stealer": 10,
     "beacon": 8,
     "nx-build": 7,
@@ -49,65 +60,75 @@
     "INC-2022-0001": 1,
     "dd-compromised-2025-03": 1,
     "starjacking": 1,
+    "typosquat": 1,
     "xrpl-js": 1
    },
    "positives_per_category": {
-    "hijack": 111,
-    "new_malicious": 224,
+    "hijack": 210,
+    "new_malicious": 588,
     "sabotage": 1,
-    "spam": 112
+    "spam": 230
    },
-   "negatives_first_release": 307,
-   "positives_first_release": 333
+   "negatives_first_release": 1135,
+   "positives_first_release": 804
   },
   "calib": {
-   "rows": 436,
-   "positives": 149,
-   "negatives": 287,
+   "rows": 3231,
+   "positives": 300,
+   "negatives": 2931,
    "published_range": [
     "2025-10-01",
     "2026-02-28"
    ],
-   "families": 7,
-   "max_family_share": 0.248,
+   "families": 8,
+   "max_family_share": 0.25,
+   "families_with_5_positives": 5,
+   "families_with_50_positives": 4,
+   "negatives_per_positive": 9.77,
    "positives_per_family": {
-    "data-exfiltration": 37,
-    "shai-hulud": 37,
-    "unattributed-malicious": 31,
-    "dependency-confusion": 30,
+    "dependency-confusion": 75,
+    "shai-hulud": 75,
+    "unattributed-malicious": 75,
+    "data-exfiltration": 60,
     "crypto-theft": 9,
     "discord-token-stealer": 4,
-    "cline": 1
+    "cline": 1,
+    "tea-xyz-token-farming": 1
    },
    "positives_per_category": {
-    "new_malicious": 111,
-    "hijack": 38
+    "new_malicious": 223,
+    "spam": 1,
+    "hijack": 76
    },
-   "negatives_first_release": 102,
-   "positives_first_release": 110
+   "negatives_first_release": 797,
+   "positives_first_release": 220
   },
   "test": {
-   "rows": 2377,
-   "positives": 449,
-   "negatives": 1928,
+   "rows": 7647,
+   "positives": 1260,
+   "negatives": 6387,
    "published_range": [
     "2026-03-01",
-    "2026-09-29"
+    "2026-10-08"
    ],
-   "families": 24,
-   "max_family_share": 0.249,
+   "families": 26,
+   "max_family_share": 0.204,
+   "families_with_5_positives": 11,
+   "families_with_50_positives": 7,
+   "negatives_per_positive": 5.07,
    "positives_per_family": {
-    "mastra": 112,
-    "teampcp-2026": 112,
-    "data-exfiltration": 55,
+    "dependency-confusion": 257,
+    "data-exfiltration": 255,
+    "unattributed-malicious": 237,
+    "teampcp-2026": 175,
+    "mastra": 119,
+    "typosquat": 68,
+    "crypto-theft": 58,
     "miasma-2026": 38,
-    "typosquat": 31,
-    "crypto-theft": 28,
-    "dependency-confusion": 21,
-    "unattributed-malicious": 15,
+    "beacon": 16,
     "2026-07-24": 8,
     "ironworm-npm": 6,
-    "beacon": 5,
+    "discord-token-stealer": 4,
     "pgserve": 4,
     "node-ipc-2026": 2,
     "react-native-country-select": 2,
@@ -117,17 +138,18 @@
     "2026-09-05": 1,
     "2026-09-23": 1,
     "axios": 1,
+    "backdoor": 1,
     "injective-sdk-ts": 1,
     "joyfill": 1,
     "miso-client": 1,
     "tiledesk": 1
    },
    "positives_per_category": {
-    "new_malicious": 155,
-    "hijack": 294
+    "new_malicious": 896,
+    "hijack": 364
    },
-   "negatives_first_release": 312,
-   "positives_first_release": 154
+   "negatives_first_release": 1607,
+   "positives_first_release": 701
   }
  },
  "packages_in_two_splits": 0,

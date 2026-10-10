@@ -64,44 +64,50 @@
  "rule_scores_missing": 0,
  "sizes": {
   "train": {
-   "rows": 3021,
-   "positives": 448
+   "rows": 6175,
+   "positives": 1029
   },
   "calib": {
-   "rows": 436,
-   "positives": 149
+   "rows": 3231,
+   "positives": 300
   },
   "test": {
-   "rows": 2377,
-   "positives": 449
+   "rows": 7647,
+   "positives": 1260
   }
  },
  "results": [
   {
    "method": "rule_scorer (blastradius scoreIntrinsic)",
-   "threshold": 0.5932870000000001,
-   "calib_alerts_per_1000_benign": 6.968641114982578,
-   "test_positives": 449,
-   "test_negatives": 1928,
-   "macro_recall": 0.12515403091060986,
+   "threshold": 0.5748030000000001,
+   "calib_alerts_per_1000_benign": 4.435346298191743,
+   "test_positives": 1260,
+   "test_negatives": 6387,
+   "macro_recall": 0.09507071562289651,
    "macro_recall_ci95_family_bootstrap": [
-    0.023195586622807015,
-    0.24867523626775265
+    0.003084960704929745,
+    0.2116643900475156
    ],
-   "macro_recall_without_largest_family": 0.08828184591914569,
-   "largest_family": "mastra",
-   "micro_recall": 0.36080178173719374,
-   "precision": 0.9642857142857143,
-   "alerts_per_1000_benign": 3.112033195020747,
-   "busy_accounts": 67,
-   "busy_account_months": 209,
-   "false_alarms_per_busy_account_month": 0.004784688995215311,
-   "roc_auc": 0.8760997236828729,
-   "average_precision": 0.6898727119131144,
-   "ece_calibrated": 0.13226238088714992,
-   "brier_calibrated": 0.1175373710271192,
+   "macro_recall_without_largest_family": 0.09887354424781238,
+   "largest_family": "dependency-confusion",
+   "macro_recall_min5": 0.13380350965411905,
+   "families_min5": 11,
+   "macro_recall_min5_ci95_family_bootstrap": [
+    0.002987432026895914,
+    0.3106904462469379
+   ],
+   "micro_recall": 0.16031746031746033,
+   "precision": 0.9140271493212669,
+   "alerts_per_1000_benign": 2.9747925473618286,
+   "busy_accounts": 187,
+   "busy_account_months": 587,
+   "false_alarms_per_busy_account_month": 0.0068143100511073255,
+   "roc_auc": 0.8502297573692597,
+   "average_precision": 0.5580627586507552,
+   "ece_calibrated": 0.08129185385561896,
+   "brier_calibrated": 0.10987205480392778,
    "fit_seconds": 0.0,
-   "predict_ms_per_1000": 0.1755290338358159,
+   "predict_ms_per_1000": 0.06422679128406156,
    "per_family": {
     "2026-06-20": {
      "n": 1,
@@ -131,20 +137,28 @@
      "n": 1,
      "recall": 1.0
     },
+    "backdoor": {
+     "n": 1,
+     "recall": 0.0
+    },
     "beacon": {
-     "n": 5,
+     "n": 16,
      "recall": 0.0
     },
     "crypto-theft": {
-     "n": 28,
+     "n": 58,
      "recall": 0.0
     },
     "data-exfiltration": {
-     "n": 55,
-     "recall": 0.0
+     "n": 255,
+     "recall": 0.00392156862745098
     },
     "dependency-confusion": {
-     "n": 21,
+     "n": 257,
+     "recall": 0.0
+    },
+    "discord-token-stealer": {
+     "n": 4,
      "recall": 0.0
     },
     "injective-sdk-ts": {
@@ -160,8 +174,8 @@
      "recall": 0.0
     },
     "mastra": {
-     "n": 112,
-     "recall": 0.9732142857142857
+     "n": 119,
+     "recall": 0.9747899159663865
     },
     "miasma-2026": {
      "n": 38,
@@ -181,51 +195,57 @@
     },
     "react-native-country-select": {
      "n": 2,
-     "recall": 0.5
+     "recall": 0.0
     },
     "teampcp-2026": {
-     "n": 112,
-     "recall": 0.4375
+     "n": 175,
+     "recall": 0.44571428571428573
     },
     "tiledesk": {
      "n": 1,
      "recall": 0.0
     },
     "typosquat": {
-     "n": 31,
+     "n": 68,
      "recall": 0.0
     },
     "unattributed-malicious": {
-     "n": 15,
-     "recall": 0.06666666666666667
+     "n": 237,
+     "recall": 0.02109704641350211
     }
    }
   },
   {
    "method": "logistic_regression",
-   "threshold": 0.9887474891753602,
-   "calib_alerts_per_1000_benign": 6.968641114982578,
-   "test_positives": 449,
-   "test_negatives": 1928,
-   "macro_recall": 0.28159015191326314,
+   "threshold": 0.910098862478982,
+   "calib_alerts_per_1000_benign": 9.89423404981235,
+   "test_positives": 1260,
+   "test_negatives": 6387,
+   "macro_recall": 0.3539667197817498,
    "macro_recall_ci95_family_bootstrap": [
-    0.1590468400503948,
-    0.4053733871503662
+    0.21912764951430241,
+    0.49619098246849314
    ],
-   "macro_recall_without_largest_family": 0.29383320199644847,
-   "largest_family": "mastra",
-   "micro_recall": 0.2984409799554566,
-   "precision": 0.9305555555555556,
-   "alerts_per_1000_benign": 5.186721991701245,
-   "busy_accounts": 67,
-   "busy_account_months": 209,
-   "false_alarms_per_busy_account_month": 0.019138755980861243,
-   "roc_auc": 0.8042416758310307,
-   "average_precision": 0.6340676367806672,
-   "ece_calibrated": 0.10763999518727933,
-   "brier_calibrated": 0.12050341717165036,
-   "fit_seconds": 0.03414750099182129,
-   "predict_ms_per_1000": 2.863731111455074,
+   "macro_recall_without_largest_family": 0.3293705247597902,
+   "largest_family": "dependency-confusion",
+   "macro_recall_min5": 0.4275577013023177,
+   "families_min5": 11,
+   "macro_recall_min5_ci95_family_bootstrap": [
+    0.25617783290112495,
+    0.5995119539140961
+   ],
+   "micro_recall": 0.5158730158730159,
+   "precision": 0.8620689655172413,
+   "alerts_per_1000_benign": 16.283074996085798,
+   "busy_accounts": 187,
+   "busy_account_months": 587,
+   "false_alarms_per_busy_account_month": 0.054514480408858604,
+   "roc_auc": 0.8586742415770129,
+   "average_precision": 0.7018767617691418,
+   "ece_calibrated": 0.07071403619408945,
+   "brier_calibrated": 0.0831386794847464,
+   "fit_seconds": 1.6378490924835205,
+   "predict_ms_per_1000": 5.058608086916362,
    "per_family": {
     "2026-06-20": {
      "n": 1,
@@ -255,21 +275,29 @@
      "n": 1,
      "recall": 1.0
     },
+    "backdoor": {
+     "n": 1,
+     "recall": 1.0
+    },
     "beacon": {
-     "n": 5,
-     "recall": 0.8
+     "n": 16,
+     "recall": 0.8125
     },
     "crypto-theft": {
-     "n": 28,
-     "recall": 0.32142857142857145
+     "n": 58,
+     "recall": 0.3620689655172414
     },
     "data-exfiltration": {
-     "n": 55,
-     "recall": 0.6727272727272727
+     "n": 255,
+     "recall": 0.3607843137254902
     },
     "dependency-confusion": {
-     "n": 21,
-     "recall": 0.6666666666666666
+     "n": 257,
+     "recall": 0.9688715953307393
+    },
+    "discord-token-stealer": {
+     "n": 4,
+     "recall": 0.25
     },
     "injective-sdk-ts": {
      "n": 1,
@@ -284,8 +312,8 @@
      "recall": 0.0
     },
     "mastra": {
-     "n": 112,
-     "recall": 0.0
+     "n": 119,
+     "recall": 0.1092436974789916
     },
     "miasma-2026": {
      "n": 38,
@@ -301,55 +329,61 @@
     },
     "pgserve": {
      "n": 4,
-     "recall": 0.5
+     "recall": 0.75
     },
     "react-native-country-select": {
      "n": 2,
-     "recall": 0.5
+     "recall": 1.0
     },
     "teampcp-2026": {
-     "n": 112,
-     "recall": 0.38392857142857145
+     "n": 175,
+     "recall": 0.49714285714285716
     },
     "tiledesk": {
      "n": 1,
      "recall": 0.0
     },
     "typosquat": {
-     "n": 31,
-     "recall": 0.3870967741935484
+     "n": 68,
+     "recall": 0.3088235294117647
     },
     "unattributed-malicious": {
-     "n": 15,
-     "recall": 0.3333333333333333
+     "n": 237,
+     "recall": 0.5907172995780591
     }
    }
   },
   {
    "method": "hist_gradient_boosting",
-   "threshold": 0.7305486295194169,
-   "calib_alerts_per_1000_benign": 6.968641114982578,
-   "test_positives": 449,
-   "test_negatives": 1928,
-   "macro_recall": 0.28829495996834703,
+   "threshold": 0.2676885648363644,
+   "calib_alerts_per_1000_benign": 9.89423404981235,
+   "test_positives": 1260,
+   "test_negatives": 6387,
+   "macro_recall": 0.351679083019923,
    "macro_recall_ci95_family_bootstrap": [
-    0.15643559733277473,
-    0.42457159803681976
+    0.22281962643272635,
+    0.48163371423902235
    ],
-   "macro_recall_without_largest_family": 0.30082952344523173,
-   "largest_family": "mastra",
-   "micro_recall": 0.47438752783964366,
-   "precision": 0.9594594594594594,
-   "alerts_per_1000_benign": 4.668049792531121,
-   "busy_accounts": 67,
-   "busy_account_months": 209,
-   "false_alarms_per_busy_account_month": 0.009569377990430622,
-   "roc_auc": 0.9428859891506252,
-   "average_precision": 0.835013822584609,
-   "ece_calibrated": 0.0651535959814884,
-   "brier_calibrated": 0.08797399885425544,
-   "fit_seconds": 0.7818622589111328,
-   "predict_ms_per_1000": 8.411150696802201,
+   "macro_recall_without_largest_family": 0.32590188836406625,
+   "largest_family": "dependency-confusion",
+   "macro_recall_min5": 0.558514196228909,
+   "families_min5": 11,
+   "macro_recall_min5_ci95_family_bootstrap": [
+    0.3826375818253177,
+    0.7248233270147337
+   ],
+   "micro_recall": 0.6214285714285714,
+   "precision": 0.902073732718894,
+   "alerts_per_1000_benign": 13.30828244872397,
+   "busy_accounts": 187,
+   "busy_account_months": 587,
+   "false_alarms_per_busy_account_month": 0.03747870528109029,
+   "roc_auc": 0.9319349074633246,
+   "average_precision": 0.827050567246503,
+   "ece_calibrated": 0.07183495174134431,
+   "brier_calibrated": 0.07740739450704576,
+   "fit_seconds": 1.0174238681793213,
+   "predict_ms_per_1000": 7.6450147363147165,
    "per_family": {
     "2026-06-20": {
      "n": 1,
@@ -365,7 +399,7 @@
     },
     "2026-07-24": {
      "n": 8,
-     "recall": 0.0
+     "recall": 0.125
     },
     "2026-09-05": {
      "n": 1,
@@ -379,21 +413,29 @@
      "n": 1,
      "recall": 0.0
     },
-    "beacon": {
-     "n": 5,
+    "backdoor": {
+     "n": 1,
      "recall": 1.0
     },
+    "beacon": {
+     "n": 16,
+     "recall": 0.875
+    },
     "crypto-theft": {
-     "n": 28,
-     "recall": 0.4642857142857143
+     "n": 58,
+     "recall": 0.43103448275862066
     },
     "data-exfiltration": {
-     "n": 55,
-     "recall": 0.8727272727272727
+     "n": 255,
+     "recall": 0.3803921568627451
     },
     "dependency-confusion": {
-     "n": 21,
-     "recall": 0.5714285714285714
+     "n": 257,
+     "recall": 0.9961089494163424
+    },
+    "discord-token-stealer": {
+     "n": 4,
+     "recall": 0.25
     },
     "injective-sdk-ts": {
      "n": 1,
@@ -408,12 +450,12 @@
      "recall": 0.0
     },
     "mastra": {
-     "n": 112,
+     "n": 119,
      "recall": 0.0
     },
     "miasma-2026": {
      "n": 38,
-     "recall": 0.5
+     "recall": 0.5526315789473685
     },
     "miso-client": {
      "n": 1,
@@ -425,55 +467,61 @@
     },
     "pgserve": {
      "n": 4,
-     "recall": 0.5
+     "recall": 0.75
     },
     "react-native-country-select": {
      "n": 2,
-     "recall": 0.0
+     "recall": 0.5
     },
     "teampcp-2026": {
-     "n": 112,
-     "recall": 0.7321428571428571
+     "n": 175,
+     "recall": 0.7942857142857143
     },
     "tiledesk": {
      "n": 1,
      "recall": 0.0
     },
     "typosquat": {
-     "n": 31,
-     "recall": 0.6451612903225806
+     "n": 68,
+     "recall": 0.5588235294117647
     },
     "unattributed-malicious": {
-     "n": 15,
-     "recall": 0.4666666666666667
+     "n": 237,
+     "recall": 0.7637130801687764
     }
    }
   },
   {
    "method": "tfidf_logistic_regression (serialised state)",
-   "threshold": 0.7813806899099205,
-   "calib_alerts_per_1000_benign": 6.968641114982578,
-   "test_positives": 449,
-   "test_negatives": 1928,
-   "macro_recall": 0.16287384210771308,
+   "threshold": 0.6805001110089537,
+   "calib_alerts_per_1000_benign": 9.89423404981235,
+   "test_positives": 1260,
+   "test_negatives": 6387,
+   "macro_recall": 0.1827809080532782,
    "macro_recall_ci95_family_bootstrap": [
-    0.05187635281385282,
-    0.2814367828631941
+    0.08490517787168925,
+    0.29964614740559176
    ],
-   "macro_recall_without_largest_family": 0.1699553135037006,
-   "largest_family": "mastra",
-   "micro_recall": 0.24498886414253898,
-   "precision": 0.8661417322834646,
-   "alerts_per_1000_benign": 8.817427385892117,
-   "busy_accounts": 67,
-   "busy_account_months": 209,
-   "false_alarms_per_busy_account_month": 0.028708133971291867,
-   "roc_auc": 0.8550605772163129,
-   "average_precision": 0.6412921372950552,
-   "ece_calibrated": 0.10500271171650978,
-   "brier_calibrated": 0.12313051836156018,
-   "fit_seconds": 0.9119553565979004,
-   "predict_ms_per_1000": 124.49752797988165,
+   "macro_recall_without_largest_family": 0.15242677472560393,
+   "largest_family": "dependency-confusion",
+   "macro_recall_min5": 0.2956639644895667,
+   "families_min5": 11,
+   "macro_recall_min5_ci95_family_bootstrap": [
+    0.12710907246911304,
+    0.4723731091537818
+   ],
+   "micro_recall": 0.4365079365079365,
+   "precision": 0.873015873015873,
+   "alerts_per_1000_benign": 12.525442304681384,
+   "busy_accounts": 187,
+   "busy_account_months": 587,
+   "false_alarms_per_busy_account_month": 0.027257240204429302,
+   "roc_auc": 0.8765876743683225,
+   "average_precision": 0.7127580259359607,
+   "ece_calibrated": 0.07930896417225965,
+   "brier_calibrated": 0.09131504168550028,
+   "fit_seconds": 2.281583309173584,
+   "predict_ms_per_1000": 119.246827927823,
    "per_family": {
     "2026-06-20": {
      "n": 1,
@@ -503,21 +551,29 @@
      "n": 1,
      "recall": 0.0
     },
+    "backdoor": {
+     "n": 1,
+     "recall": 1.0
+    },
     "beacon": {
-     "n": 5,
-     "recall": 0.8
+     "n": 16,
+     "recall": 0.5625
     },
     "crypto-theft": {
-     "n": 28,
-     "recall": 0.5
+     "n": 58,
+     "recall": 0.2413793103448276
     },
     "data-exfiltration": {
-     "n": 55,
-     "recall": 0.7454545454545455
+     "n": 255,
+     "recall": 0.2235294117647059
     },
     "dependency-confusion": {
-     "n": 21,
-     "recall": 0.9047619047619048
+     "n": 257,
+     "recall": 0.9416342412451362
+    },
+    "discord-token-stealer": {
+     "n": 4,
+     "recall": 0.25
     },
     "injective-sdk-ts": {
      "n": 1,
@@ -532,7 +588,7 @@
      "recall": 0.0
     },
     "mastra": {
-     "n": 112,
+     "n": 119,
      "recall": 0.0
     },
     "miasma-2026": {
@@ -549,27 +605,27 @@
     },
     "pgserve": {
      "n": 4,
-     "recall": 0.0
+     "recall": 0.25
     },
     "react-native-country-select": {
      "n": 2,
      "recall": 0.0
     },
     "teampcp-2026": {
-     "n": 112,
-     "recall": 0.10714285714285714
+     "n": 175,
+     "recall": 0.3142857142857143
     },
     "tiledesk": {
      "n": 1,
      "recall": 0.0
     },
     "typosquat": {
-     "n": 31,
-     "recall": 0.45161290322580644
+     "n": 68,
+     "recall": 0.35294117647058826
     },
     "unattributed-malicious": {
-     "n": 15,
-     "recall": 0.4
+     "n": 237,
+     "recall": 0.6160337552742616
     }
    }
   }
@@ -577,83 +633,83 @@
  "lr_top_coefficients": [
   [
    "log_bytes",
-   -2.6484934230285173
-  ],
-  [
-   "releases_prev_24h",
-   -2.1353630264225476
+   -4.44655714530541
   ],
   [
    "log_max_file_bytes",
-   2.132749582348055
+   3.9859850201421914
   ],
   [
    "maintainers_count",
-   -1.8455938812892456
-  ],
-  [
-   "has_provenance",
-   -1.8166347982221864
-  ],
-  [
-   "new_install_hooks",
-   1.4187531037194523
-  ],
-  [
-   "install_hooks",
-   -1.2416739608196503
-  ],
-  [
-   "bump_patch",
-   1.0906613079784755
-  ],
-  [
-   "install_hook_changed",
-   1.0763674115085644
+   -3.196622757735317
   ],
   [
    "releases_prior_365d",
-   -1.0633754147791088
+   -2.845285784503726
+  ],
+  [
+   "has_provenance",
+   -1.9465516435477694
   ],
   [
    "install_cmd_chars",
-   1.0630937919099257
-  ],
-  [
-   "deps_added",
-   -0.9893834231578085
-  ],
-  [
-   "prior_releases",
-   -0.9521786180721502
+   1.9124543169959463
   ],
   [
    "is_prerelease",
-   -0.9339656704151977
+   -1.529162342431642
   ],
   [
-   "bump_prerelease",
-   -0.8987257221511897
-  ],
-  [
-   "repository_present",
-   -0.8054404987828034
-  ],
-  [
-   "releases_prev_7d",
-   0.7720848870890281
+   "files",
+   1.0124792037493175
   ],
   [
    "publisher_prior_releases",
-   -0.7672045163709859
+   0.9498990652197965
   ],
   [
-   "distinct_publishers_prior",
-   0.6070064721341771
+   "repository_present",
+   -0.9485865574198048
   ],
   [
    "js_files",
-   -0.5886965236970452
+   -0.87003533807164
+  ],
+  [
+   "releases_prev_7d",
+   0.8000674845958429
+  ],
+  [
+   "prev_has_provenance",
+   -0.7625411459341066
+  ],
+  [
+   "new_install_hooks",
+   0.7272183810208007
+  ],
+  [
+   "bump_minor",
+   -0.7035528006988425
+  ],
+  [
+   "publisher_new_to_package",
+   0.6435928938274345
+  ],
+  [
+   "releases_prev_24h",
+   -0.6170106096931635
+  ],
+  [
+   "provenance_dropped",
+   0.5773023567622995
+  ],
+  [
+   "install_runs_package_file",
+   0.5696221456916151
+  ],
+  [
+   "prior_releases",
+   -0.5108506929080892
   ]
  ]
 }

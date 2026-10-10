@@ -22,6 +22,7 @@ SEED = 20261009
 BUDGET_PER_1000 = 10.0
 BUSY_ACCOUNT = 5
 N_BOOT = 2000
+MIN_FAMILY_N = 5  # co-primary macro (2026-10-10 deviation): families with at least this many test positives
 
 
 def ece(p: np.ndarray, y: np.ndarray, bins: int = 10) -> float:
@@ -76,6 +77,10 @@ def evaluate(name: str, s_cal, s_test, cal: pd.DataFrame, test: pd.DataFrame, fi
     for _ in range(N_BOOT):
         pick = rng.choice(fams, size=len(fams), replace=True)
         boots.append(np.mean([per[f]["recall"] for f in pick]))
+    fams5 = [f for f in fams if per[f]["n"] >= MIN_FAMILY_N]
+    mr5 = float(np.mean([per[f]["recall"] for f in fams5])) if fams5 else float("nan")
+    boots5 = [np.mean([per[f]["recall"] for f in rng.choice(fams5, size=len(fams5), replace=True)]) for _ in range(N_BOOT)] \
+        if fams5 else [float("nan")]
     neg = y_test == 0
     tp, fp = int((alert & ~neg).sum()), int((alert & neg).sum())
     # False alarms per account-month on busy accounts (>= BUSY_ACCOUNT benign releases in test).
@@ -94,6 +99,8 @@ def evaluate(name: str, s_cal, s_test, cal: pd.DataFrame, test: pd.DataFrame, fi
         "test_positives": int((~neg).sum()), "test_negatives": int(neg.sum()),
         "macro_recall": mr, "macro_recall_ci95_family_bootstrap": [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))],
         "macro_recall_without_largest_family": mr_wo, "largest_family": largest,
+        "macro_recall_min5": mr5, "families_min5": len(fams5),
+        "macro_recall_min5_ci95_family_bootstrap": [float(np.percentile(boots5, 2.5)), float(np.percentile(boots5, 97.5))],
         "micro_recall": float(tp / max(1, (~neg).sum())),
         "precision": float(tp / max(1, tp + fp)) if tp + fp else None,
         "alerts_per_1000_benign": float(1000 * fp / max(1, neg.sum())),
@@ -112,13 +119,14 @@ def alerts(s_cal, y_cal, s, budget_per_1000: float = BUDGET_PER_1000) -> np.ndar
     return np.asarray(s, dtype=float) >= threshold_for_budget(s_cal[y_cal == 0], budget_per_1000)
 
 
-def paired_family_bootstrap(per_a: dict, per_b: dict, n_boot: int = N_BOOT, seed: int = SEED) -> dict:
+def paired_family_bootstrap(per_a: dict, per_b: dict, n_boot: int = N_BOOT, seed: int = SEED, min_n: int = 1) -> dict:
     """Macro-recall difference A - B over the families both report, with a family-bootstrap 95% interval.
 
     `per_a` / `per_b` are the `per_family` dicts of `evaluate` on the same test rows. Families are resampled with
-    replacement and the same resample is applied to both methods (a paired bootstrap).
+    replacement and the same resample is applied to both methods (a paired bootstrap). `min_n` keeps only families
+    with at least that many test positives (min_n=MIN_FAMILY_N gives the co-primary comparison).
     """
-    fams = sorted(set(per_a) & set(per_b))
+    fams = sorted(f for f in set(per_a) & set(per_b) if per_a[f]["n"] >= min_n)
     d = np.array([per_a[f]["recall"] - per_b[f]["recall"] for f in fams])
     rng = np.random.default_rng(seed)
     boots = [d[rng.integers(0, len(d), len(d))].mean() for _ in range(n_boot)] if len(d) else [float("nan")]

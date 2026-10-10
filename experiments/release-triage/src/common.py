@@ -6,6 +6,7 @@ extracted to disk and nothing is executed. Run every script with `python -I`.
 """
 from __future__ import annotations
 
+import collections
 import gzip
 import hashlib
 import io
@@ -40,18 +41,36 @@ SCRIPT_FILE_CHARS = 700
 README_CHARS = 300
 DESC_CHARS = 200
 MAX_FILE_READ = 4_000_000  # bytes read from any single member (never more)
+# Archive limits, the same for both classes (added 2026-10-10 after a worker ran out of memory on the v2 fetch; no
+# v1 row comes near them): compressed archive bytes, and file entries listed.
+MAX_ARCHIVE_BYTES = 150_000_000
+MAX_MEMBERS = 50_000
 
 UA = "blastradius-release-triage-research/0.1 (+https://github.com/kambasana/56)"
 
 
-def http_get(url: str, *, timeout: int = 60, retries: int = 4, accept: str | None = None) -> bytes | None:
-    """GET with retries. Returns None on 404/410."""
+class TooLarge(Exception):
+    """An archive above MAX_ARCHIVE_BYTES or MAX_MEMBERS (same limit for DataDog archives and registry tarballs)."""
+
+
+def http_get(url: str, *, timeout: int = 60, retries: int = 4, accept: str | None = None,
+             max_bytes: int | None = None) -> bytes | None:
+    """GET with retries. Returns None on 404/410. Raises TooLarge past max_bytes (read in chunks, never buffered)."""
     last: Exception | None = None
     for i in range(retries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, **({"Accept": accept} if accept else {})})
             with urllib.request.urlopen(req, timeout=timeout) as r:
-                return r.read()
+                if max_bytes is None:
+                    return r.read()
+                buf = bytearray()
+                while True:
+                    chunk = r.read(1 << 20)
+                    if not chunk:
+                        return bytes(buf)
+                    buf += chunk
+                    if len(buf) > max_bytes:
+                        raise TooLarge(f"{url}: more than {max_bytes} bytes")
         except urllib.error.HTTPError as e:
             if e.code in (404, 410):
                 return None
@@ -59,6 +78,8 @@ def http_get(url: str, *, timeout: int = 60, retries: int = 4, accept: str | Non
             if e.code == 429:
                 time.sleep(5 * (i + 1))
                 continue
+        except TooLarge:
+            raise
         except Exception as e:  # network errors: retry
             last = e
         time.sleep(1.5 * (i + 1))
@@ -124,16 +145,56 @@ def slim_packument(p: dict) -> dict:
     }
 
 
+BIG_PACKUMENT_BYTES = 20_000_000
+_BIG_PACKUMENT = threading.Lock()
+
+
+_PACK_MEMO: "collections.OrderedDict[str, dict | None]" = collections.OrderedDict()
+_PACK_MEMO_LOCK = threading.Lock()
+_PACK_LOADING: dict[str, threading.Lock] = {}
+PACK_MEMO_SIZE = 8  # a few recent packuments shared by all threads (read-only), so a big one is parsed once
+
+
 def registry_packument(name: str) -> dict | None:
-    """Current registry packument (slimmed, cached)."""
+    """Current registry packument (slimmed, cached on disk; the last few also in memory). Treat as read-only."""
+    with _PACK_MEMO_LOCK:
+        if name in _PACK_MEMO:
+            _PACK_MEMO.move_to_end(name)
+            return _PACK_MEMO[name]
+        lk = _PACK_LOADING.setdefault(name, threading.Lock())
+    with lk:  # single flight: threads asking for the same package wait for one load
+        with _PACK_MEMO_LOCK:
+            if name in _PACK_MEMO:
+                _PACK_MEMO.move_to_end(name)
+                return _PACK_MEMO[name]
+        p = _registry_packument(name)
+        with _PACK_MEMO_LOCK:
+            _PACK_MEMO[name] = p
+            while len(_PACK_MEMO) > PACK_MEMO_SIZE:
+                _PACK_MEMO.popitem(last=False)
+            _PACK_LOADING.pop(name, None)
+    return p
+
+
+def _registry_packument(name: str) -> dict | None:
     cp = cache_path("packuments", name)
     if cp.exists():
         return read_json_gz(cp)
-    raw = http_get(f"{REGISTRY}/{enc_name(name)}")
-    if raw is None:
-        write_json_gz(cp, None)
-        return None
-    p = slim_packument(json.loads(raw))
+    url = f"{REGISTRY}/{enc_name(name)}"
+    try:
+        raw = http_get(url, max_bytes=BIG_PACKUMENT_BYTES)
+        if raw is None:
+            write_json_gz(cp, None)
+            return None
+        p = slim_packument(json.loads(raw))
+    except TooLarge:  # a very large document (e.g. aws-sdk): one at a time, to bound memory
+        with _BIG_PACKUMENT:
+            raw = http_get(url, timeout=300)
+            if raw is None:
+                write_json_gz(cp, None)
+                return None
+            p = slim_packument(json.loads(raw))
+    del raw
     write_json_gz(cp, p)
     return p
 
@@ -204,7 +265,9 @@ def contents_from_tgz(data: bytes) -> dict:
     tf = tarfile.open(fileobj=io.BytesIO(data), mode="r:*")
     members: dict[str, int] = {}
     infos: dict[str, tarfile.TarInfo] = {}
-    for ti in tf.getmembers():
+    for n_seen, ti in enumerate(tf, 1):  # iterate (not getmembers) so a huge archive is refused early
+        if n_seen > MAX_MEMBERS:
+            raise TooLarge(f"more than {MAX_MEMBERS} entries")
         if not ti.isfile():
             continue
         p = _norm(ti.name)
@@ -227,6 +290,8 @@ def contents_from_dd_zip(data: bytes) -> tuple[dict, dict | None]:
     members: dict[str, int] = {}
     names: dict[str, str] = {}
     info_name = None
+    if len(z.infolist()) > MAX_MEMBERS:
+        raise TooLarge(f"more than {MAX_MEMBERS} entries")
     for zi in z.infolist():
         if zi.is_dir():
             continue
@@ -264,7 +329,12 @@ def registry_contents(name: str, version: str, tarball_url: str | None) -> dict 
     if cp.exists():
         return read_json_gz(cp)
     url = tarball_url or f"{REGISTRY}/{name}/-/{name.split('/')[-1]}-{version}.tgz"
-    raw = http_get(url, timeout=180)
+    try:
+        raw = http_get(url, timeout=180, max_bytes=MAX_ARCHIVE_BYTES)
+    except TooLarge as e:
+        c = {"error": f"too_large: {e}"[:200]}
+        write_json_gz(cp, c)
+        return c
     if raw is None:
         write_json_gz(cp, None)
         return None

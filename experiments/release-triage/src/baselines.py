@@ -44,7 +44,7 @@ from triage_metrics import BUDGET_PER_1000, BUSY_ACCOUNT, SEED, evaluate
 
 META = {"key", "name", "version", "label", "category", "family", "wave", "family_basis", "published", "publisher",
         "content_source", "packument_source", "neg_pool", "label_sources", "registry_dist_files",
-        "registry_dist_bytes", "content_dir_entries", "split"}
+        "registry_dist_bytes", "content_dir_entries", "deps_added_unknown_first_publish", "split"}
 
 
 def main() -> None:
@@ -127,6 +127,7 @@ def main() -> None:
     (RESULTS / "baselines.json").write_text(json.dumps(out, indent=1) + "\n")
     for r in out["results"]:
         print(f"{r['method']:45s} macroR {r['macro_recall']:.3f} [{r['macro_recall_ci95_family_bootstrap'][0]:.3f},{r['macro_recall_ci95_family_bootstrap'][1]:.3f}] "
+              f"macroR>=5 {r['macro_recall_min5']:.3f} ({r['families_min5']} fam) "
               f"w/o-largest {r['macro_recall_without_largest_family']:.3f} microR {r['micro_recall']:.3f} prec {r['precision']} "
               f"alerts/1k {r['alerts_per_1000_benign']:.1f} FA/acct-mo {r['false_alarms_per_busy_account_month']} "
               f"AUC {r['roc_auc']:.3f} AP {r['average_precision']:.3f} ECE {r['ece_calibrated']:.3f}")

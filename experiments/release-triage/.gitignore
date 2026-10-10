@@ -9,3 +9,4 @@ src/__pycache__/
 !data/laya/*.jsonl.gz
 !data/features.csv.gz
 !results/baseline_scores.csv.gz
+!data/dd_*_list.txt.gz

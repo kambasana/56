@@ -1,12 +1,12 @@
 {
- "rows": 5834,
+ "rows": 17053,
  "max_gap": 0.1,
  "missingness": {
   "bin_added": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -140,9 +140,9 @@
   },
   "bytes_ratio_prev": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -157,9 +157,9 @@
   },
   "days_since_prev_release": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -174,9 +174,9 @@
   },
   "deps_added": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -208,9 +208,9 @@
   },
   "deps_removed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -225,9 +225,9 @@
   },
   "description_changed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -293,9 +293,9 @@
   },
   "files_added": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -310,9 +310,9 @@
   },
   "files_removed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -378,9 +378,9 @@
   },
   "install_file_is_new": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -395,9 +395,9 @@
   },
   "install_hook_changed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -497,9 +497,9 @@
   },
   "license_changed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -548,9 +548,9 @@
   },
   "maintainers_added": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -582,9 +582,9 @@
   },
   "maintainers_removed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -599,9 +599,9 @@
   },
   "major_jump": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -616,14 +616,14 @@
   },
   "median_gap_days_prior": {
    "all": {
-    "pos": 0.5908,
-    "neg": 0.1652,
-    "gap": 0.4256
+    "pos": 0.7034,
+    "neg": 0.2562,
+    "gap": 0.4471
    },
    "non_first": {
-    "pos": 0.0468,
-    "neg": 0.0172,
-    "gap": 0.0296
+    "pos": 0.1111,
+    "neg": 0.0153,
+    "gap": 0.0958
    },
    "first": {
     "pos": 1.0,
@@ -667,9 +667,9 @@
   },
   "prev_has_provenance": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -684,9 +684,9 @@
   },
   "prev_trusted_publisher": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -718,9 +718,9 @@
   },
   "provenance_dropped": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -735,9 +735,9 @@
   },
   "publisher_differs_prev": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -752,9 +752,9 @@
   },
   "publisher_new_to_package": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -786,9 +786,9 @@
   },
   "readme_changed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -820,9 +820,9 @@
   },
   "readme_len_prev": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -888,9 +888,9 @@
   },
   "repository_changed": {
    "all": {
-    "pos": 0.5707,
-    "neg": 0.1506,
-    "gap": 0.4202
+    "pos": 0.6663,
+    "neg": 0.2447,
+    "gap": 0.4216
    },
    "non_first": {
     "pos": 0.0,
@@ -956,9 +956,9 @@
   },
   "version_major": {
    "all": {
-    "pos": 0.001,
+    "pos": 0.0008,
     "neg": 0.0,
-    "gap": 0.001
+    "gap": 0.0008
    },
    "non_first": {
     "pos": 0.0,
@@ -966,9 +966,9 @@
     "gap": 0.0
    },
    "first": {
-    "pos": 0.0017,
+    "pos": 0.0012,
     "neg": 0.0,
-    "gap": 0.0017
+    "gap": 0.0012
    }
   },
   "young_deps_added": {
@@ -991,26 +991,26 @@
  },
  "content_parity": {
   "datadog-archive/label=1": {
-   "n_with_dist_fileCount": 1010,
-   "files_equal": 0.7802,
-   "files_within_1": 0.8347,
-   "files_equal_any_convention": 0.9624
+   "n_with_dist_fileCount": 2214,
+   "files_equal": 0.8139,
+   "files_within_1": 0.8844,
+   "files_equal_any_convention": 0.9476
   },
   "registry-tarball/label=1": {
-   "n_with_dist_fileCount": 36,
-   "files_equal": 0.7222,
-   "files_within_1": 0.8333,
-   "files_equal_any_convention": 0.9444
+   "n_with_dist_fileCount": 375,
+   "files_equal": 0.9467,
+   "files_within_1": 0.9627,
+   "files_equal_any_convention": 0.9893
   },
   "registry-tarball/label=0": {
-   "n_with_dist_fileCount": 4787,
-   "files_equal": 0.9825,
-   "files_within_1": 0.9879,
-   "files_equal_any_convention": 0.9962
+   "n_with_dist_fileCount": 14463,
+   "files_equal": 0.9849,
+   "files_within_1": 0.9911,
+   "files_equal_any_convention": 0.9953
   },
   "dist_fileCount_coverage": {
    "pos": 1.0,
-   "neg": 0.9998
+   "neg": 0.9999
   }
  },
  "state_fields": {
@@ -1146,18 +1146,18 @@
   },
   "install_scripts.hooks": {
    "non_first": {
-    "pos_present": 0.49,
-    "neg_present": 0.0263
+    "pos_present": 0.5336,
+    "neg_present": 0.0258
    },
    "first": {
-    "pos_present": 0.5477,
-    "neg_present": 0.0305
+    "pos_present": 0.593,
+    "neg_present": 0.022
    }
   },
   "install_scripts.previous_hooks": {
    "non_first": {
-    "pos_present": 0.0312,
-    "neg_present": 0.0243
+    "pos_present": 0.0833,
+    "neg_present": 0.0249
    },
    "first": {
     "pos_present": 0.0,
@@ -1366,8 +1366,8 @@
   },
   "release.median_days_between_releases": {
    "non_first": {
-    "pos_present": 0.9532,
-    "neg_present": 0.9828
+    "pos_present": 0.8889,
+    "neg_present": 0.9847
    },
    "first": {
     "pos_present": 0.0,
@@ -1426,28 +1426,28 @@
   },
   "text.description": {
    "non_first": {
-    "pos_present": 0.9465,
-    "neg_present": 0.9474
+    "pos_present": 0.9456,
+    "neg_present": 0.9616
    },
    "first": {
-    "pos_present": 0.7688,
-    "neg_present": 0.9459
+    "pos_present": 0.7525,
+    "neg_present": 0.9551
    }
   },
   "text.install_script_files": {
    "non_first": {
-    "pos_present": 0.4053,
-    "neg_present": 0.0172
+    "pos_present": 0.4734,
+    "neg_present": 0.0182
    },
    "first": {
-    "pos_present": 0.3869,
-    "neg_present": 0.018
+    "pos_present": 0.4249,
+    "neg_present": 0.0136
    }
   },
   "text.new_files": {
    "non_first": {
-    "pos_present": 0.5568,
-    "neg_present": 0.1979
+    "pos_present": 0.6042,
+    "neg_present": 0.2051
    },
    "first": {
     "pos_present": 0.0,
@@ -1456,8 +1456,8 @@
   },
   "text.previous_description": {
    "non_first": {
-    "pos_present": 0.0757,
-    "neg_present": 0.0116
+    "pos_present": 0.0856,
+    "neg_present": 0.0169
    },
    "first": {
     "pos_present": 0.0,
@@ -1466,77 +1466,89 @@
   },
   "text.readme_head": {
    "non_first": {
-    "pos_present": 0.8107,
-    "neg_present": 0.9061
+    "pos_present": 0.8113,
+    "neg_present": 0.8989
    },
    "first": {
-    "pos_present": 0.402,
-    "neg_present": 0.8363
+    "pos_present": 0.3432,
+    "neg_present": 0.8192
    }
   }
  },
  "names_in_state": {
-  "short_name/label=0": 7
+  "short_name/label=0": 27
  },
  "single_feature_auc_train": {
-  "bin_added": 0.5037,
-  "bin_count": 0.456,
+  "bin_added": 0.5013,
+  "bin_count": 0.4626,
   "bump_backport": 0.5,
-  "bump_first": 0.812,
-  "bump_major": 0.4977,
-  "bump_minor": 0.4647,
-  "bump_patch": 0.4625,
-  "bump_prerelease": 0.2631,
-  "bytes_ratio_prev": 0.8465,
-  "days_since_prev_release": 0.835,
-  "deps_added": 0.4886,
-  "deps_count": 0.3761,
-  "deps_removed": 0.4923,
-  "description_changed": 0.4954,
-  "description_len": 0.4872,
-  "distinct_publishers_prior": 0.1852,
-  "files": 0.2464,
-  "files_added": 0.6599,
-  "files_removed": 0.5064,
-  "gypfile": 0.5009,
-  "has_provenance": 0.4157,
-  "install_cmd_chars": 0.7507,
-  "install_file_is_new": 0.7415,
-  "install_hook_changed": 0.7991,
-  "install_hooks": 0.7512,
-  "install_runs_package_file": 0.6709,
-  "is_first_release": 0.812,
-  "is_prerelease": 0.2606,
-  "js_files": 0.3106,
-  "license_changed": 0.5037,
-  "log_bytes": 0.2317,
-  "log_max_file_bytes": 0.2832,
-  "maintainers_added": 0.5197,
-  "maintainers_count": 0.265,
-  "maintainers_removed": 0.5134,
-  "major_jump": 0.5344,
-  "median_gap_days_prior": 0.6573,
-  "new_install_hooks": 0.7603,
-  "package_age_days": 0.2219,
-  "prev_has_provenance": 0.4796,
-  "prev_trusted_publisher": 0.4932,
-  "prior_releases": 0.1286,
-  "provenance_dropped": 0.5615,
-  "publisher_differs_prev": 0.6497,
-  "publisher_new_to_package": 0.6399,
-  "publisher_prior_releases": 0.121,
-  "readme_changed": 0.4824,
-  "readme_len": 0.3136,
-  "readme_len_prev": 0.4838,
-  "releases_prev_24h": 0.2876,
-  "releases_prev_7d": 0.1733,
-  "releases_prior_365d": 0.1119,
-  "repository_changed": 0.5302,
-  "repository_present": 0.2322,
-  "tarball_manifest_scripts_differ": 0.4998,
-  "trusted_publisher": 0.4909,
-  "version_major": 0.616,
-  "young_deps_added": 0.5142
+  "bump_first": 0.7804,
+  "bump_major": 0.4936,
+  "bump_minor": 0.4668,
+  "bump_patch": 0.4753,
+  "bump_prerelease": 0.2839,
+  "bytes_ratio_prev": 0.8932,
+  "days_since_prev_release": 0.8308,
+  "deps_added": 0.4818,
+  "deps_count": 0.3511,
+  "deps_removed": 0.4846,
+  "description_changed": 0.4991,
+  "description_len": 0.4411,
+  "distinct_publishers_prior": 0.2088,
+  "files": 0.2308,
+  "files_added": 0.7255,
+  "files_removed": 0.4681,
+  "gypfile": 0.5,
+  "has_provenance": 0.4236,
+  "install_cmd_chars": 0.7659,
+  "install_file_is_new": 0.8196,
+  "install_hook_changed": 0.8453,
+  "install_hooks": 0.7669,
+  "install_runs_package_file": 0.6912,
+  "is_first_release": 0.7804,
+  "is_prerelease": 0.2726,
+  "js_files": 0.3156,
+  "license_changed": 0.5011,
+  "log_bytes": 0.2412,
+  "log_max_file_bytes": 0.2941,
+  "maintainers_added": 0.5118,
+  "maintainers_count": 0.2559,
+  "maintainers_removed": 0.5125,
+  "major_jump": 0.5556,
+  "median_gap_days_prior": 0.5989,
+  "new_install_hooks": 0.7731,
+  "package_age_days": 0.2361,
+  "prev_has_provenance": 0.4674,
+  "prev_trusted_publisher": 0.4958,
+  "prior_releases": 0.1691,
+  "provenance_dropped": 0.5512,
+  "publisher_differs_prev": 0.5992,
+  "publisher_new_to_package": 0.6016,
+  "publisher_prior_releases": 0.164,
+  "readme_changed": 0.4744,
+  "readme_len": 0.2804,
+  "readme_len_prev": 0.5301,
+  "releases_prev_24h": 0.2961,
+  "releases_prev_7d": 0.2059,
+  "releases_prior_365d": 0.1529,
+  "repository_changed": 0.5249,
+  "repository_present": 0.2056,
+  "tarball_manifest_scripts_differ": 0.5,
+  "trusted_publisher": 0.495,
+  "version_major": 0.678,
+  "young_deps_added": 0.5049
+ },
+ "dependency_age_unknown": {
+  "label=1": {
+   "rows": 2589,
+   "rows_with_unknown_dependency_age": 88,
+   "share": 0.034
+  },
+  "label=0": {
+   "rows": 14464,
+   "rows_with_unknown_dependency_age": 103,
+   "share": 0.0071
+  }
  },
  "fails": [],
  "flags": [],

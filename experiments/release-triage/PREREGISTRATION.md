@@ -39,6 +39,10 @@ enough, and spread across enough families, to justify a 1.7 GB model dependency.
 
 ## Data (fixed by `src/`, run by `rebuild.sh`)
 
+*The dataset was rebuilt before any Laya run (v2, 2026-10-10): more real positives and negatives, a ratio floor in
+the splits, and a hindsight fix in the dependency-age feature. The rules below still hold; every change is listed,
+with its reason, in the log at the end.*
+
 - **Unit:** one npm release (package@version) as it stood at publish time.
 - **Positives:** the first malicious release per package in the DataDog dataset and OSV `MAL-*` /
   CWE-506 records, with the published files from DataDog's archive and the registry document DataDog
@@ -176,7 +180,8 @@ Fine-tuned Laya is **adopted (moves to shadow mode)** only if the positive contr
 
 - **P0, setup valid (the result is uninterpretable otherwise):**
   - the positive control of the chosen base reaches calib `triage` accuracy ≥ 0.95 and calib ROC AUC
-    ≥ 0.95. Accuracy alone is not enough, because about 85 % of calib is negatives;
+    ≥ 0.95. Accuracy alone is not enough, because about 91 % of calib is negatives (2,931 of 3,231 releases in
+    the v2 dataset; corrected 2026-10-10, see the log);
   - at least 2 of the 3 seeds are not collapsed.
 
   If P0 fails, the outcome is **INCONCLUSIVE**: fix the setup, and do not read the real runs as
@@ -187,6 +192,10 @@ Fine-tuned Laya is **adopted (moves to shadow mode)** only if the positive contr
   has a lower bound **> 0**.
 - **P3, no single family drives it:** with any one family removed, the macro recall difference stays
   **≥ 0.025**.
+- **P1–P3 co-primary (added 2026-10-10, before any Laya run; see the log):** P1, P2 and P3 must also hold on the
+  macro recall over only the test families with **≥ 5 positives** (`macro_recall_min5`), against the baseline that
+  is best on that macro (again picked on test). The paired bootstrap and the leave-one-family-out check use the
+  same families (`paired_family_bootstrap(..., min_n=5)`). A seed meets P1–P6 only if both versions of P1–P3 hold.
 - **P4, family floor:** for every test family with ≥ 5 positives, Laya's recall is no more than
   **0.15 below** the best baseline's recall on that family.
   - An absolute floor is not used: some families (for example heuristic dependency-confusion
@@ -274,3 +283,90 @@ None of the changes below alters a checkpoint, run, threshold, metric or pass co
     that match (20 %) or negatives (16 %).
   - Fix: the gate now accepts agreement under any of the three counting conventions. The raw file-only
     agreement is still reported, and `MAX_GAP` is unchanged.
+
+## Deviations logged 2026-10-10 (dataset v2), before any Laya run
+
+No Laya model had been run on this dataset, in any form, when these were made. The baseline numbers of v1 had been
+seen (they were committed with v1); none of the changes below was chosen to move a baseline, and the time windows,
+the 25 % family cap, the questions, the methods, the threshold rule and P0–P6 are unchanged except where stated.
+The user's bars for the dataset were: only real rows, each traceable to an OSV/GHSA id, a DataDog archive (sha256)
+or an npm registry record; ≥ 5,000 training examples after laya-train's calibration slice; ≥ 1,000 malicious
+releases across ≥ 5 families; ≥ 5 benign per malicious release; ≥ 50 test positives per family where the sources
+allow; no family above 25 % of the positives of any split; and only facts knowable at publish time, with the same
+fields for both classes.
+
+1. **Hindsight leak in `young_deps_added` fixed** (`src/build.py` `young_dependencies`, and the rule-scorer harness
+   `src/rule_scorer.ts`). A dependency's first-publish date comes from today's registry. v1 counted a dependency
+   that today's registry cannot resolve as *young*, in both the feature and the rule scorer's `dependency_added`
+   fact (`markYoungDependencies` was given `null`). Malicious dependencies are exactly the ones npm removes later,
+   so this leaked the future into a positive-leaning signal. Now a dependency whose first-publish date is unknown
+   today, or later than the scoring time (release + 1 hour, the time the rule-scorer harness scores at; npm's
+   `0.0.1-security` placeholders and re-registered names fall here), counts as **unknown**: neither young nor old,
+   and not counted at all (an "unknown" count would carry the same hindsight). Dependencies beyond the first 20
+   added (not looked up) are unknown too. On v2, 88 of 2,589 positives (3.4 %) and 103 of 14,464 negatives (0.7 %)
+   have such a dependency (`results/leakage_check.json`, `dependency_age_unknown`). The leakage check now fails if
+   any unknown dependency is counted as young; it passes.
+2. **More positives, all real.**
+   - The per-family download quota in `src/collect_positives.py` went from 160 to 3,000 packages (seeded sample,
+     a superset of v1's). Only the five families above 160 change: dependency-confusion (1,711, all), tea.xyz
+     (2,437, all), unattributed (3,000 of 8,094), Shai-Hulud (527, all) and TeamPCP (240, all).
+   - **OSV-only releases** for the thin families (typosquat, crypto-theft, data-exfiltration, beacon, Discord token
+     stealer, backdoor, starjacking): npm packages listed by an OSV `MAL-*`/CWE-506 record that DataDog has no
+     archive for, kept only if today's registry still serves the earliest listed affected version (the first known
+     bad release). Their contents come from the registry tarball and their history from today's packument, the
+     same path as every negative. 346 packages qualified (data-exfiltration 258, typosquat 38, crypto-theft 33,
+     beacon 12, Discord 4, backdoor 1); the family comes from the same OSV text markers as before. Each row keeps
+     its OSV ids in `label_sources`.
+   - The OSV export is now the 802734dd… download for both classes (v1 positives used 5a721776…). Re-running v1's
+     positive list with it gives the same family for every v1 row.
+   - After fetching (same rules: the previous release must still be served) and grouping, 2,589 positives remain.
+3. **More negatives, same way** (`collect_negatives.py --extend`). v1's 7,400 candidates are kept unchanged (batch
+   v1). Batch v2 (15,758 releases) is drawn by the same code path and rules from packages v1 did not use (2,191
+   remaining established names and 16,000 more npm-search names, same exclusion list), with the per-month target
+   `max(40, round(V2_TOTAL[window] × positives(month) / positives(window)))`, V2_TOTAL = train 4,000, calib 5,000,
+   test 6,500. The month mix still follows the positives; calib got a larger total because grouping keeps only
+   part of its candidates (v1: 1 in 4, v2: about 1 in 2; a calib-window package often also releases in train or
+   test), and calib has to
+   end with ≥ 2,000 benign releases so the 10-per-1,000 threshold rests on ≥ 20 benign alerts. The "40 % first
+   releases" rule is applied as before, but v2's search pool had fewer first releases in the busy months, so 23 %
+   of v2 picks are first releases (v1: 12 %). This departs from "5 per positive, at least 40 per
+   month" in the Data section.
+4. **Ratio floor in `src/split.py`:** every split keeps at least 5 benign releases per malicious one; while it does
+   not, the largest family gives up one release (the cap's seeded order), then the 25 % cap is re-checked. In v2 it
+   removed 324 train positives (dependency-confusion 107, tea.xyz 108, unattributed 109); calib and test were
+   already above 5.
+5. **Same time windows.** No cutoff moved: train < 2025-10-01 ≤ calib < 2026-03-01 ≤ test.
+6. **Archive limits for both classes** (`src/common.py`): archives above 150 MB compressed or 50,000 entries are
+   refused, after a fetch worker ran out of memory. One candidate was refused (a benign `@openai/codex` release whose
+   tarball is above 150 MB; counted under `neg:tarball_unavailable` in `data/build.summary.json`); no positive came
+   near either limit.
+7. **Token check uses laya's own sequence builder** (`src/check_tokens.py`): the v1 script counted `json.dumps`
+   tokens with an estimated head, which the gate review found approximate. It now runs the notebook's method
+   (`laya.common.build_sequence(..., return_truncation_stats=True)` with the checkpoint tokenizer).
+8. **Co-primary pass conditions**: P1–P3 must also hold on the macro over test families with ≥ 5 positives (see the
+   Pass rule). Reason: with 26 test families, 15 of which have fewer than 5 positives, single releases can swing
+   the all-family macro by several points; the co-primary keeps the primary rule and adds the comparison that
+   rests on families with enough releases. `src/triage_metrics.py` reports `macro_recall_min5` for every method.
+9. **"85 % negatives" corrected** in P0: calib is 91 % negatives in v2.
+10. **Notebook live progress** (no protocol change): if a Colab secret `GH_TOKEN` exists, the notebook pushes
+    `progress.jsonl` and small result files to branch `results/laya-colab` (RUN-IN-COLAB.md). It does not change
+    any run, metric or rule.
+
+**v2 dataset** (`data/split.summary.json`, `results/leakage_check.json`, `results/tokens.json`):
+
+| Split | Releases | Malicious | Benign | Benign per malicious | Families | Families ≥ 5 | Families ≥ 50 | Largest family share |
+|---|---|---|---|---|---|---|---|---|
+| train | 6,175 | 1,029 | 5,146 | 5.0 | 19 | 12 | 5 | 22.4 % |
+| calib | 3,231 | 300 | 2,931 | 9.8 | 8 | 5 | 4 | 25.0 % |
+| test | 7,647 | 1,260 | 6,387 | 5.1 | 26 | 11 | 7 | 20.4 % |
+
+- 17,053 releases, 2,589 malicious; no package and no account in two splits; leakage check PASS.
+- `laya-train --dry-run` on train: 6,867 items (6,175 `triage` + 692 `script_intent`), 400 held for laya's
+  calibration slice, 6,467 trained on; 102 updates per epoch, so E = 6.
+- Truncation (laya's builder, 1024/256): `triage` 114 of 17,053 states (0.7 %), `script_intent` 72 of 1,783
+  (4.0 %); at the English bundle's 512/192 every state is cut (median 545 state tokens).
+- Test families with ≥ 50 positives: dependency-confusion 257, data-exfiltration 255, unattributed 237, TeamPCP
+  175, Mastra 119, typosquat 68, crypto-theft 58. Short of 50 because the real sources run out: Miasma 38 (all 50
+  DataDog packages fetched; 12 had no previous release still served), beacon 16, 2026-07-24 8, IronWorm 6, and 15
+  families with 1–4 releases.
+

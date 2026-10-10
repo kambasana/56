@@ -22,10 +22,11 @@ import sys
 import pathlib
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))  # -I drops the script dir
-from common import (CACHE, DATA, DESC_CHARS, INSTALL_HOOKS, README_CHARS, SCRIPT_FILE_CHARS, read_json_gz,
-                    semver_key)
+from common import (CACHE, DATA, DESC_CHARS, INSTALL_HOOKS, README_CHARS, SCRIPT_FILE_CHARS, cache_path,
+                    read_json_gz, semver_key)
 
 DAY = 86400.0
+KNOWN_BY = 3600.0  # facts are taken as of release + 1 hour (rule_scorer.ts scores at the same time)
 
 
 def ts(s: str) -> float:
@@ -89,6 +90,28 @@ def dir_entries(c: dict):
     return len(dirs)
 
 
+def young_dependencies(added: list[str], first_published: dict, pub: float) -> tuple[int, int]:
+    """(young, unknown) among the added dependencies.
+
+    A dependency's first-publish time is looked up in today's registry (fetch.py). Only a date that today's registry
+    still shows *and* that is no later than the scoring time (release + 1 hour, the time rule_scorer.ts scores at: a
+    monorepo often publishes a new sibling seconds after the release that depends on it) is a publish-time fact. A
+    dependency that cannot be resolved today (unpublished, or removed as malware), or whose earliest surviving version
+    is later than that (npm's `0.0.1-security` placeholder, or the name re-registered later), has an UNKNOWN
+    first-publish date: it is
+    neither young nor old. Counting it as young would leak hindsight, because malicious dependencies are exactly the
+    ones npm removes later. Young = known first publish within 30 days before the release.
+    """
+    young = unknown = 0
+    for d in added:
+        fp = first_published.get(d)
+        if fp is None or ts(fp) > pub + KNOWN_BY:
+            unknown += 1
+        elif ts(fp) > pub - 30 * DAY:
+            young += 1
+    return young, unknown
+
+
 def clip(s: str, n: int) -> str:
     s = s or ""
     return s if len(s) <= n else s[:n] + f"…[+{len(s) - n} chars]"
@@ -116,11 +139,7 @@ def row_from_record(r: dict) -> tuple[dict, dict] | None:
     deps = set((doc.get("dependencies") or {}) if isinstance(doc.get("dependencies"), dict) else {})
     pdeps = set((pdoc.get("dependencies") or {}) if pdoc and isinstance(pdoc.get("dependencies"), dict) else {})
     added = sorted(deps - pdeps) if pdoc else sorted(deps)
-    young = 0
-    for d in added:
-        fp = (r.get("added_deps_first_published") or {}).get(d)
-        if fp is None or ts(fp) > pub - 30 * DAY:
-            young += 1
+    young, unknown_fp = young_dependencies(added, r.get("added_deps_first_published") or {}, pub)
     maj = semver_key(v)[0] if semver_key(v)[0] < 10**9 else math.nan
     prior_majors = [semver_key(x)[0] for _, x in hist if semver_key(x)[0] < 10**9]
     paths, ppaths = set(c.get("paths") or []), set((pc or {}).get("paths") or [])
@@ -255,6 +274,9 @@ def row_from_record(r: dict) -> tuple[dict, dict] | None:
         # directory entries (and the root `package/`) into the tarball, and the registry's fileCount then counts
         # them; the leakage check needs this to compare like with like.
         "content_dir_entries": dir_entries(c),
+        # Added dependencies whose first-publish date is unknown today (metadata for the leakage check, not a
+        # feature: whether a dependency still resolves today is hindsight).
+        "deps_added_unknown_first_publish": unknown_fp,
     }
     return {**meta, **f}, {"meta": meta, "state": state}
 
@@ -262,7 +284,15 @@ def row_from_record(r: dict) -> tuple[dict, dict] | None:
 def main() -> None:
     rows, states = [], []
     drops = collections.Counter()
-    for p in sorted((CACHE / "records").glob("*.json.gz")):
+    # Only the releases listed in the candidate files (the cache may hold records of other runs).
+    keys = sorted({f"{c['label']}:{c['name']}@{c['version']}" for f in ("positive_candidates.jsonl", "negative_candidates.jsonl")
+                   for c in map(json.loads, open(DATA / f))})
+    not_fetched = 0
+    for key in keys:
+        p = cache_path("records", key)
+        if not p.exists():
+            not_fetched += 1
+            continue
         r = read_json_gz(p)
         if r.get("drop"):
             drops[(r["label"], r["drop"])] += 1
@@ -273,7 +303,8 @@ def main() -> None:
     cols = sorted({k for r in rows for k in r})
     meta_cols = ["key", "name", "version", "label", "category", "family", "wave", "family_basis", "published",
                  "publisher", "content_source", "packument_source", "neg_pool", "label_sources",
-                 "registry_dist_files", "registry_dist_bytes", "content_dir_entries"]
+                 "registry_dist_files", "registry_dist_bytes", "content_dir_entries",
+                 "deps_added_unknown_first_publish"]
     feat_cols = sorted(k for k in cols if k not in meta_cols)
     for r in rows:
         for k in feat_cols:
@@ -290,6 +321,7 @@ def main() -> None:
             fh.write(json.dumps(s, ensure_ascii=False, sort_keys=False) + "\n")
     summ = {"rows": len(rows), "positives": sum(r["label"] for r in rows), "negatives": sum(1 - r["label"] for r in rows),
             "dropped": {f"{'pos' if k[0] else 'neg'}:{k[1]}": n for k, n in sorted(drops.items())},
+            "candidates": len(keys), "candidates_not_fetched": not_fetched,
             "feature_columns": feat_cols}
     (DATA / "build.summary.json").write_text(json.dumps(summ, indent=1) + "\n")
     print(json.dumps({k: v for k, v in summ.items() if k != "feature_columns"}, indent=1))

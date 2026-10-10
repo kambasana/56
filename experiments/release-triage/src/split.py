@@ -8,6 +8,8 @@
      "GitHub Actions" identity: their account key is the package itself.
   3. Family cap: in every split no single incident family is more than CAP of the positives; the largest family
      is subsampled (seeded) until this holds.
+  4. Ratio floor: every split keeps at least MIN_NEG_PER_POS benign releases per malicious one; while it does not,
+     the largest family gives up one release (same seeded order), and the family cap is re-checked.
 Then writes data/{train,calib,test}.jsonl (laya-train format), data/features.csv.gz with a `split` column,
 data/questions.json and data/split.summary.json.
 
@@ -28,6 +30,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))  # -I drops the
 from common import DATA
 
 CAP = 0.25
+MIN_NEG_PER_POS = 5  # ratio floor per split (2026-10-10 deviation in PREREGISTRATION.md)
 SEED = 20261009
 
 QUESTIONS = {
@@ -107,7 +110,7 @@ def main() -> None:
                 dropped_group[("pos" if r["label"] == "1" else "neg", window(r))] += 1
 
     # Family cap per split.
-    final, dropped_cap = [], collections.Counter()
+    final, dropped_cap, dropped_ratio = [], collections.Counter(), collections.Counter()
     for sp in ("train", "calib", "test"):
         rs = [r for r in kept if r["split"] == sp]
         pos = [r for r in rs if r["label"] == "1"]
@@ -120,13 +123,21 @@ def main() -> None:
         while True:
             tot = sum(len(v) for v in by.values())
             big = max(by, key=lambda f: (len(by[f]), f)) if by else None
-            if big is None or len(by[big]) <= CAP * tot:
+            if big is None:
                 break
-            others = tot - len(by[big])
-            keep = max(int(others * CAP / (1 - CAP)), 0)
-            if keep == len(by[big]):
-                keep -= 1
-            dropped_cap[(sp, big)] += len(by[big]) - keep
+            if len(by[big]) > CAP * tot:
+                others = tot - len(by[big])
+                keep = max(int(others * CAP / (1 - CAP)), 0)
+                if keep == len(by[big]):
+                    keep -= 1
+                dropped_cap[(sp, big)] += len(by[big]) - keep
+            elif MIN_NEG_PER_POS * tot > len(negs):
+                # Ratio floor (2026-10-10 deviation): at least MIN_NEG_PER_POS benign per malicious release in every
+                # split. The largest family gives up one release at a time (same seeded order as the cap).
+                keep = len(by[big]) - 1
+                dropped_ratio[(sp, big)] += 1
+            else:
+                break
             by[big] = by[big][:keep]
             if keep == 0:
                 del by[big]
@@ -173,6 +184,8 @@ def main() -> None:
             "rows_in": len(rows), "rows_out": len(final),
             "dropped_for_grouping": {f"{k[0]}:{k[1]}": v for k, v in sorted(dropped_group.items())},
             "dropped_for_family_cap": {f"{k[0]}:{k[1]}": v for k, v in sorted(dropped_cap.items())},
+            "dropped_for_ratio_floor": {f"{k[0]}:{k[1]}": v for k, v in sorted(dropped_ratio.items())},
+            "min_negatives_per_positive": MIN_NEG_PER_POS,
             "largest_component_rows": max(comp_sizes), "components": len(comp_sizes),
             "script_intent_questions": script_q, "splits": {}}
     for sp in ("train", "calib", "test"):
@@ -183,6 +196,9 @@ def main() -> None:
             "rows": len(rs), "positives": len(pos), "negatives": len(rs) - len(pos),
             "published_range": [min(r["published"] for r in rs)[:10], max(r["published"] for r in rs)[:10]] if rs else None,
             "families": len(fam), "max_family_share": round(max(fam.values()) / len(pos), 3) if pos else None,
+            "families_with_5_positives": sum(1 for n in fam.values() if n >= 5),
+            "families_with_50_positives": sum(1 for n in fam.values() if n >= 50),
+            "negatives_per_positive": round((len(rs) - len(pos)) / len(pos), 2) if pos else None,
             "positives_per_family": fam,
             "positives_per_category": dict(collections.Counter(r["category"] for r in pos)),
             "negatives_first_release": sum(1 for r in rs if r["label"] == "0" and r["is_first_release"] == "1"),

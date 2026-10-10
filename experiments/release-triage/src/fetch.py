@@ -27,8 +27,9 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))  # -I drops the script dir
-from common import (DD_COMMIT, DD_REPO, as_of, cache_path, contents_from_dd_zip, http_get, read_json_gz,
-                    registry_contents, registry_packument, write_json_gz)
+from common import (BIG_PACKUMENT_BYTES, DD_COMMIT, DD_REPO, MAX_ARCHIVE_BYTES, REGISTRY, TooLarge, _BIG_PACKUMENT,
+                    as_of, cache_path, contents_from_dd_zip, enc_name, http_get, read_json_gz, registry_contents,
+                    registry_packument, write_json_gz)
 
 lock = threading.Lock()
 
@@ -69,11 +70,29 @@ def prev_release(asof: dict, version: str) -> str | None:
 
 
 def dep_first_published(name: str) -> str | None:
-    p = registry_packument(name)
-    if not p:
-        return None
-    ts = [v for k, v in (p.get("time") or {}).items() if k not in ("created", "modified")]
-    return min(ts) if ts else (p.get("time") or {}).get("created")
+    """Earliest publish time today's registry shows for a dependency (None: not resolvable). Only that one timestamp
+    is cached (cache/firstpub), so a big dependency such as typescript is downloaded and parsed once."""
+    cp = cache_path("firstpub", name)
+    if cp.exists():
+        return read_json_gz(cp)["first"]
+    pc = cache_path("packuments", name)
+    if pc.exists():
+        p = read_json_gz(pc)
+    else:
+        url = f"{REGISTRY}/{enc_name(name)}"
+        try:
+            raw = http_get(url, max_bytes=BIG_PACKUMENT_BYTES)
+        except TooLarge:
+            with _BIG_PACKUMENT:
+                raw = http_get(url, timeout=300)
+        p = json.loads(raw) if raw is not None else None
+        del raw
+    first = None
+    if p:
+        ts = [v for k, v in (p.get("time") or {}).items() if k not in ("created", "modified") and isinstance(v, str)]
+        first = min(ts) if ts else (p.get("time") or {}).get("created")
+    write_json_gz(cp, {"first": first})
+    return first
 
 
 def build(c: dict) -> dict:
@@ -81,11 +100,14 @@ def build(c: dict) -> dict:
     out = {k: c[k] for k in c}
     out["key"] = key
     if c["content_source"] == "datadog-archive":
-        raw = http_get(dd_url(c["dd_path"]), timeout=300)
-        if raw is None:
-            return {**out, "drop": "archive_missing"}
-        out["archive_sha256"] = hashlib.sha256(raw).hexdigest()
-        contents, pack = contents_from_dd_zip(raw)
+        try:
+            raw = http_get(dd_url(c["dd_path"]), timeout=300, max_bytes=MAX_ARCHIVE_BYTES)
+            if raw is None:
+                return {**out, "drop": "archive_missing"}
+            out["archive_sha256"] = hashlib.sha256(raw).hexdigest()
+            contents, pack = contents_from_dd_zip(raw)
+        except TooLarge:
+            return {**out, "drop": "archive_too_large"}
         del raw
         contents["source"] = "datadog-archive"
         out["packument_source"] = "datadog-captured"
@@ -150,13 +172,14 @@ def main() -> None:
         r = read_json_gz(cp)  # cached: redo only the previous-release part if the rule changed
         if "asof" in r and "contents" in r and r.get("prev_version", "-") != prev_release(r["asof"], r["version"]):
             todo.append((r, cp))
+    todo.sort(key=lambda x: (x[0]["name"], x[0]["version"]))  # one package's releases together: its packument is parsed once
     print(f"{len(cands)} candidates, {len(todo)} to fetch", flush=True)
     stats = collections.Counter()
     done = 0
     with ThreadPoolExecutor(a.workers) as ex:
         futs = {ex.submit(with_prev if "asof" in c else build, c): (c, cp) for c, cp in todo}
         for f in as_completed(futs):
-            c, cp = futs[f]
+            c, cp = futs.pop(f)  # drop the future so its record can be freed (records hold whole packuments)
             try:
                 rec = f.result()
             except Exception as e:
@@ -165,6 +188,7 @@ def main() -> None:
                 continue
             write_json_gz(cp, rec)
             stats[rec.get("drop", "ok")] += 1
+            del rec, f
             done += 1
             if done % 50 == 0:
                 print(done, dict(stats), flush=True)

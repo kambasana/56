@@ -11,6 +11,8 @@ Checks (all on data/features.csv.gz and data/{train,calib,test}.jsonl, after spl
   3. State fields: every top-level and second-level key of the Laya state is present (non-null) at similar rates
      in both classes, again within non-first releases for previous-release fields.
   4. No package or account names in states: the release's package name (>= 5 chars) never appears in its state.
+  2b. Dependency ages: dependencies whose first-publish date is unknown today are never counted as young (FAIL
+     otherwise); the share of rows with such a dependency is reported per class.
   5. Single-feature AUC on train, reported; any feature with AUC > 0.97 is flagged for a human look (not a FAIL:
      a strong feature is not leakage by itself).
 Writes results/leakage_check.json and exits 1 on any FAIL.
@@ -31,7 +33,7 @@ from common import DATA, RESULTS
 MAX_GAP = 0.10
 META = {"key", "name", "version", "label", "category", "family", "wave", "family_basis", "published", "publisher",
         "content_source", "packument_source", "neg_pool", "label_sources", "registry_dist_files",
-        "registry_dist_bytes", "content_dir_entries", "split"}
+        "registry_dist_bytes", "content_dir_entries", "deps_added_unknown_first_publish", "split"}
 
 
 def auc(pos: list[float], neg: list[float]) -> float:
@@ -101,6 +103,25 @@ def main() -> int:
         rs = [r for r in rows if r["label"] == lab]
         cov[lab] = sum(1 for r in rs if r["registry_dist_files"] != "") / len(rs)
     out["content_parity"]["dist_fileCount_coverage"] = {"pos": round(cov["1"], 4), "neg": round(cov["0"], 4)}
+
+    # 2b. Hindsight in dependency ages: a dependency today's registry cannot resolve (or whose earliest surviving
+    # version is later than the release + 1 h) has an unknown first-publish date and must not count as young.
+    # Reported, per class: rows with such a dependency, and whether any of them still counts one as young (FAIL).
+    unk = {}
+    for lab in ("1", "0"):
+        rs = [r for r in rows if r["label"] == lab]
+        n_unk = sum(1 for r in rs if r.get("deps_added_unknown_first_publish", "0") not in ("", "0"))
+        unk[f"label={lab}"] = {"rows": len(rs), "rows_with_unknown_dependency_age": n_unk,
+                               "share": round(n_unk / len(rs), 4) if rs else None}
+    out["dependency_age_unknown"] = unk
+    for r in rows:
+        try:
+            added = float(r["deps_added"]) if r["deps_added"] != "" else float(r["deps_count"])
+            if float(r["young_deps_added"]) + float(r.get("deps_added_unknown_first_publish") or 0) > added:
+                fails.append(f"young_deps_added counts dependencies of unknown age: {r['key']}")
+                break
+        except (KeyError, ValueError):
+            continue
 
     # 3 + 4. State fields and names.
     cnt = collections.defaultdict(lambda: collections.Counter())
