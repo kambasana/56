@@ -84,6 +84,7 @@ else:
     GPU_NAME, GPU_GB, BF16 = "cpu", 0.0, False
 # Effective batch 64 either way (PREREGISTRATION.md): 8 x 8 on >= 30 GB, else 4 x 16.
 MICRO, ACCUM = (8, 8) if GPU_GB >= 30 else (4, 16)
+SCORE_BATCH = 32 if GPU_GB >= 30 or DEVICE == "cpu" else 16   # scoring only; latency is measured at batch 32
 print(f"device {DEVICE} {GPU_NAME} {GPU_GB:.1f} GB bf16={BF16} micro-batch {MICRO} x accum {ACCUM}")
 if DEVICE == "cuda" and not BF16:
     print("WARNING: this GPU has no bf16 (e.g. T4). Laya's checkpoints use bf16 autocast; prefer an A100 or L4.")'''
@@ -551,9 +552,9 @@ if SHIP is not None:
     states = [r["state"] for r in ROWS["test"]][:256]
     q = {"triage": TRIAGE}
     t0 = time.time(); ag = laya.load(str(SHIP), device=DEVICE); LAT["gpu_load_seconds"] = time.time() - t0
-    ag.predict_batch(states[:SCORE_BATCH], q, batch_size=SCORE_BATCH)
+    ag.predict_batch(states[:32], q, batch_size=32)
     if DEVICE == "cuda": torch.cuda.synchronize()
-    t0 = time.time(); ag.predict_batch(states, q, batch_size=SCORE_BATCH)
+    t0 = time.time(); ag.predict_batch(states, q, batch_size=32)
     if DEVICE == "cuda": torch.cuda.synchronize()
     LAT["gpu_ms_per_release_batch32"] = 1000 * (time.time() - t0) / len(states)
     del ag; gc_collect()

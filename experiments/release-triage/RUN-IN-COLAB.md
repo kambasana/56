@@ -19,7 +19,12 @@ not need any password or API key. A Hugging Face token is optional.
    - Go to *Runtime → Run all*.
    - When asked, allow access to Google Drive. Progress, results and the chosen checkpoint are saved in
      `MyDrive/laya-release-triage/`.
-   - The run fine-tunes eight models and takes several hours.
+   - The run fine-tunes eight models: two positive controls and six real runs. Each one trains for 13 epochs
+     over 2,996 training items (from `laya-train --dry-run` on this dataset), which is about 39,000 item-passes
+     per run and 312,000 in total.
+   - Laya's docs report about 4–5 hours for about 120,000 item-passes on two T4s. An A100 is faster, so expect
+     very roughly 3–6 hours. This is an estimate, not a measurement, and an L4 takes longer.
+   - The run uses Colab compute units for that whole time.
    - If Colab disconnects, reconnect, pick the same GPU and do *Run all* again. Finished runs are skipped.
 5. **Send back the results.** The last cell prints a summary table and a `VERDICT` line. Download
    `MyDrive/laya-release-triage/results.zip` and send it back. Sending the `results` folder works too.
