@@ -425,3 +425,22 @@ the 25 % family cap, the ratio floor, the questions, the methods, the threshold 
 - Truncation at 1024/256: `triage` 108 of 16,986 (0.6 %), `script_intent` 72 of 1,781 (4.0 %).
 - Test families with ≥ 50 positives: dependency-confusion 257, unattributed 237, data-exfiltration 200, TeamPCP 175,
   Mastra 119, typosquat 62, crypto-theft 53.
+
+## Execution plumbing 2026-10-10 (no rule changed), before any Laya run
+
+The notebook gained resume, retry and keep-going plumbing so a Colab disconnect does not lose finished work. None of
+it changes a checkpoint, run, dataset, threshold, metric, selection step or pass condition (P0–P6):
+
+- A ledger (`state.json`) on Drive records each run's status, attempts and errors, and the sha256 of its result
+  files; a finished run is skipped after its files verify. Training runs in a detached process with a watchdog.
+- Runs execute in a fixed priority order (positive controls, then seed 0 of both bases, then seeds 1–2, then the
+  zero-shot references). Each run is the same pre-registered run; only the order changed.
+- laya-train 0.4.1 cannot resume from `checkpoint_latest/` (weights only; no optimizer, scheduler or RNG state), so
+  an interrupted run restarts from its base checkpoint with the same seed and flags.
+- On CUDA out-of-memory a run is retried with half the micro-batch and double the accumulation, so the effective
+  batch stays 64 and the optimizer-update count is unchanged (checked, and logged in `train_<run>.json`). This
+  extends "8 × 8, or 4 × 16" above with 2 × 32 and 1 × 64, used only after an OOM.
+- Precision is laya's own and is recorded per run: fp16 autocast with a gradient scaler for training on any CUDA
+  GPU; bf16 (compute capability ≥ 8) or fp16 autocast for scoring.
+- A run that still fails after 3 attempts is reported as not finished. The verdict code is unchanged and treats a
+  missing run as it did before.

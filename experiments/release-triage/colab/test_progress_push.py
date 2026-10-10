@@ -117,17 +117,29 @@ class FakeGitHub:
         raise err(404, f"unhandled {m} {path}")
 
 
-def load_cell():
-    ns = {"REPO": "kambasana/56", "SUBDIR": "experiments/release-triage", "SMOKE": False, "time": time, "json": json,
-          "hashlib": hashlib, "pathlib": pathlib, "urllib": urllib}
-    exec(compile(cell_source(), "progress_cell", "exec"), ns)  # no google.colab here: GH_TOKEN reads as absent
-    assert ns["PROGRESS"].pusher is None, "without google.colab the cell must run with pushing off"
+def load_cell(env_token=None):
+    import os
+    os.environ.pop("GH_TOKEN", None)   # never pick up a real token from the test machine
+    if env_token:
+        os.environ["GH_TOKEN"] = env_token
+    try:
+        ns = {"REPO": "kambasana/56", "SUBDIR": "experiments/release-triage", "SMOKE": False, "time": time, "json": json,
+              "hashlib": hashlib, "pathlib": pathlib, "urllib": urllib}
+        exec(compile(cell_source(), "progress_cell", "exec"), ns)  # no google.colab here: the env var is used
+    finally:
+        os.environ.pop("GH_TOKEN", None)
+    if env_token:
+        assert ns["PROGRESS"].pusher is not None and env_token not in repr(ns["PROGRESS"].pusher), \
+            "off Colab, the GH_TOKEN environment variable enables pushing"
+    else:
+        assert ns["PROGRESS"].pusher is None, "without google.colab or GH_TOKEN the cell must run with pushing off"
     return ns
 
 
 def main() -> None:
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
+        load_cell(env_token=TOKEN)   # custom VM / local Jupyter path: token from the environment
         ns = load_cell()
         gh = FakeGitHub(TOKEN)
         pusher = ns["GitHubPusher"](TOKEN, "kambasana/56", "results/laya-colab", "research/laya-proper", "", opener=gh)
