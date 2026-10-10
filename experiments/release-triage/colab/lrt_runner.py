@@ -385,6 +385,10 @@ RUNNER_CELL = r'''# Execution plumbing only: no experiment rule, threshold, metr
 #     updated in place (runs, status, epoch, ETA, GPU use, last Drive sync); logs stay in files.
 #   * finish(): final sync, sha256 verification on Drive, last GitHub push, Drive flush + unmount, and only then
 #     (if AUTO_RELEASE_RUNTIME) runtime.unassign(). Nothing is released if any of these failed.
+#   * Remote control (owner-approved 2026-10-10; ALLOW_REMOTE_CONTROL in Settings): lrt_runner.ControlChannel reads an
+#     allow-list of commands from GitHub; this orchestrator applies the run-level ones at safe points only: pause /
+#     resume between runs, stop_now (kill the training process, mark the run "interrupted", hold until resume),
+#     retry / skip / rescore one run. None of them changes a rule, a setting, the data or what a run computes.
 # laya 0.4.1 cannot resume a run from checkpoint_latest/ (weights only, no optimizer/scheduler/RNG state, and no
 # resume option in laya-train), so an interrupted run restarts from its base checkpoint; finished runs are kept.
 import os, re, sys, json, time, math, html, shutil, signal, socket, hashlib, pathlib, datetime, threading, traceback, subprocess, zipfile
@@ -699,6 +703,13 @@ class RunError(Exception):
         self.kind, self.detail = kind, detail
 
 
+class ControlStop(BaseException):
+    """A remote stop_now command (not an error: no attempt is used, nothing is recorded as failed)."""
+    def __init__(self, cmd):
+        super().__init__("stopped by a remote-control command")
+        self.cmd = cmd
+
+
 # ---- ledger ----------------------------------------------------------------------------------------------------
 class Ledger:
     """state.json: per-run status, attempts, errors and the sha256 of every stage output (paths relative to root)."""
@@ -961,6 +972,7 @@ class Orchestrator:
         self._last_line = ""
         self.on_status = globals().get("ORCH_STATUS_HOOK")   # control panel (display only): on_status(orch, idle_min)
         self.on_line = globals().get("ORCH_LINE_HOOK")       # control panel (display only): on_line(run_id, line)
+        self.control = globals().get("ORCH_CONTROL")         # remote control (allow-list; None when off)
 
     # -- Drive sync and the status table
     def _sync(self, full=True):
@@ -1161,6 +1173,11 @@ class Orchestrator:
             st, rc = job.status()
             if st == "exited":
                 return rc, "\n".join(tail + ([buf] if buf else []))
+            stop = self._stop_requested()
+            if stop is not None:   # remote stop_now: end the training process cleanly, nothing is recorded as failed
+                job.kill()
+                job.clear()
+                raise ControlStop(stop)
             if st == "lost":
                 raise RunError("killed", "the training process disappeared without an exit code", "\n".join(tail[-40:]))
             cpu = job.cpu_seconds()
@@ -1179,14 +1196,92 @@ class Orchestrator:
             j.clear()
         self._jobs_to_clear = []
 
+    # -- remote control (applied only here, at safe points; see lrt_runner.ControlChannel)
+    def _stop_requested(self):
+        c = self.control
+        return c.stop_requested() if c is not None else None
+
+    def control_apply(self, c, queue, by_id):
+        """Apply one run-level command (retry / skip / rescore) between runs. Returns (ok, note or error)."""
+        cmd, rid, L = c["cmd"], c.get("run"), self.ledger
+        if rid not in by_id:
+            return False, f"unknown run {rid!r}: not in this run plan {list(by_id)}"
+        if rid == self.current.get("run_id"):
+            return False, f"{rid} is running now; send stop_now first"
+        st = L.get(rid)["status"]
+        if cmd == "retry":
+            if st not in ("failed", "interrupted", "skipped"):
+                return False, f"{rid} is {st}; only a failed, interrupted or skipped run can be retried"
+            L.update(rid, status="pending", attempts=0)
+            if rid not in queue:
+                queue.append(rid)
+            return True, f"{rid} queued again with {self.max_attempts} attempts"
+        if cmd == "skip":
+            if st not in ("pending", "failed", "interrupted"):
+                return False, f"{rid} is {st}; only a pending, failed or interrupted run can be skipped"
+            L.update(rid, status="skipped", skipped_by_command=c["id"])
+            return True, f"{rid} will not be run (recorded as skipped in state.json; retry {rid} undoes this)"
+        if cmd == "rescore":
+            if st != "done":
+                return False, f"{rid} is {st}; only a finished run can be rescored"
+            names = [s.name for s in by_id[rid].stages]
+            if "train" in names:
+                ok = L.stage_ok(rid, "train", need_checkpoint=True)[0]
+                ck = (L.get(rid)["stages"].get("train") or {}).get("checkpoint")
+                if not ok and ck and self.sync is not None:
+                    self.sync.restore_tree(ck["path"])
+                    ok = L.stage_ok(rid, "train", need_checkpoint=True)[0]
+                if not ok:
+                    return False, (f"{rid}: its trained checkpoint is not kept (or does not verify), so rescoring "
+                                   "would mean re-training; rejected")
+            for n in names:
+                if n != "train":
+                    L.drop_stage(rid, n)
+            L.update(rid, status="pending", attempts=0)
+            if rid not in queue:
+                queue.append(rid)
+            return True, f"{rid}: {', '.join(n for n in names if n != 'train')} queued again on the same checkpoint"
+        return False, f"{cmd} is not a run-level command"
+
+    def _control_point(self, queue, by_id):
+        """Between runs: apply queued run-level commands, and hold while paused (only if a run is still to come)."""
+        c = self.control
+        if c is None:
+            return
+        c.apply_pending(self, queue, by_id)
+        stop = self._stop_requested()
+        if stop is not None:   # nothing is running: stop_now just holds before the next run
+            c.stopped(stop, None)
+        while c.paused and queue:
+            self.current = {}
+            self.show()
+            self.sleep(self.poll_s)
+            c.apply_pending(self, queue, by_id)
+            stop = self._stop_requested()
+            if stop is not None:
+                c.stopped(stop, None)
+
     # -- runs
     def run_all(self, specs, retry_failed=False):
         self.plan = [s.run_id for s in specs]
+        by_id = {s.run_id: s for s in specs}
+        queue = list(self.plan)
+        if self.control is not None:
+            self.control.training_started()
         self.show()
-        for spec in specs:
-            self.run_one(spec, retry_failed=retry_failed)
-            self.show()
-        return self.report([s.run_id for s in specs])
+        try:
+            while True:
+                self._control_point(queue, by_id)
+                if not queue:
+                    break
+                rid = queue.pop(0)
+                if self.run_one(by_id[rid], retry_failed=retry_failed) == "interrupted":
+                    queue.insert(0, rid)   # stopped by stop_now: restarts after resume
+                self.show()
+        finally:
+            if self.control is not None:
+                self.control.training_finished()
+        return self.report(self.plan)
 
     def run_one(self, spec, retry_failed=False):
         try:
@@ -1197,6 +1292,14 @@ class Orchestrator:
     def _run_one(self, spec, retry_failed=False):
         L, P, rid = self.ledger, self.progress, spec.run_id
         r = L.get(rid)
+        if r["status"] == "skipped":
+            P.log("run_skipped_by_command", run_id=rid, command_id=r.get("skipped_by_command"))
+            print(f"{rid}: skipped by a remote-control command (retry {rid} undoes this)")
+            return "skipped"
+        if r["status"] == "interrupted":   # stopped by stop_now earlier: restarts from its base checkpoint
+            L.update(rid, status="pending")
+            P.log("run_restart_after_stop", run_id=rid)
+            r = L.get(rid)
         if r["status"] == "done":
             bad = [(s.name, why) for s in spec.stages for ok, why in [L.stage_ok(rid, s.name, need_checkpoint=False)] if not ok]
             if not bad:
@@ -1238,6 +1341,9 @@ class Orchestrator:
                 for stage in spec.stages:
                     if L.stage_ok(rid, stage.name, need_checkpoint=True)[0]:
                         continue
+                    stop = self._stop_requested()
+                    if stop is not None:
+                        raise ControlStop(stop)
                     self.current["phase"] = stage.name
                     out = stage.fn(self, rid) or {}
                     L.record_stage(rid, stage.name, out.get("files", ()), out.get("checkpoint"), out.get("info"))
@@ -1254,6 +1360,19 @@ class Orchestrator:
             except KeyboardInterrupt:
                 P.log("cell_interrupted", run_id=rid, note="a detached training process keeps running; Run all re-attaches")
                 raise
+            except ControlStop as cs:   # remote stop_now: not a failure, the attempt is not counted
+                self._clear_jobs()
+                r = L.get(rid)
+                L.update(rid, status="interrupted", attempts=max(0, r["attempts"] - 1),
+                         interruptions=r["interruptions"] + 1)
+                self.current = {}
+                P.log("run_stopped", run_id=rid, run_stage=getattr(stage, "name", None), command_id=cs.cmd.get("id"),
+                      note="stopped by a remote-control command; restarts from its base checkpoint after resume")
+                print(f"{rid}: stopped by a remote-control command (stop_now); marked interrupted, held until resume")
+                if self.control is not None:
+                    self.control.stopped(cs.cmd, rid)
+                P.push()
+                return "interrupted"
             except (Exception, SystemExit) as e:
                 tb = traceback.format_exc()
                 msg = f"{type(e).__name__}: {e}"
@@ -2302,9 +2421,11 @@ FINISH_RESULT = finish(SYNC, PROGRESS, AUTO_RELEASE_RUNTIME, unmount=_unmount, u
 # Control panel and runner. Presentation and execution plumbing only: everything below reads the stages' state and
 # shows it; nothing here decides what is trained, scored, or how the verdict is reached.
 # =====================================================================================================================
+import base64
 import collections
 import contextlib
 import datetime
+import hashlib
 import html
 import io
 import json
@@ -2318,6 +2439,7 @@ import sys
 import threading
 import time
 import traceback
+import urllib.parse
 
 # The stepper: ten steps, each made of one or more stages (the former notebook cells), executed in this order.
 STEPS = [("setup", "Setup"), ("gpu", "GPU"), ("storage", "Storage"), ("install", "Install"), ("data", "Data"),
@@ -2364,9 +2486,10 @@ LEVEL_COLOUR = {"ok": "#1e8e3e", "warn": "#e37400", "error": "#d93025", "off": "
 LEVEL_WORD = {"ok": "OK", "warn": "attention", "error": "problem", "off": "off", "active": "working"}
 STEP_ICON = {"done": "✓", "active": "▶", "pending": "○", "failed": "✗", "stopped": "■"}
 STEP_LEVEL = {"done": "ok", "active": "active", "pending": "off", "failed": "error", "stopped": "warn"}
-RUN_ICON = {"done": "✓", "running": "▶", "pending": "○", "failed": "✗", "retrying": "↻", "interrupted": "■"}
+RUN_ICON = {"done": "✓", "running": "▶", "pending": "○", "failed": "✗", "retrying": "↻", "interrupted": "■",
+            "skipped": "»"}
 RUN_LEVEL = {"done": "ok", "running": "active", "pending": "off", "failed": "error", "retrying": "warn",
-             "interrupted": "warn"}
+             "interrupted": "warn", "skipped": "off"}
 NOTICE_PAT = re.compile(r"WARNING|UNDERPOWERED|NOT releasing|Drive sync problem|GitHub push disabled|"
                         r"recommended: Runtime|Google Drive not mounted|NOT durable", re.I)
 
@@ -2513,6 +2636,7 @@ class DashState:
         self.now = "Starting"
         self.header = {}
         self.indicators = {"drive": None, "github": None}
+        self.control = None   # ControlChannel.status() once the Storage step has set it up
         self.heartbeat_every = 120
         self.heartbeat_running = False
         self.last_heartbeat = None
@@ -2684,6 +2808,19 @@ class DashState:
                     self.current = {}
                 note = "" if ev == "run_failed" else " (earlier; tick RETRY_FAILED in Settings to retry)"
                 self.add_error(f"run:{rid}", f"Run {rid} failed{note}", rec.get("last_error") or "", where_run(rid))
+            elif ev == "run_stopped" and rid:
+                row = self._run(rid)
+                row.update(status="interrupted", note="stopped by a remote command")
+                if self.current.get("run_id") == rid:
+                    self.current = {}
+                self.add_notice(f"stop:{rid}:{rec.get('command_id')}", f"{rid}: stopped by remote command "
+                                f"{rec.get('command_id')} (stop_now); restarts from its base checkpoint after resume.")
+            elif ev == "run_skipped_by_command" and rid:
+                self._run(rid).update(status="skipped", note="skipped by a remote command")
+            elif ev == "run_restart_after_stop" and rid:
+                self._run(rid).pop("note", None)
+            elif ev == "control_ack":
+                pass   # the panel reads the channel's own status
             elif ev == "sync_error":
                 errs = rec.get("errors") or []
                 self.add_notice("sync_error", f"Drive sync problem (retried at the next sync): {errs[0] if errs else ''}"[:240])
@@ -2730,7 +2867,7 @@ class DashState:
     # -- progress and ETA
     def run_fraction(self, rid):
         r = self.runs.get(rid) or {}
-        if r.get("status") in ("done", "failed"):
+        if r.get("status") in ("done", "failed", "skipped"):
             return 1.0
         if self.current.get("run_id") != rid:
             return 0.0
@@ -2791,6 +2928,7 @@ class DashState:
                 "t": now, "elapsed_s": now - self.t0, "header": dict(self.header),
                 "drive": drive_indicator(self.indicators["drive"], now),
                 "github": github_indicator(self.indicators["github"], now), "heartbeat": hb,
+                "control": control_indicator(self.control, now), "control_text": control_text(self.control),
                 "overall_pct": round(100 * self.overall_fraction(), 1), "eta_min": self.overall_eta_min(),
                 "training_status": self.status["training"],
                 "steps": [{"key": k, "label": lab, "status": self.status[k]} for k, lab in STEPS],
@@ -2854,7 +2992,10 @@ def html_header(s):
     prec = h.get("precision") or "(recorded at the Install step)"
     smoke = (" " + badge("warn", "SMOKE: quick check, not the experiment")) if h.get("smoke") else ""
     ind = []
-    for key, name in (("drive", h.get("storage_name") or "Drive"), ("github", "GitHub"), ("heartbeat", "Heartbeat")):
+    for key, name in (("drive", h.get("storage_name") or "Drive"), ("github", "GitHub"), ("heartbeat", "Heartbeat"),
+                      ("control", "Remote control")):
+        if key not in s:
+            continue
         level, text = s[key]
         ind.append(f"<span style='margin-right:18px;white-space:nowrap'>{dot(level)}<b>{esc(name)}</b>: "
                    f"{esc(LEVEL_WORD[level])}, {esc(text)}</span>")
@@ -2895,7 +3036,9 @@ def html_stepper(s):
 
 def html_now(s):
     note = f"<div style='color:{LEVEL_COLOUR['warn']}'>{esc(s['closed_note'])}</div>" if s.get("closed_note") else ""
-    return (f"<div style='font-size:14px;margin:4px 0'><b>What's happening now:</b> {esc(s['now'])}</div>" + note)
+    ctl = (f"<div style='font-size:12.5px'>{dot(s['control'][0])}{esc(s['control_text'])}</div>"
+           if s.get("control_text") else "")
+    return (f"<div style='font-size:14px;margin:4px 0'><b>What's happening now:</b> {esc(s['now'])}</div>" + ctl + note)
 
 
 def current_text(s):
@@ -3017,11 +3160,14 @@ def text_status(s):
         "all steps done" if all(st["status"] == "done" for st in s["steps"]) else "starting")
     c = s["counts"]
     ind = " | ".join(f"{n} {LEVEL_WORD[s[k][0]]}: {s[k][1]}" for k, n in (("drive", "Drive"), ("github", "GitHub"),
-                                                                           ("heartbeat", "heartbeat")))
+                                                                           ("heartbeat", "heartbeat"),
+                                                                           ("control", "remote control")) if k in s)
     lines = [f"[{time.strftime('%H:%M:%S', time.localtime(s['t']))}] {overall_text(s)} | {step} | runs "
              f"{c.get('done', 0)} done, {c.get('failed', 0)} failed, {len(s['runs']) - c.get('done', 0) - c.get('failed', 0)} to go",
              f"  now: {s['now']}" + (f" | {current_text(s)}" if s["current"].get("run_id") else ""),
              f"  {ind}"]
+    if s.get("control_text"):
+        lines.append(f"  {s['control_text']}")
     for e in s["errors"]:
         lines.append(f"  ERROR {e['what']}: {e['message']} ({e['where']})")
     if s.get("results"):
@@ -3149,7 +3295,7 @@ class TextView:
 
     def update(self, s, force=False):
         key = (tuple(st["status"] for st in s["steps"]), tuple((r["run"], r.get("status")) for r in s["runs"]),
-               len(s["errors"]), bool(s.get("results")))
+               len(s["errors"]), bool(s.get("results")), s.get("control_text"))
         if force or key != self._key or self.clock() - self._last >= self.every_s:
             self._key, self._last = key, self.clock()
             print(text_status(s), file=self.stream, flush=True)
@@ -3385,6 +3531,18 @@ class Dashboard:
                                            "last_push_ok": getattr(P, "last_push_ok", None)}
                 st.heartbeat_running = getattr(P, "_thread", None) is not None
             st.heartbeat_every = ns.get("PUSH_EVERY_S", 120)
+            ctl = ns.get("LRT_CONTROL")
+            if ctl is not None and hasattr(ctl, "status"):
+                info = ctl.status()
+                if info != st.control:
+                    st.control = info
+                    st._touch()
+                if info["paused"] and st.status["training"] == "active" and not st.current.get("run_id"):
+                    now = ("Paused by a remote-control command, between runs: waiting for a resume command "
+                           "(no training process is running)")
+                    if st.now != now:
+                        st.now = now
+                        st._touch()
 
     def refresh(self, force=False):
         with self._render_lock:
@@ -3505,6 +3663,412 @@ def public_text(text, ns):
     return ABS_PATH_PAT.sub("[path]", text)
 
 
+# ---- remote control --------------------------------------------------------------------------------------------
+# Approved by the project owner on 2026-10-10, with exactly this scope. The notebook reads commands from two files on
+# the results branch (<prefix> = experiments/release-triage/colab-runs/<run tag>):
+#     <prefix>/control.json   and   <prefix>/control/latest.json
+# Each holds one command {"id": "...", "cmd": "...", "run": "..."} or {"commands": [...]}. Only the commands below
+# are accepted; anything else (another command, an extra field, a malformed id or run) is rejected and acknowledged
+# as rejected. Nothing here runs code, starts a shell, fetches code, or changes a rule, setting or input.
+# Every command is acknowledged once in <prefix>/control-ack.jsonl (and <run dir>/control-ack.jsonl, synced to
+# Drive): {"id", "t", "cmd", "run", "result": "applied" | "rejected", "error", "note"}; an acknowledged id is never
+# applied again. Off when ALLOW_REMOTE_CONTROL is unticked in Settings, or without a GH_TOKEN (nothing is polled).
+CONTROL_COMMANDS = {"pause": False, "resume": False, "stop_now": False, "retry": True, "skip": True, "rescore": True,
+                    "ping": False, "dump": False}   # value: whether the command names a run
+CONTROL_FIELDS = {"id", "cmd", "run", "note", "t"}
+CONTROL_ID_PAT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")
+CONTROL_RUN_PAT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+CONTROL_FILES = ("control.json", "control/latest.json")
+CONTROL_ACK = "control-ack.jsonl"
+CONTROL_MAX_BYTES = 64 * 1024
+DUMP_LOG_LINES = 500
+
+
+def _utc_now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+class ControlChannel:
+    """Polls the control files (GitHub contents API, through the progress pusher: the token goes only in its
+    Authorization header) about every poll_s seconds, validates each command against the allow-list and acknowledges
+    it. ping, dump, pause and resume are applied by the poll itself; stop_now, retry, skip and rescore are applied by
+    the orchestrator at safe points (Orchestrator._control_point, its job watch loop and stage boundaries)."""
+
+    def __init__(self, pusher, ack_path, ns=None, enabled=True, off_reason=None, poll_s=60, clock=time.time):
+        self.pusher, self.ns, self.clock, self.poll_s = pusher, ns if ns is not None else {}, clock, poll_s
+        self.enabled = bool(enabled and pusher is not None)
+        self.off_reason = off_reason or (None if self.enabled else
+                                         ("ALLOW_REMOTE_CONTROL is off in Settings" if not enabled
+                                          else "needs the GH_TOKEN secret (live progress on)"))
+        self.ack_path = pathlib.Path(ack_path) if ack_path else None
+        self.lock = threading.RLock()
+        self.acked = {}          # id -> ack record (from the local file, the branch, and this session)
+        self.pending = []        # run-level commands waiting for the orchestrator
+        self._pending_ids = set()
+        self._stop_cmd = None
+        self.paused = False
+        self.training = "pending"   # pending | active | done
+        self.last_cmd = self.last_ack = None
+        self.last_poll = self.last_poll_ok = None
+        self.poll_errors, self.last_error = 0, None
+        self.applied = collections.Counter()
+        self._remote_acks_read = False
+        self._thread, self._stop = None, threading.Event()
+        if self.ack_path is not None and self.ack_path.exists():
+            self._merge_acks(self.ack_path.read_text(errors="replace"))
+
+    def __repr__(self):
+        return f"ControlChannel(enabled={self.enabled}, paused={self.paused}, acked={len(self.acked)})"
+
+    # -- acknowledgements
+    def _merge_acks(self, text):
+        for line in text.splitlines():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(rec, dict) and isinstance(rec.get("id"), str):
+                self.acked.setdefault(rec["id"], rec)
+
+    def _ack_lines(self):
+        return "".join(json.dumps(r, sort_keys=True) + "\n" for r in sorted(self.acked.values(), key=lambda r: r["t"]))
+
+    def ack(self, c, result, error=None, note=None):
+        rec = {"id": c["id"], "t": _utc_now(), "cmd": c.get("cmd") if isinstance(c.get("cmd"), str) else None,
+               "run": c.get("run") if isinstance(c.get("run"), str) else None, "result": result,
+               "error": error, "note": note}
+        with self.lock:
+            if c["id"] in self.acked:
+                return self.acked[c["id"]]
+            self.acked[c["id"]] = rec
+            self.last_ack = rec
+            self.applied[result] += 1
+            self._pending_ids.discard(c["id"])
+            if self.ack_path is not None:
+                try:
+                    self.ack_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(self.ack_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(rec, sort_keys=True) + "\n")
+                except OSError:
+                    pass
+            if self.enabled:
+                self.pusher.put(CONTROL_ACK, self._ack_lines().encode(), f"colab control ack {rec['id']}: {result}")
+        P = self.ns.get("PROGRESS")
+        if P is not None and hasattr(P, "log"):
+            P.log("control_ack", **{k: v for k, v in rec.items() if k != "t"})
+        return rec
+
+    # -- reading the control files
+    def _get(self, rel):
+        """(status, bytes or None) of <prefix>/<rel> on the results branch."""
+        p = self.pusher
+        path = urllib.parse.quote(f"{p.prefix}/{rel}".lstrip("/"))
+        st, body = p._req("GET", f"/repos/{p.repo}/contents/{path}?ref={urllib.parse.quote(p.branch)}")
+        if st != 200 or not isinstance(body, dict):
+            return st, None
+        if body.get("size", 0) > CONTROL_MAX_BYTES or not isinstance(body.get("content"), str):
+            return 413, None
+        try:
+            return 200, base64.b64decode(body["content"])
+        except ValueError:
+            return 422, None
+
+    @staticmethod
+    def parse(raw):
+        """bytes of one control file -> list of candidate commands (dicts or other JSON values), or None if the
+        file is not JSON at all."""
+        try:
+            doc = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return None
+        if isinstance(doc, dict) and "commands" in doc and set(doc) <= {"commands", "note", "t"}:
+            doc = doc["commands"]
+        return doc if isinstance(doc, list) else [doc]
+
+    @staticmethod
+    def validate(c):
+        """(command with a usable id, error or None)."""
+        if not isinstance(c, dict):
+            h = hashlib.sha256(json.dumps(c, sort_keys=True, default=str).encode()).hexdigest()[:16]
+            return {"id": f"invalid-{h}"}, "a command must be a JSON object"
+        cid = c.get("id")
+        if not isinstance(cid, str) or not CONTROL_ID_PAT.fullmatch(cid):
+            h = hashlib.sha256(json.dumps(c, sort_keys=True, default=str).encode()).hexdigest()[:16]
+            return dict(c, id=f"invalid-{h}"), "missing or malformed id (letters, digits, . _ : -; at most 64)"
+        extra = sorted(set(c) - CONTROL_FIELDS)
+        if extra:
+            return c, f"field(s) not allowed: {extra}"
+        cmd = c.get("cmd")
+        if cmd not in CONTROL_COMMANDS:
+            return c, f"not an allowed command: {str(cmd)[:40]!r} (allowed: {', '.join(CONTROL_COMMANDS)})"
+        run = c.get("run")
+        if CONTROL_COMMANDS[cmd]:
+            if not isinstance(run, str) or not CONTROL_RUN_PAT.fullmatch(run):
+                return c, f"{cmd} needs a run id, e.g. {{\"cmd\": \"{cmd}\", \"run\": \"F-EN-s1\"}}"
+        elif run is not None:
+            return c, f"{cmd} takes no run"
+        return c, None
+
+    def poll(self, force=False):
+        """Read both control files and handle every new command. Never raises. Returns the number handled."""
+        if not self.enabled or not self.pusher.enabled:
+            return 0
+        now = self.clock()
+        with self.lock:
+            if not force and self.last_poll is not None and now - self.last_poll < self.poll_s:
+                return 0
+            self.last_poll = now
+        n, errors = 0, []
+        try:
+            if not self._remote_acks_read:   # acks written by an earlier session (other VM) also count
+                st, raw = self._get(CONTROL_ACK)
+                if st == 200 and raw is not None:
+                    with self.lock:
+                        self._merge_acks(raw.decode("utf-8", "replace"))
+                if st in (200, 404):
+                    self._remote_acks_read = True
+            for rel in CONTROL_FILES:
+                st, raw = self._get(rel)
+                if st == 404:
+                    continue
+                if st != 200 or raw is None:
+                    errors.append(f"{rel}: HTTP {st}")
+                    continue
+                cmds = self.parse(raw)
+                if cmds is None:
+                    cmds = [{"id": "invalid-" + hashlib.sha256(raw).hexdigest()[:16], "_unparsable": True}]
+                for c in cmds:
+                    n += self.handle(c)
+        except Exception as e:   # never let polling break the run; the type only (no details that could leak)
+            errors.append(type(e).__name__)
+        with self.lock:
+            if errors:
+                self.poll_errors += 1
+                self.last_error = "; ".join(errors)[:200]
+            else:
+                self.last_poll_ok, self.last_error = now, None
+        return n
+
+    def handle(self, c):
+        """One candidate command: 1 if it was new (applied, queued or rejected), 0 if already seen."""
+        if isinstance(c, dict) and c.get("_unparsable"):
+            c, err = {"id": c["id"]}, "the control file is not valid JSON"
+        else:
+            c, err = self.validate(c)
+        with self.lock:
+            if c["id"] in self.acked or c["id"] in self._pending_ids:
+                return 0
+            self.last_cmd = {"id": c["id"], "cmd": c.get("cmd") if isinstance(c.get("cmd"), str) else None,
+                             "run": c.get("run") if isinstance(c.get("run"), str) else None, "t": self.clock()}
+        if err:
+            self.ack(c, "rejected", err)
+            return 1
+        cmd = c["cmd"]
+        if cmd == "ping":
+            self.ack(c, "applied", note=self._ping())
+        elif cmd == "dump":
+            ok, note = self.dump(c)
+            self.ack(c, "applied" if ok else "rejected", None if ok else note, note if ok else None)
+        elif self.training == "done":
+            self.ack(c, "rejected", "the Training step has finished; run-level commands no longer apply")
+        elif cmd == "pause":
+            with self.lock:
+                self.paused = True
+            self.ack(c, "applied", note="holds before the next run starts (the current run, if any, finishes first)")
+        elif cmd == "resume":
+            with self.lock:
+                was = self.paused
+                self.paused = False
+            self.ack(c, "applied", note="resumed" if was else "was not paused")
+        elif cmd == "stop_now":
+            with self.lock:
+                dup = self._stop_cmd is not None
+                if not dup:
+                    self._stop_cmd = c
+                    self._pending_ids.add(c["id"])
+            if dup:
+                self.ack(c, "rejected", "a stop_now is already waiting to take effect")
+        else:
+            with self.lock:
+                self.pending.append(c)
+                self._pending_ids.add(c["id"])
+        return 1
+
+    # -- the orchestrator's side (main thread)
+    def stop_requested(self):
+        with self.lock:
+            return self._stop_cmd
+
+    def stopped(self, c, rid):
+        """stop_now has taken effect (rid: the run that was stopped, or None if nothing was running)."""
+        with self.lock:
+            self._stop_cmd = None
+            self.paused = True
+        self.ack(c, "applied", note=(f"{rid} stopped and marked interrupted; it restarts from its base checkpoint "
+                                     "after resume" if rid else "no run was in progress") +
+                                    "; paused until a resume command (or Run all)")
+
+    def apply_pending(self, orch, queue, by_id):
+        with self.lock:
+            todo, self.pending = self.pending, []
+        for c in todo:
+            try:
+                ok, msg = orch.control_apply(c, queue, by_id)
+            except Exception as e:
+                ok, msg = False, f"could not be applied ({type(e).__name__})"
+            self.ack(c, "applied" if ok else "rejected", None if ok else msg, msg if ok else None)
+
+    def training_started(self):
+        with self.lock:
+            self.training = "active"
+
+    def training_finished(self):
+        with self.lock:
+            self.training = "done"
+            left = self.pending + ([self._stop_cmd] if self._stop_cmd is not None else [])
+            self.pending, self._stop_cmd, self.paused = [], None, False
+        for c in left:
+            self.ack(c, "rejected", "the Training step finished before this could be applied")
+
+    # -- ping and dump
+    def _ping(self):
+        orch = self.ns.get("ORCH")
+        cur = getattr(orch, "current", {}) or {}
+        dash = self.ns.get("LRT_DASHBOARD")
+        step = getattr(getattr(dash, "state", None), "active", None)
+        bits = [f"pong at {_utc_now()}", f"step {step or '-'}", f"training {self.training}",
+                f"paused {self.paused}"]
+        if cur.get("run_id"):
+            bits.append(f"run {cur['run_id']} phase {cur.get('phase') or '-'} epoch {cur.get('epoch') or '-'}/"
+                        f"{cur.get('epochs') or '-'}")
+        return ", ".join(bits)
+
+    def dump(self, c):
+        """Push the ledger, env.json, the last DUMP_LOG_LINES log lines and a GPU snapshot to <prefix>/dump/<id>/,
+        with secrets and absolute paths removed (public_text)."""
+        ns = self.ns
+        files = {}
+        run_dir, results = ns.get("RUN_DIR"), ns.get("RESULTS")
+
+        def tail(p, n=DUMP_LOG_LINES):
+            try:
+                return "\n".join(pathlib.Path(p).read_text(errors="replace").splitlines()[-n:]) + "\n"
+            except OSError:
+                return None
+        if run_dir is not None:
+            t = tail(pathlib.Path(run_dir) / "state.json", 10 ** 6)
+            if t is not None:
+                files["state.json"] = t
+        if results is not None:
+            t = tail(pathlib.Path(results) / "env.json", 10 ** 6)
+            if t is not None:
+                files["env.json"] = t
+            t = tail(pathlib.Path(results) / "logs" / "console.log")
+            if t is not None:
+                files["console-tail.log"] = t
+        dash = ns.get("LRT_DASHBOARD")
+        if "console-tail.log" not in files and dash is not None:
+            files["console-tail.log"] = "\n".join(list(dash.state.log)[-DUMP_LOG_LINES:]) + "\n"
+        orch = ns.get("ORCH")
+        lp = (getattr(orch, "current", {}) or {}).get("log_path")
+        if lp:
+            t = tail(lp)
+            if t is not None:
+                files["train-tail.log"] = t
+        gpu = {"t": _utc_now()}
+        for name in ("gpu_stats", "nvidia_smi_summary"):
+            fn = ns.get(name)
+            try:
+                gpu[name] = fn() if callable(fn) else None
+            except Exception as e:
+                gpu[name] = f"failed ({type(e).__name__})"
+        files["gpu.json"] = json.dumps(gpu, indent=1, default=str) + "\n"
+        pushed, failed = [], []
+        for name, text in files.items():
+            body = public_text(text, ns).encode("utf-8")
+            if self.pusher.put(f"dump/{c['id']}/{name}", body, f"colab dump {c['id']}: {name}"):
+                pushed.append(name)
+            else:
+                failed.append(name)
+        if failed:
+            return False, f"push failed for {failed} ({self.pusher.last_error})"
+        return True, f"pushed dump/{c['id']}/: {', '.join(pushed)}"
+
+    # -- polling thread and status for the panel
+    def start(self):
+        if not self.enabled or self._thread is not None:
+            return
+        self._stop.clear()
+
+        def loop():
+            while True:
+                try:
+                    self.poll()
+                except Exception:
+                    pass
+                if self._stop.wait(min(5.0, self.poll_s)):
+                    return
+        self._thread = threading.Thread(target=loop, daemon=True, name="lrt-remote-control")
+        self._thread.start()
+
+    def close(self):
+        self._stop.set()
+        self._thread = None
+
+    def status(self):
+        with self.lock:
+            return {"enabled": self.enabled, "off_reason": self.off_reason, "paused": self.paused,
+                    "training": self.training, "last_cmd": dict(self.last_cmd) if self.last_cmd else None,
+                    "last_ack": dict(self.last_ack) if self.last_ack else None, "last_poll_ok": self.last_poll_ok,
+                    "poll_errors": self.poll_errors, "last_error": self.last_error,
+                    "waiting": len(self.pending) + (self._stop_cmd is not None)}
+
+
+def control_indicator(info, now):
+    """info: None before the Storage step, else ControlChannel.status()."""
+    if info is None:
+        return "off", "set up at the Storage step"
+    if not info.get("enabled"):
+        return "off", f"off ({info.get('off_reason')})"
+    if info.get("paused"):
+        return "warn", "PAUSED by a remote command: holds before the next run until resume"
+    if info.get("last_error") and info.get("poll_errors"):
+        return "warn", f"polling problem: {info['last_error']}"
+    if info.get("last_poll_ok"):
+        return "ok", f"listening (allow-list only), last check {hhmm(info['last_poll_ok'])}"
+    return "ok", "listening (allow-list only), first check pending"
+
+
+def control_text(info):
+    """The last command and its acknowledgement, in one line ('' if none)."""
+    if not info or not info.get("enabled"):
+        return ""
+    c, a = info.get("last_cmd"), info.get("last_ack")
+    if not c:
+        return "Remote control: no command received yet."
+    s = f"Remote control: last command {c.get('cmd') or '?'}" + (f" {c['run']}" if c.get("run") else "") + \
+        f" (id {c['id']}, received {hhmm(c.get('t'))})"
+    if a and a.get("id") == c["id"]:
+        s += f" → {a['result']}" + (f": {a['error']}" if a.get("error") else (f": {a['note']}" if a.get("note") else ""))
+    else:
+        s += " → waiting to be applied at the next safe point"
+    return s
+
+
+def make_control(ns, hooks=None):
+    """The remote-control channel for this run (after the Storage step: the run tag and folder are known)."""
+    P = ns.get("PROGRESS")
+    pusher = getattr(P, "pusher", None)
+    allow = bool(ns.get("ALLOW_REMOTE_CONTROL", True))
+    reason = None
+    if not allow:
+        reason = "ALLOW_REMOTE_CONTROL is off in Settings"
+    elif pusher is None:
+        reason = "needs the GH_TOKEN secret and PUSH_PROGRESS on"
+    return ControlChannel(pusher, pathlib.Path(ns["RUN_DIR"]) / CONTROL_ACK, ns, enabled=allow and pusher is not None,
+                          off_reason=reason, poll_s=(hooks or {}).get("control_poll_s", 60))
+
+
 # ---- runner ----------------------------------------------------------------------------------------------------
 def stage_source(stage, data_ref, manifest_sha256):
     src = globals()[stage.source]
@@ -3547,6 +4111,10 @@ def run(ns, data_ref, manifest_sha256, mode=None):
     old = ns.get("LRT_DASHBOARD")
     if old is not None and hasattr(old, "close"):
         old.close("This panel is no longer updated: the Run cell was started again (see the newer panel).")
+    oldc = ns.get("LRT_CONTROL")
+    if oldc is not None and hasattr(oldc, "close"):
+        oldc.close()   # one remote-control poller at a time
+    ns["LRT_CONTROL"] = ns["ORCH_CONTROL"] = None
     oldp = ns.get("PROGRESS")
     if oldp is not None and hasattr(oldp, "stop_timer"):
         oldp.stop_timer()   # one heartbeat timer at a time; the new session starts its own
@@ -3571,6 +4139,8 @@ def run(ns, data_ref, manifest_sha256, mode=None):
                 threading.Thread(target=P.push, daemon=True, name="lrt-panel-push").start()   # stage change
             if stage.source == "FINISH":
                 console.close_file()
+                if ns.get("LRT_CONTROL") is not None:
+                    ns["LRT_CONTROL"].close()   # nothing may change the run folder between final sync and verification
                 dash.results_from_ns()
             code = compile_stage(stage, stage_source(stage, data_ref, manifest_sha256), shell)
             with console.capture():
@@ -3584,6 +4154,13 @@ def run(ns, data_ref, manifest_sha256, mode=None):
                 ns["PROGRESS"].snapshot_files = lambda: {"dashboard.html": dash.public_html().encode("utf-8")}
             elif stage.source == "DRIVE":
                 console.open_file(pathlib.Path(ns["RESULTS"]) / "logs" / "console.log")
+                ctl = make_control(ns, hooks)
+                ns["LRT_CONTROL"] = ns["ORCH_CONTROL"] = ctl
+                console.line("remote control: " + ("on (allow-list: " + ", ".join(CONTROL_COMMANDS) + "; reads "
+                             + " and ".join(CONTROL_FILES) + " of this run on " + str(ns.get("RESULTS_BRANCH")) + ")"
+                             if ctl.enabled else f"off ({ctl.off_reason})"))
+                if not hooks.get("no_control_thread"):
+                    ctl.start()
                 led = pathlib.Path(ns["RUN_DIR"]) / "state.json"
                 if led.exists():
                     try:

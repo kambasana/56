@@ -17,23 +17,28 @@ optional: `GH_TOKEN` (live progress on GitHub) and `HF_TOKEN` (Hugging Face down
    - *Save*.
 3. **Optional secrets.** Key icon (*Secrets*) in the left bar: add `GH_TOKEN` and/or `HF_TOKEN` (see the sections
    below) and turn on **Notebook access** for each. Without them the run is the same and saves to Drive only.
-4. **Settings form.** The first cell is a form; normally nothing needs changing:
+4. **Settings form.** The notebook has two code cells: the **Settings** form and the **▶ Run** cell. Normally nothing
+   in the form needs changing:
    - `RUN_TAG`: empty continues the run recorded on Drive (or starts one); a tag continues or starts that run.
    - `RETRY_FAILED` (off): retry runs recorded as failed.
    - `AUTO_RELEASE_RUNTIME` (on): release the GPU at the end, once everything is saved and verified on Drive.
    - `PUSH_PROGRESS` (on): live progress to GitHub, if `GH_TOKEN` exists.
    - `SMOKE` (off): a quick end-to-end check on a tiny slice under its own `smoke-...` tag; not the experiment.
-5. **Run all.** *Runtime → Run all*. Allow Google Drive access when asked (and *Grant access* to a secret if
-   Colab asks).
-6. **Close the tab if you like.** Once the status table under section 12 shows the first run *training*, you may
+   - `ALLOW_REMOTE_CONTROL` (on): lets the assistant pause, stop or retry runs through GitHub (see *Remote control by
+     the assistant*). It needs `GH_TOKEN`; untick it to switch it off.
+5. **Run all.** *Runtime → Run all* (or ▶ on Settings, then ▶ on Run). Allow Google Drive access when asked (and
+   *Grant access* to a secret if Colab asks). The Run cell downloads the notebook's code (`colab/lrt_runner.py`) at
+   a pinned commit and checks its sha256 before running it; if the check fails, nothing runs.
+6. **Close the tab if you like.** Once the control panel under the Run cell shows the first run *training*, you may
    close the tab: with Pro+ background execution the session keeps running. Training runs in a detached process on
    the VM, independent of the browser. Without background execution, keep the tab open and the computer awake.
-7. **The end.** The Finish cell syncs everything to Drive, verifies it (sha256, and `results.zip` is opened and
+7. **The end.** The Finish step syncs everything to Drive, verifies it (sha256, and `results.zip` is opened and
    checked), pushes a last progress update to GitHub, flushes and unmounts Drive and then **releases the runtime**
    (`AUTO_RELEASE_RUNTIME`), so no more compute units are spent. The notebook then shows as disconnected; that is
-   expected. If any sync or check failed, the runtime is **not** released and the cell prints why: fix it (e.g. free
-   Drive space) and run that cell again, or release it yourself (*Runtime → Disconnect and delete runtime*). If a
-   cell stops with an error before the end, the runtime is not released either: release it yourself.
+   expected. If any sync or check failed, the runtime is **not** released and the panel says why: fix it (e.g. free
+   Drive space) and run the Run cell again (finished work is kept), or release it yourself (*Runtime → Disconnect and
+   delete runtime*). If a step stops with an error before the end, the runtime is not released either: release it
+   yourself.
 8. **Send back** `MyDrive/laya-release-triage/<run tag>/results.zip` (or the `results` folder).
 
 The run fine-tunes eight models and scores two zero-shot references, in this order: the two positive controls,
@@ -41,16 +46,42 @@ fine-tuned typed-decisions and English at seed 0, then seeds 1 and 2, and last t
 fine-tune trains for 6 epochs over 6,468 training items (from `laya-train --dry-run` on this dataset: 6,868 items,
 400 kept aside for laya's calibration). Laya's docs report about 4–5 hours for about 120,000 item-passes on two T4s;
 an A100 is faster, so expect very roughly 3–6 hours for the ~310,000 item-passes here. This is an estimate, not a
-measurement; the status table shows a measured ETA once training starts. A run that fails is retried up to 3 times
+measurement; the control panel shows a measured ETA once training starts. A run that fails is retried up to 3 times
 (out of GPU memory: smaller micro-batch, same effective batch; network error: wait and retry; stalled for 30
 minutes: killed and restarted); any other error is recorded with its traceback and the next run starts.
 
-## What you see while it runs
+## What you'll see
 
-Section 12 shows **one status table, updated in place**: every run with its status, attempt, phase, epoch,
-progress and ETA, plus the GPU's utilisation and memory, when Drive was last synced (and any sync error), whether
-GitHub pushing is on, and the last line of the training log. Full logs are not printed; they are in
-`results/logs/` (on the VM's disk and synced to Drive), and every event is in `results/progress.jsonl`.
+One **control panel** under the Run cell, updated in place (about once a second); nothing else scrolls by. From top
+to bottom:
+
+- **Header:** the run tag, the GPU (with live utilisation and memory once training runs) and the precision, and four
+  indicators, each a coloured dot *and* a word (OK, attention, problem, off): **Drive** (last sync, or the sync
+  error), **GitHub** (last push, or why it is off), **Heartbeat** (green while the ~2-minute heartbeats arrive,
+  amber when one is late, red when they stopped) and **Remote control** (listening, paused, or off and why).
+- **Overall** progress bar with a rough ETA for all runs (measured from the training speed once training starts)
+  and the elapsed time.
+- **Stepper:** Setup → GPU → Storage → Install → Data → Checks → Models → Training runs → Verdict → Finish, each
+  marked done ✓, working ▶, waiting ○, failed ✗ or stopped ■.
+- **What's happening now**, in plain words (for example "Training F-EN-s1 (fine-tune, English, seed 1): epoch 3
+  of 6, step 40 of 102, loss 0.3121"), and below it the last remote-control command and its acknowledgement.
+- **Current run** progress bar: epoch, step, loss, ETA of this run, and a warning when the training log has been
+  quiet for a few minutes.
+- **Runs table:** the ten runs in their order, each with a plain description, status (pending, running, retrying,
+  done, failed, interrupted, skipped), attempt, epoch and, once scored, its headline number.
+- **Errors and notices:** only when there is something to show. Each error says what failed and where the full
+  traceback is (`state.json`, `results/progress.jsonl`, `results/logs/`). Retries (out of memory, network) appear
+  as notices.
+- **Log** (collapsed): the last 200 lines the steps printed; every line is also in `results/logs/console.log`.
+- **Results** at the end: the verdict, the summary table and where `results.zip` is.
+
+Without ipywidgets (it is built into Colab, so only on other Jupyter front ends) the panel falls back to a compact
+text status printed at most once a minute and whenever a step or run changes. With `GH_TOKEN`, a static copy of
+the panel (`dashboard.html`, secrets removed, paths shortened) is pushed with every heartbeat, next to
+`progress.jsonl`.
+
+If the panel stops moving after the browser reconnected, press ■ on the Run cell and then ▶ again: training keeps
+running in the background and the panel is redrawn from the ledger.
 
 ## Where things are written
 
@@ -86,7 +117,7 @@ disconnect can cost:
   background process, which keeps going. *Run all* re-attaches to it; nothing is lost.
 
 Do not use the "keep-alive" auto-clicker scripts posted online: they work around Colab's usage policies, and the
-notebook does not need them. Stopping a cell does not stop a training process that has already started (that is
+notebook does not need them. Stopping the Run cell does not stop a training process that has already started (that is
 what makes it survive a dropped connection). *Runtime → Disconnect and delete runtime* stops everything.
 
 To start a completely new run instead of resuming, type a new `RUN_TAG` in the Settings form, or rename or delete
@@ -216,6 +247,42 @@ token, with **Notebook access** on. The notebook sets it as the `HF_TOKEN` envir
 `huggingface_hub`, never prints it, and does not pass it to the training processes. Nothing needs editing in the
 notebook.
 
+## Remote control by the assistant
+
+Approved by the project owner on 2026-10-10. When `GH_TOKEN` is set and `ALLOW_REMOTE_CONTROL` is ticked (the
+default), the notebook checks two files on branch `results/laya-colab`, in the run's folder
+`experiments/release-triage/colab-runs/<run tag>/`, about once a minute: `control.json` and `control/latest.json`.
+The assistant (or you) can put a command there, for example `{"id": "c-0007", "cmd": "pause"}` or
+`{"id": "c-0008", "cmd": "retry", "run": "F-EN-s1"}`; a file can also hold `{"commands": [...]}`.
+
+**What it can do** (nothing else is accepted):
+
+| Command | Effect |
+|---|---|
+| `pause` / `resume` | Hold before the next run starts (the current run finishes first) / continue. |
+| `stop_now` | Stop the current training process at once, mark that run *interrupted* (no attempt used, nothing recorded as failed) and hold. After `resume` (or *Run all*) that run restarts from its base checkpoint. |
+| `retry` *run* | Run a failed, interrupted or skipped run again, with fresh attempts. |
+| `skip` *run* | Do not run a pending, failed or interrupted run (recorded as *skipped* in `state.json`; `retry` undoes it). |
+| `rescore` *run* | Score a finished run again on its kept checkpoint (no re-training; rejected if the checkpoint is not kept). |
+| `ping` | Acknowledge with the current step, run and epoch. |
+| `dump` | Push the ledger, `env.json`, the last 500 log lines and a GPU snapshot to `dump/<id>/` in the run's folder, with secrets removed and paths shortened. |
+
+Run-level commands take effect only between runs or at a stage boundary (`stop_now` also within a training process),
+and only while the Training step runs; after it, only `ping` and `dump` apply.
+
+**What it cannot do:** run code or shell commands, fetch or load any code (the runner stays the pinned, sha256-
+checked file), change any setting, rule, threshold, metric, run order, dataset or checkpoint, or read anything other
+than these two files. A command with another name, an unexpected field, a malformed id or run, or a file that is not
+JSON is **rejected**. Every command, applied or rejected, is acknowledged once in `control-ack.jsonl` next to it
+(id, time, result, error), and in the run folder on Drive; an acknowledged id is never applied again, also after a
+reconnect. The panel shows the last command and its acknowledgement, and every acknowledgement is in
+`progress.jsonl`. The token is used exactly as for live progress: only in the `Authorization` header, never printed
+or written.
+
+**How to switch it off:** untick `ALLOW_REMOTE_CONTROL` in the Settings form before *Run all* (or remove the
+`GH_TOKEN` secret, or untick `PUSH_PROGRESS`). Nothing is then read from GitHub, and commands are ignored. Pressing ■
+on the Run cell stops it too; *Run all* starts it again with the form's setting.
+
 ## What is in `results/` (what to send back)
 
 | File | What it holds |
@@ -237,7 +304,8 @@ notebook.
 | `run_ledger.json` | A copy of `state.json`: status, attempts, interruptions and errors (with tracebacks) of every run |
 
 Next to `results/`, the run folder on Drive holds `state.json` (the ledger), `heartbeat.json` (the latest heartbeat),
-`checkpoints/` (fine-tuned weights), `jobs/` (bookkeeping for a training process in progress) and `results.zip`.
+`checkpoints/` (fine-tuned weights), `jobs/` (bookkeeping for a training process in progress),
+`control-ack.jsonl` (remote-control acknowledgements, if any) and `results.zip`.
 `MyDrive/laya-release-triage/cache/` holds the pip download cache and the verified base-checkpoint snapshot
 (`cache/hf/laya-snapshots/`); it can be deleted at any time and is rebuilt when needed.
 

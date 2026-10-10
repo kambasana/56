@@ -101,7 +101,9 @@ class FakeGitHub:
                 b = urllib.parse.parse_qs(url.query)["ref"][0]
                 if (b, p) not in self.files:
                     raise err(404, "Not Found")
-                return Resp(200, {"sha": self.files[(b, p)][0], "path": p})
+                sha, data = self.files[(b, p)]
+                return Resp(200, {"sha": sha, "path": p, "size": len(data), "encoding": "base64",
+                                  "content": base64.encodebytes(data).decode()})
             if m == "PUT":
                 b = body["branch"]
                 assert b in self.refs, "branch must exist before writing"

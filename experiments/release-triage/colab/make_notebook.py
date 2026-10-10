@@ -61,6 +61,12 @@ The code of every stage is in [`colab/lrt_runner.py`](https://github.com/kambasa
 downloaded at a pinned commit and checked by sha256 before it runs. This is execution and presentation plumbing
 only: no experiment rule, data, threshold or pass condition depends on it.
 
+**Remote control by the assistant** (owner-approved; switch off with `ALLOW_REMOTE_CONTROL` in Settings): with
+`GH_TOKEN` set, the notebook checks `control.json` in its run folder on branch `results/laya-colab` about once a
+minute and accepts only pause / resume (between runs), stop_now, retry / skip / rescore one run, ping and a
+diagnostic dump. It cannot run code or change any rule, data or setting; every command is acknowledged in
+`control-ack.jsonl` and shown in the panel. Details: RUN-IN-COLAB.md, "Remote control by the assistant".
+
 **Send back:** `results.zip` (or the `results` folder) from `MyDrive/laya-release-triage/<run tag>/`.
 
 Shai-Hulud is one incident family among many here. Every recall figure is a macro average over families, and
@@ -79,6 +85,8 @@ AUTO_RELEASE_RUNTIME = True  #@param {type:"boolean"}
 PUSH_PROGRESS = True  #@param {type:"boolean"}
 #@markdown **SMOKE**: quick end-to-end check on a tiny slice (1 epoch) under its own `smoke-...` run tag. Not the experiment.
 SMOKE = False  #@param {type:"boolean"}
+#@markdown **ALLOW_REMOTE_CONTROL**: let the assistant send a few fixed commands through the results branch on GitHub (pause/resume between runs, stop now, retry/skip/rescore one run, ping, diagnostic dump). No code, no shell, no change to any rule, data or setting; every command is acknowledged on GitHub. Needs `GH_TOKEN`. Untick to switch it off.
+ALLOW_REMOTE_CONTROL = True  #@param {type:"boolean"}
 #@markdown ---
 #@markdown Normally left as they are:
 EXPORT_ONNX = True  #@param {type:"boolean"}

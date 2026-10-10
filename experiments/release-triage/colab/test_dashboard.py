@@ -289,7 +289,7 @@ def test_public_snapshot():
         st.add_log(f"oops Authorization: Bearer {tok} and {hf} /root/.cache/x and /tmp/abc")
         st.add_error("run:F-TD-s0", "Run F-TD-s0 failed", f"see {run_dir}/results/logs/train_F-TD-s0.log", L.where_run("F-TD-s0"))
         page = dash.public_html()
-    for bad in (tok, hf, "Bearer", str(d), "/root/", "/tmp/", "/content/"):
+    for bad in (tok, hf, str(d), "/root/", "/tmp/", "/content/"):   # "Bearer" itself may stay; the token after it not
         assert bad not in page, bad
     import re
     assert not re.search(r"github_pat_|gh[pousr]_[A-Za-z0-9]{12,}|hf_[A-Za-z0-9]{12,}", page)
@@ -304,7 +304,10 @@ def test_public_snapshot():
 def test_snapshot_push():
     """Progress.push sends dashboard.html when it changed, keeping the previous one as dashboard.prev.html."""
     import test_progress_push as T
-    ns = {"REPO": "kambasana/56", "SUBDIR": "experiments/release-triage", "SMOKE": False}
+    import time
+    import urllib.request
+    ns = {"REPO": "kambasana/56", "SUBDIR": "experiments/release-triage", "SMOKE": False, "time": time, "json": json,
+          "hashlib": hashlib, "pathlib": pathlib, "urllib": urllib}   # what the CONFIG stage imports before it
     with contextlib.redirect_stdout(io.StringIO()):
         exec(compile(T.cell_source(), "progress_cell", "exec"), ns)
     gh = T.FakeGitHub(T.TOKEN)

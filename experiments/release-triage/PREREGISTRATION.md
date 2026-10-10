@@ -465,3 +465,24 @@ changed:
 - GPU, driver, CUDA, torch and RAM are recorded in `env.json`. A status table replaces the log output. At the end
   the notebook syncs and verifies everything on Drive, then flushes and unmounts Drive. Only if all of that
   succeeded, and `AUTO_RELEASE_RUNTIME` is on, does it release the runtime.
+
+## Presentation and execution 2026-10-10: two-cell notebook, control panel, remote control (no rule changed), before any Laya run
+
+Only how the notebook is run and shown changed. No checkpoint, run, run order, dataset, threshold, metric, selection
+step, training or scoring setting, or pass condition (P0–P6) changed:
+
+- The notebook has two code cells: the Settings form and a Run cell. The Run cell downloads `colab/lrt_runner.py` at a
+  pinned commit, checks its sha256 and runs the same stages as before, in the same order. The stage sources that
+  carry rules (data, validity, checkpoints, tokens, dry run, scoring, metrics, training runs, verdict, latency,
+  summary, finish) are byte-identical to the former cells; `colab/test_dashboard.py` checks this.
+- One control panel replaces the printed output (progress, stepper, runs table, errors, log, results), with a text
+  fallback. With `GH_TOKEN` a static copy (`dashboard.html`, secrets removed) is pushed next to `progress.jsonl`.
+- Remote control, approved by the project owner on 2026-10-10 (switch: `ALLOW_REMOTE_CONTROL` in Settings): the
+  notebook reads `control.json` / `control/latest.json` of its run folder on branch `results/laya-colab` and accepts
+  only pause / resume (between runs), stop_now (the run is marked interrupted and later restarts from its base
+  checkpoint, as after a disconnect), retry / skip / rescore of one run, ping and a diagnostic dump. Every command
+  is acknowledged in `control-ack.jsonl`. It cannot run code, change a rule, setting, threshold, metric, run order
+  or input, or alter what a run computes: retry and rescore repeat the pre-registered run or its scoring on the same
+  checkpoint, and a skipped run counts as a run that did not finish, which the unchanged verdict code already
+  handles. Any command used is recorded with the results.
+

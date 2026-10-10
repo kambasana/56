@@ -606,9 +606,10 @@ def test_forms_and_env(tmp):
         v = ast.literal_eval(m.group(2))
         assert {"string": str, "boolean": bool, "integer": int}[m.group(3)] is type(v), l
         params[m.group(1)] = v
-    want = {"RUN_TAG": "", "RETRY_FAILED": False, "AUTO_RELEASE_RUNTIME": True, "PUSH_PROGRESS": True, "SMOKE": False}
+    want = {"RUN_TAG": "", "RETRY_FAILED": False, "AUTO_RELEASE_RUNTIME": True, "PUSH_PROGRESS": True, "SMOKE": False,
+            "ALLOW_REMOTE_CONTROL": True}
     assert {k: params[k] for k in want} == want, params
-    assert list(params)[:5] == list(want), "the five main options come first"
+    assert list(params)[:6] == list(want), "the six main options come first"
     nb_src = (HERE / "make_notebook.py").read_text()
     assert "new_markdown_cell(INTRO),\n        new_code_cell(FORM)," in nb_src, "the form is the first code cell"
     for name in params:   # no later cell re-assigns a form option at top level (except normalising SMOKE/RUN_TAG)
@@ -630,7 +631,7 @@ def test_forms_and_env(tmp):
     log = (out / "log.txt").read_text()
     assert "HF None GH None" in log and "TEST_ONLY" not in log, log
     print("ok forms: one Settings cell of #@param lines, defaults RUN_TAG='' RETRY_FAILED=False "
-          "AUTO_RELEASE_RUNTIME=True PUSH_PROGRESS=True SMOKE=False; secrets not passed to training")
+          "AUTO_RELEASE_RUNTIME=True PUSH_PROGRESS=True SMOKE=False ALLOW_REMOTE_CONTROL=True; secrets not passed to training")
 
 
 def test_status_view(tmp):
