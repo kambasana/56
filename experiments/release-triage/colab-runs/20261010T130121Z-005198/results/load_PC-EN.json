@@ -1,0 +1,8 @@
+{
+ "load_seconds": 3.621163845062256,
+ "checkpoint": "/content/work/runs/PC-EN",
+ "score_batch": 32,
+ "inference_precision": "torch.bfloat16",
+ "autocast": true,
+ "gpu": "NVIDIA A100-SXM4-80GB"
+}
