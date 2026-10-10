@@ -1,0 +1,17 @@
+{
+ "data": "/content/work/data/train.jsonl",
+ "rows_read": 6175,
+ "valid_items": 6868,
+ "train_items": 6468,
+ "calibration_items": 400,
+ "effective_batch": 64,
+ "optimizer_updates": 102,
+ "skipped": {},
+ "max_len": 1024,
+ "head_max_len": 256,
+ "eval_data": "/content/work/data/calib.jsonl",
+ "eval_rows_read": 3231,
+ "eval_valid_items": 3476,
+ "eval_skipped": {},
+ "cli_stdout": "dry-run: eval 3231 rows read, 3476 valid items, skipped: {}\ndry-run: 6175 rows read, 6868 valid items, skipped: {}\ndry-run: optimizer budget: 6468 train item(s), effective batch up to 64 (micro_batch 8 x grad_accum 8), 102 optimizer updates over 1 epoch(s)\n"
+}
