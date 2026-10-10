@@ -444,3 +444,22 @@ it changes a checkpoint, run, dataset, threshold, metric, selection step or pass
   GPU; bf16 (compute capability ≥ 8) or fp16 autocast for scoring.
 - A run that still fails after 3 attempts is reported as not finished. The verdict code is unchanged and treats a
   missing run as it did before.
+
+## Execution plumbing 2026-10-10, Colab features (execution only; no rule changed), before any Laya run
+
+The notebook now uses Colab's own features for running it, and nothing else changed. No checkpoint, run, run order,
+dataset, threshold, metric, selection step or pass condition (P0–P6) changed, and no training or scoring setting
+changed:
+
+- A Colab form holds the options (`RUN_TAG`, `RETRY_FAILED`, `AUTO_RELEASE_RUNTIME`, `PUSH_PROGRESS`, `SMOKE` and the
+  existing switches). `SMOKE` is a tiny end-to-end check under its own `smoke-...` run tag, and it is never the
+  experiment.
+- Secrets come from `google.colab.userdata`: `GH_TOKEN` (live progress) and optionally `HF_TOKEN` (download rate
+  limits only). Neither is passed to training.
+- Everything is written on the VM's local disk first and then copied to Google Drive atomically (temporary file,
+  then rename). A new VM restores the ledger, results and logs from Drive. The verified base-checkpoint snapshot
+  (pinned revision, sha256 manifest) and the pip download cache are kept on Drive. Package versions stay pinned
+  exactly.
+- GPU, driver, CUDA, torch and RAM are recorded in `env.json`. A status table replaces the log output. At the end
+  the notebook syncs and verifies everything on Drive, then flushes and unmounts Drive. Only if all of that
+  succeeded, and `AUTO_RELEASE_RUNTIME` is on, does it release the runtime.

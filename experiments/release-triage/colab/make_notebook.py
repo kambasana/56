@@ -16,71 +16,71 @@ HERE = pathlib.Path(__file__).resolve().parent
 
 INTRO = """# Laya release triage: fine-tuned Laya vs. tabular and text baselines
 
-> **Resume after a disconnect or sleep.** Colab ends idle sessions (roughly 90 minutes without interaction in the
-> browser) and every session after a maximum lifetime (about 24 h on Pro); the VM and its files go with it.
-> Everything this notebook produces is saved on Google Drive as it goes, so:
-> 1. *Runtime → Reconnect* (or *Restart session* if Colab asks), pick the same GPU type if offered;
-> 2. *Runtime → Run all*.
->
-> Finished runs are verified (sha256) and skipped; nothing finished is redone. A run that was mid-training restarts
-> from its base checkpoint (laya 0.4.1 cannot resume a run mid-way), so a disconnect loses at most that one run's
-> partial training. If only the kernel restarted, the training process is still running and is re-attached.
-> Keep this tab open and in front while it runs: closing it or letting the computer sleep starts the idle clock.
-> (Colab Pro+ background execution lets a session keep running with the tab closed.)
-
 This notebook runs the experiment fixed in
 [PREREGISTRATION.md](https://github.com/kambasana/56/blob/research/laya-proper/experiments/release-triage/PREREGISTRATION.md).
-Run it **top to bottom** on a Colab GPU runtime: *Runtime → Change runtime type → A100 GPU* (L4 also works, but
-more slowly).
+Step by step instructions: [RUN-IN-COLAB.md](https://github.com/kambasana/56/blob/research/laya-proper/experiments/release-triage/RUN-IN-COLAB.md).
 
-What it does:
+**Before *Run all*** (Colab Pro+):
 
-1. Checks the GPU and installs pinned packages.
-2. Downloads the dataset from GitHub and verifies every file's sha256.
-3. Downloads the Laya checkpoints at a pinned revision.
-4. Runs `laya-train --dry-run`, then, most decision-relevant first: the two label-encoding positive controls,
-   fine-tuned typed-decisions and English at seed 0, the same at seeds 1 and 2, and last the two zero-shot
-   references.
-5. Scores calib and test, including the reversed-option-order check, and runs Laya's own eval harness.
-6. Applies the pre-registered pass rule against the baselines.
-7. Measures GPU latency and estimates CPU latency.
-8. Saves the chosen checkpoint to your Google Drive, and optionally exports it to ONNX with receptron/laya's
-   script.
+1. *Runtime → Change runtime type*: **A100 GPU**, and **High-RAM** if that option is offered. If the dialog shows a
+   *Background execution* toggle, turn it on.
+2. Optional secrets (key icon in the left bar, each with **Notebook access** on): `GH_TOKEN` (live progress on
+   GitHub), `HF_TOKEN` (Hugging Face read token, only against download rate limits).
+3. Options are in the **Settings** form below (no code edits needed).
+4. *Runtime → Run all*, and allow Google Drive access.
 
-No secret is required. Two are optional:
+Once the status table shows the first run training, you may close the tab (with Pro+ background execution).
+Training runs in a detached process on the VM, independent of the browser. Everything is written to the VM's fast
+local disk (`/content/work`) and copied to `MyDrive/laya-release-triage/<run tag>/` (write to a temporary file, then
+rename) after every stage and run, and small files every ~2 minutes. At the end the notebook syncs and verifies
+everything on Drive (sha256, including `results.zip`), pushes a last progress update to GitHub, flushes and unmounts
+Drive and then, if `AUTO_RELEASE_RUNTIME` is on, **releases the runtime so no more compute units are spent**. If
+anything failed to sync or verify, the runtime is kept and the reason is printed.
 
-- a Hugging Face read token, pasted in the next cell, only to avoid download rate limits;
-- a Colab secret named `GH_TOKEN` (key icon in the left bar; see RUN-IN-COLAB.md). If it exists and this notebook
-  has access to it, progress (stage, run, epoch, step, loss, elapsed time, GPU, errors with tracebacks) and the
-  small `results/*.json` files are pushed every ~2 minutes and at the end of every stage to branch
-  `results/laya-colab` of the dataset repository, so the run can be followed live. The token is never printed or
-  written to disk.
+**Resume after a disconnect:** *Runtime → Reconnect* (same GPU type if offered), then *Runtime → Run all*. The ledger,
+results and logs are restored from Drive; finished runs are verified (sha256) and skipped. A run that was
+mid-training when the VM was lost restarts from its base checkpoint (laya 0.4.1 cannot resume a run mid-way). If
+only the kernel restarted, the training process is still running and is re-attached.
 
-Durable state lives in `MyDrive/laya-release-triage/<run tag>/` (or `OUTPUT_DIR` on a runtime without Google
-Drive): `state.json` (the ledger: status, attempts and errors of every run, sha256 of every result file),
-`results/`, `checkpoints/`, `heartbeat.json` and the training logs. Training runs in a detached background process
-with a watchdog; each run gets up to 3 attempts (CUDA out-of-memory: half the micro-batch and double the
-accumulation, so the effective batch and update count are unchanged; network errors: backoff). This is execution
-plumbing only: no experiment rule, data, threshold or pass condition depends on it.
+What it does: checks the GPU and RAM, mounts Drive, installs pinned packages (pip cache on Drive), downloads the
+dataset from GitHub and verifies every file's sha256, gets the Laya checkpoints at a pinned revision (verified copy
+cached on Drive), runs `laya-train --dry-run`, then the runs, most decision-relevant first: the two label-encoding
+positive controls, fine-tuned typed-decisions and English at seed 0, the same at seeds 1 and 2, and last the two
+zero-shot references. Then it scores calib and test (with the reversed-option-order check and Laya's eval harness),
+applies the pre-registered pass rule, measures latency, records the chosen checkpoint and optionally exports it to
+ONNX.
 
-**Send back:** the `results` folder (or `results.zip`) from `MyDrive/laya-release-triage/<run tag>/`.
+This is execution plumbing only: no experiment rule, data, threshold or pass condition depends on it.
+
+**Send back:** `results.zip` (or the `results` folder) from `MyDrive/laya-release-triage/<run tag>/`.
 
 Shai-Hulud is one incident family among many here. Every recall figure is a macro average over families, and
 no gate names a family."""
 
-CONFIG = '''# ---- Settings (normally nothing to change) ---------------------------------------------------------------
-HF_TOKEN = ""            # optional: paste a Hugging Face read token to avoid anonymous rate limits
-USE_DRIVE = True         # save progress, results and the chosen checkpoint to Google Drive
-EXPORT_ONNX = True       # export the chosen checkpoint with receptron/laya's export/export_onnx.py
-RUN_ZERO_SHOT = True     # reference runs Z-EN (512) and Z-TD (1024)
-RUN_POSITIVE_CONTROL = True
-RUN_FINETUNE = True
-RETRY_FAILED = False     # True: give runs recorded as failed in state.json another 3 attempts on this Run all
-OUTPUT_DIR = ""          # durable output folder when Google Drive is not available (custom GCE VM, local Jupyter);
-                         # empty = ~/laya-release-triage. Environment variable LRT_OUT overrides both.
-STALL_MINUTES = 30       # watchdog: kill and retry a training process with no log output and no CPU use this long
+FORM = """#@title Settings { display-mode: "form" }
+#@markdown Set the options here, then *Runtime → Run all*. Nothing else needs editing.
+#@markdown
+#@markdown **RUN_TAG**: leave empty to continue the run recorded in `MyDrive/laya-release-triage/run_tag.txt` (a new one is started the first time). A tag continues or starts that run.
+RUN_TAG = ""  #@param {type:"string"}
+#@markdown **RETRY_FAILED**: give runs recorded as failed another 3 attempts.
+RETRY_FAILED = False  #@param {type:"boolean"}
+#@markdown **AUTO_RELEASE_RUNTIME**: at the very end, once everything is synced to Drive and verified, release the GPU runtime so no more compute units are spent.
+AUTO_RELEASE_RUNTIME = True  #@param {type:"boolean"}
+#@markdown **PUSH_PROGRESS**: push live progress to GitHub (only if the `GH_TOKEN` secret exists and has notebook access).
+PUSH_PROGRESS = True  #@param {type:"boolean"}
+#@markdown **SMOKE**: quick end-to-end check on a tiny slice (1 epoch) under its own `smoke-...` run tag. Not the experiment.
+SMOKE = False  #@param {type:"boolean"}
+#@markdown ---
+#@markdown Normally left as they are:
+EXPORT_ONNX = True  #@param {type:"boolean"}
+RUN_POSITIVE_CONTROL = True  #@param {type:"boolean"}
+RUN_FINETUNE = True  #@param {type:"boolean"}
+RUN_ZERO_SHOT = True  #@param {type:"boolean"}
+USE_DRIVE = True  #@param {type:"boolean"}
+STALL_MINUTES = 30  #@param {type:"integer"}
+OUTPUT_DIR = ""  #@param {type:"string"}"""
 
-# ---- Pinned inputs (fixed by PREREGISTRATION.md; do not edit) ------------------------------------------------
+CONFIG = '''# Pinned inputs (fixed by PREREGISTRATION.md; do not edit) and runtime detection. Options are in the Settings form.
 REPO = "kambasana/56"
 SUBDIR = "experiments/release-triage"
 DATA_REF = "__DATA_REF__"                # commit holding data/laya/MANIFEST.json
@@ -95,40 +95,66 @@ EFFECTIVE_BATCH = 64
 SCORE_BATCH = 32
 
 import os, sys, json, time, math, glob, gzip, shutil, hashlib, pathlib, subprocess, urllib.request, importlib.util
-SMOKE = os.environ.get("LRT_SMOKE") == "1"   # used only by the author's local CPU check; leave unset
+LOCAL_CHECK = os.environ.get("LRT_SMOKE") == "1"   # the author's local CPU check only (no installs, no Drive)
+SMOKE = bool(SMOKE) or LOCAL_CHECK
 try:   # Colab (hosted or Colab-managed runtime) vs. any other Jupyter (custom VM, local)
     IN_COLAB = importlib.util.find_spec("google.colab") is not None
 except (ImportError, ValueError):
     IN_COLAB = False
-# Fast local scratch (dataset copy, base checkpoints, a run's training output before it is copied to durable storage).
-WORK = pathlib.Path(os.environ.get("LRT_WORK") or ("/content/lrt" if IN_COLAB and os.path.isdir("/content")
+CONTENT = pathlib.Path(os.environ.get("LRT_CONTENT") or "/content")   # Colab's /content (LRT_CONTENT: tests only)
+# Fast local disk: dataset copy, base checkpoints, training output, results; copied to Drive as they are finished.
+WORK = pathlib.Path(os.environ.get("LRT_WORK") or (CONTENT / "work" if IN_COLAB and CONTENT.is_dir()
                                                    else pathlib.Path.home() / "lrt-work"))
 WORK.mkdir(parents=True, exist_ok=True)
-print("runtime", "Colab" if IN_COLAB else "non-Colab Jupyter", "| work dir", WORK, "| smoke" if SMOKE else "")'''
+print("runtime", "Colab" if IN_COLAB else "non-Colab Jupyter", "| local work dir", WORK, "| SMOKE (not the experiment)" if SMOKE else "")
+if IN_COLAB:
+    print("Pro+ background execution lets you close the tab once runs have started; if your runtime-type dialog "
+          "shows a Background execution toggle, enable it.")
+print("settings:", {"RUN_TAG": RUN_TAG or "(continue / new)", "RETRY_FAILED": RETRY_FAILED,
+                    "AUTO_RELEASE_RUNTIME": AUTO_RELEASE_RUNTIME, "PUSH_PROGRESS": PUSH_PROGRESS, "SMOKE": SMOKE})'''
 
-PROGRESS_CELL = r'''# Live progress (optional). If a Colab secret named GH_TOKEN exists and this notebook has access to it, progress
-# and the small results/*.json files are pushed to branch RESULTS_BRANCH of REPO every ~2 minutes and at the end of
-# every stage, through the GitHub contents REST API over HTTPS. The token is read with google.colab.userdata (on a
-# runtime without google.colab: the GH_TOKEN environment variable), kept in memory only, sent only in the
-# Authorization header to api.github.com, and never printed, logged or written to disk (no git credentials are
-# created). Without GH_TOKEN the run is the same and saves to durable storage only. Every ~2 minutes the timer also
-# writes a heartbeat (time, run, epoch/step, GPU, minutes since the last log line) to progress.jsonl.
+PROGRESS_CELL = r'''# Secrets and live progress. Secrets are read with google.colab.userdata (key icon in the left bar; each secret
+# needs "Notebook access" on); on a runtime without google.colab, from environment variables of the same names.
+# Values are kept in memory only and never printed, logged or written to disk.
+#   GH_TOKEN (optional, used only if PUSH_PROGRESS): progress and the small results/*.json files are pushed to branch
+#     RESULTS_BRANCH of REPO every ~2 minutes and at the end of every stage, through the GitHub contents REST API
+#     (the token goes only in the Authorization header to api.github.com; no git credentials are created).
+#   HF_TOKEN (optional): set as the HF_TOKEN environment variable for huggingface_hub (download rate limits only).
+#     It is removed from the environment of the training processes.
+# Without them the run is the same and saves to Drive only. Every ~2 minutes the timer also writes a heartbeat
+# (time, run, epoch/step, GPU, minutes since the last log line) to progress.jsonl and syncs small files to Drive.
 import os, base64, datetime, re, threading, traceback, uuid, urllib.error, urllib.parse
 RESULTS_BRANCH = "results/laya-colab"
 PUSH_EVERY_S = 120
 SMALL_FILE_BYTES = 512 * 1024
 
-def _read_gh_token():
+
+def read_secret(name):
+    """(value or None, note). The note explains a missing value; the value itself is never shown."""
     try:
         from google.colab import userdata
-    except Exception:   # not Colab (custom VM, local Jupyter): an environment variable instead
-        t = os.environ.get("GH_TOKEN")
-        return t.strip() if isinstance(t, str) and t.strip() else None
+    except ImportError:   # not Colab (custom VM, local Jupyter): an environment variable instead
+        t = os.environ.get(name)
+        return (t.strip(), "environment variable") if isinstance(t, str) and t.strip() else (None, f"no {name} environment variable")
+    not_found = getattr(userdata, "SecretNotFoundError", ())
+    no_access = getattr(userdata, "NotebookAccessError", ())
     try:
-        t = userdata.get("GH_TOKEN")
-    except Exception:   # secret missing, or notebook access to it not enabled
-        return None
-    return t.strip() if isinstance(t, str) and t.strip() else None
+        t = userdata.get(name)
+    except not_found:
+        return None, (f"no Colab secret named {name} (key icon in the left bar -> Add new secret, name {name}, "
+                      "then turn on Notebook access)")
+    except no_access:
+        return None, (f"the Colab secret {name} exists but this notebook has no access to it: key icon in the left "
+                      f"bar -> turn on Notebook access for {name} (or click Grant access when asked), then Run all again")
+    except Exception as e:   # e.g. the access dialog timed out
+        return None, f"could not read the Colab secret {name} ({type(e).__name__})"
+    if isinstance(t, str) and t.strip():
+        return t.strip(), "Colab secret"
+    return None, f"the Colab secret {name} is empty"
+
+
+def _read_gh_token():
+    return read_secret("GH_TOKEN")[0]
 
 
 class GitHubPusher:
@@ -238,7 +264,9 @@ class Progress:
         self._dirty = False
         self._lock = threading.RLock()
         self._thread = None
-        self.heartbeat = None   # set later: called every PUSH_EVERY_S, before the push
+        self._stop = threading.Event()
+        self.heartbeat = None     # set later: called every PUSH_EVERY_S, before the push
+        self.after_stage = None   # set later: called at the end of every stage (sync to Drive)
 
     def bind(self, results_dir, run_tag):
         """Called once RESULTS is known: keep earlier sessions' lines and write from now on."""
@@ -270,6 +298,11 @@ class Progress:
     def end(self, stage):
         self.stage = stage
         self.log("stage_end")
+        if self.after_stage is not None:
+            try:
+                self.after_stage()
+            except Exception as e:
+                print("sync after stage failed:", type(e).__name__, e)
         self.push()
 
     def error(self, exc):
@@ -278,14 +311,18 @@ class Progress:
         self.push()
 
     def push(self):
-        """Push progress.jsonl and any new or changed small results file. Safe to call from any thread."""
+        """Push progress.jsonl and any new or changed small results file. Safe to call from any thread.
+        Returns None when pushing is off, else True if everything outstanding was pushed."""
         if self.pusher is None or not self.pusher.enabled or self.run_tag is None:
-            return
+            return None
+        ok = True
         with self._lock:
             if self._dirty:
                 if self.pusher.put("progress.jsonl", "".join(l + "\n" for l in self.lines).encode(),
                                    f"colab progress {self.run_tag}: {self.stage}"):
                     self._dirty = False
+                else:
+                    ok = False
             for p in sorted(list(self.results.glob("*.json")) + list(self.results.glob("summary.md"))):
                 try:
                     if p.stat().st_size > SMALL_FILE_BYTES:
@@ -294,15 +331,19 @@ class Progress:
                 except OSError:
                     continue
                 h = hashlib.sha256(b).hexdigest()
-                if self._pushed.get(p.name) != h and self.pusher.put(f"results/{p.name}", b, f"colab results {self.run_tag}: {p.name}"):
-                    self._pushed[p.name] = h
+                if self._pushed.get(p.name) != h:
+                    if self.pusher.put(f"results/{p.name}", b, f"colab results {self.run_tag}: {p.name}"):
+                        self._pushed[p.name] = h
+                    else:
+                        ok = False
+        return ok and self.pusher.enabled
 
     def start_timer(self):
         if self._thread is not None:
             return
+        self._stop.clear()
         def loop():
-            while True:
-                time.sleep(PUSH_EVERY_S)
+            while not self._stop.wait(PUSH_EVERY_S):
                 try:
                     if self.heartbeat is not None:
                         self.heartbeat()
@@ -315,11 +356,27 @@ class Progress:
         self._thread = threading.Thread(target=loop, daemon=True, name="progress-push")
         self._thread.start()
 
+    def stop_timer(self):
+        """Stop the heartbeat/push timer (before the final sync), waiting for a heartbeat in progress."""
+        t, self._thread = self._thread, None
+        self._stop.set()
+        if t is not None and t is not threading.current_thread():
+            t.join(timeout=300)
 
-_tok = None if SMOKE else _read_gh_token()
+
+_hf, _note = (None, "local check") if globals().get("LOCAL_CHECK") else read_secret("HF_TOKEN")
+if _hf:
+    os.environ["HF_TOKEN"] = _hf   # read by huggingface_hub only; never printed
+print("HF_TOKEN:", "set from the " + _note + " (value not shown)" if _hf else "not set (optional): " + _note)
+if globals().get("LOCAL_CHECK"):
+    _tok, _note = None, "local check"
+elif not globals().get("PUSH_PROGRESS", True):
+    _tok, _note = None, "PUSH_PROGRESS is off in Settings"
+else:
+    _tok, _note = read_secret("GH_TOKEN")
 PROGRESS = Progress(GitHubPusher(_tok, REPO, RESULTS_BRANCH, "research/laya-proper", "") if _tok else None)
-del _tok
-print("live progress to GitHub:", f"on (branch {RESULTS_BRANCH} of {REPO})" if PROGRESS.pusher else "off (no GH_TOKEN secret); durable storage only")
+del _tok, _hf
+print("live progress to GitHub:", f"on (branch {RESULTS_BRANCH} of {REPO})" if PROGRESS.pusher else f"off ({_note}); Drive only")
 
 def _post_run_cell(result):
     err = getattr(result, "error_in_exec", None) or getattr(result, "error_before_exec", None)
@@ -357,9 +414,15 @@ RUNNER_CELL = r'''# Execution plumbing only: no experiment rule, threshold, metr
 #     and the same optimizer-update count, checked); network/HF errors -> exponential backoff; any other error ->
 #     traceback recorded, next run, reported at the end.
 #   * Heartbeat every ~2 minutes (progress.jsonl + heartbeat.json, and GitHub if GH_TOKEN is set).
+#   * Storage: everything is written on the VM's fast local disk; DriveSync copies it to Google Drive (temporary file +
+#     fsync + rename, so a Drive file is never half-written): small files on every heartbeat, everything after every
+#     stage and run. On a new VM the ledger, results, logs and job files are restored from Drive first.
+#   * Status: one table, updated in place (runs, status, epoch, ETA, GPU use, last Drive sync); logs stay in files.
+#   * finish(): final sync, sha256 verification on Drive, last GitHub push, Drive flush + unmount, and only then
+#     (if AUTO_RELEASE_RUNTIME) runtime.unassign(). Nothing is released if any of these failed.
 # laya 0.4.1 cannot resume a run from checkpoint_latest/ (weights only, no optimizer/scheduler/RNG state, and no
 # resume option in laya-train), so an interrupted run restarts from its base checkpoint; finished runs are kept.
-import os, re, sys, json, time, math, shutil, signal, socket, hashlib, pathlib, datetime, threading, traceback, subprocess
+import os, re, sys, json, time, math, html, shutil, signal, socket, hashlib, pathlib, datetime, threading, traceback, subprocess, zipfile
 MAX_ATTEMPTS = globals().get("MAX_ATTEMPTS", 3)
 MAX_INTERRUPTIONS = globals().get("MAX_INTERRUPTIONS", 5)   # disconnects that restart a run without using an attempt
 STALL_MINUTES = globals().get("STALL_MINUTES", 30)
@@ -396,6 +459,235 @@ def write_json_atomic(path, obj):
         f.flush()
         os.fsync(f.fileno())
     os.replace(tmp, path)
+
+
+def atomic_copy(src, dst):
+    """Copy src to dst through a temporary file in dst's folder, fsync, then rename: dst is always either the old or
+    the new complete file, never a partial one (also on the Google Drive mount). Raises OSError on failure."""
+    src, dst = pathlib.Path(src), pathlib.Path(dst)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dst.with_name(f".{dst.name}.tmp{os.getpid()}-{threading.get_ident()}")
+    try:
+        with open(src, "rb") as fi, open(tmp, "wb") as fo:
+            shutil.copyfileobj(fi, fo, 1 << 22)
+            fo.flush()
+            os.fsync(fo.fileno())
+        os.replace(tmp, dst)
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
+TMP_NAME = re.compile(r"\.tmp[0-9-]*$|\.partial$")
+
+
+class DriveSync:
+    """Mirrors the local run folder (fast disk) to its durable copy (Google Drive). Never raises from sync().
+    small sync (heartbeat): state.json, heartbeat.json, results/ files up to SMALL_MAX, jobs/*.job.json.
+    full sync (end of every stage and run, and finish()): every file, checkpoints and results.zip included.
+    Temporary files, *.partial folders and job exit codes are never copied. Unchanged files are skipped (local size
+    and mtime against the last copy). restore() brings back the ledger, results, logs and job files on a new VM;
+    checkpoints are restored on demand (restore_tree)."""
+    SMALL_MAX = 8 << 20
+
+    def __init__(self, local, remote, enabled=True):
+        self.local = pathlib.Path(local)
+        self.remote = pathlib.Path(remote) if remote else None
+        self.local.mkdir(parents=True, exist_ok=True)
+        same = self.remote is not None and self.remote.resolve() == self.local.resolve()
+        self.enabled = bool(enabled and self.remote is not None and not same)
+        self._seen = {}
+        self._lock = threading.RLock()
+        self.last_ok, self.last_error, self.errors_total, self.copied_total = None, None, 0, 0
+
+    @staticmethod
+    def skip(rel):
+        parts = rel.split("/")
+        return (any(x.startswith(".") or TMP_NAME.search(x) for x in parts)
+                or (parts[0] == "jobs" and not parts[-1].endswith(".job.json")))
+
+    def small(self, rel, size):
+        top = rel.split("/")[0]
+        if "/" not in rel:
+            return rel != "results.zip" and size <= self.SMALL_MAX
+        return top == "jobs" or (top == "results" and size <= self.SMALL_MAX)
+
+    @staticmethod
+    def _files(root):
+        root = pathlib.Path(root)
+        if not root.is_dir():
+            return []
+        out = []
+        for d, dirs, files in os.walk(root):
+            dirs[:] = sorted(x for x in dirs if not x.startswith(".") and not x.endswith(".partial"))
+            for f in sorted(files):
+                out.append(str((pathlib.Path(d) / f).relative_to(root)).replace(os.sep, "/"))
+        return out
+
+    def rels(self):
+        return [r for r in self._files(self.local) if not self.skip(r)]
+
+    def sync(self, full=False):
+        res = {"copied": [], "deleted": [], "errors": []}
+        if not self.enabled:
+            return res
+        with self._lock:
+            for rel in self.rels():
+                src = self.local / rel
+                try:
+                    st = src.stat()
+                except OSError:
+                    continue   # removed meanwhile
+                if not full and not self.small(rel, st.st_size):
+                    continue
+                key = (st.st_size, st.st_mtime_ns)
+                if self._seen.get(rel) == key and (self.remote / rel).exists():
+                    continue
+                try:
+                    atomic_copy(src, self.remote / rel)
+                    self._seen[rel] = key
+                    res["copied"].append(rel)
+                except OSError as e:
+                    res["errors"].append(f"{rel}: {type(e).__name__}: {e}"[:300])
+            rj = self.remote / "jobs"
+            if rj.is_dir():   # finished jobs: their bookkeeping files go from Drive too
+                for p in rj.iterdir():
+                    if p.name.endswith(".job.json") and not (self.local / "jobs" / p.name).exists():
+                        try:
+                            p.unlink()
+                            res["deleted"].append(f"jobs/{p.name}")
+                        except OSError as e:
+                            res["errors"].append(f"jobs/{p.name}: {type(e).__name__}")
+            self.copied_total += len(res["copied"])
+            if res["errors"]:
+                self.errors_total += len(res["errors"])
+                self.last_error = res["errors"][0]
+            else:
+                self.last_ok = time.time()
+        return res
+
+    def delete(self, rel):
+        """Remove a file or folder from the durable copy (e.g. a positive control's checkpoint once scored)."""
+        if not self.enabled:
+            return
+        with self._lock:
+            p = self.remote / rel
+            try:
+                shutil.rmtree(p) if p.is_dir() else p.unlink()
+            except FileNotFoundError:
+                pass
+            except OSError as e:
+                print(f"could not delete {p} on Drive: {type(e).__name__}")
+            for k in [k for k in self._seen if k == rel or k.startswith(rel.rstrip("/") + "/")]:
+                self._seen.pop(k, None)
+
+    def _restore(self, rels):
+        done = []
+        for rel in rels:
+            dst = self.local / rel
+            if self.skip(rel) or dst.exists():
+                continue   # the local copy (same VM, kernel restart) is the newer one
+            atomic_copy(self.remote / rel, dst)
+            st = dst.stat()
+            self._seen[rel] = (st.st_size, st.st_mtime_ns)
+            done.append(rel)
+        return done
+
+    def restore(self):
+        """New VM: copy the ledger, heartbeat, results (with logs) and job files back from Drive."""
+        if not self.enabled:
+            return []
+        with self._lock:
+            rels = [r for r in self._files(self.remote)
+                    if ("/" not in r and r != "results.zip") or r.split("/")[0] in ("results", "jobs")]
+            return self._restore(rels)
+
+    def restore_tree(self, rel_dir):
+        """Copy one folder (e.g. checkpoints/<run>) back from Drive if it is missing locally."""
+        if not self.enabled or not (self.remote / rel_dir).is_dir():
+            return []
+        with self._lock:
+            return self._restore([rel_dir.rstrip("/") + "/" + r for r in self._files(self.remote / rel_dir)])
+
+    def verify(self, rels=None, deep=lambda rel: not rel.startswith(("checkpoints/", "onnx_"))):
+        """Problems (empty list = fine): every file exists on Drive with the local sha256 (size only where deep()
+        is False: large checkpoints, whose model sha256 the ledger already records)."""
+        if not self.enabled:
+            return ["no durable copy configured"]
+        out = []
+        for rel in (self.rels() if rels is None else rels):
+            a, b = self.local / rel, self.remote / rel
+            if not b.exists():
+                out.append(f"{rel}: missing on Drive")
+            elif not a.exists():
+                out.append(f"{rel}: missing locally")
+            elif deep(rel) and sha256_file(a) != sha256_file(b):
+                out.append(f"{rel}: sha256 differs on Drive")
+            elif a.stat().st_size != b.stat().st_size:
+                out.append(f"{rel}: size differs on Drive")
+        return out
+
+
+def finish(sync, progress, auto_release, unmount=None, unassign=None, zip_rel="results.zip"):
+    """End of the notebook: final sync to Drive, sha256 verification (results.zip also opened and checked), a last
+    GitHub push, Drive flush + unmount, then runtime.unassign() if auto_release. Nothing is released if any step
+    failed; the reasons are printed and returned."""
+    out = {"problems": [], "synced": 0, "verified": 0, "pushed": None, "unmounted": False, "released": False}
+    P = out["problems"]
+    progress.stop_timer()
+    progress.log("finish_start", auto_release=bool(auto_release))
+    if not (sync.local / zip_rel).exists():
+        P.append(f"{zip_rel} missing locally (did the Summary cell finish?)")
+    if not sync.enabled:
+        P.append("no durable copy configured (Google Drive not mounted)")
+    else:
+        r = sync.sync(full=True)
+        out["synced"] = len(r["copied"])
+        P += ["sync failed: " + e for e in r["errors"]]
+        rels = sync.rels()
+        P += sync.verify(rels)
+        out["verified"] = len(rels)
+        rz = sync.remote / zip_rel
+        if rz.exists():
+            try:
+                with zipfile.ZipFile(rz) as z:
+                    bad = z.testzip()
+                if bad is not None:
+                    P.append(f"{zip_rel} on Drive: corrupt member {bad}")
+            except (OSError, zipfile.BadZipFile) as e:
+                P.append(f"{zip_rel} on Drive cannot be read: {type(e).__name__}")
+    pusher = progress.pusher
+    if pusher is not None and pusher.enabled:
+        out["pushed"] = progress.push()
+        if not out["pushed"]:
+            P.append(f"final GitHub push failed ({pusher.last_error})")
+    if not P and unmount is not None:
+        try:
+            unmount()   # google.colab.drive.flush_and_unmount: waits until Drive has every write
+            out["unmounted"] = True
+            sync.enabled = False
+        except Exception as e:
+            P.append(f"Drive flush_and_unmount failed: {type(e).__name__}: {e}")
+    where = sync.remote if sync.remote is not None else sync.local
+    if P:
+        print("NOT releasing the runtime, because:")
+        for x in P:
+            print("  -", x)
+        print("Fix the cause (e.g. Drive full or not mounted), then run this cell again. The runtime keeps running "
+              "(and spending compute units) until you release it: Runtime -> Disconnect and delete runtime.")
+    elif not auto_release:
+        print(f"Everything is synced to {where} and verified. AUTO_RELEASE_RUNTIME is off: release the runtime "
+              "yourself when done (Runtime -> Disconnect and delete runtime).")
+    elif unassign is None:
+        print(f"Everything is synced to {where} and verified. Not on Colab: no runtime to release.")
+    else:
+        print(f"Everything is synced to {where}, verified (sha256) and Drive is flushed. Releasing the runtime now "
+              "(runtime.unassign) so no more compute units are spent; this disconnects the notebook.")
+        out["released"] = True
+        unassign()
+    return out
 
 
 # ---- retry policy ----------------------------------------------------------------------------------------------
@@ -559,7 +851,8 @@ class Job:
         jobs_dir.mkdir(parents=True, exist_ok=True)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         exit_path = jobs_dir / f"{run_id}.attempt{attempt}.{int(time.time())}.exit"
-        env = dict(os.environ if env is None else env, PYTHONUNBUFFERED="1")
+        env = {k: v for k, v in (os.environ if env is None else env).items() if k not in ("GH_TOKEN", "HF_TOKEN")}
+        env["PYTHONUNBUFFERED"] = "1"   # secrets are not passed to the training process
         with open(log_path, "ab") as lf:
             lf.write(f"\n===== {run_id} attempt {attempt} start {_utc()} =====\n".encode())
             lf.flush()
@@ -638,28 +931,31 @@ class Job:
                 pass
 
 
-# ---- live view -------------------------------------------------------------------------------------------------
-class LiveView:
-    """A progress bar and the log tail, updated in place under IPython; plain prints (at most once a minute) elsewhere."""
+# ---- status view -----------------------------------------------------------------------------------------------
+class StatusView:
+    """One status table, updated in place (IPython display with a display_id; Colab renders it as HTML). Off
+    IPython: one plain line at most once a minute. Full logs stay in results/logs/."""
 
     def __init__(self, quiet=False):
         self.quiet, self.handle, self._last_print = quiet, None, 0.0
+        if quiet:
+            return
         try:
             get_ipython()  # noqa: F821
-            from IPython.display import display, Pretty
-            self._Pretty = Pretty
-            self.handle = display(Pretty(""), display_id=True)
+            from IPython.display import display, HTML
+            self._HTML = HTML
+            self.handle = display(HTML("<i>starting...</i>"), display_id=True)
         except Exception:
             self.handle = None
 
-    def show(self, text):
+    def show(self, html_text, plain):
         if self.quiet:
             return
         if self.handle is not None:
-            self.handle.update(self._Pretty(text))
+            self.handle.update(self._HTML(html_text))
         elif time.time() - self._last_print > 60:
             self._last_print = time.time()
-            print(text.splitlines()[0] if text else "", flush=True)
+            print(plain, flush=True)
 
 
 TRAIN_ITEMS = re.compile(r"train items (\d+)")
@@ -681,7 +977,7 @@ class RunSpec:
 
 class Orchestrator:
     def __init__(self, root, ledger, progress, jobs_dir=None, max_attempts=None, stall_s=None, poll_s=None,
-                 backoff_s=None, sleep=time.sleep, quiet=False, gpu=None):
+                 backoff_s=None, sleep=time.sleep, quiet=False, gpu=None, sync=None):
         self.root, self.ledger, self.progress = pathlib.Path(root), ledger, progress
         self.jobs_dir = pathlib.Path(jobs_dir or self.root / "jobs")
         self.max_attempts = max_attempts or MAX_ATTEMPTS
@@ -691,7 +987,93 @@ class Orchestrator:
         self.sleep, self.quiet, self.gpu = sleep, quiet, gpu
         self.current = {}
         self._jobs_to_clear = []
-        self.run_seconds = []   # wall time of runs that trained in this session, for the ETA
+        self.sync = sync
+        self.plan = []
+        self.view = None
+        self._gpu_cache = (0.0, {})
+        self._last_line = ""
+
+    # -- Drive sync and the status table
+    def _sync(self, full=True):
+        if self.sync is None:
+            return
+        r = self.sync.sync(full=full)
+        if r["errors"]:
+            self.progress.log("sync_error", errors=r["errors"][:5])
+            print("Drive sync problem (will retry at the next sync):", r["errors"][0])
+
+    def _gpu(self):
+        t, g = self._gpu_cache
+        if time.time() - t > 30:
+            g = gpu_stats()
+            self._gpu_cache = (time.time(), g)
+        return g
+
+    def status_rows(self):
+        c = self.current
+        trained = [((r["stages"].get("train") or {}).get("info") or {}).get("wall_seconds")
+                   for r in self.ledger.data["runs"].values()]
+        trained = [x for x in trained if x]
+        mean_train = sum(trained) / len(trained) if trained else None
+        rows, todo = [], 0
+        for rid in self.plan:
+            r = self.ledger.data["runs"].get(rid) or {}
+            row = {"run": rid, "status": r.get("status", "pending"), "attempt": r.get("attempts", 0) or "",
+                   "phase": "", "epoch": "", "progress": "", "eta_min": ""}
+            if c.get("run_id") == rid:
+                row.update(status="running", phase=c.get("phase") or "", attempt=c.get("attempt") or "",
+                           epoch=f"{c.get('epoch') or '-'}/{c.get('epochs') or '-'}" if c.get("epochs") else "",
+                           progress=f"{c.get('pct'):.0f}%" if c.get("pct") is not None else "",
+                           eta_min=c.get("eta_min") if c.get("eta_min") is not None else "")
+            elif row["status"] in ("pending", "running") and not rid.startswith("Z-"):
+                todo += 1
+            rows.append(row)
+        eta_all = None
+        if mean_train is not None:
+            eta_all = round((c.get("eta_min") or 0) + todo * mean_train / 60)
+        return rows, eta_all
+
+    def render(self, idle_min=None):
+        rows, eta_all = self.status_rows()
+        g = self._gpu()
+        s = self.sync
+        sync_txt = ("off" if s is None or not s.enabled else
+                    (f"last OK {time.strftime('%H:%M:%S', time.localtime(s.last_ok))}" if s.last_ok else "pending")
+                    + (f", {s.errors_total} error(s): {s.last_error}" if s.errors_total else ""))
+        p = self.progress.pusher
+        gh = "off" if p is None else ("on" if p.enabled and not p.errors else f"{'on' if p.enabled else 'off'}, {p.errors} error(s)")
+        head = {"GPU": f"{g.get('gpu_name', self.gpu or '-')} {g.get('gpu_util_pct', '-')}% util, "
+                       f"{g.get('gpu_mem_used_mb', 0) / 1024:.1f}/{g.get('gpu_mem_total_mb', 0) / 1024:.1f} GB" if g else (self.gpu or "-"),
+                "Drive sync": sync_txt, "GitHub": gh, "runs": self.ledger.counts(),
+                "ETA all runs": f"~{eta_all} min (rough)" if eta_all is not None else "after the first run",
+                "last log output": f"{idle_min:.1f} min ago" if idle_min is not None else "-"}
+        cols = ["run", "status", "attempt", "phase", "epoch", "progress", "eta_min"]
+        esc = lambda v: html.escape(str(v))
+        colour = {"done": "#1e8e3e", "failed": "#d93025", "running": "#1a73e8"}
+        t = ["<div style='font-family:monospace;font-size:13px'>",
+             " | ".join(f"<b>{esc(k)}</b>: {esc(v)}" for k, v in head.items()),
+             "<table style='border-collapse:collapse;margin-top:4px'><tr>"
+             + "".join(f"<th style='text-align:left;padding:2px 10px'>{esc(c)}</th>" for c in cols) + "</tr>"]
+        for r in rows:
+            t.append("<tr>" + "".join(
+                f"<td style='padding:2px 10px;color:{colour.get(r['status'], 'inherit') if c == 'status' else 'inherit'}'>"
+                f"{esc(r[c])}</td>" for c in cols) + "</tr>")
+        t.append("</table>")
+        if self._last_line:
+            t.append(f"<div style='color:#777'>last log line: {esc(self._last_line[-160:])}</div>")
+        t.append("<div style='color:#777'>full logs: results/logs/ (local disk, synced to Drive)</div></div>")
+        cur = next((r for r in rows if r["status"] == "running"), None)
+        plain = (f"{time.strftime('%H:%M:%S')} runs {self.ledger.counts()} | "
+                 + (f"{cur['run']} {cur['phase']} epoch {cur['epoch']} {cur['progress']} ETA {cur['eta_min']} min | " if cur else "")
+                 + f"GPU {g.get('gpu_util_pct', '-')}% | Drive sync {sync_txt}")
+        return "".join(t), plain
+
+    def show(self, idle_min=None):
+        if self.quiet:
+            return
+        if self.view is None:
+            self.view = StatusView(self.quiet)
+        self.view.show(*self.render(idle_min))
 
     # -- heartbeat
     def heartbeat(self):
@@ -749,7 +1131,6 @@ class Orchestrator:
         return rc, tail, job.info
 
     def _watch(self, job, on_line, micro):
-        view = LiveView(self.quiet)
         log = pathlib.Path(job.info["log_path"])
         off, buf, tail = job.info.get("log_offset", 0), "", []
         last_change, last_cpu = time.time(), job.cpu_seconds()
@@ -769,6 +1150,8 @@ class Orchestrator:
                 buf = lines.pop()
                 for line in lines:
                     tail = (tail + [line])[-200:]
+                    if line.strip():
+                        self._last_line = line.strip()
                     if on_line is not None:
                         try:
                             on_line(line)
@@ -808,13 +1191,7 @@ class Orchestrator:
                 job.kill()
                 raise RunError("stalled", f"no log output and no CPU progress for {idle / 60:.1f} min; process killed",
                                "\n".join(tail[-40:]))
-            pct = c.get("pct") or 0.0
-            bar = "#" * int(pct / 100 * 30) + "." * (30 - int(pct / 100 * 30))
-            head = (f"[{bar}] {c.get('run_id')} attempt {c.get('attempt')} | {c.get('phase')} | epoch "
-                    f"{c.get('epoch') or '-'}/{c.get('epochs') or '-'} step {c.get('step') or '-'}/"
-                    f"{c.get('steps_per_epoch') or '-'} | {pct:.1f}% | ETA {c.get('eta_min') or '?'} min | "
-                    f"last output {idle / 60:.1f} min ago | runs {self.ledger.counts()}")
-            view.show(head + "\n" + "\n".join(tail[-TAIL_LINES:]))
+            self.show(idle / 60)
             self.sleep(self.poll_s)
 
     def _clear_jobs(self):
@@ -824,11 +1201,20 @@ class Orchestrator:
 
     # -- runs
     def run_all(self, specs, retry_failed=False):
+        self.plan = [s.run_id for s in specs]
+        self.show()
         for spec in specs:
             self.run_one(spec, retry_failed=retry_failed)
+            self.show()
         return self.report([s.run_id for s in specs])
 
     def run_one(self, spec, retry_failed=False):
+        try:
+            return self._run_one(spec, retry_failed)
+        finally:   # the run's files (and the ledger) are on Drive before the next run starts
+            self._sync(full=True)
+
+    def _run_one(self, spec, retry_failed=False):
         L, P, rid = self.ledger, self.progress, spec.run_id
         r = L.get(rid)
         if r["status"] == "done":
@@ -877,6 +1263,7 @@ class Orchestrator:
                     L.record_stage(rid, stage.name, out.get("files", ()), out.get("checkpoint"), out.get("info"))
                     self._clear_jobs()
                     P.log("stage_done", run_id=rid, run_stage=stage.name)
+                    self._sync(full=True)   # the stage's files (and checkpoint) are on Drive before the next stage
                 L.update(rid, status="done", finished=_utc(), wall_seconds_last_attempt=round(time.time() - t0, 1))
                 self.current = {}
                 P.log("run_done", run_id=rid, attempt=attempt, wall_seconds=round(time.time() - t0, 1))
@@ -942,18 +1329,49 @@ def gpu_stats():
         return {}
 
 
+def nvidia_smi_summary():
+    """GPU name, driver version, the CUDA version the driver supports, and memory, from nvidia-smi ({} if absent)."""
+    if not shutil.which("nvidia-smi"):
+        return {}
+    try:
+        q = subprocess.run(["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader,nounits"],
+                           capture_output=True, text=True, timeout=20).stdout.splitlines()[0]
+        name, drv, mem = [x.strip() for x in q.split(",")]
+        head = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=20).stdout
+        m = re.search(r"CUDA Version:\s*([0-9.]+)", head)
+        return {"gpu_name": name, "driver_version": drv, "cuda_driver_version": m.group(1) if m else None,
+                "gpu_mem_total_mb": float(mem)}
+    except Exception:
+        return {}
+
+
 def heartbeat():
-    """Called every ~2 minutes by the progress timer (see the live-progress cell)."""
+    """Called every ~2 minutes by the progress timer (see the live-progress cell); also syncs small files to Drive."""
     orch = globals().get("ORCH")
     if orch is not None:
         orch.heartbeat()
     elif globals().get("RUN_DIR") is not None:
         rec = {"t": _utc(), "stage": PROGRESS.stage, **gpu_stats()}
         write_json_atomic(pathlib.Path(RUN_DIR) / "heartbeat.json", rec)
-        PROGRESS.log("heartbeat", **{k: v for k, v in rec.items() if k not in ("t", "stage")})'''
+        PROGRESS.log("heartbeat", **{k: v for k, v in rec.items() if k not in ("t", "stage")})
+    sync = globals().get("SYNC")
+    if sync is not None:
+        r = sync.sync(full=False)
+        if r["errors"]:
+            PROGRESS.log("sync_error", errors=r["errors"][:5])'''
 
-GPU = r'''import subprocess, torch
-print(subprocess.run(["nvidia-smi"], capture_output=True, text=True).stdout if shutil.which("nvidia-smi") else "no nvidia-smi")
+GPU = r'''# GPU and RAM. The runs are refused on CPU; a T4 gets a loud warning; High-RAM is recommended when RAM is small.
+import subprocess, torch
+SMI = nvidia_smi_summary()
+print("nvidia-smi:", ", ".join(f"{k} {v}" for k, v in SMI.items()) if SMI else "not available")
+try:
+    import psutil
+    RAM_GB = psutil.virtual_memory().total / 1e9
+except Exception:
+    RAM_GB = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 1e9
+HIGH_RAM = RAM_GB >= 24   # standard Colab VMs have about 13 GB; High-RAM ones several times more
+print(f"system RAM {RAM_GB:.1f} GB" + ("" if HIGH_RAM else
+      " -- recommended: Runtime -> Change runtime type -> turn on High-RAM if it is offered, then Run all"))
 if not torch.cuda.is_available() and not SMOKE:
     raise SystemExit("No GPU: the full runs are refused on CPU (they would take days). Runtime -> Change runtime type "
                      "-> A100 GPU (or L4), then Runtime -> Run all.")
@@ -976,7 +1394,14 @@ SCORE_BATCH = 32 if GPU_GB >= 30 or DEVICE == "cpu" else 16   # scoring only; la
 INFER_PRECISION_EXPECTED = ("bf16 autocast" if GPU_CC and int(GPU_CC.split(".")[0]) >= 8 else "fp16 autocast") if DEVICE == "cuda" else "fp32"
 GPU_PROFILE = {"gpu": GPU_NAME, "vram_gb": round(GPU_GB, 1), "compute_capability": GPU_CC, "bf16_supported": BF16,
                "micro_batch": MICRO, "grad_accum": ACCUM, "effective_batch": MICRO * ACCUM, "score_batch": SCORE_BATCH,
-               "inference_precision_expected": INFER_PRECISION_EXPECTED}
+               "inference_precision_expected": INFER_PRECISION_EXPECTED,
+               "driver_version": SMI.get("driver_version"), "cuda_driver_version": SMI.get("cuda_driver_version"),
+               "torch": getattr(torch, "__version__", None), "torch_cuda": getattr(getattr(torch, "version", None), "cuda", None),
+               "ram_gb": round(RAM_GB, 1), "high_ram": HIGH_RAM}
+try:
+    GPU_PROFILE["cudnn"] = torch.backends.cudnn.version()
+except Exception:
+    GPU_PROFILE["cudnn"] = None
 print(json.dumps(GPU_PROFILE, indent=1))
 PROGRESS.ctx["gpu"] = GPU_NAME
 PROGRESS.log("gpu_profile", **GPU_PROFILE)
@@ -991,23 +1416,30 @@ elif DEVICE == "cuda":
     print("Rough budget (an estimate, not a measurement): 3-6 h on an A100, longer on an L4. "
           "A measured ETA is shown once training starts.")'''
 
-PIP = '''# Pinned versions. torch stays Colab's own CUDA build (recorded in env.json).
+PIP = '''# Pinned versions, installed with %pip using a wheel/download cache on Drive (MyDrive/laya-release-triage/cache/pip),
+# so a later session reuses the downloads. pip checks each download against the index's hash; afterwards every
+# installed version is checked against its pin. torch stays Colab's own CUDA build (recorded in env.json).
 PKGS = ["laya==0.4.1", "transformers==4.57.1", "huggingface_hub==0.36.2", "tokenizers==0.22.2",
         "safetensors==0.8.0", "scikit-learn==1.7.2"]
 if EXPORT_ONNX:
     PKGS += ["onnx==1.22.0", "onnxruntime==1.29.0", "onnxscript==0.7.1"]
-if not SMOKE:
-    subprocess.run([sys.executable, "-m", "pip", "install", "-q", *PKGS], check=True)
+PINS = dict(p.split("==") for p in PKGS)
+PIP_ARGS = " ".join(PKGS)
+if not LOCAL_CHECK:
+    PIP_CACHE.mkdir(parents=True, exist_ok=True)
+    %pip install -q --cache-dir "{PIP_CACHE}" {PIP_ARGS}
 import importlib.metadata as md
-VERSIONS = {p: md.version(p) for p in ["laya", "torch", "transformers", "huggingface_hub", "tokenizers",
-                                       "safetensors", "scikit-learn", "numpy", "pandas"]}
-if EXPORT_ONNX:
-    for p in ("onnx", "onnxruntime", "onnxscript"):
-        try:
-            VERSIONS[p] = md.version(p)
-        except md.PackageNotFoundError:
-            VERSIONS[p] = None
+VERSIONS = {}
+for p in ["laya", "torch", "transformers", "huggingface_hub", "tokenizers", "safetensors", "scikit-learn", "numpy",
+          "pandas", *(["onnx", "onnxruntime", "onnxscript"] if EXPORT_ONNX else [])]:
+    try:
+        VERSIONS[p] = md.version(p)
+    except md.PackageNotFoundError:
+        VERSIONS[p] = None
 print(VERSIONS)
+PIN_MISMATCH = {p: {"pinned": v, "installed": VERSIONS.get(p)} for p, v in PINS.items() if VERSIONS.get(p) != v}
+if PIN_MISMATCH and not LOCAL_CHECK:
+    raise SystemExit(f"installed versions differ from the pins: {PIN_MISMATCH}. Runtime -> Restart session, then Run all.")
 assert VERSIONS["laya"] == "0.4.1", "laya 0.4.1 is the pre-registered version"
 # Training precision, read from the installed laya source rather than assumed.
 import inspect, laya.train as _lt
@@ -1019,42 +1451,68 @@ elif "dtype=torch.float16" in _src and "GradScaler" in _src:
 else:
     TRAIN_PRECISION = "laya default (not confirmed from source)"
 GPU_PROFILE["train_precision"] = TRAIN_PRECISION
-print("training precision:", TRAIN_PRECISION)'''''
+print("training precision:", TRAIN_PRECISION)'''
 
-DRIVE = r'''# Durable storage: Google Drive on Colab; otherwise OUTPUT_DIR (or $LRT_OUT). The same ledger works either way.
-OUT_ROOT, DURABLE = None, False
+DRIVE = r'''# Storage. Work happens on the VM's fast local disk (RUN_DIR under /content/work); finished artifacts are copied to
+# durable storage: Google Drive on Colab (MyDrive/laya-release-triage/<run tag>/), else OUTPUT_DIR or $LRT_OUT. Copies
+# are atomic (temporary file + rename). On a new VM the ledger, results, logs and job files are restored first.
+OUT_ROOT, DURABLE, DRIVE_MOUNTED = None, False, False
 if os.environ.get("LRT_OUT"):
     OUT_ROOT, DURABLE = pathlib.Path(os.environ["LRT_OUT"]), True
-elif USE_DRIVE and IN_COLAB and not SMOKE:
+elif USE_DRIVE and IN_COLAB and not LOCAL_CHECK:
     try:
         from google.colab import drive
-        drive.mount("/content/drive")
-        OUT_ROOT, DURABLE = pathlib.Path("/content/drive/MyDrive/laya-release-triage"), True
+        drive.mount(str(CONTENT / "drive"), force_remount=True)
+        OUT_ROOT, DURABLE, DRIVE_MOUNTED = CONTENT / "drive" / "MyDrive" / "laya-release-triage", True, True
     except Exception as e:  # declined, or a Colab-connected runtime without Drive support
-        print("Google Drive not mounted:", e)
+        print("Google Drive not mounted:", type(e).__name__, e)
 if OUT_ROOT is None:
-    OUT_ROOT = pathlib.Path(OUTPUT_DIR).expanduser() if OUTPUT_DIR else (WORK / "out" if SMOKE else pathlib.Path.home() / "laya-release-triage")
+    OUT_ROOT = pathlib.Path(OUTPUT_DIR).expanduser() if OUTPUT_DIR else (WORK / "durable" if LOCAL_CHECK else pathlib.Path.home() / "laya-release-triage")
     DURABLE = not IN_COLAB   # on a custom VM the disk persists; on a Colab VM it does not
-    if IN_COLAB and not SMOKE:
+    if IN_COLAB and not LOCAL_CHECK:
         print("!" * 100 + "\nWARNING: saving to the Colab VM's own disk, which is deleted with the runtime. "
-              "Mount Google Drive (USE_DRIVE = True) so a disconnect loses nothing finished.\n" + "!" * 100)
+              "Mount Google Drive (USE_DRIVE on) so a disconnect loses nothing finished.\n" + "!" * 100)
 OUT_ROOT.mkdir(parents=True, exist_ok=True)
-# One run tag per output folder, kept across reconnects: the ledger, results and live progress continue in place.
-# To start a fresh run, rename or delete run_tag.txt.
+
+# Caches on durable storage, reused by later sessions: Hugging Face (HF_HOME; the verified base-checkpoint snapshot
+# is kept under HF_HOME/laya-snapshots/) and pip downloads. Set before huggingface_hub is first imported.
+CACHE = OUT_ROOT / "cache"
+HF_CACHE, PIP_CACHE = CACHE / "hf", CACHE / "pip"
+if "huggingface_hub" in sys.modules:
+    print("note: huggingface_hub was imported before this cell; HF_HOME takes effect after Runtime -> Restart session")
+os.environ["HF_HOME"] = str(HF_CACHE)
+os.environ.setdefault("HF_XET_CACHE", str(WORK / "xet-cache"))   # chunk cache: many small files, keep it local
+
+# One run tag per output folder, kept across reconnects (run_tag.txt). Settings: RUN_TAG picks one explicitly;
+# SMOKE uses its own smoke-<time> tag. To start a fresh run, rename or delete run_tag.txt (or set RUN_TAG).
 _tag_file = OUT_ROOT / "run_tag.txt"
-if _tag_file.exists():
+_now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+if str(RUN_TAG).strip():
+    RUN_TAG = str(RUN_TAG).strip()
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", RUN_TAG) or RUN_TAG in (".", ".."):
+        raise SystemExit("RUN_TAG may only use letters, digits, '.', '_' and '-'")
+elif SMOKE:
+    RUN_TAG = "smoke-" + _now
+elif _tag_file.exists():
     RUN_TAG = _tag_file.read_text().strip()
 else:
-    RUN_TAG = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:6]
+    RUN_TAG = _now + "-" + uuid.uuid4().hex[:6]
     _tag_file.write_text(RUN_TAG + "\n")
-RUN_DIR = OUT_ROOT / RUN_TAG          # state.json, heartbeat.json, jobs/, checkpoints/, results/
+REMOTE_RUN = OUT_ROOT / RUN_TAG       # durable copy: state.json, heartbeat.json, jobs/, checkpoints/, results/
+RUN_DIR = WORK / "out" / RUN_TAG      # where everything is written first (fast local disk)
 OUT = RUN_DIR
 RESULTS = RUN_DIR / "results"
+SYNC = DriveSync(RUN_DIR, REMOTE_RUN)
+_restored = SYNC.restore()
 (RESULTS / "logs").mkdir(parents=True, exist_ok=True)
-print("durable output ->", RUN_DIR, "" if DURABLE else "(NOT durable)")
+print("local work ->", RUN_DIR)
+print("durable copy ->", REMOTE_RUN, "" if DURABLE else "(NOT durable)",
+      f"| restored {len(_restored)} files from it (ledger, results, logs)" if _restored else "")
 PROGRESS.bind(RESULTS, RUN_TAG)
+PROGRESS.after_stage = lambda: SYNC.sync(full=True)
 PROGRESS.log("session_start", dataset_commit=DATA_REF, manifest_sha256=MANIFEST_SHA256, runtime="colab" if IN_COLAB else "other",
-             out_dir=str(RUN_DIR), durable=DURABLE, **{k: v for k, v in GPU_PROFILE.items() if k != "gpu"})
+             out_dir=str(REMOTE_RUN), local_dir=str(RUN_DIR), durable=DURABLE, restored_files=len(_restored),
+             **{k: v for k, v in GPU_PROFILE.items() if k != "gpu"})
 PROGRESS.heartbeat = heartbeat
 PROGRESS.start_timer()
 if PROGRESS.pusher:
@@ -1139,20 +1597,108 @@ if leak.get("result") != "PASS" and not SMOKE:
 if VALIDITY["underpowered"]:
     print("UNDERPOWERED: fewer than 6 test families with >= 5 positives. Runs continue, but Laya cannot be adopted.")'''
 
-CKPT = '''# Base checkpoints at the pinned revision (English = repo root, typed-decisions = subfolder).
+CKPT = '''# Base checkpoints at the pinned revision (English = repo root, typed-decisions = subfolder). A verified copy is
+# cached on Drive (HF_HOME/laya-snapshots/<repo>@<revision>/ with a sha256 manifest); a later session copies it to
+# the local disk and re-verifies every file instead of downloading. The model files are also checked against the
+# sha256 the Hub reports for the pinned revision whenever the Hub can be reached.
 from huggingface_hub import snapshot_download
 HUB = pathlib.Path(os.environ.get("LRT_HUB") or WORK / "hub")   # LRT_HUB: local copy, author's CPU check only
 pats = [p + f for p in ("", "typed-decisions/") for f in
         ("rl_agent_config.json", "model.safetensors", "tokenizer/*", "encoder/*")]
-if not os.environ.get("LRT_HUB"):
-    snapshot_download(HF_REPO, revision=HF_REVISION, local_dir=str(HUB), allow_patterns=pats, token=HF_TOKEN or None)
-BASES = {"EN": str(HUB), "TD": str(HUB / "typed-decisions")}
+HUB_MANIFEST = ".lrt-manifest.json"
+HUB_CACHE = (pathlib.Path(os.environ["HF_HOME"]) / "laya-snapshots" / (HF_REPO.replace("/", "--") + "@" + HF_REVISION)
+             if os.environ.get("HF_HOME") else None)
+
 def file_sha(p, n=1 << 22):
     h = hashlib.sha256()
     with open(p, "rb") as f:
         for b in iter(lambda: f.read(n), b""):
             h.update(b)
     return h.hexdigest()
+
+def tree_files(root):
+    root = pathlib.Path(root)
+    return sorted(str(q.relative_to(root)) for q in root.rglob("*")
+                  if q.is_file() and not any(x.startswith(".") for x in q.relative_to(root).parts))
+
+def tree_sha(root):
+    return {rel: file_sha(pathlib.Path(root) / rel) for rel in tree_files(root)}
+
+def hub_lfs_sha():
+    """sha256 of the model files at the pinned revision, from the Hub's own metadata ({} if unreachable)."""
+    try:
+        from huggingface_hub import HfApi
+        infos = HfApi().get_paths_info(HF_REPO, ["model.safetensors", "typed-decisions/model.safetensors"],
+                                       revision=HF_REVISION, token=os.environ.get("HF_TOKEN") or None)
+        out = {}
+        for i in infos:
+            lfs = getattr(i, "lfs", None)
+            h = getattr(lfs, "sha256", None) or (lfs.get("sha256") if isinstance(lfs, dict) else None)
+            if h:
+                out[i.path] = h
+        return out
+    except Exception as e:
+        print("could not read the Hub's sha256 for the pinned revision (", type(e).__name__, "); using the cache manifest")
+        return {}
+
+def snapshot_ok(root, man, lfs):
+    if not man or man.get("repo") != HF_REPO or man.get("revision") != HF_REVISION:
+        return False, "another repository or revision"
+    got = tree_sha(root)
+    if got != man.get("files"):
+        return False, "files differ from the manifest (sha256)"
+    bad = [k for k, h in lfs.items() if got.get(k) != h]
+    return (not bad), (f"differs from the Hub's sha256: {bad}" if bad else "")
+
+def read_manifest(path):
+    try:
+        return json.loads(pathlib.Path(path).read_text())
+    except (OSError, ValueError):
+        return None
+
+HUB_SOURCE = None
+if os.environ.get("LRT_HUB"):
+    HUB_SOURCE = "local copy (LRT_HUB)"
+else:
+    LFS_SHA = hub_lfs_sha()
+    if snapshot_ok(HUB, read_manifest(HUB / HUB_MANIFEST), LFS_SHA)[0]:
+        HUB_SOURCE = "local disk (verified sha256)"
+    elif HUB_CACHE is not None and (HUB_CACHE / HUB_MANIFEST).exists():
+        shutil.rmtree(HUB, ignore_errors=True)
+        try:
+            for rel in tree_files(HUB_CACHE):
+                atomic_copy(HUB_CACHE / rel, HUB / rel)
+            man = read_manifest(HUB_CACHE / HUB_MANIFEST)
+            ok, why = snapshot_ok(HUB, man, LFS_SHA)
+        except OSError as e:
+            ok, why = False, f"copy failed ({type(e).__name__})"
+        if ok:
+            write_json_atomic(HUB / HUB_MANIFEST, man)
+            HUB_SOURCE = "Drive cache (verified sha256)"
+        else:
+            print("Drive cache of the checkpoints not used:", why)
+            shutil.rmtree(HUB, ignore_errors=True)
+    if HUB_SOURCE is None:
+        snapshot_download(HF_REPO, revision=HF_REVISION, local_dir=str(HUB), allow_patterns=pats,
+                          token=os.environ.get("HF_TOKEN") or None)
+        files = tree_sha(HUB)
+        bad = [k for k, h in LFS_SHA.items() if files.get(k) != h]
+        if bad:
+            raise SystemExit(f"downloaded checkpoints differ from the Hub's sha256 for {HF_REVISION}: {bad}")
+        man = {"repo": HF_REPO, "revision": HF_REVISION, "files": files, "hub_lfs_sha256": LFS_SHA,
+               "created": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
+        write_json_atomic(HUB / HUB_MANIFEST, man)
+        HUB_SOURCE = "downloaded from the Hub"
+        if HUB_CACHE is not None:   # files first, the manifest last: a cache without a manifest is never used
+            try:
+                for rel in files:
+                    atomic_copy(HUB / rel, HUB_CACHE / rel)
+                write_json_atomic(HUB_CACHE / HUB_MANIFEST, man)
+                HUB_SOURCE += " (cached on Drive for later sessions)"
+            except OSError as e:
+                print("could not cache the checkpoints on Drive:", type(e).__name__, "(the run continues)")
+print("base checkpoints:", HUB_SOURCE)
+BASES = {"EN": str(HUB), "TD": str(HUB / "typed-decisions")}
 CKPT_SHA = {k: file_sha(pathlib.Path(v) / "model.safetensors") if (pathlib.Path(v) / "model.safetensors").exists() else None
             for k, v in BASES.items()}
 for k, v in BASES.items():
@@ -1162,7 +1708,10 @@ ENV = {"dataset_repo": REPO, "dataset_commit": DATA_REF, "manifest_sha256": MANI
        "hf_repo": HF_REPO, "hf_revision": HF_REVISION, "checkpoint_sha256": CKPT_SHA, "versions": VERSIONS,
        "device": DEVICE, "gpu": GPU_NAME, "gpu_gb": round(GPU_GB, 1), "bf16": BF16, "micro_batch": MICRO,
        "grad_accum": ACCUM, "cpu_count": os.cpu_count(), "python": sys.version.split()[0], "smoke": SMOKE,
-       "gpu_profile": GPU_PROFILE, "runtime": "colab" if IN_COLAB else "other", "durable_output": DURABLE}
+       "gpu_profile": GPU_PROFILE, "runtime": "colab" if IN_COLAB else "other", "durable_output": DURABLE,
+       "base_checkpoints_source": HUB_SOURCE, "system": {"ram_gb": round(RAM_GB, 1), "high_ram": HIGH_RAM,
+       "driver_version": SMI.get("driver_version"), "cuda_driver_version": SMI.get("cuda_driver_version"),
+       "torch": VERSIONS.get("torch"), "torch_cuda": GPU_PROFILE.get("torch_cuda"), "cudnn": GPU_PROFILE.get("cudnn")}}
 # A later session may get another GPU: each session's profile is kept, and each run records its own (train_<run>.json).
 _envp = RESULTS / "env.json"
 if _envp.exists():
@@ -1362,14 +1911,21 @@ TRAIN = r'''# All Laya runs, in priority order, through the ledger (state.json):
 # still alive, and restarts an interrupted run from its base checkpoint. The order changes no rule: every run is
 # the pre-registered one, and the verdict reads the same files.
 RUNS = WORK / "runs"             # local disk: laya-train's --out (it writes checkpoint_latest/ after every epoch)
-CKPTS = RUN_DIR / "checkpoints"  # durable copy of each trained run's weights (controls' copies are deleted once scored)
+CKPTS = RUN_DIR / "checkpoints"  # each trained run's weights (local; synced to Drive after the stage; controls' copies
+                                 # are deleted, also on Drive, once scored)
 N_TRAIN = DRY["EN"]["train_items"]
 BASE_MICRO, BASE_ACCUM = MICRO, ACCUM
 FINGERPRINT = {"dataset_commit": DATA_REF, "manifest_sha256": MANIFEST_SHA256, "hf_revision": HF_REVISION,
                "laya": VERSIONS["laya"], "epochs": EPOCHS, "effective_batch": EFFECTIVE_BATCH, "seeds": SEEDS,
                "smoke": SMOKE}
 LEDGER = Ledger(RUN_DIR / "state.json", RUN_DIR, FINGERPRINT)
-ORCH = Orchestrator(RUN_DIR, LEDGER, PROGRESS, gpu=GPU_NAME)
+ORCH = Orchestrator(RUN_DIR, LEDGER, PROGRESS, gpu=GPU_NAME, sync=SYNC)
+# A run that was trained but not yet scored when the VM was lost needs its checkpoint back from Drive.
+for _rid, _r in LEDGER.data["runs"].items():
+    _ck = (_r["stages"].get("train") or {}).get("checkpoint")
+    if _r["status"] != "done" and _ck and not (RUN_DIR / _ck["path"] / "model.safetensors").exists():
+        _got = SYNC.restore_tree(_ck["path"])
+        print(f"{_rid}: restored {len(_got)} checkpoint files from Drive")
 assert MICRO * ACCUM == EFFECTIVE_BATCH
 
 def batch_for(run_id):
@@ -1415,7 +1971,7 @@ def train_job(run_id, base, data, eval_data, seed):
     out = RUNS / run_id
     log = RESULTS / "logs" / f"train_{run_id}.log"
     cmd = [*LAYA_TRAIN, *train_flags(base, data, seed, EPOCHS, out=out, eval_data=eval_data, micro=m, accum=a)]
-    print(" ".join(map(str, cmd)))
+    PROGRESS.log("train_command", run_id=run_id, cmd=" ".join(map(str, cmd)))   # in progress.jsonl, not printed
     def prepare():   # laya-train cannot resume: a (re)started run always begins from its base checkpoint
         shutil.rmtree(out, ignore_errors=True)
     rc, tail, info = ORCH.run_job(run_id, cmd, log, marker=f"{run_id}|{out}|{m}x{a}", prepare=prepare,
@@ -1492,9 +2048,10 @@ def load_metrics(run_id):
         RESULTS_BY_RUN[run_id] = json.loads(p.read_text())
 
 def cleanup_local(run_id, keep_durable=True):
-    shutil.rmtree(RUNS / run_id, ignore_errors=True)   # the durable copy stays in CKPTS
+    shutil.rmtree(RUNS / run_id, ignore_errors=True)   # the copy in CKPTS (and on Drive) stays
     if not keep_durable:
         shutil.rmtree(CKPTS / run_id, ignore_errors=True)
+        SYNC.delete(f"checkpoints/{run_id}")
     load_metrics(run_id)
 
 pc_data = lambda: (label_copy("train"), label_copy("calib"))
@@ -1516,7 +2073,7 @@ if RUN_ZERO_SHOT:
         zck = (lambda b: lambda run_id: BASES[b])(b)
         SPECS.append(RunSpec(run_id, [score_stage(zck, trained=False), harness_stage(zck)], on_skip=load_metrics,
                              on_done=load_metrics))
-print("run order:", [s.run_id for s in SPECS])
+print("run order:", [s.run_id for s in SPECS], "| live status below; full logs in results/logs/")
 print("batch mapping:", {"gpu": GPU_NAME, "micro_batch": MICRO, "grad_accum": ACCUM, "effective_batch": MICRO * ACCUM,
                          "optimizer_updates_per_run": optimizer_updates(N_TRAIN, MICRO, ACCUM, EPOCHS),
                          "train_precision": TRAIN_PRECISION})
@@ -1529,7 +2086,7 @@ if FAILED_RUNS:
     print("\nRuns that did not finish (details and tracebacks in state.json and progress.jsonl):")
     for r in FAILED_RUNS:
         print(" ", r["run"], r["status"], "-", r["last_error"])
-    print("Later cells use the runs that finished. Set RETRY_FAILED = True in Settings and Run all to retry them.")'''
+    print("Later cells use the runs that finished. Tick RETRY_FAILED in the Settings form and Run all to retry them.")'''
 
 VERDICT = '''# Selection on calib only, then the pre-registered pass rule on test (PREREGISTRATION.md, "Pass rule").
 def load_m(run_id):
@@ -1598,6 +2155,8 @@ print(json.dumps({s: v["conditions"] for s, v in per_seed.items()}, indent=1))''
 LATENCY = '''# Latency: GPU (batch 32, after warm-up) and a CPU estimate (batch 1, all VM cores) for the shipped checkpoint.
 SHIP_ID = f"F-{chosen}-s{ship_seed}" if ship_seed is not None else None
 SHIP = CKPTS / SHIP_ID if SHIP_ID else None
+if SHIP is not None and not (SHIP / "model.safetensors").exists():   # new VM: bring the shipped weights back from Drive
+    SYNC.restore_tree(f"checkpoints/{SHIP_ID}")
 if SHIP is not None and not (SHIP / "model.safetensors").exists():
     # Only if its durable copy was deleted: re-train with the same seed, recorded as its own run.
     print("the shipped checkpoint's durable copy is missing: re-training it with the same seed as", SHIP_ID + "-retrain")
@@ -1627,10 +2186,10 @@ if SHIP is not None:
 save_json("latency.json", LAT)
 print(LAT)'''
 
-SAVE = '''# The shipped checkpoint (chosen on calib only) is already on durable storage: <run dir>/checkpoints/<run>.
+SAVE = '''# The shipped checkpoint (chosen on calib only) is already synced to durable storage: <run dir>/checkpoints/<run>.
 if SHIP is not None:
-    print("shipped checkpoint:", SHIP, "| sha256", file_sha(SHIP / "model.safetensors")[:16])
-    save_json("shipped_checkpoint.json", {"run": SHIP_ID, "path": str(SHIP),
+    print("shipped checkpoint:", REMOTE_RUN / SHIP.relative_to(RUN_DIR), "| sha256", file_sha(SHIP / "model.safetensors")[:16])
+    save_json("shipped_checkpoint.json", {"run": SHIP_ID, "path": str(REMOTE_RUN / SHIP.relative_to(RUN_DIR)),
                                          "model_sha256": file_sha(SHIP / "model.safetensors")})'''
 
 ONNX = '''# Optional: ONNX export with receptron/laya's export/export_onnx.py (the Node runtime's format), parity and CPU latency.
@@ -1737,12 +2296,31 @@ save_json("run_ledger.json", LEDGER.data)
                                     + f"\\n\\n**Verdict:** {VERDICT['outcome']}\\n"
                                     + "\\n## Execution (not part of any rule)\\n\\n" + _md(RUNS_T) + "\\n")
 shutil.make_archive(str(OUT / "results"), "zip", RESULTS)
-print("\\nSend back:", OUT / "results.zip", "(or the folder", RESULTS, ")")'''
+print("\\nSend back:", REMOTE_RUN / "results.zip", "(or the folder", REMOTE_RUN / "results", ") once the Finish cell has synced it")'''
+
+FINISH = r'''# Finish: stop the timer, final sync to Drive, sha256 verification (results.zip included), last GitHub push,
+# drive.flush_and_unmount(), then, if AUTO_RELEASE_RUNTIME, runtime.unassign() so no more compute units are spent.
+# Nothing is released if any step failed (the reasons are printed); then fix the cause and run this cell again.
+PROGRESS.begin("finish")
+_unmount = _unassign = None
+if DRIVE_MOUNTED:
+    from google.colab import drive
+    _unmount = drive.flush_and_unmount
+if IN_COLAB and not LOCAL_CHECK:
+    try:
+        from google.colab import runtime
+        _unassign = runtime.unassign
+    except ImportError:
+        print("google.colab.runtime is not available here: the runtime is not released automatically")
+if FAILED_RUNS:
+    print(f"{len(FAILED_RUNS)} run(s) did not finish (see the summary); their state is saved. To retry them later: "
+          "tick RETRY_FAILED in Settings and Run all on a new runtime.")
+FINISH_RESULT = finish(SYNC, PROGRESS, AUTO_RELEASE_RUNTIME, unmount=_unmount, unassign=_unassign)'''
 
 
 def build(data_ref: str, manifest_sha: str) -> nbformat.NotebookNode:
     nb = new_notebook()
-    nb.metadata = {"accelerator": "GPU", "colab": {"gpuType": "A100", "provenance": []},
+    nb.metadata = {"accelerator": "GPU", "colab": {"gpuType": "A100", "machine_shape": "hm", "provenance": []},
                    "kernelspec": {"display_name": "Python 3", "name": "python3"},
                    "language_info": {"name": "python"}}
     def staged(name, src):
@@ -1751,32 +2329,41 @@ def build(data_ref: str, manifest_sha: str) -> nbformat.NotebookNode:
 
     cells = [
         new_markdown_cell(INTRO),
-        new_markdown_cell("## 1. Settings"), new_code_cell(CONFIG.replace("__DATA_REF__", data_ref).replace("__MANIFEST_SHA256__", manifest_sha)),
-        new_markdown_cell("## 1b. Live progress to GitHub (only if a `GH_TOKEN` Colab secret exists)"), new_code_cell(PROGRESS_CELL),
-        new_markdown_cell("## 1c. Resume, retry and keep-going plumbing (definitions only)\n\n"
-                          "A ledger (`state.json`) on durable storage, training in a detached background process with "
-                          "a watchdog, the retry policy and the heartbeat. Execution only: no experiment rule lives here."),
+        new_code_cell(FORM),
+        new_markdown_cell("## 1. Pinned inputs and runtime detection"),
+        new_code_cell(CONFIG.replace("__DATA_REF__", data_ref).replace("__MANIFEST_SHA256__", manifest_sha)),
+        new_markdown_cell("## 1b. Secrets and live progress (`GH_TOKEN`, `HF_TOKEN`: optional Colab secrets)"), new_code_cell(PROGRESS_CELL),
+        new_markdown_cell("## 1c. Resume, retry, Drive sync and status plumbing (definitions only)\n\n"
+                          "A ledger (`state.json`), training in a detached background process with a watchdog, the "
+                          "retry policy, the heartbeat, the local-disk-to-Drive sync, the status table and the final "
+                          "release step. Execution only: no experiment rule lives here."),
         new_code_cell(RUNNER_CELL),
-        new_markdown_cell("## 2. GPU check"), staged("gpu", GPU),
-        new_markdown_cell("## 3. Install pinned packages"), staged("install", PIP),
-        new_markdown_cell("## 4. Durable storage (Google Drive, or `OUTPUT_DIR` off Colab)"), staged("drive", DRIVE),
+        new_markdown_cell("## 2. GPU and RAM check"), staged("gpu", GPU),
+        new_markdown_cell("## 3. Storage: local work disk, Google Drive copy, caches, restore"), staged("drive", DRIVE),
+        new_markdown_cell("## 4. Install pinned packages (`%pip`, cache on Drive)"), staged("install", PIP),
         new_markdown_cell("## 5. Dataset (sha256-verified)"), staged("data", DATA),
         new_markdown_cell("## 6. Validity checks (before any Laya run)"), staged("validity", VALIDITY),
-        new_markdown_cell("## 7. Base checkpoints at the pinned revision"), staged("checkpoints", CKPT),
+        new_markdown_cell("## 7. Base checkpoints at the pinned revision (verified cache on Drive)"), staged("checkpoints", CKPT),
         new_markdown_cell("## 8. Token budget and truncation"), staged("tokens", TOKENS),
         new_markdown_cell("## 9. `laya-train --dry-run` and the epoch budget"), staged("dryrun", DRYRUN),
         new_markdown_cell("## 10. Scoring, order check and Laya's eval harness (definitions)"), staged("score_defs", SCORE),
         new_markdown_cell("## 11. Metrics (definitions)"), staged("metric_defs", METRICS),
         new_markdown_cell("## 12. All runs, most decision-relevant first (the long part: several hours on an A100)\n\n"
                           "Positive controls, fine-tunes at seed 0 (typed-decisions, then English), seeds 1 and 2, then "
-                          "the zero-shot references. Re-running this cell skips finished runs and re-attaches to a "
-                          "training process that is still alive. Stopping the cell does not stop a training process "
-                          "already started; *Runtime → Disconnect and delete runtime* does."), staged("train", TRAIN),
+                          "the zero-shot references. One status table below updates in place. Once it shows the first "
+                          "run training you may close the tab (Pro+ background execution). Re-running this cell skips "
+                          "finished runs and re-attaches to a training process that is still alive. Stopping the cell "
+                          "does not stop a training process already started; *Runtime → Disconnect and delete runtime* "
+                          "does."), staged("train", TRAIN),
         new_markdown_cell("## 13. Verdict (pre-registered rule)"), staged("verdict", VERDICT),
         new_markdown_cell("## 14. Latency"), staged("latency", LATENCY),
-        new_markdown_cell("## 15. Record the chosen checkpoint (already on durable storage)"), staged("save_checkpoint", SAVE),
+        new_markdown_cell("## 15. Record the chosen checkpoint (already on Drive)"), staged("save_checkpoint", SAVE),
         new_markdown_cell("## 16. Optional ONNX export (receptron/laya script)"), staged("onnx", ONNX),
         new_markdown_cell("## 17. Summary"), staged("summary", SUMMARY),
+        new_markdown_cell("## 18. Finish: final sync and verification on Drive, then release the runtime\n\n"
+                          "If `AUTO_RELEASE_RUNTIME` is on and everything verified, the runtime is released here "
+                          "(the notebook disconnects; that is expected). Results: `MyDrive/laya-release-triage/<run tag>/`."),
+        new_code_cell(FINISH),
     ]
     nb.cells = cells
     return nb

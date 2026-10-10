@@ -6,7 +6,10 @@ No network and no real token: a fake GitHub contents API in memory stands in for
   * the token is sent only in the Authorization header and never appears in output, repr, progress.jsonl or
     pushed content;
   * Progress pushes progress.jsonl and new or changed small results/*.json files, and records errors with
-    tracebacks, and laya-train's loss lines.
+    tracebacks, and laya-train's loss lines;
+  * Colab secrets (google.colab.userdata mocked): a missing secret (SecretNotFoundError) or one without notebook
+    access (NotebookAccessError) gives a clear message and pushing stays off; HF_TOKEN is set as an environment
+    variable for huggingface_hub and never printed; PUSH_PROGRESS off does not even read GH_TOKEN.
 
 Run: python -I colab/test_progress_push.py
 """
@@ -136,7 +139,71 @@ def load_cell(env_token=None):
     return ns
 
 
+def test_secrets() -> None:
+    import os
+    import types
+    HF = "hf_TEST_ONLY_not_a_real_token_987"
+
+    class SecretNotFoundError(Exception):
+        pass
+
+    class NotebookAccessError(Exception):
+        pass
+
+    def install(secrets):
+        asked = []
+        ud = types.ModuleType("google.colab.userdata")
+        ud.SecretNotFoundError, ud.NotebookAccessError = SecretNotFoundError, NotebookAccessError
+        def get(name):
+            asked.append(name)
+            v = secrets.get(name, SecretNotFoundError)
+            if isinstance(v, type):
+                raise v(name)
+            return v
+        ud.get = get
+        g, gc = types.ModuleType("google"), types.ModuleType("google.colab")
+        g.colab, gc.userdata = gc, ud
+        sys.modules.update({"google": g, "google.colab": gc, "google.colab.userdata": ud})
+        return asked
+
+    saved = {k: sys.modules.get(k) for k in ("google", "google.colab", "google.colab.userdata")}
+    os.environ.pop("HF_TOKEN", None)
+    try:
+        def run(push=True):
+            ns = {"REPO": "kambasana/56", "SUBDIR": "experiments/release-triage", "SMOKE": False, "PUSH_PROGRESS": push,
+                  "time": time, "json": json, "hashlib": hashlib, "pathlib": pathlib, "urllib": urllib}
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                exec(compile(cell_source(), "progress_cell", "exec"), ns)
+            return ns, buf.getvalue()
+        install({"GH_TOKEN": NotebookAccessError, "HF_TOKEN": HF})
+        ns, out = run()
+        assert ns["PROGRESS"].pusher is None and "Notebook access" in out and "GH_TOKEN" in out, out
+        assert os.environ.get("HF_TOKEN") == HF and HF not in out and "value not shown" in out, out
+        os.environ.pop("HF_TOKEN")
+        install({})
+        ns, out = run()
+        assert ns["PROGRESS"].pusher is None and "no Colab secret named GH_TOKEN" in out and "HF_TOKEN" not in os.environ, out
+        install({"GH_TOKEN": TOKEN, "HF_TOKEN": "  "})
+        ns, out = run()
+        assert ns["PROGRESS"].pusher is not None and TOKEN not in out and TOKEN not in repr(ns["PROGRESS"].pusher)
+        assert "HF_TOKEN" not in os.environ and "empty" in out, out
+        asked = install({"GH_TOKEN": TOKEN})
+        ns, out = run(push=False)
+        assert ns["PROGRESS"].pusher is None and "GH_TOKEN" not in asked and "PUSH_PROGRESS is off" in out, (asked, out)
+    finally:
+        os.environ.pop("HF_TOKEN", None)
+        for k, v in saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+    print("ok secrets: missing / no notebook access handled with clear messages; HF_TOKEN set for huggingface_hub, "
+          "never printed; PUSH_PROGRESS off skips GH_TOKEN")
+
+
 def main() -> None:
+    test_secrets()
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
         load_cell(env_token=TOKEN)   # custom VM / local Jupyter path: token from the environment

@@ -1,36 +1,96 @@
-# Running the Laya release-triage notebook in Google Colab
+# Running the Laya release-triage notebook in Google Colab (Pro+)
 
 The notebook runs the experiment fixed in [PREREGISTRATION.md](PREREGISTRATION.md): it fine-tunes Laya and
-compares it with the baselines. You need a Colab Pro account (for an A100 or L4 GPU) and a Google Drive. You do
-not need any password or API key. Two tokens are optional: a Hugging Face token (download rate limits) and a GitHub
-token (live progress, see below).
+compares it with the baselines. You need Colab Pro+ (Pro works too, without background execution) and a Google
+Drive with room for six fine-tuned checkpoints. No password or API key is required. Two Colab secrets are
+optional: `GH_TOKEN` (live progress on GitHub) and `HF_TOKEN` (Hugging Face download rate limits).
 
-## If Colab disconnects or goes to sleep: resume
+## Steps (Colab Pro+)
+
+1. **Open the notebook in Colab:**
+   https://colab.research.google.com/github/kambasana/56/blob/research/laya-proper/experiments/release-triage/colab/laya_release_triage.ipynb
+2. **Runtime type.** *Runtime → Change runtime type*:
+   - *Hardware accelerator*: **A100 GPU** (L4 works but is slower; avoid T4, see *Choosing a runtime*).
+   - **High-RAM**, if that option is offered.
+   - If the dialog shows a **Background execution** toggle, turn it on. (The notebook cannot check this setting;
+     it prints a reminder.)
+   - *Save*.
+3. **Optional secrets.** Key icon (*Secrets*) in the left bar: add `GH_TOKEN` and/or `HF_TOKEN` (see the sections
+   below) and turn on **Notebook access** for each. Without them the run is the same and saves to Drive only.
+4. **Settings form.** The first cell is a form; normally nothing needs changing:
+   - `RUN_TAG`: empty continues the run recorded on Drive (or starts one); a tag continues or starts that run.
+   - `RETRY_FAILED` (off): retry runs recorded as failed.
+   - `AUTO_RELEASE_RUNTIME` (on): release the GPU at the end, once everything is saved and verified on Drive.
+   - `PUSH_PROGRESS` (on): live progress to GitHub, if `GH_TOKEN` exists.
+   - `SMOKE` (off): a quick end-to-end check on a tiny slice under its own `smoke-...` tag; not the experiment.
+5. **Run all.** *Runtime → Run all*. Allow Google Drive access when asked (and *Grant access* to a secret if
+   Colab asks).
+6. **Close the tab if you like.** Once the status table under section 12 shows the first run *training*, you may
+   close the tab: with Pro+ background execution the session keeps running. Training runs in a detached process on
+   the VM, independent of the browser. Without background execution, keep the tab open and the computer awake.
+7. **The end.** The Finish cell syncs everything to Drive, verifies it (sha256, and `results.zip` is opened and
+   checked), pushes a last progress update to GitHub, flushes and unmounts Drive and then **releases the runtime**
+   (`AUTO_RELEASE_RUNTIME`), so no more compute units are spent. The notebook then shows as disconnected; that is
+   expected. If any sync or check failed, the runtime is **not** released and the cell prints why: fix it (e.g. free
+   Drive space) and run that cell again, or release it yourself (*Runtime → Disconnect and delete runtime*). If a
+   cell stops with an error before the end, the runtime is not released either: release it yourself.
+8. **Send back** `MyDrive/laya-release-triage/<run tag>/results.zip` (or the `results` folder).
+
+The run fine-tunes eight models and scores two zero-shot references, in this order: the two positive controls,
+fine-tuned typed-decisions and English at seed 0, then seeds 1 and 2, and last the two zero-shot references. Each
+fine-tune trains for 6 epochs over 6,468 training items (from `laya-train --dry-run` on this dataset: 6,868 items,
+400 kept aside for laya's calibration). Laya's docs report about 4–5 hours for about 120,000 item-passes on two T4s;
+an A100 is faster, so expect very roughly 3–6 hours for the ~310,000 item-passes here. This is an estimate, not a
+measurement; the status table shows a measured ETA once training starts. A run that fails is retried up to 3 times
+(out of GPU memory: smaller micro-batch, same effective batch; network error: wait and retry; stalled for 30
+minutes: killed and restarted); any other error is recorded with its traceback and the next run starts.
+
+## What you see while it runs
+
+Section 12 shows **one status table, updated in place**: every run with its status, attempt, phase, epoch,
+progress and ETA, plus the GPU's utilisation and memory, when Drive was last synced (and any sync error), whether
+GitHub pushing is on, and the last line of the training log. Full logs are not printed; they are in
+`results/logs/` (on the VM's disk and synced to Drive), and every event is in `results/progress.jsonl`.
+
+## Where things are written
+
+- **Local disk** (`/content/work`, fast): the dataset copy, the base checkpoints, laya-train's output, and the run
+  folder (`/content/work/out/<run tag>/`: ledger, results, logs, checkpoints). Everything is written here first.
+- **Google Drive** (`MyDrive/laya-release-triage/<run tag>/`, durable): a copy of the run folder. Each file is
+  written to a temporary name and then renamed, so a file on Drive is never half-written. Small files (ledger,
+  heartbeat, results, logs) are synced every ~2 minutes; everything, checkpoints included, after every stage and
+  every run, and once more at the end. Drive is mounted with `force_remount=True` and flushed and unmounted
+  (`drive.flush_and_unmount()`) at the end so every write reaches Drive.
+- **Caches on Drive** (`MyDrive/laya-release-triage/cache/`): `HF_HOME` (the base checkpoints at the pinned
+  revision, kept as a snapshot with a sha256 manifest; a later session copies and re-verifies it instead of
+  downloading, and also checks the model files against the sha256 the Hub reports for that revision when the Hub
+  is reachable) and the pip download cache used by `%pip install --cache-dir` (exact version pins; every installed
+  version is checked against its pin).
+
+## If Colab disconnects: resume
 
 1. *Runtime → Reconnect* (or *Runtime → Restart session* if Colab asks for it). If you get to choose, pick the same
-   GPU type as before (*Runtime → Change runtime type*).
-2. *Runtime → Run all*. Allow Google Drive access again when asked.
+   GPU type as before.
+2. *Runtime → Run all*. Allow Google Drive access again when asked. Leave `RUN_TAG` empty (or set it to the same tag).
 
-Nothing finished is redone. Every result is saved to `MyDrive/laya-release-triage/<run tag>/` as it is produced, and
-`state.json` there records which runs are done; on *Run all* each done run's files are checked (sha256) and the run
-is skipped. What a disconnect can cost:
+Nothing finished is redone. On a new VM the notebook first restores the ledger (`state.json`), results, logs and
+job files from Drive; on *Run all* each done run's files are checked (sha256) and the run is skipped. What a
+disconnect can cost:
 
 - **If the whole runtime was lost** (idle timeout, maximum lifetime, *Disconnect and delete runtime*): the run that
   was training restarts from its base checkpoint. laya 0.4.1 cannot resume a run mid-way (see below), so at most
-  that one run's partial training is lost, about one eighth of the training time. Every finished run is kept,
-  including its trained weights (`checkpoints/`).
+  that one run's partial training is lost, about one eighth of the training time. A run that had finished
+  training but not scoring gets its checkpoint back from Drive. Every finished run is kept, including its trained
+  weights (`checkpoints/` on Drive).
 - **If only the notebook's kernel restarted, or the browser lost its connection**: training runs in a separate
   background process, which keeps going. *Run all* re-attaches to it; nothing is lost.
 
-To avoid disconnects: **keep the Colab tab open and in front, and keep the computer awake** while it runs. Colab
-treats a session without browser interaction as idle and ends it. Colab Pro+ offers background execution, which
-keeps a session running with the tab closed. Do not use the "keep-alive" auto-clicker scripts posted online: they
-work around Colab's usage policies, and the notebook does not need them.
+Do not use the "keep-alive" auto-clicker scripts posted online: they work around Colab's usage policies, and the
+notebook does not need them. Stopping a cell does not stop a training process that has already started (that is
+what makes it survive a dropped connection). *Runtime → Disconnect and delete runtime* stops everything.
 
-Stopping a cell does not stop a training process that has already started (that is what makes it survive a
-dropped connection). *Runtime → Disconnect and delete runtime* stops everything.
-
-To start a completely new run instead of resuming, rename or delete `MyDrive/laya-release-triage/run_tag.txt`.
+To start a completely new run instead of resuming, type a new `RUN_TAG` in the Settings form, or rename or delete
+`MyDrive/laya-release-triage/run_tag.txt`.
 
 ### What Colab does, and what others do about it
 
@@ -45,6 +105,7 @@ To start a completely new run instead of resuming, rename or delete `MyDrive/lay
   guide that reports the ~90-minute figure as approximate
   ([Apatero](https://apatero.com/blog/keep-google-colab-disconnecting-training-guide-2025)).
 - **Background execution** (closing the tab) is a Colab Pro+ feature ([Colab plans](https://colab.research.google.com/signup)).
+  The notebook cannot detect whether it is on; it prints a reminder at the start.
 - **The standard practice** for long training on Colab is: save checkpoints and results to Google Drive often, and
   make every job restartable and idempotent, so that re-running the notebook continues instead of starting over.
   This notebook does that: a ledger on Drive, every stage skipped when its verified outputs exist, and a run that
@@ -64,7 +125,9 @@ restarts the interrupted run from its base checkpoint instead. Finished runs are
 
 ## Choosing a runtime
 
-*Runtime → Change runtime type → Hardware accelerator.* Availability is not guaranteed; take what is offered:
+*Runtime → Change runtime type → Hardware accelerator.* Availability is not guaranteed; take what is offered. Turn on
+**High-RAM** too if the dialog offers it: the GPU cell prints the system RAM and recommends High-RAM below about 24 GB.
+The GPU, driver, CUDA, torch and RAM are recorded in `env.json`.
 
 - **A100**: fastest. Micro-batch 8 × accumulation 8.
 - **L4**: works, slower. Micro-batch 4 × accumulation 16.
@@ -98,15 +161,16 @@ account**, outside Colab Pro. You choose:
   21 March 2025; existing VMs can still connect. Such a VM cannot mount Google Drive, and you must stop the VM
   yourself when finished ([Colab marketplace VMs](https://research.google.com/colaboratory/marketplace.html)).
 
-On a runtime without Google Drive, set `OUTPUT_DIR` in the Settings cell to a folder on that VM's persistent disk
+On a runtime without Google Drive, set `OUTPUT_DIR` in the Settings form to a folder on that VM's persistent disk
 (the default is `~/laya-release-triage`), or set the environment variable `LRT_OUT`. The same ledger, resume and
 retry logic applies. `GH_TOKEN` is then read from an environment variable of that name instead of a Colab secret.
-Copy `results.zip` off the VM when the run is over. This document gives no prices: see Google Cloud's own pricing
+Copy `results.zip` off the VM when the run is over (it is not released automatically: that only exists on Colab). This document gives no prices: see Google Cloud's own pricing
 pages for the machine and GPU you pick.
 
 ## Optional: follow the run live on GitHub (GH_TOKEN)
 
-If you add a GitHub token as a Colab secret named `GH_TOKEN`, the notebook pushes its progress every ~2 minutes and
+If you add a GitHub token as a Colab secret named `GH_TOKEN` (and `PUSH_PROGRESS` is ticked in the Settings form, the
+default), the notebook pushes its progress every ~2 minutes and
 at the end of every stage to branch `results/laya-colab` of `kambasana/56`, under
 `experiments/release-triage/colab-runs/<run tag>/`:
 
@@ -140,42 +204,17 @@ only, and the heartbeat is still written to `heartbeat.json` and `progress.jsonl
    secret and runs with live progress off.
 4. If Colab asks *"Grant access to GH_TOKEN?"* when the notebook starts, click *Grant access*.
 
+If the secret is missing, or exists without notebook access, the notebook says which of the two it is and runs with
+live progress off.
+
 Revoke the token on GitHub when the run is over (or let it expire after 7 days). The branch and its files stay.
 
-## Five steps
+### Optional: a Hugging Face token (HF_TOKEN)
 
-1. **Open the notebook in Colab.** Use this link:
-   https://colab.research.google.com/github/kambasana/56/blob/research/laya-proper/experiments/release-triage/colab/laya_release_triage.ipynb
-2. **Pick a GPU.**
-   - Go to *Runtime → Change runtime type → Hardware accelerator: A100 GPU*, then *Save*.
-   - L4 works but is slower.
-   - Avoid T4: several times slower (see *Choosing a runtime*).
-3. **Optional: add a Hugging Face token.** In the first code cell (Settings), paste a Hugging Face *read* token
-   between the quotes of `HF_TOKEN = ""`. This only avoids download rate limits. Leave it empty if you don't
-   have one.
-4. **Run everything.**
-   - Go to *Runtime → Run all*.
-   - When asked, allow access to Google Drive. Progress, results and checkpoints are saved in
-     `MyDrive/laya-release-triage/<run tag>/`.
-   - Keep the tab open and in front, and the computer awake (see *If Colab disconnects* above).
-   - The run fine-tunes eight models and scores two zero-shot references, in this order: the two positive
-     controls, fine-tuned typed-decisions and English at seed 0, then seeds 1 and 2, and last the two zero-shot
-     references. Each fine-tune trains for 6 epochs
-     over 6,468 training items (from `laya-train --dry-run` on this dataset: 6,868 items, 400 kept aside for
-     laya's calibration), which is about 38,800 item-passes per run and 310,000 in total.
-   - Laya's docs report about 4–5 hours for about 120,000 item-passes on two T4s. An A100 is faster, so expect
-     very roughly 3–6 hours. This is an estimate, not a measurement, and an L4 takes longer.
-   - The run uses Colab compute units for that whole time.
-   - If Colab disconnects, reconnect and do *Run all* again (see above). Finished runs are skipped.
-   - A run that fails is retried up to 3 times (out of GPU memory: smaller micro-batch, same effective batch;
-     network error: wait and retry; stalled for 30 minutes: killed and restarted). Any other error is recorded
-     with its traceback, and the notebook moves on to the next run. The summary lists runs that did not finish;
-     set `RETRY_FAILED = True` in Settings and *Run all* to retry them.
-5. **Send back the results.** The last cell prints a summary table and a `VERDICT` line. Download
-   `MyDrive/laya-release-triage/<run tag>/results.zip` and send it back. Sending the `results` folder works too.
-   - You do not need to send `checkpoints/` (the fine-tuned weights) or the ONNX export (`onnx_F-…`). They stay
-     in your Drive for the shadow stage, if it passes. Six fine-tuned checkpoints are kept; check that your Drive
-     has room for them.
+Only useful against anonymous download rate limits. Add a Colab secret named `HF_TOKEN` with a Hugging Face *read*
+token, with **Notebook access** on. The notebook sets it as the `HF_TOKEN` environment variable for
+`huggingface_hub`, never prints it, and does not pass it to the training processes. Nothing needs editing in the
+notebook.
 
 ## What is in `results/` (what to send back)
 
@@ -197,8 +236,10 @@ Revoke the token on GitHub when the run is over (or let it expire after 7 days).
 | `progress.jsonl` | Live progress log with heartbeats, retries and errors (also pushed to GitHub when `GH_TOKEN` is set) |
 | `run_ledger.json` | A copy of `state.json`: status, attempts, interruptions and errors (with tracebacks) of every run |
 
-Next to `results/`, the run folder holds `state.json` (the ledger), `heartbeat.json` (the latest heartbeat),
+Next to `results/`, the run folder on Drive holds `state.json` (the ledger), `heartbeat.json` (the latest heartbeat),
 `checkpoints/` (fine-tuned weights), `jobs/` (bookkeeping for a training process in progress) and `results.zip`.
+`MyDrive/laya-release-triage/cache/` holds the pip download cache and the verified base-checkpoint snapshot
+(`cache/hf/laya-snapshots/`); it can be deleted at any time and is rebuilt when needed.
 
 Nothing in `results/` contains a secret: neither the Hugging Face token nor `GH_TOKEN` is ever written to disk by the
 notebook.

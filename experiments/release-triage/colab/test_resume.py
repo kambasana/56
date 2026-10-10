@@ -15,13 +15,22 @@ Checks:
   * retries: OOM -> 8x8, 4x16, 2x32; OOM at every size -> failed after 3 attempts, next run continues; other error
     -> failed at once with its traceback, next run continues; network error -> backoff then success; a stalled
     process -> killed by the watchdog and retried;
-  * a "done" run whose result file changed is redone; heartbeat lines and heartbeat.json are written.
+  * a "done" run whose result file changed is redone; heartbeat lines and heartbeat.json are written;
+  * local disk -> Drive (Drive simulated by a temp dir): atomic copies (a failed copy leaves the old file and no
+    temporary file), small sync on heartbeats vs. full sync after stages/runs, deletions, restore on a new VM and
+    the whole disconnect scenario with the local disk wiped (ledger, results, logs, job files restored from "Drive");
+  * finish(): runtime.unassign (mocked) only after a final sync, sha256 verification of everything on "Drive"
+    including results.zip, a successful GitHub push and drive.flush_and_unmount; never after a failed sync, a
+    corrupt file on Drive, a failed push or unmount, or with AUTO_RELEASE_RUNTIME off;
+  * the Settings form: one top cell of #@param lines with the documented defaults; secrets are not passed to the
+    training process.
 
 Run: python -I colab/test_resume.py
 """
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import math
 import os
@@ -107,6 +116,12 @@ def driver(run_dir, plan_path):
     ns["PUSH_EVERY_S"] = plan.get("heartbeat_s", 0.5)   # the timer reads this global on every loop
     run_dir = pathlib.Path(run_dir)
     res = run_dir / "results"
+    sync = None
+    if plan.get("remote"):   # Drive mode: run_dir is the VM's local disk, plan["remote"] stands in for Drive
+        sync = ns["DriveSync"](run_dir, plan["remote"])
+        restored = sync.restore()
+        ns["SYNC"] = sync
+        print("RESTORED " + json.dumps(restored), flush=True)
     (res / "logs").mkdir(parents=True, exist_ok=True)
     P = ns["Progress"](None)
     ns["PROGRESS"] = P
@@ -116,7 +131,8 @@ def driver(run_dir, plan_path):
     L = ns["Ledger"](run_dir / "state.json", run_dir, {"test": 1})
     slept = []
     O = ns["Orchestrator"](run_dir, L, P, poll_s=0.1, stall_s=plan.get("stall_s", 60), backoff_s=0.01,
-                           sleep=lambda s: (slept.append(s), time.sleep(min(s, 0.1))), quiet=True, gpu="fake-cpu")
+                           sleep=lambda s: (slept.append(s), time.sleep(min(s, 0.1))), quiet=True, gpu="fake-cpu",
+                           sync=sync)
     ns["ORCH"] = O
     ns["RUN_DIR"] = run_dir
     P.heartbeat = ns["heartbeat"]
@@ -169,6 +185,9 @@ def driver(run_dir, plan_path):
     specs = [ns["RunSpec"](r["id"], [train_stage(r["id"], r), score_stage()]) for r in plan["runs"]]
     report = O.run_all(specs)
     O.heartbeat()
+    P.stop_timer()
+    if sync is not None:
+        assert not sync.sync(full=True)["errors"]
     print("REPORT " + json.dumps({"report": report, "slept": slept}), flush=True)
 
 
@@ -338,6 +357,311 @@ def test_retries(tmp):
           "network backs off; stall killed and retried; changed result redone; failed runs not retried")
 
 
+def test_drive_resume(tmp):
+    """Disconnect with the local disk wiped (a new Colab VM): everything comes back from the simulated Drive."""
+    import shutil
+    vm, drive = tmp / "dr" / "vm" / "run", tmp / "dr" / "drive" / "run"
+    plan = {"runs": [{"id": "A"}, {"id": "B"}, {"id": "C"}], "epochs": 4, "n": 40, "step_s": 0.08,
+            "remote": str(drive), "heartbeat_s": 0.3}
+    drv = run_driver(vm, plan, wait=False)
+    log_b = vm / "results" / "logs" / "train_B.log"
+    wait_until(lambda: ledger(drive)["runs"].get("A", {}).get("status") == "done"
+               and (drive / "jobs" / "B.job.json").exists() and log_b.exists() and "epoch 2/4" in log_b.read_text()
+               and (drive / "results" / "logs" / "train_B.log").exists(), what="A done on Drive and B training")
+    job = json.loads((vm / "jobs" / "B.job.json").read_text())
+    a_remote = {p: p.read_bytes() for p in (drive / "results").glob("*_A.json")}
+    assert a_remote and (drive / "checkpoints" / "A" / "model.safetensors").exists(), "A's results and weights on Drive"
+    assert not (drive / "checkpoints" / "B").exists(), "B's checkpoint is not on Drive before its stage finished"
+    os.killpg(drv.pid, signal.SIGKILL)
+    os.killpg(job["pgid"], signal.SIGKILL)
+    drv.wait()
+    wait_until(lambda: not alive(job["pid"]), what="B's process gone")
+    shutil.rmtree(vm.parent)   # the VM and its local disk are gone
+    out = run_driver(vm, plan)
+    L = ledger(vm)["runs"]
+    assert [r["status"] for r in out["report"]] == ["done"] * 3, out
+    assert L["A"]["attempts"] == 1 and L["B"]["interruptions"] == 1 and L["B"]["attempts"] == 1, L["B"]
+    for p_, b in a_remote.items():
+        assert p_.read_bytes() == b, f"{p_.name} changed on Drive"
+        assert (vm / "results" / p_.name).read_bytes() == b, f"{p_.name} not restored"
+    ev = events(drive)
+    assert any(e["event"] == "run_skipped_done" and e.get("run_id") == "A" for e in ev), "A skipped after the restore"
+    assert any(e["event"] == "run_interrupted" and e.get("run_id") == "B" for e in ev)
+    assert any(e["event"] == "session_start" for e in ev) and len([e for e in ev if e["event"] == "session_start"]) == 2, \
+        "progress.jsonl continued across sessions"
+    assert json.loads((drive / "state.json").read_text()) == json.loads((vm / "state.json").read_text())
+    for rid in ("B", "C"):
+        h = json.loads((drive / "state.json").read_text())["runs"][rid]["stages"]["train"]["checkpoint"]["sha256"]
+        assert hashlib.sha256((drive / "checkpoints" / rid / "model.safetensors").read_bytes()).hexdigest() == h
+    assert "===== B attempt 1 start" in (drive / "results" / "logs" / "train_B.log").read_text()
+    assert not list((drive / "jobs").glob("*.job.json")), "finished job files removed from Drive"
+    junk = [p_ for p_ in drive.rglob("*") if p_.name.startswith(".") or ".tmp" in p_.name or p_.name.endswith(".exit")]
+    assert not junk, junk
+    print("ok drive resume: local disk wiped; ledger, results, logs and job files restored from Drive; A skipped, "
+          "B restarted (interruption), C done; Drive matches the ledger sha256, no temporary files")
+
+
+def test_sync_units(tmp):
+    ns = load_cells()
+    root = tmp / "sync"
+    loc, rem = root / "local" / "run", root / "drive" / "run"
+    # atomic copy: a failure at the rename leaves the old file intact and no temporary file behind
+    src = root / "src.txt"
+    root.mkdir(parents=True)
+    src.write_text("new")
+    dst = root / "d" / "f.txt"
+    dst.parent.mkdir()
+    dst.write_text("old")
+    real_replace = os.replace
+    ns_os = ns["os"]
+    def boom(a, b):
+        raise OSError(28, "No space left on device (simulated)")
+    ns_os.replace = boom
+    try:
+        try:
+            ns["atomic_copy"](src, dst)
+            raise AssertionError("expected OSError")
+        except OSError:
+            pass
+        try:
+            ns["write_json_atomic"](root / "d" / "j.json", {"a": 1})
+            raise AssertionError("expected OSError")
+        except OSError:
+            pass
+    finally:
+        ns_os.replace = real_replace
+    assert dst.read_text() == "old" and [p.name for p in dst.parent.iterdir() if p.name != "j.json.tmp%d" % os.getpid()] == ["f.txt"], \
+        list(dst.parent.iterdir())
+    ns["atomic_copy"](src, dst)
+    assert dst.read_text() == "new" and sorted(p.name for p in dst.parent.iterdir() if "tmp" not in p.name) == ["f.txt"]
+
+    S = ns["DriveSync"]
+    files = {"state.json": b"{}", "heartbeat.json": b"{}", "results/env.json": b"{}", "results/logs/train_A.log": b"x" * 100,
+             "results/scores_A.csv.gz": b"z" * (S.SMALL_MAX + 1), "checkpoints/A/model.safetensors": b"w" * 1000,
+             "jobs/A.job.json": b"{}", "jobs/A.attempt1.1.exit": b"0", "results/env.json.tmp123": b"partial",
+             "checkpoints/B.partial/model.safetensors": b"p", "results.zip": b"PK"}
+    for rel, b in files.items():
+        (loc / rel).parent.mkdir(parents=True, exist_ok=True)
+        (loc / rel).write_bytes(b)
+    sy = S(loc, rem)
+    r = sy.sync(full=False)
+    assert sorted(r["copied"]) == ["heartbeat.json", "jobs/A.job.json", "results/env.json", "results/logs/train_A.log",
+                                   "state.json"], r
+    assert not r["errors"] and not (rem / "checkpoints").exists() and not (rem / "results.zip").exists()
+    r = sy.sync(full=True)
+    assert sorted(r["copied"]) == ["checkpoints/A/model.safetensors", "results.zip", "results/scores_A.csv.gz"], r
+    assert sy.sync(full=True)["copied"] == [], "unchanged files are not copied again"
+    time.sleep(0.01)
+    (loc / "state.json").write_text('{"v": 2}')
+    assert sy.sync(full=False)["copied"] == ["state.json"] and (rem / "state.json").read_text() == '{"v": 2}'
+    assert not [p for p in rem.rglob("*") if "tmp" in p.name or p.name.endswith(".exit") or ".partial" in str(p)]
+    assert sy.verify() == []
+    (rem / "results" / "env.json").write_text('{"tampered": 1}')
+    assert sy.verify() == ["results/env.json: sha256 differs on Drive"]
+    (rem / "results" / "env.json").write_bytes(b"{}")
+    (loc / "jobs" / "A.job.json").unlink()
+    assert sy.sync()["deleted"] == ["jobs/A.job.json"] and not (rem / "jobs" / "A.job.json").exists()
+    sy.delete("checkpoints/A")
+    assert not (rem / "checkpoints" / "A").exists()
+    sy.sync(full=True)
+    assert (rem / "checkpoints" / "A").exists(), "re-copied: the local copy still exists"
+    # restore on a new VM: ledger/results/logs/jobs only; checkpoints on demand
+    (loc / "jobs" / "A.job.json").write_bytes(b"{}")
+    sy.sync()
+    new = root / "vm2" / "run"
+    sy2 = S(new, rem)
+    got = sy2.restore()
+    assert sorted(got) == ["heartbeat.json", "jobs/A.job.json", "results/env.json", "results/logs/train_A.log",
+                           "results/scores_A.csv.gz", "state.json"], got
+    assert not (new / "checkpoints").exists() and not (new / "results.zip").exists()
+    assert sy2.restore_tree("checkpoints/A") == ["checkpoints/A/model.safetensors"]
+    assert (new / "checkpoints/A/model.safetensors").read_bytes() == files["checkpoints/A/model.safetensors"]
+    assert sy2.sync(full=True)["copied"] == [], "restored files are known to be in sync"
+    (new / "state.json").write_text('{"local": "newer"}')
+    assert sy2.restore() == [] and (new / "state.json").read_text() == '{"local": "newer"}', "local copy wins"
+    # a Drive error is reported, not raised
+    sy3 = S(root / "local3", root / "drive" / "run" / "state.json" / "not-a-dir")
+    (root / "local3" / "state.json").write_text("{}")
+    r = sy3.sync()
+    assert r["errors"] and sy3.errors_total == 1 and sy3.last_ok is None
+    assert not S(loc, loc).enabled, "same folder: sync off"
+    print("ok sync: atomic copies (failure keeps the old file, no temp left), small vs full sync, skip unchanged, "
+          "temp/partial/exit files never copied, deletions, verify, restore (checkpoints on demand), errors reported")
+
+
+class FakePusher:
+    def __init__(self, ok=True):
+        self.ok, self.enabled, self.errors, self.last_error, self.prefix, self.puts = ok, True, 0, None, "", []
+
+    def put(self, rel, content, message):
+        self.puts.append(rel)
+        if not self.ok:
+            self.errors += 1
+            self.last_error = "write: HTTP 500 (fake)"
+        return self.ok
+
+
+def test_finish(tmp):
+    import zipfile
+    ns = load_cells()
+    calls = []
+
+    def setup(name, pusher=None):
+        loc, rem = tmp / "fin" / name / "local", tmp / "fin" / name / "drive"
+        (loc / "results" / "logs").mkdir(parents=True)
+        (loc / "state.json").write_text('{"runs": {}}')
+        (loc / "results" / "verdict.json").write_text('{"outcome": "x"}')
+        (loc / "results" / "logs" / "train_A.log").write_text("epoch 1/1 mean loss 0.1\n")
+        (loc / "checkpoints" / "A").mkdir(parents=True)
+        (loc / "checkpoints" / "A" / "model.safetensors").write_bytes(b"w" * 4096)
+        with zipfile.ZipFile(loc / "results.zip", "w") as z:
+            z.write(loc / "results" / "verdict.json", "verdict.json")
+        P = ns["Progress"](pusher)
+        P.bind(loc / "results", "t-" + name)
+        P.heartbeat = lambda: None
+        ns["PUSH_EVERY_S"] = 0.05
+        P.start_timer()
+        return ns["DriveSync"](loc, rem), P
+
+    def run(sync, P, auto=True, unmount_ok=True):
+        def unmount():
+            calls.append("unmount")
+            if not unmount_ok:
+                raise RuntimeError("flush timed out (fake)")
+        return ns["finish"](sync, P, auto, unmount=unmount, unassign=lambda: calls.append("unassign"))
+
+    # 1. everything fine: sync, verify, push, unmount, then unassign, in that order
+    sy, P = setup("ok", FakePusher())
+    r = run(sy, P)
+    assert r["released"] and not r["problems"] and calls == ["unmount", "unassign"], (r, calls)
+    assert (sy.remote / "results.zip").read_bytes() == (sy.local / "results.zip").read_bytes()
+    assert r["pushed"] is True and "progress.jsonl" in P.pusher.puts and P._thread is None
+    assert not sy.enabled, "no Drive writes after the unmount"
+    # 2. a failed sync (Drive not writable): never released, never unmounted
+    calls.clear()
+    sy, P = setup("syncfail")
+    real = ns["atomic_copy"]
+    def flaky(a, b):
+        if pathlib.Path(b).name == "results.zip":
+            raise OSError(28, "No space left on device (simulated)")
+        return real(a, b)
+    ns["atomic_copy"] = flaky
+    try:
+        r = run(sy, P)
+    finally:
+        ns["atomic_copy"] = real
+    assert not r["released"] and calls == [] and any("results.zip" in x for x in r["problems"]), r
+    # 3. a file corrupted on Drive after the copy: verification fails
+    calls.clear()
+    sy, P = setup("corrupt")
+    sy.sync(full=True)
+    (sy.remote / "results.zip").write_bytes(b"not a zip")
+    st = (sy.local / "results.zip").stat()
+    sy._seen["results.zip"] = (st.st_size, st.st_mtime_ns)   # the sync believes it is up to date
+    r = run(sy, P)
+    assert not r["released"] and calls == [] and any("results.zip" in x for x in r["problems"]), r
+    # 4. the final GitHub push fails
+    calls.clear()
+    sy, P = setup("push", FakePusher(ok=False))
+    r = run(sy, P)
+    assert not r["released"] and calls == [] and any("GitHub" in x for x in r["problems"]), r
+    # 5. flush_and_unmount fails
+    calls.clear()
+    sy, P = setup("unmount")
+    r = run(sy, P, unmount_ok=False)
+    assert not r["released"] and calls == ["unmount"] and any("flush_and_unmount" in x for x in r["problems"]), r
+    # 6. AUTO_RELEASE_RUNTIME off: synced, verified and unmounted, but not released
+    calls.clear()
+    sy, P = setup("noauto")
+    r = run(sy, P, auto=False)
+    assert not r["released"] and calls == ["unmount"] and not r["problems"], r
+    # 7. results.zip missing (Summary did not finish) / no Drive at all
+    calls.clear()
+    sy, P = setup("nozip")
+    (sy.local / "results.zip").unlink()
+    r = run(sy, P)
+    assert not r["released"] and calls == [], r
+    sy, P = setup("nodrive")
+    sy.enabled = False
+    r = run(sy, P)
+    assert not r["released"] and calls == [] and any("Drive" in x for x in r["problems"]), r
+    print("ok finish: unassign only after sync + sha256 verify + zip check + push + flush_and_unmount; not after a "
+          "failed sync, corrupt Drive file, failed push, failed unmount, missing zip or no Drive, or with auto-release off")
+
+
+def test_forms_and_env(tmp):
+    import re
+    src = cell("FORM")
+    lines = src.splitlines()
+    assert lines[0].startswith("#@title Settings") and 'display-mode: "form"' in lines[0]
+    params = {}
+    for l in lines:
+        if l.startswith("#"):
+            assert l.startswith("#@"), f"only form lines in the Settings cell: {l}"
+            continue
+        m = re.fullmatch(r'(\w+) = (.+?)  #@param \{type:"(string|boolean|integer)"\}', l)
+        assert m, f"not a Colab form line: {l}"
+        v = ast.literal_eval(m.group(2))
+        assert {"string": str, "boolean": bool, "integer": int}[m.group(3)] is type(v), l
+        params[m.group(1)] = v
+    want = {"RUN_TAG": "", "RETRY_FAILED": False, "AUTO_RELEASE_RUNTIME": True, "PUSH_PROGRESS": True, "SMOKE": False}
+    assert {k: params[k] for k in want} == want, params
+    assert list(params)[:5] == list(want), "the five main options come first"
+    nb_src = (HERE / "make_notebook.py").read_text()
+    assert "new_markdown_cell(INTRO),\n        new_code_cell(FORM)," in nb_src, "the form is the first code cell"
+    for name in params:   # no later cell re-assigns a form option at top level (except normalising SMOKE/RUN_TAG)
+        for other in ("CONFIG", "PROGRESS_CELL", "RUNNER_CELL", "GPU", "PIP", "DATA", "TRAIN", "FINISH"):
+            for l in cell(other).splitlines():
+                if re.match(rf"{name}\s*=", l):
+                    assert name in ("SMOKE", "RUN_TAG", "STALL_MINUTES"), f"{other} overrides {name}: {l}"
+    # secrets are not passed to the training process
+    ns = load_cells()
+    os.environ["HF_TOKEN"], os.environ["GH_TOKEN"] = "hf_TEST_ONLY_secret", "github_pat_TEST_ONLY_secret"
+    try:
+        out = tmp / "envjob"
+        job = ns["Job"].launch("E", 1, [sys.executable, "-I", "-c",
+                                        "import os; print('HF', os.environ.get('HF_TOKEN'), 'GH', os.environ.get('GH_TOKEN'))"],
+                               out / "log.txt", out / "jobs", "m")
+        wait_until(lambda: job.status()[0] == "exited", what="env job")
+    finally:
+        os.environ.pop("HF_TOKEN"), os.environ.pop("GH_TOKEN")
+    log = (out / "log.txt").read_text()
+    assert "HF None GH None" in log and "TEST_ONLY" not in log, log
+    print("ok forms: one Settings cell of #@param lines, defaults RUN_TAG='' RETRY_FAILED=False "
+          "AUTO_RELEASE_RUNTIME=True PUSH_PROGRESS=True SMOKE=False; secrets not passed to training")
+
+
+def test_status_view(tmp):
+    ns = load_cells()
+    run_dir = tmp / "status"
+    (run_dir / "results").mkdir(parents=True)
+    P = ns["Progress"](None)
+    P.bind(run_dir / "results", "t")
+    L = ns["Ledger"](run_dir / "state.json", run_dir, {"t": 1})
+    L.update("F-TD-s0", status="done", attempts=1)
+    L.get("F-TD-s0")["stages"]["train"] = {"info": {"wall_seconds": 1800}}
+    L.update("F-EN-s0", status="running", attempts=1)
+    O = ns["Orchestrator"](run_dir, L, P, gpu="fake-gpu", sync=ns["DriveSync"](run_dir, tmp / "status-drive"))
+    O.plan = ["F-TD-s0", "F-EN-s0", "F-TD-s1", "Z-EN"]
+    O.current = {"run_id": "F-EN-s0", "attempt": 1, "phase": "train", "epoch": 2, "epochs": 6, "pct": 30.0, "eta_min": 21.0}
+    O._last_line = "epoch 2/6 step 40 loss 0.31 <b>"
+    rows, eta = O.status_rows()
+    assert [r["status"] for r in rows] == ["done", "running", "pending", "pending"] and rows[1]["epoch"] == "2/6"
+    assert eta == 21 + 30, eta   # current run + one pending fine-tune at the measured 30 min (zero-shot not counted)
+    h, plain = O.render(idle_min=0.5)
+    assert "<table" in h and "F-EN-s0" in h and "&lt;b&gt;" in h
+    assert "ETA all runs" in h and "Drive sync" in h and "F-EN-s0 train epoch 2/6 30% ETA 21.0 min" in plain, plain
+    printed = []
+    O.view = ns["StatusView"]()   # not under IPython: plain line, at most once a minute
+    import contextlib, io
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        O.show()
+        O.show()
+    assert buf.getvalue().count("runs {") == 1, buf.getvalue()
+    print("ok status view: one table (runs, status, epoch, progress, ETA, GPU, Drive sync), HTML-escaped log line")
+
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--fake-trainer-TEST-ONLY":
         return fake_trainer_TEST_ONLY(sys.argv[2:])
@@ -346,6 +670,11 @@ def main():
     test_mapping()
     with tempfile.TemporaryDirectory() as d:
         tmp = pathlib.Path(d)
+        test_forms_and_env(tmp)
+        test_status_view(tmp)
+        test_sync_units(tmp)
+        test_finish(tmp)
+        test_drive_resume(tmp)
         test_disconnect(tmp)
         test_kernel_restart(tmp)
         test_retries(tmp)
