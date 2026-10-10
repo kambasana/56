@@ -1,0 +1,324 @@
+{
+ "method": "F-EN-s0",
+ "threshold": 0.20570000000000002,
+ "calib_alerts_per_1000_benign": 9.89423404981235,
+ "test_positives": 1193,
+ "test_negatives": 6387,
+ "macro_recall": 0.31155855380521325,
+ "macro_recall_ci95_family_bootstrap": [
+  0.18346936825335966,
+  0.4455260452740705
+ ],
+ "macro_recall_without_largest_family": 0.2896240087978887,
+ "largest_family": "dependency-confusion",
+ "macro_recall_min5": 0.48641112717595847,
+ "families_min5": 11,
+ "macro_recall_min5_ci95_family_bootstrap": [
+  0.31881901034678767,
+  0.6405803271854141
+ ],
+ "micro_recall": 0.5926236378876781,
+ "precision": 0.8938053097345132,
+ "alerts_per_1000_benign": 13.151714419915454,
+ "busy_accounts": 187,
+ "busy_account_months": 587,
+ "false_alarms_per_busy_account_month": 0.05110732538330494,
+ "roc_auc": 0.9197281097094357,
+ "average_precision": 0.7978616412050071,
+ "ece_calibrated": 0.06311285667132488,
+ "brier_calibrated": 0.07416758222681108,
+ "fit_seconds": 0.0,
+ "predict_ms_per_1000": 0.0,
+ "per_family": {
+  "2026-06-20": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "2026-07-16": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "2026-07-18": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "2026-07-24": {
+   "n": 8,
+   "recall": 0.0
+  },
+  "2026-09-05": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "2026-09-23": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "axios": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "backdoor": {
+   "n": 1,
+   "recall": 1.0
+  },
+  "beacon": {
+   "n": 15,
+   "recall": 0.8666666666666667
+  },
+  "crypto-theft": {
+   "n": 53,
+   "recall": 0.4528301886792453
+  },
+  "data-exfiltration": {
+   "n": 200,
+   "recall": 0.475
+  },
+  "dependency-confusion": {
+   "n": 257,
+   "recall": 0.8599221789883269
+  },
+  "discord-token-stealer": {
+   "n": 4,
+   "recall": 0.25
+  },
+  "injective-sdk-ts": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "ironworm-npm": {
+   "n": 6,
+   "recall": 0.3333333333333333
+  },
+  "joyfill": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "mastra": {
+   "n": 119,
+   "recall": 0.025210084033613446
+  },
+  "miasma-2026": {
+   "n": 38,
+   "recall": 0.4473684210526316
+  },
+  "miso-client": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "node-ipc-2026": {
+   "n": 2,
+   "recall": 0.0
+  },
+  "pgserve": {
+   "n": 4,
+   "recall": 1.0
+  },
+  "react-native-country-select": {
+   "n": 2,
+   "recall": 0.5
+  },
+  "teampcp-2026": {
+   "n": 175,
+   "recall": 0.7542857142857143
+  },
+  "tiledesk": {
+   "n": 1,
+   "recall": 0.0
+  },
+  "typosquat": {
+   "n": 62,
+   "recall": 0.43548387096774194
+  },
+  "unattributed-malicious": {
+   "n": 237,
+   "recall": 0.70042194092827
+  }
+ },
+ "reporting_only": {
+  "excluded_family": "dependency-confusion",
+  "macro_recall_excl_dependency_confusion": 0.2896240087978887,
+  "macro_recall_min5_excl_dependency_confusion": 0.44906002199472167,
+  "by_first_release": {
+   "first_release": {
+    "positives": 692,
+    "negatives": 1607,
+    "macro_recall": 0.7075173175713496,
+    "macro_recall_min5": 0.6933564234284662,
+    "families_min5": 6,
+    "macro_recall_excl_dependency_confusion": 0.6852653272243996,
+    "micro_recall": 0.7557803468208093,
+    "alerts_per_1000_benign": 41.692594897324206,
+    "roc_auc": 0.9265582117254354,
+    "per_family": {
+     "backdoor": {
+      "n": 1,
+      "recall": 1.0
+     },
+     "beacon": {
+      "n": 10,
+      "recall": 0.8
+     },
+     "crypto-theft": {
+      "n": 41,
+      "recall": 0.5365853658536586
+     },
+     "data-exfiltration": {
+      "n": 109,
+      "recall": 0.7431192660550459
+     },
+     "dependency-confusion": {
+      "n": 256,
+      "recall": 0.86328125
+     },
+     "discord-token-stealer": {
+      "n": 2,
+      "recall": 0.5
+     },
+     "typosquat": {
+      "n": 53,
+      "recall": 0.4716981132075472
+     },
+     "unattributed-malicious": {
+      "n": 220,
+      "recall": 0.7454545454545455
+     }
+    }
+   },
+   "non_first_release": {
+    "positives": 501,
+    "negatives": 4780,
+    "macro_recall": 0.18882318617055457,
+    "macro_recall_min5": 0.3220579654263865,
+    "families_min5": 10,
+    "macro_recall_excl_dependency_confusion": 0.19669081892766105,
+    "micro_recall": 0.36726546906187624,
+    "alerts_per_1000_benign": 3.556485355648536,
+    "roc_auc": 0.8948596530787796,
+    "per_family": {
+     "2026-06-20": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "2026-07-16": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "2026-07-18": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "2026-07-24": {
+      "n": 8,
+      "recall": 0.0
+     },
+     "2026-09-05": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "2026-09-23": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "axios": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "beacon": {
+      "n": 5,
+      "recall": 1.0
+     },
+     "crypto-theft": {
+      "n": 12,
+      "recall": 0.16666666666666666
+     },
+     "data-exfiltration": {
+      "n": 91,
+      "recall": 0.15384615384615385
+     },
+     "dependency-confusion": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "discord-token-stealer": {
+      "n": 2,
+      "recall": 0.0
+     },
+     "injective-sdk-ts": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "ironworm-npm": {
+      "n": 6,
+      "recall": 0.3333333333333333
+     },
+     "joyfill": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "mastra": {
+      "n": 119,
+      "recall": 0.025210084033613446
+     },
+     "miasma-2026": {
+      "n": 38,
+      "recall": 0.4473684210526316
+     },
+     "miso-client": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "node-ipc-2026": {
+      "n": 2,
+      "recall": 0.0
+     },
+     "pgserve": {
+      "n": 4,
+      "recall": 1.0
+     },
+     "react-native-country-select": {
+      "n": 2,
+      "recall": 0.5
+     },
+     "teampcp-2026": {
+      "n": 175,
+      "recall": 0.7542857142857143
+     },
+     "tiledesk": {
+      "n": 1,
+      "recall": 0.0
+     },
+     "typosquat": {
+      "n": 9,
+      "recall": 0.2222222222222222
+     },
+     "unattributed-malicious": {
+      "n": 17,
+      "recall": 0.11764705882352941
+     }
+    }
+   }
+  }
+ },
+ "order_check": {
+  "argmax_changed_share": 0.008707124010554089,
+  "mean_abs_delta_p_mal": 0.007350092348284961,
+  "alerted_either_order": 812,
+  "alert_flip_rate": 0.059113300492610835
+ },
+ "calib": {
+  "roc_auc": 0.9856687137495734,
+  "triage_accuracy": 0.9805013927576601,
+  "macro_recall_at_budget": 0.6451388888888889
+ },
+ "ece_laya_temperatures": 0.0657006068601583,
+ "noul_label_check": {
+  "items": 843,
+  "accuracy_AB": 0.8813760379596679,
+  "accuracy_false_true": 0.8351126927639383,
+  "agreement": 0.9276393831553974
+ },
+ "test_states_truncated_share": 0.010554089709762533,
+ "ms_per_release_gpu_batch": 13.093062126542144,
+ "collapsed": false
+}
