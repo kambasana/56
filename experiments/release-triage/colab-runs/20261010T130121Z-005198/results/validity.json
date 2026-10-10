@@ -1,0 +1,18 @@
+{
+ "leakage_check": "PASS",
+ "test_families_with_5_positives": 11,
+ "families": [
+  "2026-07-24",
+  "beacon",
+  "crypto-theft",
+  "data-exfiltration",
+  "dependency-confusion",
+  "ironworm-npm",
+  "mastra",
+  "miasma-2026",
+  "teampcp-2026",
+  "typosquat",
+  "unattributed-malicious"
+ ],
+ "underpowered": false
+}
