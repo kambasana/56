@@ -1,0 +1,8 @@
+{
+ "load_seconds": 0.8655092716217041,
+ "checkpoint": "/content/work/runs/F-TD-s0",
+ "score_batch": 32,
+ "inference_precision": "torch.bfloat16",
+ "autocast": true,
+ "gpu": "NVIDIA A100-SXM4-80GB"
+}
