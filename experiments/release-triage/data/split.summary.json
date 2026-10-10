@@ -1,0 +1,135 @@
+{
+ "calib_start": "2025-10-01",
+ "test_start": "2026-03-01",
+ "cap": 0.25,
+ "rows_in": 8540,
+ "rows_out": 5834,
+ "dropped_for_grouping": {
+  "neg:calib": 1002,
+  "neg:test": 1117,
+  "neg:train": 460,
+  "pos:calib": 1
+ },
+ "dropped_for_family_cap": {
+  "calib:data-exfiltration": 24,
+  "calib:shai-hulud": 40,
+  "test:mastra": 7,
+  "test:teampcp-2026": 8,
+  "train:tea-xyz-token-farming": 47
+ },
+ "largest_component_rows": 264,
+ "components": 1771,
+ "script_intent_questions": 666,
+ "splits": {
+  "train": {
+   "rows": 3021,
+   "positives": 448,
+   "negatives": 2573,
+   "published_range": [
+    "2018-05-02",
+    "2025-09-30"
+   ],
+   "families": 18,
+   "max_family_share": 0.25,
+   "positives_per_family": {
+    "tea-xyz-token-farming": 112,
+    "unattributed-malicious": 90,
+    "dependency-confusion": 59,
+    "shai-hulud": 47,
+    "crypto-theft": 45,
+    "npmjs-help-phishing-2025-09": 18,
+    "gluestack-ui": 17,
+    "npnjs-phishing-2025-07": 16,
+    "data-exfiltration": 11,
+    "discord-token-stealer": 10,
+    "beacon": 8,
+    "nx-build": 7,
+    "rspack": 3,
+    "2018-05-19": 1,
+    "INC-2022-0001": 1,
+    "dd-compromised-2025-03": 1,
+    "starjacking": 1,
+    "xrpl-js": 1
+   },
+   "positives_per_category": {
+    "hijack": 111,
+    "new_malicious": 224,
+    "sabotage": 1,
+    "spam": 112
+   },
+   "negatives_first_release": 307,
+   "positives_first_release": 333
+  },
+  "calib": {
+   "rows": 436,
+   "positives": 149,
+   "negatives": 287,
+   "published_range": [
+    "2025-10-01",
+    "2026-02-28"
+   ],
+   "families": 7,
+   "max_family_share": 0.248,
+   "positives_per_family": {
+    "data-exfiltration": 37,
+    "shai-hulud": 37,
+    "unattributed-malicious": 31,
+    "dependency-confusion": 30,
+    "crypto-theft": 9,
+    "discord-token-stealer": 4,
+    "cline": 1
+   },
+   "positives_per_category": {
+    "new_malicious": 111,
+    "hijack": 38
+   },
+   "negatives_first_release": 102,
+   "positives_first_release": 110
+  },
+  "test": {
+   "rows": 2377,
+   "positives": 449,
+   "negatives": 1928,
+   "published_range": [
+    "2026-03-01",
+    "2026-09-29"
+   ],
+   "families": 24,
+   "max_family_share": 0.249,
+   "positives_per_family": {
+    "mastra": 112,
+    "teampcp-2026": 112,
+    "data-exfiltration": 55,
+    "miasma-2026": 38,
+    "typosquat": 31,
+    "crypto-theft": 28,
+    "dependency-confusion": 21,
+    "unattributed-malicious": 15,
+    "2026-07-24": 8,
+    "ironworm-npm": 6,
+    "beacon": 5,
+    "pgserve": 4,
+    "node-ipc-2026": 2,
+    "react-native-country-select": 2,
+    "2026-06-20": 1,
+    "2026-07-16": 1,
+    "2026-07-18": 1,
+    "2026-09-05": 1,
+    "2026-09-23": 1,
+    "axios": 1,
+    "injective-sdk-ts": 1,
+    "joyfill": 1,
+    "miso-client": 1,
+    "tiledesk": 1
+   },
+   "positives_per_category": {
+    "new_malicious": 155,
+    "hijack": 294
+   },
+   "negatives_first_release": 312,
+   "positives_first_release": 154
+  }
+ },
+ "packages_in_two_splits": 0,
+ "accounts_in_two_splits": 0
+}

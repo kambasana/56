@@ -1,0 +1,23 @@
+{
+ "triage": {
+  "type": "choice",
+  "instructions": "An npm package just published this release. Using only the facts in the state, how should a security reviewer treat it?",
+  "criteria": {
+   "routine": "an ordinary release by the usual maintainers; nothing needs a look",
+   "review": "legitimate-looking, but a change in the facts deserves a human look before adoption",
+   "likely_malicious": "the facts point to a compromised or attacker-controlled release"
+  }
+ },
+ "script_intent": {
+  "type": "noul",
+  "instructions": "Does the install-time script shown in the state do something other than build, compile or set up this package (for example download, exfiltrate, run obfuscated code or touch credentials)?",
+  "criteria": {
+   "false": "it only builds or sets up the package",
+   "true": "it does something unrelated to building the package"
+  },
+  "labels": {
+   "false": "B",
+   "true": "A"
+  }
+ }
+}

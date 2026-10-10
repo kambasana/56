@@ -5,7 +5,8 @@
 #              GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --filter=blob:none --no-checkout \
 #                https://github.com/DataDog/malicious-software-packages-dataset "$DD_CLONE"
 #   OSV_ZIP    https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip (sha256 recorded in
-#              data/positive_candidates.summary.json; the build used 5a7217769c65205b…)
+#              data/positive_candidates.summary.json; positives used 5a7217769c65205b…, negatives were
+#              collected with a later download, 802734dd469fb0c5…, which only adds names to the exclusion list)
 #   LABELS     git show 305fad812dc1bdee3fb478ee8d40f1494ea5c3bf:blastradius/pack/model/manifest/labels.jsonl
 #   UNIVERSE   dir with universe-negatives.txt and universe-hammer.txt from the same commit
 #   TOKENIZER  convaiinnovations/laya @ 7b928d82…: tokenizer/tokenizer.json (and a dir with the `tokenizers` package)
