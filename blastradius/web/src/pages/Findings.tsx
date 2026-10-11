@@ -42,6 +42,7 @@ import { useApi } from '@/lib/useApi';
 import { fmtNum } from '@/lib/cn';
 import { cn } from '@/lib/utils';
 import { HealthTable } from './d-parts/HealthTable';
+import { StabilitySection } from './d-parts/Stability';
 import { StatusBadge } from './d-parts/ui';
 import { FindingPeekBody } from './a-parts/FindingPeek';
 import { commonOwner, commonStatus, findingHref, rowsFromFindings, rowsFromGroups, type ListRow } from './a-parts/rows';
@@ -220,6 +221,7 @@ export default function Findings() {
   const rows = useMemo(() => shownData?.rows ?? [], [shownData]);
 
   const health = useApi((s) => (projectScoped ? api.projectHealth(routeProject, s) : Promise.resolve(null)), [routeProject, projectScoped]);
+  const stability = useApi((s) => (projectScoped && view === 'health' ? api.projectStability(routeProject, s) : Promise.resolve(null)), [routeProject, projectScoped, view]);
 
   // Selection (cleared whenever the list changes).
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -537,8 +539,18 @@ export default function Findings() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="findings">{listBody}</TabsContent>
-            <TabsContent value="health">
-              {health.error ? <StateBlock kind="error" title="Could not load maintenance signals" cause={health.error.message} onRetry={health.reload} /> : <HealthTable items={health.data?.items ?? []} loading={health.loading && !health.data} />}
+            <TabsContent value="health" className="flex flex-col gap-5">
+              {stability.error ? (
+                <StateBlock kind="error" title="Could not load stability labels" cause={stability.error.message} onRetry={stability.reload} />
+              ) : (
+                <StabilitySection data={stability.data} loading={stability.loading && !stability.data} />
+              )}
+              <section aria-labelledby="h-upkeep" className="flex flex-col gap-2">
+                <h2 id="h-upkeep" className="m-0 text-heading font-semibold">
+                  Upkeep signals
+                </h2>
+                {health.error ? <StateBlock kind="error" title="Could not load maintenance signals" cause={health.error.message} onRetry={health.reload} /> : <HealthTable items={health.data?.items ?? []} loading={health.loading && !health.data} />}
+              </section>
             </TabsContent>
           </Tabs>
         ) : (

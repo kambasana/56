@@ -290,6 +290,12 @@ export function aggregateHistory(rec: HistoryRecord, asOf: Date, opts: { verifie
   let gap = 0;
   for (let i = 1; i < days.length; i++) gap = Math.max(gap, (days[i]! - days[i - 1]!) / DAY);
 
+  // CAF of the last active period: the 24 months up to the last commit (P3 uses it for inactive repos).
+  const lastEnd = lastAt + DAY;
+  const lastFrom = secs(addMonths(new Date(lastEnd * 1000), -R.cafMonths));
+  const lastPeriod = commits.filter((c) => c.at >= lastFrom && c.at < lastEnd);
+  const cafAtLastCommit = { from: iso(lastFrom), to: iso(lastAt), commits: lastPeriod.length, absenceFactor: absenceFactor([...countBy(lastPeriod, (c) => c.author).values()]) };
+
   const allIds = new Set([...allBy.keys()]);
   const history: CommitHistoryValue = {
     repo: rec.repo,
@@ -308,6 +314,7 @@ export function aggregateHistory(rec: HistoryRecord, asOf: Date, opts: { verifie
       hashed: [...allIds].filter(isHashedId).length,
       via: opts.identityVia ?? ['mailmap', 'github-noreply', 'salted-hash'],
     },
+    cafAtLastCommit,
   };
   if (opts.verified) history.verified = opts.verified;
   return { contributors, history };

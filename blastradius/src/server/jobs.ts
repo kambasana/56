@@ -4,8 +4,10 @@
  * outcome. Scanning never executes repository code (the pipeline only parses manifests).
  */
 import { realpathSync } from 'node:fs';
+import { join } from 'node:path';
 import { isPathInside } from '../core/paths.js';
 import { scan, type ScanOptions } from '../pipeline.js';
+import { recordedHistories } from '../history/fixture.js';
 import type { GitRunner } from '../ingest/git.js';
 import { ApiHttpError } from './errors.js';
 import { checkTarget, cloneTarget } from './targets.js';
@@ -169,6 +171,9 @@ export class ScanJobs {
       log(`scan ${scanId}: started`);
       const asOf = o.asOf ?? this.opts.asOf ?? replay?.asOf;
       const out = await scan({
+        // Offline fixture replays also replay recorded git histories (<fixtures>/history/recorded), so
+        // the stability labels have their repo-level facts; nothing is cloned.
+        ...(offline && fixturesDir !== undefined ? { history: { recorded: recordedHistories(join(fixturesDir, 'history', 'recorded')) } } : {}),
         ...this.opts.scanOptions,
         target: dir,
         offline,

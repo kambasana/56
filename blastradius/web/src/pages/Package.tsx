@@ -22,6 +22,7 @@ import { useApi } from '@/lib/useApi';
 import { fmtTime } from '@/lib/cn';
 import { cn } from '@/lib/utils';
 import { STATUS_LABEL } from './Incidents';
+import { StabilityDetails } from './d-parts/Stability';
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -141,6 +142,22 @@ function Reach({ r, pkg }: { r: PackageReachResponse; pkg: string }) {
               </div>
             ) : (
               <ReachTable r={r} />
+            )}
+          </section>
+
+          <section aria-labelledby="h-stability" className="flex flex-col gap-2.5">
+            <h2 id="h-stability" className="m-0 text-heading font-semibold">
+              Stability
+            </h2>
+            {r.stability ? (
+              <div className="flex flex-col gap-2 rounded-xl border p-4">
+                <StabilityDetails entry={r.stability.entry} disclaimer={r.stability.disclaimer} />
+                <p className="m-0 text-caption text-muted-foreground">
+                  From the scan of {r.stability.projectName} on {fmtTime(r.stability.asOf)}.
+                </p>
+              </div>
+            ) : (
+              <p className="m-0 text-caption text-muted-foreground">No stability label yet: the newest scans that use this package were made before labels existed.</p>
             )}
           </section>
 

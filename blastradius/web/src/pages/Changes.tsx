@@ -25,6 +25,7 @@ import { fmtNum, fmtTime } from '@/lib/cn';
 import { CHANGE_LABELS, factorLabel, LEVEL_RANK, purlLabel } from './d-parts/format';
 import { findingHref } from './d-parts/FindingPanel';
 import { ClampedText, DetailList, Section } from './d-parts/ui';
+import { ContinuitySection } from './d-parts/Stability';
 
 const TYPE_TONE: Record<ChangeType, string> = {
   new_finding: 'border-destructive/40 text-destructive',
@@ -246,6 +247,7 @@ export default function Changes() {
             renderPanel={(row, close) => <ChangePanel row={row} projectId={id} onClose={close} />}
           />
         </TabsContent>
+        {data.continuity && <ContinuitySection rows={data.continuity} />}
       </Tabs>
     );
 

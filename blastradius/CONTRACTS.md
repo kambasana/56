@@ -24,10 +24,11 @@ General rules for all modules:
 | `src/ingest` | static parsers (package-lock / package.json / workflows / Dockerfile, optional syft) → `Inventory` |
 | `src/enrich/osv` | `vuln`, `malware` facts |
 | `src/enrich/depsdev` | `scorecard`, `provenance`, `dependents`, `repo` facts (deps.dev + Scorecard API) |
-| `src/enrich/npm` | `maintainers`, `publisher`, `publisher_change`, `maintainer_change`, `install_script`, `release_age`, `funding`, `repo`, `provenance` |
+| `src/enrich/npm` | `maintainers`, `publisher`, `publisher_change`, `maintainer_change`, `install_script`, `release_age`, `funding`, `repo`, `provenance`, `release_cadence`, `release_publishers`, `declared_status` |
 | `src/enrich/licenses` + `src/licenses` | `license`, `license_change` (deps.dev, ClearlyDefined, lockfile/SBOM declared); SPDX normalisation, categories, policy, `ScanResult.licenses` |
 | `src/enrich/github` | `repo_owner`, `repo_transfer`, `archived`, `funding` |
-| `src/enrich/history` + `src/history` | `contributors`, `commit_history` (opt-in `--history`: blobless bare clones, fixed-format `git log`, GitHub GraphQL login mapping within a point budget); `ScanResult.history` |
+| `src/enrich/history` + `src/history` | `contributors`, `commit_history` (opt-in `--history`: blobless bare clones, fixed-format `git log`, GitHub GraphQL login mapping within a point budget; S5a npm side from `release_publishers` matched by registry e-mail hash); `ScanResult.history` |
+| `src/stability` | stability labels Fragile / Watch / Steady / Unknown from repo-level facts only (`STABILITY_RULES`, `LABEL_RULES`); `ScanResult.stability`; never part of findings or scores |
 | `src/entities` | `Entity` / `EntityLink` from facts |
 | `src/incidents` + `kb/incidents` | YAML incident KB loader + validator → `Incident[]` |
 | `src/scoring` | intrinsic, entity, combined risk, inbound blast radius → `Finding[]` (PLAN §3.6) |
@@ -152,13 +153,22 @@ FACT_KINDS                             // readonly array of all kinds
 | `license_change` | unversioned | `{ version; previousVersion; from: string[]; to: string[]; fromStatus; toStatus; fromCategory; toCategory; added: string[]; removed: string[]; date?: string; unknownBetween?: number }` | licenses (`depsdev`) |
 | `contributors` | unversioned | `{ from; to; commits; absenceFactor /*CHAOSS CAF, 24 months*/; top: {id, share}[]; unmapped; contributors?; allHistory? }`; ids are GitHub logins or `hash:<salted HMAC>` | git |
 | `commit_history` | unversioned | `CommitHistoryValue`: repo-level 12-month windows (CAF, occasional/regular, continuity, signed share, releases, time-zone aggregate above the k-floor), `changes[]` with fixed wording, `people[]` (id, first/last seen, counts; no time, zone or location) | git |
-| `release_cadence`, `funding_detail`, `org_profile` | unversioned | see `src/core/types.ts` (declared in P0 for P3–P7; no producer yet) | — |
+| `release_age` (P3 addition) | versioned | adds `latestDeprecated?: string` (the latest release's npm deprecation message) | npm |
+| `release_cadence` | unversioned | `{ releases; medianDays; cv; latestGapDays; irregular /*CV > 1.5 and latest gap > 3 × median, last 10 stable releases*/; dates?; totalReleases?; lastRelease?: {version, date}; daysSinceLastRelease? }` | npm |
+| `release_publishers` | unversioned | `{ releases; accounts: { name /*npm handle*/; firstVersion; firstAt; index; releases; trusted }[] }`; input of the S5a npm side only; never read by the labels | npm |
+| `declared_status` | unversioned | `{ status: 'deprecated'\|'unmaintained'\|'maintenance_mode'; phrase /*matched README sentence*/; via: 'npm.readme' }` (low confidence; counts only with a second fact) | npm |
+| `commit_history` (P3 additions) | unversioned | `cafAtLastCommit?` (CAF of the 24 months up to the last commit), `npmPublishers?: { total; matched }`, change kind `npm_release_by_new_account` | git |
+| `funding_detail`, `org_profile` | unversioned | see `src/core/types.ts` (declared in P0 for P4–P7; no producer yet) | — |
 
 Notes:
 - `ageDays` / `daysSinceLatestRelease` are computed against `EnrichContext.now`, never the wall clock.
 - `email` fields are kept only when public in registry metadata; reports should not display them.
 - Git author emails never leave memory: `contributors`/`commit_history` carry logins or salted
   hashes only, and time zones only as repo-level window aggregates (docs/WHO-BEHIND-PLAN.md §5).
+- Stability labels (`ScanResult.stability`, docs/WHO-BEHIND-PLAN.md §4) read repo- and org-level
+  fields only (`src/stability/signals.ts`): never `contributors.top`, `commit_history.people`,
+  `release_publishers`, publisher or maintainer names, time zones or any location (test-enforced).
+  Funding rules (F2/F3) are not applied until P4: every entry says `funding: 'not_assessed'`.
 - `LicenseCategory` = `'permissive'|'weak_copyleft'|'strong_copyleft'|'network_copyleft'|'source_available'|'proprietary'|'unknown'`,
   from Blue Oak Council and ScanCode LicenseDB (`src/licenses/classify.ts`), never our own judgement.
 - `Component.declaredLicenses?: { values: string[]; via: 'lockfile' | 'sbom' }` carries the licence

@@ -22,6 +22,7 @@ import type {
 import { isObject, npmPackagePage } from './registry.js';
 import { fundingFromManifestField, repoFromManifestField } from './repo.js';
 import { analyzeInstallScripts, markNewInstallHooks } from './scripts.js';
+import { releaseCadence, releasePublishers } from '../../stability/cadence.js';
 import type {
   NpmMaintainerChangeValue,
   NpmPublisherChangeValue,
@@ -337,7 +338,18 @@ export function deriveReleaseAge(p: Packument, version: string, now: Date): Rele
   if (newest) value.daysSinceLatestRelease = Math.max(0, daysBetween(newest.publishedMs, nowMs));
   const deprecated = str(manifest(p, version)?.deprecated, 500);
   if (deprecated) value.deprecated = deprecated;
+  const latestDeprecated = latestRec ? str(manifest(p, latestRec.version)?.deprecated, 500) : undefined;
+  if (latestDeprecated) value.latestDeprecated = latestDeprecated;
   return value;
+}
+
+/** The README status slimPackument derived (registry.ts), validated again (packuments are untrusted). */
+function declaredStatusField(v: unknown): { status: 'deprecated' | 'unmaintained' | 'maintenance_mode'; phrase: string } | undefined {
+  if (!isObject(v)) return undefined;
+  const status = v.status;
+  const phrase = str(v.phrase, 200);
+  if ((status === 'deprecated' || status === 'unmaintained' || status === 'maintenance_mode') && phrase) return { status, phrase };
+  return undefined;
 }
 
 export function packageName(p: Packument, fallback: string): string {
@@ -363,6 +375,16 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
     const value: MaintainersValue = { maintainers: topMaintainers, count: topMaintainers.length };
     facts.push(makeFact('maintainers', pkgSubject, value, meta([pkgPage])));
   }
+
+  // Stability inputs (plan S3, S4, S5a; P3): package-level, as of `now`, also when the version in
+  // use is gone from the registry (event-stream 3.3.6 was unpublished).
+  const asOfHistory = versionHistory(p, opts.now);
+  const cadence = releaseCadence(asOfHistory, opts.now);
+  if (cadence) facts.push(makeFact('release_cadence', pkgSubject, cadence, meta([pkgPage])));
+  const publishers = releasePublishers(asOfHistory, opts.now);
+  if (publishers) facts.push(makeFact('release_publishers', pkgSubject, publishers, meta([pkgPage])));
+  const declared = declaredStatusField(p._declaredStatus);
+  if (declared) facts.push(makeFact('declared_status', pkgSubject, { ...declared, via: 'npm.readme' }, meta([pkgPage])));
 
   const m = manifest(p, version);
   if (!m) {

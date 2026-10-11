@@ -4,7 +4,7 @@
  * imports and constant tables only, so the web app imports it through the @server alias.
  * Values that came from scanned repos, registries or advisories are untrusted text.
  */
-import type { DepScope, EntityChainEntry, Environment, RiskLevel } from '../core/types.js';
+import type { DepScope, EntityChainEntry, Environment, RiskLevel, StabilityEntry } from '../core/types.js';
 import type { Id, IsoTime } from './api-types.js';
 
 // ---------------------------------------------------------------------------
@@ -197,6 +197,11 @@ export interface PackageReachResponse {
   /** Production paths first, then shortest. Capped at 200. */
   paths: ReachPath[];
   totalPaths: number;
+  /**
+   * Stability label (docs/WHO-BEHIND-PLAN.md §4) from the newest scan among the projects that use the
+   * package; null when no such scan has labels. Upkeep from public records, not risk.
+   */
+  stability?: { entry: StabilityEntry; projectId: Id; projectName: string; scanId: Id; asOf: IsoTime; disclaimer: string } | null;
 }
 
 // ---------------------------------------------------------------------------

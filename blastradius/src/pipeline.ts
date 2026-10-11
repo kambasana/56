@@ -25,6 +25,7 @@ import { createLicenseEnricher } from './enrich/licenses/index.js';
 import { buildLicenseReport } from './licenses/report.js';
 import { createHistoryEnricher, type HistoryEnricherOptions } from './enrich/history/index.js';
 import { buildHistoryReport } from './history/report.js';
+import { buildStabilityReport } from './stability/report.js';
 import type { LicensePolicy } from './licenses/policy.js';
 import { incidentsFromMalwareFacts, loadIncidents, validateKbDir } from './incidents/index.js';
 import { applyReviewState, buildEntityGraph, loadReviewState, resolveEntities, type EntityGraphData } from './entities/index.js';
@@ -244,6 +245,8 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   result.licenses = buildLicenseReport(inventory, facts);
   const history = buildHistoryReport(facts);
   if (history) result.history = history;
+  // Stability labels (plan §4, P3): repo-level facts only; not risk, no effect on findings.
+  result.stability = buildStabilityReport(inventory, facts, now);
 
   // 6. Reports.
   const files: string[] = [];

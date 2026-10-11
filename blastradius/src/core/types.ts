@@ -315,6 +315,8 @@ export const FACT_KINDS = [
   'contributors',
   'commit_history',
   'release_cadence',
+  'release_publishers',
+  'declared_status',
   'funding_detail',
   'org_profile',
 ] as const;
@@ -532,6 +534,11 @@ export interface ReleaseAgeValue {
   daysSinceLatestRelease?: number;
   /** Package deprecated message, if any. */
   deprecated?: string;
+  /**
+   * Deprecation message of the latest release (plan S3, P3). npm deprecates versions or ranges
+   * (`npm deprecate`), so only a deprecated latest release says the package as a whole is.
+   */
+  latestDeprecated?: string;
 }
 
 /**
@@ -661,6 +668,13 @@ export interface CommitHistoryValue {
   verified?: { checked: number; verified: number };
   /** How identities were resolved. */
   identity: { mapped: number; hashed: number; via: string[] };
+  /** CAF over the 24 months up to the last commit (P3: the CAF of the last active period). */
+  cafAtLastCommit?: { from: string; to: string; commits: number; absenceFactor: number };
+  /**
+   * S5a npm side (P3): npm accounts that published releases, and how many of them could be matched
+   * to this history (registry e-mail address hashed like commit e-mails, or a no-reply login).
+   */
+  npmPublishers?: { total: number; matched: number };
 }
 
 export interface CommitHistoryWindow {
@@ -706,7 +720,9 @@ export type CommitHistoryChangeKind =
   | 'release_by_new_person'
   | 'release_handover'
   | 'signed_share_changed'
-  | 'time_zone_pattern_changed';
+  | 'time_zone_pattern_changed'
+  /** S5a, npm side (P3): a release published on npm by an account first seen in the repository < 180 days earlier. */
+  | 'npm_release_by_new_account';
 
 export interface CommitHistoryChange {
   kind: CommitHistoryChangeKind;
@@ -749,12 +765,52 @@ export interface HistoryPerson {
 
 /** Release regularity from registry publish times (plan S4; produced in P3). */
 export interface ReleaseCadenceValue {
+  /** Releases the numbers are computed over (the last N stable releases, N ≤ 10). */
   releases: number;
+  /** Median days between consecutive releases among them. */
   medianDays: number;
-  /** Coefficient of variation of the gaps. */
+  /** Coefficient of variation of the gaps (population standard deviation / mean). */
   cv: number;
+  /** Days between the two most recent releases. */
   latestGapDays: number;
+  /** CV > 1.5 and latest gap > 3 × median (STABILITY_RULES). */
   irregular: boolean;
+  /** Release dates (YYYY-MM-DD) the numbers are computed over, oldest first. */
+  dates?: string[];
+  /** Stable releases up to the scan time, and the latest one. */
+  totalReleases?: number;
+  lastRelease?: { version: string; date: string };
+  /** Days from the latest release (any, including pre-releases) to the scan time. */
+  daysSinceLastRelease?: number;
+}
+
+/**
+ * Who published the releases of an npm package (`_npmUser`), per account: its first release and
+ * how many it published (plan S5a input; produced in P3). npm handles are public account ids.
+ * Read only by the history aggregate, which turns them into repo-level observations; the
+ * stability labels never read this fact (src/stability/signals.ts, guarded by a test).
+ */
+export interface ReleasePublishersValue {
+  /** Releases with a time entry up to the scan time (pre-releases included). */
+  releases: number;
+  accounts: {
+    name: string;
+    firstVersion: string;
+    firstAt: string;
+    /** Position of the first release by this account in the release order (0 = the first release). */
+    index: number;
+    releases: number;
+    /** Published through npm trusted publishing (an OIDC CI identity, not a person's account). */
+    trusted: boolean;
+  }[];
+}
+
+/** A maintenance status the package itself declares (README; plan S3). Low confidence by definition. */
+export interface DeclaredStatusValue {
+  status: 'deprecated' | 'unmaintained' | 'maintenance_mode';
+  /** The matched sentence, verbatim (≤ 200 characters). */
+  phrase: string;
+  via: 'npm.readme';
 }
 
 /** Money received through a funding platform with public books (plan F2/F3; produced in P4). */
@@ -806,6 +862,8 @@ export interface FactValueMap {
   contributors: ContributorsValue;
   commit_history: CommitHistoryValue;
   release_cadence: ReleaseCadenceValue;
+  release_publishers: ReleasePublishersValue;
+  declared_status: DeclaredStatusValue;
   funding_detail: FundingDetailValue;
   org_profile: OrgProfileValue;
 }
@@ -1064,6 +1122,11 @@ export interface ScanResult {
    * when the scan ran with history collection. Repo-level and pseudonymous by construction.
    */
   history?: HistoryReport;
+  /**
+   * Stability labels per package (docs/WHO-BEHIND-PLAN.md §4, S3, S4, S5a; P3). Not risk: never
+   * part of findings or scores. Present on scans made since P3.
+   */
+  stability?: StabilityReport;
   /** Non-fatal problems (enricher failures, missing fixtures in offline mode). */
   warnings?: string[];
 }
@@ -1150,4 +1213,91 @@ export interface LicenseReport {
   /** Classifications the categories come from (name, url, version, licence of the data). */
   classification: { name: string; url: string; version: string; license: string }[];
   note: string;
+}
+
+// ---------------------------------------------------------------------------
+// Stability labels (docs/WHO-BEHIND-PLAN.md §4; P3)
+// ---------------------------------------------------------------------------
+
+export const STABILITY_LABELS = ['fragile', 'watch', 'steady', 'unknown'] as const;
+export type StabilityLabel = (typeof STABILITY_LABELS)[number];
+
+export const MAINTENANCE_STATES = ['active', 'quiet', 'inactive', 'ended', 'unknown'] as const;
+export type MaintenanceState = (typeof MAINTENANCE_STATES)[number];
+
+export type StabilityConfidence = 'high' | 'medium' | 'low';
+
+/** One fact behind a label: what it says, where it comes from, how sure. Repo/org level only. */
+export interface StabilityReason {
+  /** Signal id from the plan: S1, S2, S3, S4, S5a, C1, C2, L2, F2, F3. */
+  signal: string;
+  /** Plain factual sentence; no names, ids or e-mails. */
+  text: string;
+  /** Producer: "npm", "git", "scorecard", "github", "depsdev", "npm.readme". */
+  source: string;
+  confidence: StabilityConfidence;
+  /** Public URLs (registry page, repository, Scorecard). */
+  evidence?: string[];
+  /** Date the fact refers to (YYYY-MM-DD), when it has one. */
+  date?: string;
+}
+
+/** A rule that decided the label, with the facts that triggered it. */
+export interface StabilityRuleHit {
+  /** Rule id (src/stability/rules.ts LABEL_RULES). */
+  rule: string;
+  /** Rule as written in the plan, e.g. "Fragile: CAF = 1 and S3 inactive". */
+  name: string;
+  facts: StabilityReason[];
+}
+
+/** S5a observation for the Changes page: a release made or published by a recent account. */
+export interface ContinuityEvent {
+  package: PurlString;
+  name: string;
+  kind: 'release_by_new_person' | 'npm_release_by_new_account' | 'release_takeover';
+  date: string;
+  release?: string;
+  daysSinceFirstSeen?: number;
+  text: string;
+  source: 'git' | 'npm+git';
+  confidence: StabilityConfidence;
+  evidence?: string[];
+}
+
+export interface StabilityEntry {
+  /** Unversioned purl. */
+  package: PurlString;
+  name: string;
+  /** Versions of the package in the scanned inventory. */
+  versions: string[];
+  /** Reached through a runtime (non-dev) dependency path. */
+  production: boolean;
+  label: StabilityLabel;
+  /** One factual sentence, e.g. "Single active contributor and no commit or release in 18 months." */
+  summary: string;
+  /** Rules that fired (empty for Steady and Unknown). */
+  rules: StabilityRuleHit[];
+  /** Facts shown for context that decided nothing (e.g. C1 alone, S1, S4 regular). */
+  context: StabilityReason[];
+  /** What is missing for a fuller label (Unknown says why). */
+  missing: string[];
+  s3: { state: MaintenanceState; confidence: StabilityConfidence; lastCommit?: string; lastRelease?: string; declared?: DeclaredStatusValue['status'] };
+  /** S2 used by the rules: CAF and the window it covers. */
+  caf?: { value: number; commits: number; from: string; to: string };
+  s4?: ReleaseCadenceValue;
+  s5a: ContinuityEvent[];
+  /** F2/F3 are P4: always "not_assessed" until funding data exists. */
+  funding: 'not_assessed';
+}
+
+export interface StabilityReport {
+  /** Scan time the labels are computed at. */
+  asOf: string;
+  /** Rule set version (bumped when STABILITY_RULES change meaning). */
+  rulesVersion: 1;
+  packages: StabilityEntry[];
+  counts: Record<StabilityLabel, number>;
+  /** Wording shown with every label. */
+  disclaimer: string;
 }

@@ -13,14 +13,16 @@
 import path from 'node:path';
 import { defaultCacheDir } from '../../core/paths.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
-import { makeFact, unversionedPurl } from '../../core/types.js';
-import type { Fact, Inventory, PurlString } from '../../core/types.js';
+import { makeFact, npmNameFromPurl, parsePurl, unversionedPurl } from '../../core/types.js';
+import type { Fact, Inventory, PurlString, ReleasePublishersValue } from '../../core/types.js';
 import { aggregateHistory, mappingLookups } from '../../history/aggregate.js';
 import { ensureClone, pruneCache, readHistory, runGit, type GitRun, type HistoryCacheOptions } from '../../history/git.js';
 import { GraphqlBudget, mapLogins, DEFAULT_BUDGET_POINTS } from '../../history/graphql.js';
-import { loadSalt } from '../../history/identity.js';
+import { npmContinuity } from '../../history/continuity.js';
+import { loadSalt, localIdentity } from '../../history/identity.js';
 import { renameIds, type HistoryRecord } from '../../history/record.js';
 import { mapLimit } from '../depsdev/util.js';
+import { fetchPackument, isObject } from '../npm/registry.js';
 
 export interface HistoryEnricherOptions {
   /** Facts produced earlier in the scan (the `repo` facts). */
@@ -54,7 +56,9 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
     async enrich(_inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
       const byRepo = new Map<string, Set<PurlString>>();
       for (const f of opts.repoFacts()) {
-        if (f.kind !== 'repo' || f.value.directory) continue;
+        // A package in a monorepo subdirectory gets the facts of the whole repository (repo-level by
+        // design; the stability label says so). One clone per repository either way.
+        if (f.kind !== 'repo') continue;
         let url = f.value.url.replace(/\.git$/, '').replace(/\/+$/, '');
         // GitHub owner and repository names are case-insensitive: one clone per repository.
         if (url.startsWith('https://github.com/')) url = url.toLowerCase();
@@ -63,6 +67,8 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         if (!s) byRepo.set(url, (s = new Set()));
         s.add(unversionedPurl(f.subject));
       }
+      const publishersOf = new Map<PurlString, ReleasePublishersValue>();
+      for (const f of opts.repoFacts()) if (f.kind === 'release_publishers') publishersOf.set(unversionedPurl(f.subject), f.value);
       const repos = [...byRepo.keys()].sort().slice(0, opts.maxRepos ?? 300);
       if (repos.length === 0) return [];
       const cacheDir = opts.cache?.dir ?? path.join(defaultCacheDir(), 'git-history');
@@ -92,6 +98,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             return;
           }
         }
+        let renamed: ReadonlyMap<string, string> = new Map();
         let verified: { checked: number; verified: number } | undefined;
         const via = ['mailmap', 'github-noreply', 'salted-hash'];
         const gh = GITHUB_REPO_RE.exec(url);
@@ -104,6 +111,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
               if (login && c.author.startsWith('hash:') && !rename.has(c.author)) rename.set(c.author, login);
             }
             rec = renameIds(rec, rename);
+            renamed = rename;
             verified = m.verified;
             via.splice(2, 0, 'github-graphql');
           } catch {
@@ -115,7 +123,21 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         const meta = { source: 'git', fetchedAt: ctx.now, evidence: [url] };
         for (const subject of byRepo.get(url) ?? []) {
           facts.push(makeFact('contributors', subject, agg.contributors, meta));
-          facts.push(makeFact('commit_history', subject, agg.history, meta));
+          // S5a npm side (P3): per package, from the npm publishers matched to this history.
+          const pubs = publishersOf.get(subject);
+          if (!pubs) {
+            facts.push(makeFact('commit_history', subject, agg.history, meta));
+            continue;
+          }
+          let linked = rec;
+          if (!linked.npmPublishers && !ctx.offline && !opts.recorded) linked = { ...rec, npmPublishers: await publisherLinks(ctx, subject, rec, getSalt, renamed) };
+          const npm = npmContinuity(linked, pubs, ctx.now);
+          const history = {
+            ...agg.history,
+            changes: [...agg.history.changes, ...npm.changes].sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
+            npmPublishers: { total: npm.accounts, matched: npm.matched },
+          };
+          facts.push(makeFact('commit_history', subject, history, meta));
         }
       });
       if (skippedOffline > 0) ctx.warn?.(`git history: ${skippedOffline} repositor${skippedOffline === 1 ? 'y' : 'ies'} skipped in offline mode`);
@@ -125,4 +147,36 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       return facts.sort((a, b) => a.subject.localeCompare(b.subject) || a.kind.localeCompare(b.kind));
     },
   };
+}
+
+/**
+ * npm account → id in this history, through the registry e-mail address of each release's
+ * publisher (`_npmUser.email`), hashed in memory with the history salt; only matches are kept and
+ * the addresses are dropped at once. Empty on any failure (no observation without a match).
+ */
+async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: HistoryRecord, salt: () => Buffer | string, renamed: ReadonlyMap<string, string>): Promise<Record<string, string>> {
+  const p = parsePurl(subject);
+  if (p.type !== 'npm') return {};
+  let packument;
+  try {
+    packument = await fetchPackument(ctx.http, npmNameFromPurl(p));
+  } catch {
+    return {};
+  }
+  if (!packument || !isObject(packument.versions)) return {};
+  const ids = new Set<string>();
+  for (const c of rec.commits) {
+    ids.add(c.author);
+    ids.add(c.committer);
+  }
+  for (const t of rec.tags) ids.add(t.by);
+  const out: Record<string, string> = {};
+  for (const m of Object.values(packument.versions)) {
+    const u = isObject(m) && isObject(m._npmUser) ? m._npmUser : undefined;
+    if (typeof u?.name !== 'string' || typeof u.email !== 'string' || Object.hasOwn(out, u.name)) continue;
+    const local = localIdentity(u.email, salt());
+    const id = renamed.get(local) ?? local;
+    if (ids.has(id)) out[u.name] = id;
+  }
+  return out;
 }

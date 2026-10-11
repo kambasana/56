@@ -51,6 +51,8 @@ export interface Packument {
   time?: Record<string, unknown>;
   maintainers?: unknown;
   repository?: unknown;
+  /** Declared maintenance status found in the README by slimPackument (P3); the README is not kept. */
+  _declaredStatus?: unknown;
 }
 
 /** One version of the publish history, with validated fields. */

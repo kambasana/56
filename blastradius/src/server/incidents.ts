@@ -41,6 +41,7 @@ import {
   listAlerts,
   listProjects,
   parseJson,
+  packageStability,
   placeholders,
   type AlertRow,
   type Store,
@@ -383,6 +384,12 @@ export function packageReach(ctx: IncidentContext, query: { name: string; versio
       .sort((a, b) => Number(b.production) - Number(a.production) || b.assets - a.assets || a.projectName.localeCompare(b.projectName) || a.via.localeCompare(b.via)),
     paths: paths.slice(0, MAX_PATHS),
     totalPaths: paths.length,
+    stability: packageStability(
+      ctx.store,
+      ctx.orgId,
+      inventories.flatMap((inv) => (inv.scanId && projects.some((p) => p.projectId === inv.projectId) ? [{ projectId: inv.projectId, projectName: inv.projectName, scanId: inv.scanId }] : [])),
+      query.name,
+    ),
   };
 }
 
