@@ -803,7 +803,7 @@ kept and both injected values are refused without being stored. Costs: request, 
 budgets, cache with TTL (re-verified on every hit), de-duplication; all tested.
 
 Tests: 126 in blastradius for this work (`src/agentic/agentic.test.ts`, `test/agentic/*.test.ts`,
-`src/server/agentic.test.ts`, migration test), 812 in all; web 301 unit (+4) and 56 e2e (+4: the
+`src/server/agentic.test.ts`, migration test), 823 in all after merging the P1 fix; web 302 unit (+4) and 56 e2e (+4: the
 Proposed facts list for AppSec, confirm and reject as org admin, axe light and dark). Model turns in
 tests are hand-written stubs replayed by `ReplayModel` (`test/fixtures/agentic/model/stubbed.json`)
 because no API key is available here; every page and registry document they lead to is a real
