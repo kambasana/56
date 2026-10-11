@@ -12,6 +12,10 @@
  *    vendored in ./data/scancode-categories.ts), mapped as in SCANCODE_TO_CATEGORY below.
  * 4. Anything else: unknown.
  *
+ * One exception: SSPL-1.0 is in Blue Oak's network copyleft family, but it is not OSI-approved and
+ * buyers group it with BUSL and Elastic, so ScanCode's "Source-available" decides it (see
+ * SCANCODE_FIRST below).
+ *
  * Categories describe the kind of obligations, not whether a use is allowed: that is the
  * customer's policy (./policy.ts). Not legal advice.
  */
@@ -66,6 +70,9 @@ export interface CategoryOf {
   by: 'blueoak-copyleft' | 'blueoak-list' | 'scancode' | 'npm' | 'none';
 }
 
+/** Licences where ScanCode's category is used ahead of Blue Oak's (reason in the header comment). */
+export const SCANCODE_FIRST: ReadonlySet<string> = new Set(['SSPL-1.0']);
+
 const BY_ID = new Map<string, CategoryOf>();
 for (const fam of ['maximal', 'network', 'strong', 'weak'] as const) {
   const category: LicenseCategory = fam === 'weak' ? 'weak_copyleft' : fam === 'strong' ? 'strong_copyleft' : 'network_copyleft';
@@ -75,9 +82,10 @@ for (const rating of BLUE_OAK_LIST) for (const l of rating.licenses) if (!BY_ID.
 
 /** Category of one SPDX licence id (deprecated ids are mapped to their current form first). */
 export function categoryOfId(id: string): CategoryOf {
+  const sc = SCANCODE_CATEGORIES[id];
+  if (sc && SCANCODE_FIRST.has(id)) return { category: SCANCODE_TO_CATEGORY[sc], by: 'scancode' };
   const known = BY_ID.get(id);
   if (known) return known;
-  const sc = SCANCODE_CATEGORIES[id];
   if (sc) return { category: SCANCODE_TO_CATEGORY[sc], by: 'scancode' };
   return { category: 'unknown', by: 'none' };
 }

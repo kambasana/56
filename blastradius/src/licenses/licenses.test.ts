@@ -55,8 +55,8 @@ describe('categories from Blue Oak Council and ScanCode LicenseDB', () => {
     ['LGPL-2.1-only', 'weak_copyleft', 'blueoak-copyleft'],
     ['GPL-3.0-only', 'strong_copyleft', 'blueoak-copyleft'],
     ['AGPL-3.0-only', 'network_copyleft', 'blueoak-copyleft'],
-    // Blue Oak's copyleft guide lists SSPL in its network family; that listing wins over ScanCode's "Source-available".
-    ['SSPL-1.0', 'network_copyleft', 'blueoak-copyleft'],
+    // Blue Oak lists SSPL as network copyleft; ScanCode's "Source-available" is used for it instead.
+    ['SSPL-1.0', 'source_available', 'scancode'],
     ['BUSL-1.1', 'source_available', 'scancode'],
     ['Elastic-2.0', 'source_available', 'scancode'],
     ['LicenseRef-acme-internal', 'unknown', 'none'],
