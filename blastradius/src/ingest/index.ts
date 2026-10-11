@@ -295,6 +295,11 @@ function mergeSbom(
 ): void {
   sbom.warnings.forEach(ctx.warn);
   const fresh = sbom.components.filter((c) => !ctx.components.has(c.purl));
+  // Licences the SBOM declares for components the static parsers already found (lockfile first).
+  for (const c of sbom.components) {
+    const known = ctx.components.get(c.purl);
+    if (known && !known.declaredLicenses && c.declaredLicenses) known.declaredLicenses = c.declaredLicenses;
+  }
   ctx.addComponents(fresh);
   const newEdges: DepEdge[] = [];
   const hasInbound = new Set(ctx.edges.map((e) => e.to));

@@ -230,6 +230,12 @@ export interface Component {
   integrity?: string;
   /** For actions/images: how the reference is pinned. */
   pinning?: 'sha' | 'tag' | 'branch' | 'digest' | 'unpinned';
+  /**
+   * Licence strings declared in the scanned files themselves: the `license` field npm copies into
+   * package-lock.json entries, or an imported SBOM's `licenses`. Untrusted, capped; normalised
+   * by the licences enricher (source "lockfile" / "sbom").
+   */
+  declaredLicenses?: { values: string[]; via: 'lockfile' | 'sbom' };
 }
 
 export type DepScope = 'runtime' | 'dev' | 'optional' | 'peer' | 'build';
@@ -303,6 +309,13 @@ export const FACT_KINDS = [
   'archived',
   'release_age',
   'dependency_added',
+  // docs/WHO-BEHIND-PLAN.md P0: licences (P1), git history (P2), stability (P3), funding (P4), orgs (P7).
+  'license',
+  'license_change',
+  'contributors',
+  'release_cadence',
+  'funding_detail',
+  'org_profile',
 ] as const;
 
 export type FactKind = (typeof FACT_KINDS)[number];
@@ -520,6 +533,134 @@ export interface ReleaseAgeValue {
   deprecated?: string;
 }
 
+/**
+ * Obligation category of a licence (docs/WHO-BEHIND-PLAN.md L4). Taken from published
+ * classifications, never decided by us: Blue Oak Council's licence list (permissive) and copyleft
+ * guide (weak / strong / network / maximal), then ScanCode LicenseDB categories for licences Blue
+ * Oak does not cover (source-available, proprietary). See src/licenses/classify.ts.
+ */
+export const LICENSE_CATEGORIES = [
+  'permissive',
+  'weak_copyleft',
+  'strong_copyleft',
+  'network_copyleft',
+  'source_available',
+  'proprietary',
+  'unknown',
+] as const;
+export type LicenseCategory = (typeof LICENSE_CATEGORIES)[number];
+
+/**
+ * How a declared licence string was read:
+ * - `spdx`: a valid SPDX expression as declared (deprecated ids kept as written);
+ * - `corrected`: not valid SPDX, mapped by spdx-correct (a guess; `raw` keeps the original);
+ * - `non_standard`: no SPDX mapping (deps.dev "non-standard", or nothing we could map);
+ * - `unlicensed`: npm's "UNLICENSED" (no rights granted; package.json docs);
+ * - `see_file`: npm's "SEE LICENSE IN <file>" (terms only in a file we do not read);
+ * - `unknown`: the source has no licence for it (empty, NOASSERTION, NONE).
+ */
+export type LicenseStatus = 'spdx' | 'corrected' | 'non_standard' | 'unlicensed' | 'see_file' | 'unknown';
+
+/** Declared licence of one component version, as one source states it. */
+export interface LicenseValue {
+  /** Exact strings the source gave (deps.dev licenseDetails[].license, package.json `license`, SBOM). */
+  raw: string[];
+  /**
+   * Valid SPDX expressions, one per declared licence entry, sorted. Absent for entries we could
+   * not map. deps.dev: "when more than one license is listed, their relationship is unspecified".
+   */
+  expressions: string[];
+  /** Weakest status across the entries (unknown when nothing usable was declared). */
+  status: LicenseStatus;
+  /** Category of the combination (entries treated as all applying when their relation is unknown). */
+  category: LicenseCategory;
+  /** The version the value is for. */
+  version: string;
+  /** spdx-correct guesses: raw string → expression. Shown as "corrected", never as declared. */
+  corrected?: { from: string; to: string }[];
+  /** ClearlyDefined licence score (0–100) when the source is ClearlyDefined. */
+  score?: number;
+  /**
+   * "repository": the licence the source repository declares today (deps.dev GetProject, as
+   * reported by GitHub), used for GitHub Actions, which have no package metadata. Not per version.
+   */
+  basis?: 'repository';
+}
+
+/** The declared licence changed between two releases of a package (version order). */
+export interface LicenseChangeValue {
+  /** First release with the new licence. */
+  version: string;
+  /** Previous release with a known licence (unknown releases in between are skipped). */
+  previousVersion: string;
+  /**
+   * Before and after, sorted: normalised SPDX expressions, or the author's strings when they have
+   * no SPDX form (then the matching status is non_standard).
+   */
+  from: string[];
+  to: string[];
+  fromStatus: LicenseStatus;
+  toStatus: LicenseStatus;
+  fromCategory: LicenseCategory;
+  toCategory: LicenseCategory;
+  /** SPDX ids added / removed by the change. */
+  added: string[];
+  removed: string[];
+  /** Publication time of `version` (ISO), when known. */
+  date?: string;
+  /** Releases between the two with no licence data. */
+  unknownBetween?: number;
+}
+
+/** Contributor concentration from git history (plan S2; produced in P2). */
+export interface ContributorsValue {
+  /** Window the numbers cover (ISO dates). */
+  from: string;
+  to: string;
+  commits: number;
+  /** CHAOSS Contributor Absence Factor at 50 %. */
+  absenceFactor: number;
+  /** Largest shares, ids are GitHub logins or `hash:<salted hash>`; never clear-text emails. */
+  top: { id: string; share: number }[];
+  /** Commits whose author could not be mapped to a login. */
+  unmapped: number;
+}
+
+/** Release regularity from registry publish times (plan S4; produced in P3). */
+export interface ReleaseCadenceValue {
+  releases: number;
+  medianDays: number;
+  /** Coefficient of variation of the gaps. */
+  cv: number;
+  latestGapDays: number;
+  irregular: boolean;
+}
+
+/** Money received through a funding platform with public books (plan F2/F3; produced in P4). */
+export interface FundingDetailValue {
+  platform: 'open_collective';
+  slug: string;
+  currency: string;
+  last12Months: number;
+  previous12Months: number;
+  /** Share of the last 12 months from the largest organisational funder (0–1). */
+  topShare?: number;
+  fundersOver5Percent?: number;
+  trend: 'growing' | 'flat' | 'declining' | 'stopped' | 'unknown';
+}
+
+/** Facts an organisation declares about itself (plan C4; produced in P7). Never about a person. */
+export interface OrgProfileValue {
+  /** Entity id, e.g. "org:github/hashicorp" or "funder:opencollective/babel". */
+  entity: string;
+  name?: string;
+  legalName?: string;
+  /** Self-declared location string, shown as declared, never parsed into a country. */
+  location?: string;
+  /** Where it came from: "github.org", "opencollective.account", "companies-house". */
+  via: string;
+}
+
 /** Value shape for each Fact kind. */
 export interface FactValueMap {
   vuln: VulnValue;
@@ -539,6 +680,12 @@ export interface FactValueMap {
   archived: ArchivedValue;
   release_age: ReleaseAgeValue;
   dependency_added: DependencyAddedValue;
+  license: LicenseValue;
+  license_change: LicenseChangeValue;
+  contributors: ContributorsValue;
+  release_cadence: ReleaseCadenceValue;
+  funding_detail: FundingDetailValue;
+  org_profile: OrgProfileValue;
 }
 
 /** A fact of one specific kind. */
@@ -785,6 +932,11 @@ export interface ScanResult {
    * column so real problems are not buried (docs/DATA-ML.md, noise rule). Sorted like findings.
    */
   health?: HealthEntry[];
+  /**
+   * Declared licences per component, licence changes and their sources (docs/WHO-BEHIND-PLAN.md
+   * L1, L2). Shown from others: no policy result is stored here, policies are applied when read.
+   */
+  licenses?: LicenseReport;
   /** Non-fatal problems (enricher failures, missing fixtures in offline mode). */
   warnings?: string[];
 }
@@ -797,4 +949,78 @@ export interface HealthEntry {
   reasons: Reason[];
   /** Who is behind the package (see Finding.behind). */
   behind?: EntityChainEntry[];
+}
+
+// ---------------------------------------------------------------------------
+// Licences (docs/WHO-BEHIND-PLAN.md L1, L2, L4)
+// ---------------------------------------------------------------------------
+
+/** A customer's licence policy decision (src/licenses/policy.ts evaluates it). */
+export const LICENSE_POLICY_DECISIONS = ['allow', 'review', 'deny'] as const;
+export type LicensePolicyDecision = (typeof LICENSE_POLICY_DECISIONS)[number];
+
+/**
+ * Licence policy: a decision per obligation category, plus per-SPDX-id overrides. `unknown` can
+ * only be review or deny. The customer's rules, not ours; not legal advice.
+ */
+export interface LicensePolicy {
+  version: 1;
+  categories: Record<LicenseCategory, LicensePolicyDecision>;
+  ids: { id: string; decision: LicensePolicyDecision; note?: string }[];
+}
+
+/** One source's statement of a component's licence. */
+export interface LicenseSourceValue {
+  /** Fact source: "depsdev", "clearlydefined", "lockfile", "sbom". */
+  source: string;
+  raw: string[];
+  expressions: string[];
+  status: LicenseStatus;
+  category: LicenseCategory;
+  evidence?: string[];
+  corrected?: { from: string; to: string }[];
+  score?: number;
+  basis?: 'repository';
+}
+
+/** The licence shown for a component, with every source that stated one. */
+export interface ComponentLicense {
+  /** Versioned purl. */
+  purl: PurlString;
+  name: string;
+  version: string;
+  ecosystem: Ecosystem;
+  /** Chosen value (first known of: deps.dev, ClearlyDefined, lockfile, SBOM). */
+  expressions: string[];
+  status: LicenseStatus;
+  category: LicenseCategory;
+  /** Source of the chosen value; "none" when no source stated a licence. */
+  source: string;
+  sources: LicenseSourceValue[];
+  /** Two sources state different licences. */
+  disagreement: boolean;
+}
+
+/** A licence change of a package in the inventory, placed against the versions in use. */
+export interface LicenseChangeEntry extends LicenseChangeValue {
+  /** Unversioned purl. */
+  purl: PurlString;
+  name: string;
+  /** Versions of the package in this inventory. */
+  inUse: string[];
+  /** Whether the versions in use already carry the new licence, or would on upgrade. */
+  relation: 'in_use_or_earlier' | 'after_in_use' | 'mixed' | 'unknown';
+  categoryChange: boolean;
+  source: string;
+  evidence?: string[];
+}
+
+export interface LicenseReport {
+  components: ComponentLicense[];
+  changes: LicenseChangeEntry[];
+  /** Components per category. */
+  counts: Record<LicenseCategory, number>;
+  /** Classifications the categories come from (name, url, version, licence of the data). */
+  classification: { name: string; url: string; version: string; license: string }[];
+  note: string;
 }

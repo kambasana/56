@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { defaultCacheDir } from './core/paths.js';
 import { installEnvProxy } from './core/proxy.js';
 import type { RiskLevel } from './core/types.js';
-import { DEFAULT_KB_DIR, OUTPUT_FORMATS, scan, validateKb, type OutputFormat, type ScanOptions } from './pipeline.js';
+import { ALL_OUTPUT_FORMATS, DEFAULT_KB_DIR, OUTPUT_FORMATS, scan, validateKb, type OutputFormat, type ScanOptions } from './pipeline.js';
 import { failsThreshold, formatSummary } from './summary.js';
+import { parseLicensePolicy } from './licenses/policy.js';
 
 /** Exit code when --fail-on matches (distinct from 1 = error). */
 export const EXIT_POLICY = 2;
@@ -17,11 +19,11 @@ export function parseFormats(value: string): OutputFormat[] {
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  if (parts.length === 1 && parts[0] === 'all') return [...OUTPUT_FORMATS];
+  if (parts.length === 1 && parts[0] === 'all') return [...ALL_OUTPUT_FORMATS];
   const out: OutputFormat[] = [];
   for (const p of parts) {
-    if (!(OUTPUT_FORMATS as readonly string[]).includes(p)) {
-      throw new InvalidArgumentError(`unknown format "${p}" (allowed: ${OUTPUT_FORMATS.join(', ')}, all)`);
+    if (!(ALL_OUTPUT_FORMATS as readonly string[]).includes(p)) {
+      throw new InvalidArgumentError(`unknown format "${p}" (allowed: ${ALL_OUTPUT_FORMATS.join(', ')}, all)`);
     }
     if (!out.includes(p as OutputFormat)) out.push(p as OutputFormat);
   }
@@ -49,6 +51,7 @@ interface ScanCliOptions {
   review?: string;
   pack?: string;
   syft: boolean;
+  licensePolicy?: string;
   failOn?: RiskLevel;
   top: string;
 }
@@ -71,7 +74,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .command('scan')
     .description('Scan a local directory or git URL and report risky dependencies and their blast radius')
     .argument('<target>', 'local path or git repository URL (https/ssh; cloned with --depth 1)')
-    .option('--format <formats>', 'comma-separated report formats: json, sarif, html, or all', parseFormats, [...OUTPUT_FORMATS])
+    .option('--format <formats>', 'comma-separated report formats: json, sarif, html, cyclonedx (CycloneDX 1.6 SBOM), spdx (SPDX 2.3 SBOM), or all', parseFormats, [...OUTPUT_FORMATS])
     .option('--out <dir>', 'output directory for report files', 'out')
     .option('--offline', 'no network: answer from fixtures/cache only', false)
     .option('--fixtures <dir>', 'directory of recorded API responses (implies --offline)')
@@ -84,6 +87,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--pack <file>', 'knowledge pack (pack.json.gz) with the known-bad list; default $BLASTRADIUS_PACK')
     .option('--review <file>', 'entity-link review decisions (JSON)')
     .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
+    .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
     .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
     .option('--top <n>', 'findings to list in the terminal summary', '5')
     .action(async (target: string, o: ScanCliOptions) => {
@@ -102,6 +106,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
       if (o.asOf) opts.now = o.asOf;
       if (o.review) opts.reviewFile = o.review;
       if (o.pack) opts.packFile = o.pack;
+      if (o.licensePolicy) opts.licensePolicy = parseLicensePolicy(JSON.parse(await readFile(o.licensePolicy, 'utf8')));
       const { result, files } = await scan(opts);
       const top = Math.max(0, Math.min(100, Number.parseInt(o.top, 10) || 5));
       out(formatSummary(result, { top, files }));

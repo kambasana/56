@@ -65,6 +65,8 @@ describe('routes', () => {
       ['/projects/p1/findings/f1', 'Finding'],
       ['/projects/p1/exposure', 'Exposure'],
       ['/exposure', 'Exposure'],
+      ['/licenses', 'Licences'],
+      ['/projects/p1/licenses', 'Licences'],
       ['/incidents/GHSA-1', 'GHSA-1'],
       ['/packages/behind?name=chalk', "Who's behind chalk"],
       ['/projects/p1/investigate', 'Investigate'],
@@ -105,7 +107,7 @@ describe('routes', () => {
     renderAt('/projects/p1/scans', meFor('org_admin'));
     await screen.findByRole('heading', { name: 'Scans', level: 1 });
     const sub = screen.getByRole('navigation', { name: 'Project' });
-    expect(within(sub).getAllByRole('link').map((a) => a.textContent)).toEqual(['Changes', 'Findings', 'Exposure matrix', 'Investigate', 'Scans']);
+    expect(within(sub).getAllByRole('link').map((a) => a.textContent)).toEqual(['Changes', 'Findings', 'Exposure matrix', 'Licences', 'Investigate', 'Scans']);
     expect(within(sub).getByRole('link', { name: 'Scans' })).toHaveAttribute('aria-current', 'page');
     const crumbs = screen.getByRole('navigation', { name: 'breadcrumb' });
     const links = within(crumbs).getAllByRole('link');

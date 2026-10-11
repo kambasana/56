@@ -106,7 +106,11 @@ Permissions are data (`permissions.ts`):
 | GET | `/api/investigate/search?project=&q=` | investigate | — | `InvestigateSearchResponse` |
 | GET | `/api/investigate/node?project=&id=` | investigate | — | `InvestigateNodeResponse` |
 | GET | `/api/reports?project=` | reports | — | `ListReportsResponse` |
-| GET | `/api/reports/:scanId.html` / `.json` / `.sarif` | reports | — | report body (`ReportDownload`) |
+| GET | `/api/reports/:scanId.html` / `.json` / `.sarif` / `.cdx.json` / `.spdx.json` | reports | — | report body (`ReportDownload`; `.cdx.json` is a CycloneDX 1.6 SBOM and `.spdx.json` an SPDX 2.3 SBOM, both with declared licences) |
+| GET | `/api/licenses?project=` (or no `project` for every visible project) | exposure (org or per project) | — | `LicensesResponse` (latest succeeded scan per project, org licence policy applied; see Licences) |
+| GET | `/api/license-policy` | exposure or settings | — | `LicensePolicyResponse` |
+| PUT | `/api/license-policy` | manage_projects | `LicensePolicy` | `LicensePolicyResponse` (400 with the field on an invalid policy; audited as `license_policy.update`) |
+| DELETE | `/api/license-policy` | manage_projects | — | `LicensePolicyResponse` (back to the default template; audited as `license_policy.reset`) |
 | GET | `/api/integrations` | integrations | — | `ListIntegrationsResponse` (read-only in 4a) |
 | GET | `/api/roles` | settings | — | `ListRolesResponse` |
 | POST | `/api/roles` | manage_members | `CreateRoleRequest` | `CreateRoleResponse` 201 |
@@ -197,6 +201,8 @@ Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). E
 | `/projects/:id/exposure` | exposure | Exposure matrix (assets × components) |
 | `/projects/:id/investigate` | investigate | Search, then a scoped graph |
 | `/projects/:id/scans` | scans | Scan list, plus "Run scan" when the user has manage_projects |
+| `/projects/:id/licenses` | exposure | Licences of the project's latest scan: categories, policy results, licence changes, sources |
+| `/licenses` | exposure | The same across every project the user can see (linked from the Overview) |
 | `/reports` | reports | Report list and downloads |
 | `/integrations` | integrations | Integration status (read-only) |
 | `/settings` | settings | Project tier, roles matrix and bindings. Editing needs manage_projects or manage_members |
@@ -254,3 +260,23 @@ From the account-level proof ([ACCOUNT-PROOF.md](ACCOUNT-PROOF.md)): the account
 `GET /api/incidents` and `/api/incidents/:id` carry `account: { registry, name, since }` for an account incident; its timeline has `account` events. Web routes: `/accounts/:registry/:name` (page `exposure`), reached from Who's behind it (every account and repository owner), from an account incident, and from the concentration section on `/exposure`.
 
 **Gate (G1).** `test/replay/account/product-parity.test.ts` feeds the recorded chalk/debug data through this index and API offline: at the debug advisory time (2025-09-08T14:26:51Z) `GET .../npm/qix/exposure?asOf=` names 204 exposures in the two recorded orgs where the advisories then named 21, precision 1.0, the same (project, version) set as the proof and all 21 locked bad versions. It names all 19 bad packages when qix's listing is the one reconstructed for that time from recorded maintainers; with today's recorded listing it names 18 (chalk-template changed owner after the incident).
+
+## Licences
+
+Declared licences, shown with their source (docs/WHO-BEHIND-PLAN.md L1, L2, L4). Scans store them
+in `ScanResult.licenses`: one row per component with every source's value (`depsdev`,
+`clearlydefined`, `lockfile`, `sbom`), the value shown (first known in that order), whether sources
+disagree, the obligation category and the licence changes between releases (deps.dev release
+history). Categories come from Blue Oak Council (permissive list, copyleft families) and, for
+licences Blue Oak does not list, ScanCode LicenseDB; the response names both with their licences.
+
+- **Policy:** one per org (`license_policy` table, migration 11). A decision (`allow`, `review`,
+  `deny`) per category plus optional rules per SPDX id; an id rule wins. `unknown` can only be
+  `review` or `deny`. With no stored policy the default template applies: permissive allowed,
+  everything else needs review. The policy is applied when read, so changing it updates every
+  view and the HTML report without a rescan.
+- **Expressions:** `A OR B` takes the more favourable side, `A AND B` the less favourable; several
+  licences whose relation the source does not state are treated as all applying.
+- **Scans made before licences existed** have no `licenses`; `LicensesResponse.scansWithoutLicences`
+  counts them.
+- Not legal advice: every response carries `note` saying so.

@@ -155,7 +155,8 @@ export class SkippedHosts {
  */
 // Open Collective's public GraphQL API answers 429 to bursts, even at one a second when several scans run
 // at once (live hammer runs): one request every 3 s. Set OPENCOLLECTIVE_API_KEY for a higher limit.
-export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25, 'api.opencollective.com': 3000 };
+// ClearlyDefined allows 250 POST /definitions a minute (docs.clearlydefined.io, "Using the data"): at most one every 250 ms.
+export const DEFAULT_HOST_INTERVALS: Readonly<Record<string, number>> = { 'registry.npmjs.org': 20, 'raw.githubusercontent.com': 25, 'api.opencollective.com': 3000, 'api.clearlydefined.io': 250 };
 
 export class OfflineMissError extends Error {
   constructor(

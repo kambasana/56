@@ -2,7 +2,10 @@
  * Single-file HTML report: no scripts, no external assets, a restrictive CSP, and every
  * value HTML-escaped. Summary, top findings, why (reasons), paths, entity chain and evidence.
  */
-import type { Finding, OutboundFinding, Reason, RiskLevel, ScanResult } from '../core/types.js';
+import { LICENSE_CATEGORIES, type Finding, type LicenseReport, type OutboundFinding, type Reason, type RiskLevel, type ScanResult } from '../core/types.js';
+import { CATEGORY_LABEL } from '../licenses/classify.js';
+import { DEFAULT_LICENSE_POLICY, type LicensePolicy } from '../licenses/policy.js';
+import { applyPolicy, SOURCE_LABEL } from '../licenses/report.js';
 import { escapeHtml as h, safeHttpUrl } from './escape.js';
 import { findingReach, nameAndVersion } from './json.js';
 
@@ -14,6 +17,10 @@ export interface HtmlOptions {
   maxPathsPerAsset?: number;
   /** Assets shown per finding. Default 10. */
   maxAssets?: number;
+  /** Licence policy applied in the Licences section (default: the shipped template). */
+  licensePolicy?: LicensePolicy;
+  /** Label for the policy ("default template", "org policy"). */
+  licensePolicyLabel?: string;
 }
 
 const LEVELS: RiskLevel[] = ['critical', 'high', 'medium', 'low'];
@@ -56,7 +63,7 @@ function reasonsTable(reasons: readonly Reason[]): string {
     .join('')}</tbody></table></div>`;
 }
 
-function findingCard(f: Finding, idx: number, opts: Required<Omit<HtmlOptions, 'title' | 'topN'>>): string {
+function findingCard(f: Finding, idx: number, opts: Required<Pick<HtmlOptions, 'maxPathsPerAsset' | 'maxAssets'>>): string {
   const { name, version } = nameAndVersion(f.purl);
   const reach = findingReach(f);
   const assets = f.blastRadius.assets.slice(0, opts.maxAssets);
@@ -96,6 +103,47 @@ function outboundSection(outbound: readonly OutboundFinding[]): string {
           .join('')}</ul></td></tr>`,
     )
     .join('')}</tbody></table></div>`;
+}
+
+function licenseText(expressions: readonly string[], status: string, raw: readonly string[]): string {
+  if (status === 'unlicensed') return 'UNLICENSED';
+  if (expressions.length > 0) return expressions.join(' · ');
+  return raw.length > 0 ? `${raw.join(' · ')} (${status.replace('_', '-')})` : 'unknown';
+}
+
+const MAX_LICENSE_ROWS = 200;
+
+function licenseSection(report: LicenseReport, policy: LicensePolicy, policyLabel: string): string {
+  const decisions = applyPolicy(report, policy);
+  const rows = report.components.map((c, i) => ({ c, d: decisions[i]! }));
+  const notAllowed = rows.filter((r) => r.d.decision !== 'allow');
+  notAllowed.sort((a, b) => (a.d.decision === b.d.decision ? (a.c.purl < b.c.purl ? -1 : 1) : a.d.decision === 'deny' ? -1 : 1));
+  const tiles = LICENSE_CATEGORIES.map((cat) => `<div class="tile"><span class="muted">${h(CATEGORY_LABEL[cat])}</span><strong>${h(report.counts[cat])}</strong></div>`).join('');
+  const table = notAllowed.length
+    ? `<div class="scroll"><table><thead><tr><th>Component</th><th>Licence</th><th>Category</th><th>Policy</th><th>Rule</th><th>Source</th></tr></thead><tbody>${notAllowed
+        .slice(0, MAX_LICENSE_ROWS)
+        .map(
+          ({ c, d }) =>
+            `<tr><td><code>${h(c.name)}@${h(c.version)}</code></td><td><code>${h(licenseText(c.expressions, c.status, c.sources[0]?.raw ?? []))}</code>${c.disagreement ? ' <span class="muted">(sources disagree)</span>' : ''}</td><td>${h(CATEGORY_LABEL[c.category])}</td><td>${h(d.decision)}</td><td>${h(d.rule)}</td><td>${h(SOURCE_LABEL[c.source] ?? c.source)}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>${notAllowed.length > MAX_LICENSE_ROWS ? `<p class="muted">… ${h(notAllowed.length - MAX_LICENSE_ROWS)} more in the JSON report.</p>` : ''}`
+    : '<p class="muted">Every component is allowed by the policy.</p>';
+  const changes = report.changes.length
+    ? `<h3>Licence changes</h3><div class="scroll"><table><thead><tr><th>Package</th><th>From</th><th>To</th><th>At version</th><th>Date</th><th>Versions in use</th><th>Source</th></tr></thead><tbody>${report.changes
+        .slice(0, MAX_LICENSE_ROWS)
+        .map(
+          (c) =>
+            `<tr><td><code>${h(c.name)}</code></td><td><code>${h(c.from.join(' · '))}</code> <span class="muted">${h(CATEGORY_LABEL[c.fromCategory])}</span></td><td><code>${h(c.to.join(' · '))}</code> <span class="muted">${h(CATEGORY_LABEL[c.toCategory])}</span></td><td>${h(c.previousVersion)} → ${h(c.version)}</td><td>${h(c.date?.slice(0, 10) ?? '')}</td><td>${h(c.inUse.join(', '))}</td><td>${h(SOURCE_LABEL[c.source] ?? c.source)}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>`
+    : '';
+  return `<h2>Licences</h2>
+<p class="muted">Declared licences from deps.dev, ClearlyDefined and the scanned files, with the source of each value. Policy: ${h(policyLabel)}. ${h(report.note)}</p>
+<div class="tiles">${tiles}</div>
+<h3>Needs review or denied (${h(notAllowed.length)})</h3>
+${table}
+${changes}
+<p class="muted">Categories: ${report.classification.map((c) => `<a href="${h(safeHttpUrl(c.url) ?? '')}" rel="noopener noreferrer nofollow">${h(c.name)}</a> (${h(c.version)}, ${h(c.license)})`).join(', ')}.</p>`;
 }
 
 export function renderHtml(result: ScanResult, opts: HtmlOptions = {}): string {
@@ -146,6 +194,7 @@ ${result.health?.length ? `<p class="muted">${h(result.health.length)} more comp
 ${summaryTable}
 ${top.map((f, i) => findingCard(f, i, cardOpts)).join('\n')}
 ${outboundSection(result.outbound ?? [])}
+${result.licenses ? licenseSection(result.licenses, opts.licensePolicy ?? DEFAULT_LICENSE_POLICY, opts.licensePolicyLabel ?? (opts.licensePolicy ? 'custom' : 'default template (permissive allowed, everything else needs review)')) : ''}
 ${warnings}
 </main></body>
 </html>

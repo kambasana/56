@@ -13,6 +13,12 @@
  * This file only has type imports plus a few constant tables, so the web app can import it.
  */
 import type {
+  ComponentLicense,
+  LicenseCategory,
+  LicenseChangeEntry,
+  LicensePolicy,
+  LicensePolicyDecision,
+  LicenseReport,
   AssetExposure,
   AssetKind,
   Criticality,
@@ -753,8 +759,17 @@ export interface InvestigateNodeResponse {
 // Reports
 // ---------------------------------------------------------------------------
 
-export const REPORT_FORMATS = ['html', 'json', 'sarif'] as const;
+export const REPORT_FORMATS = ['html', 'json', 'sarif', 'cyclonedx', 'spdx'] as const;
 export type ReportFormat = (typeof REPORT_FORMATS)[number];
+
+/** File extension of each download ("/api/reports/<scanId>.<ext>"). */
+export const REPORT_EXTENSIONS: Readonly<Record<ReportFormat, string>> = {
+  html: 'html',
+  json: 'json',
+  sarif: 'sarif',
+  cyclonedx: 'cdx.json',
+  spdx: 'spdx.json',
+};
 
 export interface ReportRow {
   scanId: Id;
@@ -774,10 +789,66 @@ export interface ReportRow {
 export type ListReportsResponse = Page<ReportRow>;
 
 /**
- * GET /api/reports/:scanId.{html,json,sarif}: the engine report body, generated from the stored
- * ScanResult by src/report. Content-Disposition: attachment. HTML is served with a strict CSP.
+ * GET /api/reports/:scanId.{html,json,sarif,cdx.json,spdx.json}: the engine report body, generated
+ * from the stored ScanResult by src/report (CycloneDX 1.6 and SPDX 2.3 SBOMs with licences).
+ * Content-Disposition: attachment. HTML is served with a strict CSP.
  */
 export type ReportDownload = string;
+
+// ---------------------------------------------------------------------------
+// Licences (docs/WHO-BEHIND-PLAN.md L1, L2, L4)
+// ---------------------------------------------------------------------------
+
+export type { LicenseCategory, LicensePolicy, LicensePolicyDecision, ComponentLicense, LicenseChangeEntry };
+
+/** One component version with its licence, the org policy result and the projects using it. */
+export interface LicenseRow extends ComponentLicense {
+  decision: LicensePolicyDecision;
+  /** The policy rule that decided, e.g. "category Network copyleft (AGPL-3.0-only)". */
+  rule: string;
+  projects: ProjectRef[];
+}
+
+export interface LicenseChangeRow extends LicenseChangeEntry {
+  projects: ProjectRef[];
+}
+
+/**
+ * GET /api/licenses?project=<id> (one project) or GET /api/licenses (every project the caller may
+ * see, page permission `exposure`): the latest succeeded scan of each project, policy applied.
+ */
+export interface LicensesResponse {
+  scope: 'project' | 'org';
+  /** Scans the rows come from (latest succeeded per project). */
+  scans: { scanId: Id; project: ProjectRef; createdAt: IsoTime }[];
+  /** Projects with a scan made before licences were collected (no licence data). */
+  scansWithoutLicences: number;
+  policy: LicensePolicy;
+  policyIsDefault: boolean;
+  counts: {
+    components: number;
+    byCategory: Record<LicenseCategory, number>;
+    byDecision: Record<LicensePolicyDecision, number>;
+    changes: number;
+    disagreements: number;
+  };
+  rows: LicenseRow[];
+  changes: LicenseChangeRow[];
+  /** True when rows were cut (max 5000). */
+  truncated: boolean;
+  classification: LicenseReport['classification'];
+  note: string;
+}
+
+/** GET /api/license-policy, PUT /api/license-policy (manage_projects), DELETE resets to the default. */
+export interface LicensePolicyResponse {
+  policy: LicensePolicy;
+  isDefault: boolean;
+  updatedAt: IsoTime | null;
+  updatedBy: string | null;
+  /** The shipped default template, for "reset". */
+  defaultPolicy: LicensePolicy;
+}
 
 // ---------------------------------------------------------------------------
 // Integrations (read-only in 4a)

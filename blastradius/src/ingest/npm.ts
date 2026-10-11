@@ -189,6 +189,7 @@ class Collector {
       return;
     }
     if (c.hasInstallScript) prev.hasInstallScript = true;
+    prev.declaredLicenses ??= c.declaredLicenses;
     prev.resolved ??= c.resolved;
     prev.integrity ??= c.integrity;
   }
@@ -249,7 +250,23 @@ function makeComponent(rv: ResolvedVersion, entry: unknown): Component {
   const integrity = own(entry, 'integrity');
   if (typeof integrity === 'string' && integrity) c.integrity = cap(integrity, MAX_INTEGRITY);
   if (own(entry, 'hasInstallScript') === true) c.hasInstallScript = true;
+  const licenses = declaredLicenseStrings(own(entry, 'license'));
+  if (licenses.length > 0) c.declaredLicenses = { values: licenses, via: 'lockfile' };
   return c;
+}
+
+/**
+ * The `license` npm copies from each package's package.json into lockfile v2/v3 entries: an SPDX
+ * expression string, or the legacy `{ type }` object / array forms. Untrusted: capped.
+ */
+export function declaredLicenseStrings(v: unknown): string[] {
+  const one = (x: unknown): string | undefined => {
+    const t = typeof x === 'string' ? x : isRecord(x) && typeof own(x, 'type') === 'string' ? (own(x, 'type') as string) : undefined;
+    const trimmed = t?.trim();
+    return trimmed ? cap(trimmed, 200) : undefined;
+  };
+  const list = Array.isArray(v) ? v.slice(0, 10).map(one) : [one(v)];
+  return [...new Set(list.filter((x): x is string => x !== undefined))];
 }
 
 function readFlags(entry: unknown): Flags {

@@ -30,3 +30,4 @@ export * from './triage.js';
 export * from './incidents.js';
 export * from './alert-rules.js';
 export * from './accounts.js';
+export * from './licenses.js';

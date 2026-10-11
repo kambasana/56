@@ -52,7 +52,7 @@ describe('serve command options', () => {
 
 describe('cli options', () => {
   it('parses report formats', () => {
-    expect(parseFormats('all')).toEqual(['json', 'sarif', 'html']);
+    expect(parseFormats('all')).toEqual(['json', 'sarif', 'html', 'cyclonedx', 'spdx']);
     expect(parseFormats('sarif, json,sarif')).toEqual(['sarif', 'json']);
     expect(() => parseFormats('xml')).toThrow(/unknown format/);
   });

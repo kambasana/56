@@ -11,7 +11,7 @@ import type { OverviewResponse } from '@server/api-types';
 import { api, isApiError } from '@/api';
 import { useAuth } from '@/auth';
 import { useProject } from '@/project';
-import { projectPath } from '@/nav';
+import { LICENSES_PATH, projectPath } from '@/nav';
 import { Button } from '@/components/Button';
 import { PageHeader } from '@/components/PageHeader';
 import { RANGE_LABEL, ScopeBar, SEVERITY_GLYPH, SEVERITY_LABEL, StateBlock, useScope, type Severity } from '@/components/br';
@@ -73,7 +73,7 @@ function IncidentBanner({ incident }: { incident: NonNullable<OverviewResponse['
   );
 }
 
-function BySeverity({ data, sp, exposureTo }: { data: OverviewResponse; sp: URLSearchParams; exposureTo: string | null }) {
+function BySeverity({ data, sp, exposureTo, licensesTo }: { data: OverviewResponse; sp: URLSearchParams; exposureTo: string | null; licensesTo: string | null }) {
   const max = Math.max(1, ...data.bySeverity.map((b) => b.open));
   const range = data.since ? RANGE_LABEL[(sp.get('range') as keyof typeof RANGE_LABEL) ?? '30d'] ?? 'Last 30 days' : null;
   return (
@@ -120,6 +120,7 @@ function BySeverity({ data, sp, exposureTo }: { data: OverviewResponse; sp: URLS
       <span className="mt-auto flex flex-wrap gap-4 text-label">
         <Link to={findingsLink(sp, { status: OPEN })}>View all open findings</Link>
         {exposureTo && <Link to={exposureTo}>See where they sit (exposure matrix)</Link>}
+        {licensesTo && <Link to={licensesTo}>Licences of your dependencies</Link>}
       </span>
     </section>
   );
@@ -174,6 +175,8 @@ export default function OrgHome() {
   const crumbs = [{ label: me?.org?.name ?? 'Organization', to: '/' }, { label: 'Overview', to: '/' }];
   // The org-wide Exposure matrix, narrowed to the Overview's project scope when there is one. A viewer
   // with exposure in one project only lands on that project's slice.
+  // Licences of every project the viewer can see, or of the current project with a project grant.
+  const licensesTo = can('exposure') ? LICENSES_PATH : projectId && can('exposure', projectId) ? projectPath(projectId, 'licenses') : null;
   const exposureTo = can('exposure') ? exposurePath(scope.projects) : projectId && can('exposure', projectId) ? exposurePath(scope.projects.length ? scope.projects : [projectId]) : null;
 
   let body;
@@ -223,7 +226,7 @@ export default function OrgHome() {
           <StateBlock kind="no-results" title="No completed scan yet" description="The numbers appear after a project's first successful scan." actions={[{ label: 'See projects', to: '/projects' }]} />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
-            <BySeverity data={data} sp={sp} exposureTo={exposureTo} />
+            <BySeverity data={data} sp={sp} exposureTo={exposureTo} licensesTo={licensesTo} />
             <TopPackages data={data} />
           </div>
         )}

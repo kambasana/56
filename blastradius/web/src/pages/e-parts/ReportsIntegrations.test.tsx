@@ -14,7 +14,7 @@ function report(i: number, project = { id: 'p1', name: 'payments-platform' }): R
     project,
     createdAt: new Date(Date.UTC(2026, 9, 6, 2, 14) - i * 60_000).toISOString(),
     counts: { critical: 2, high: 0, medium: 1, low: 8 },
-    downloads: { html: `/api/reports/${id}.html`, json: `/api/reports/${id}.json`, sarif: `/api/reports/${id}.sarif` },
+    downloads: { html: `/api/reports/${id}.html`, json: `/api/reports/${id}.json`, sarif: `/api/reports/${id}.sarif`, cyclonedx: `/api/reports/${id}.cdx.json`, spdx: `/api/reports/${id}.spdx.json` },
     sha256: 'a'.repeat(60) + 'beef',
   };
 }

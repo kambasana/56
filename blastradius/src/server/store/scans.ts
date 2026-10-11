@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 import { renderJson } from '../../report/json.js';
 import type { Page, ReportFormat, ReportRow, Scan, ScanRef, ScanStatus, ScanSummary } from '../api-types.js';
-import { REPORT_FORMATS } from '../api-types.js';
+import { REPORT_EXTENSIONS, REPORT_FORMATS } from '../api-types.js';
 import type { Inventory, ScanResult } from '../../core/types.js';
 import { writeAudit } from './audit.js';
 import { all, get, isConstraintError, newId, nextCursorFor, nowIso, pageWindow, parseJson, placeholders, run, StoreError, tx, type Param, type Store } from './db.js';
@@ -321,7 +321,7 @@ export function succeededSummaries(s: Store, projectId: string, limit = 12): { i
 // ---------------------------------------------------------------------------
 
 export function reportDownloads(scanId: string): Record<ReportFormat, string> {
-  return Object.fromEntries(REPORT_FORMATS.map((f) => [f, `/api/reports/${scanId}.${f}`])) as Record<ReportFormat, string>;
+  return Object.fromEntries(REPORT_FORMATS.map((f) => [f, `/api/reports/${scanId}.${REPORT_EXTENSIONS[f]}`])) as Record<ReportFormat, string>;
 }
 
 /** Scans stored before report_sha256 existed: hash their JSON report once and keep it. */

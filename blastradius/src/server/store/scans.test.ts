@@ -187,6 +187,8 @@ describe('scans', () => {
       html: `/api/reports/${s2.id}.html`,
       json: `/api/reports/${s2.id}.json`,
       sarif: `/api/reports/${s2.id}.sarif`,
+      cyclonedx: `/api/reports/${s2.id}.cdx.json`,
+      spdx: `/api/reports/${s2.id}.spdx.json`,
     });
     expect(reports.items[0]!.sha256).toMatch(/^[0-9a-f]{64}$/);
     const page2 = listReports(s, orgId, { limit: 1, cursor: reports.nextCursor! });

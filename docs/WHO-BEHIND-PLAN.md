@@ -9,7 +9,15 @@ maintainer continuity, licences, and a roll-up by repo/org.
 this session (fetched, or confirmed through a search result that quoted the page). **[u]** =
 unverified: the URL is from memory or the page could not be reached from this environment
 (several official doc hosts did not resolve here). Each [u] item is re-checked in phase P0 before
-code depends on it.
+code depends on it. **[v P0]** = re-checked in P0 (2026-10-11) from the primary source named next
+to it (official docs, an API response, a licence file at a release tag).
+
+**P0 result (2026-10-11).** 34 unverified items: 28 are now [v P0]; 6 stay [u] with the reason
+inline (Sponsors field visibility and Tidelift need a token or a JavaScript-only page; the HashiCorp
+blog answers 429 here, the licence files at the tags verify the event instead; the SPDX
+license-list-data licence is not stated in its repos, and P1 uses CC0 npm packages instead; two
+are data expectations that only P2/P4 can measure). One expectation was corrected: `request`'s
+repository is not archived. Gate results for P0 and P1 are in §10.
 
 ---
 
@@ -85,22 +93,31 @@ IDs are used by the phases in §6.
 - Definition: every channel a package/repo/owner declares: FUNDING.yml, package.json `funding`,
   funding.json, GitHub Sponsors listing, Open Collective, Tidelift, thanks.dev, Polar, custom.
 - Sources:
-  - FUNDING.yml format: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository [u] (already implemented).
+  - FUNDING.yml format: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository [v P0: page lists github, patreon, tidelift, polar, buy_me_a_coffee, thanks_dev, custom …] (already implemented).
   - funding.json manifest (FLOSS/fund): https://floss.fund/funding-manifest/ [v: exists, has
     "funding plans" section, validator at fundingjson.org]; field names (`entity`, `projects`,
-    `funding.channels/plans/history`) [u], re-check against the schema before parsing.
+    `funding.channels/plans/history`) [v P0: JSON schema v1.1.0, https://fundingjson.org/schema/v1.1.0.json:
+    top level `version`, `entity`, `projects`, `funding` (required: entity, funding); `funding` has
+    `channels`, `plans`, `history`; project items have `guid`, `name`, `webpageUrl`, `repositoryUrl`,
+    `licenses`, `tags`].
   - GitHub Sponsors via GraphQL `Sponsorable` interface: `hasSponsorsListing`,
     `sponsorshipsAsMaintainer` [v, via schema docs generated from GitHub's GraphQL schema:
     https://jsr.io/@luxass/github-schema/doc/~/Sponsorable; official reference
-    https://docs.github.com/en/graphql/reference/interfaces#sponsorable [u]]. Which fields are
-    visible to a third party (private sponsors, income estimates) is [u]: assume only listing
-    existence and public sponsor counts; never show amounts unless the API exposes them publicly.
+    https://docs.github.com/en/graphql/reference/interfaces#sponsorable [v P0: GitHub's published
+    schema file https://docs.github.com/public/fpt/schema.docs.graphql has `interface Sponsorable`
+    with `hasSponsorsListing`, `sponsorshipsAsMaintainer`, `sponsors`, and also
+    `monthlyEstimatedSponsorsIncomeInCents` / `estimatedNextSponsorsPayoutInCents`]. Which fields are
+    visible to a third party (private sponsors, income estimates) is [u: the schema does not say
+    and checking needs a token; settle in P4 with a real query]: assume only listing existence and
+    public sponsor counts; never show amounts unless the API exposes them publicly.
   - GitHub GraphQL limit: 5,000 points/hour per user token [v,
     https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api].
   - thanks.dev: no public API found [v: search found none; how it works:
     https://www.theregister.com/2023/04/07/thanksdev_open_source_funding/]. Show the declared
     link only.
-  - Tidelift: declared link only (no public data API assumed) [u].
+  - Tidelift: declared link only (no public data API assumed) [u: https://tidelift.com/docs/api
+    renders only with JavaScript here; api.tidelift.com answers 404 without a subscriber token. Not
+    needed before P4].
 - Computation: union of channels per package with the file/URL each came from. Confidence high
   (declared by the project itself). Declared is not received: wording "declares", not "is funded".
 - Screen: Who's behind it rail ("Funding channels"), Package page, new Funding view.
@@ -108,9 +125,10 @@ IDs are used by the phases in §6.
 **F2 Received funding and concentration** (new, Open Collective only at first)
 - Definition: for collectives with public books, money received in the last 12 months, the share
   from the largest funder ("top funder share"), and number of funders giving ≥ 5 %.
-- Source: Open Collective GraphQL v2 https://graphql-docs-v2.opencollective.com/ [u for exact
-  fields: `stats`, `transactions`, `members.totalDonations`; `members.totalDonations` is already
-  used in code]. Personal tokens: https://docs.opencollective.com/help/developers/personal-tokens
+- Source: Open Collective GraphQL v2 https://graphql-docs-v2.opencollective.com/ [v P0 by schema
+  introspection of https://api.opencollective.com/graphql/v2: `Account` has `stats`,
+  `transactions`, `members`, `location`, `legalName`; `Member.totalDonations`; `AccountStats` has
+  `totalAmountReceived`, `totalAmountSpent`, `balance`, `yearlyBudget`, `contributionsCount`]. Personal tokens: https://docs.opencollective.com/help/developers/personal-tokens
   [v]. Published rate limit: not found [v: searched] → keep current cache + concurrency limits,
   send `Api-Key` when configured. OC ledgers are public by design; we store organisation funders
   only (individual backers stay off, as today).
@@ -132,7 +150,9 @@ IDs are used by the phases in §6.
   (OpenJS, Apache, Linux Foundation, CNCF, Eclipse) from a curated, sourced list of their projects;
   (c) OC fiscal host (exists as slug); (d) contributors' **self-declared** GitHub profile `company`
   field, shown only aggregated per repo ("3 of the 5 most active contributors declare company X").
-- Sources: GitHub users API/GraphQL `company` field [u]; OpenSSF Scorecard's Contributors check
+- Sources: GitHub users API/GraphQL `company` field [v P0: `User.company: String` in the GraphQL
+  schema file above; `"company"` in the REST "Get a user" response example,
+  https://docs.github.com/en/rest/users/users]; OpenSSF Scorecard's Contributors check
   uses the same field ("at least 3 different companies in the last 30 commits") [v,
   https://github.com/ossf/scorecard/blob/main/docs/checks.md]. CHAOSS Elephant Factor = minimum
   number of companies whose employees make a given share of commits [v,
@@ -162,14 +182,16 @@ S2, because publish rights and real contribution often differ. Confidence high.
 - Source: the repo's git history. Fetch with a **blobless clone**
   (`git clone --filter=blob:none --no-checkout --bare`), which gives every commit's author,
   committer, timestamps with UTC offsets and signature headers without file contents (git
-  partial clone docs: https://git-scm.com/docs/partial-clone [u]). No API quota used. GitHub
+  partial clone docs: https://git-scm.com/docs/partial-clone [v P0: the "filter" capability and
+  `--filter=<filter-spec>` on clone/fetch]). No API quota used. GitHub
   GraphQL is used only to map commits to logins and read `verification` (budgeted, cached).
 - Computation: commits on the default branch in the last 24 months, excluding bots
   (`[bot]` logins, `dependabot`, `renovate`, `github-actions`), merge commits counted once;
   identity = GitHub login when the API maps it, else the normalised author email **hash** (never
   stored in clear, see §5). Output CAF and the top-k shares. Also CAF over all history for context.
   Confidence medium (identity mapping). Cross-check: Scorecard Contributors check, and GrimoireLab/
-  Augur numbers on 3 repos ([u], https://chaoss.github.io/grimoirelab/ ,
+  Augur numbers on 3 repos ([v P0: both resolve; Augur via its README at
+  raw.githubusercontent.com/chaoss/augur/main], https://chaoss.github.io/grimoirelab/ ,
   https://github.com/chaoss/augur) — used as a test reference only, not deployed.
 - Screen: Stability view column "Rely on", Package page, roll-up.
 
@@ -212,7 +234,8 @@ Source: git history. Confidence medium.
 
 **C2 Signed/verified commits and releases**: share of commits on the default branch with a
 signature header (local), and GitHub's `verification.verified` for the most recent 100 (GraphQL
-`Commit.signature`, [u] https://docs.github.com/en/graphql/reference/objects#commit). Show the
+`Commit.signature: GitSignature`, [v P0: in the published schema file]
+https://docs.github.com/en/graphql/reference/objects#commit). Show the
 share and a **change** ("signed share fell from 95 % to 10 % after 2024-02"). Scorecard
 Signed-Releases is shown as input (signature/provenance files on the 30 latest releases; it does
 not verify signatures) [v, checks.md above]. Confidence high for "has signature header",
@@ -227,10 +250,13 @@ translated to a country; never an input to any score. Confidence low by definiti
 user-set and trivially changed). Purpose: context for C1 (e.g. xz, §8), never a verdict.
 
 **C4 Organisation jurisdiction (declared public facts only)**
-- Org-level fields only: GitHub org `location` (self-declared, shown as such) [u]; OC collective
-  and fiscal host location/legal entity [u, OC fields]; foundation/company legal entity from the
-  project's own legal pages or an official company register the customer chooses (e.g. UK
-  Companies House API https://developer.company-information.service.gov.uk/ [u]). Each value shows
+- Org-level fields only: GitHub org `location` (self-declared, shown as such) [v P0: `"location"`
+  in the REST "Get an organization" example, https://docs.github.com/en/rest/orgs/orgs, and
+  `Organization.location` in the GraphQL schema]; OC collective and fiscal host location/legal
+  entity [v P0: `Account.location`, `Account.legalName` by introspection]; foundation/company legal
+  entity from the project's own legal pages or an official company register the customer chooses
+  (e.g. UK Companies House API https://developer.company-information.service.gov.uk/ [v P0:
+  resolves, developer portal]). Each value shows
   its source and "declared by the organisation".
 - Individual location: **off by default**; if a customer enables it, only the profile `location`
   string, labelled "self-declared on public profile", never parsed into a country, never used in a
@@ -240,8 +266,10 @@ user-set and trivially changed). Purpose: context for C1 (e.g. xz, §8), never a
 - Lists: OFAC SDN list (XML, enhanced XML) [v, https://sanctionslist.ofac.treas.gov/Home/static/sdn.html];
   OFAC consolidated non-SDN lists [v, https://sanctionslist.ofac.treas.gov/Home/static/consolidated.html];
   EU consolidated financial sanctions list
-  https://data.europa.eu/data/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions [u];
-  UK sanctions list https://www.gov.uk/government/publications/the-uk-sanctions-list [u].
+  https://data.europa.eu/data/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions [v P0:
+  the dataset record answers from https://data.europa.eu/api/hub/search/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions];
+  UK sanctions list https://www.gov.uk/government/publications/the-uk-sanctions-list [v P0: page
+  lists CSV, ODS and other downloads with update notes].
 - Matching: only `org:`/`funder:` entities (companies, fiscal hosts, foundations), exact normalised
   legal-name match plus one more identifier (country of registration or address) → status
   "possible match, needs review". A person entity is never matched automatically.
@@ -254,12 +282,20 @@ user-set and trivially changed). Purpose: context for C1 (e.g. xz, §8), never a
 ### 3.4 Licences and bill of materials (L) — all from others
 
 **L1 Declared licence per component version**: deps.dev `GetVersion` returns licences [v,
-https://docs.deps.dev/api/v3/]; already fetched in `src/enrich/depsdev`. Fallback: npm per-version
-`license` field. Normalise to SPDX expressions using the SPDX License List data
+https://docs.deps.dev/api/v3/; v P0: `licenses[]` are "SPDX 2.1 expressions", "non-standard" when
+there is no SPDX identifier, empty when unknown, relationship between several "unspecified"; npm
+licences are "read from the package metadata", Go licences come from the licensecheck package;
+v3alpha adds `licenseDetails[]` = author's string + SPDX mapping and `GetVersionBatch`
+(POST /v3alpha/versionbatch, answered in pages of 100)]; already fetched in `src/enrich/depsdev`.
+Fallback: npm per-version `license` field. Normalise to SPDX expressions using the SPDX License List data
 (https://github.com/spdx/license-list-data, JSON `licenses.json` with `isOsiApproved`,
 `isDeprecatedLicenseId` [v via secondary sources]; data licence stated as CC-BY-3.0 by a secondary
-source [u]). deps.dev terms and rate limits: not published in what we found [v: searched];
-keep the existing cache and concurrency, and a contact path. Confidence high (declared).
+source [u: the repo README says "see the respective repositories for licensing information" and
+neither repo states one; P1 uses the CC0-1.0 npm packages spdx-license-ids and
+spdx-expression-parse instead, so nothing depends on it]). deps.dev terms [v P0: "Use of the
+deps.dev API is subject to the Google API Terms of Service. Clients are expressly permitted to cache
+data served by the API"; generated data CC-BY 4.0; contact depsdev@google.com]; rate limits not
+published [v: searched]; keep the existing cache and concurrency. Confidence high (declared).
 Transitive coverage: everything in the inventory (npm lockfile is already full-tree; Syft adds
 other ecosystems).
 
@@ -270,21 +306,30 @@ L1. Confidence high. This catches Terraform MPL-2.0 → BUSL-1.1 type events (§
 
 **L3 Discovered licences** (optional, later): ClearlyDefined definitions (`licensed.declared`,
 discovered expressions, a licence score) from `https://api.clearlydefined.io` [v: host and
-curated-definition model, https://github.com/clearlydefined/service; endpoint fields and rate
-limit u]. We do **not** run our own scanner; customers who need file-level results run ScanCode
-(https://github.com/aboutcode-org/scancode-toolkit [u]) or ORT
-(https://github.com/oss-review-toolkit/ort [u]) and we import their output (ScanCode JSON, ORT
+curated-definition model, https://github.com/clearlydefined/service; v P0: POST /definitions takes
+a list of coordinates and returns `{coordinate: definition}` (OpenAPI at
+https://api.clearlydefined.io/schemas/swagger.yaml), `?expand=-files` drops the file list; rate
+limits POST /definitions 250/min, other endpoints 2,000/min (https://docs.clearlydefined.io/docs/get-involved/using-data,
+and `ratelimit-policy: 2000;w=60` on responses); "all the data is distributed under CC0"
+(https://docs.clearlydefined.io/docs/resources/faq)]. P1 already uses it as the second source.
+We do **not** run our own scanner; customers who need file-level results run ScanCode
+(https://github.com/aboutcode-org/scancode-toolkit [v P0: README via raw.githubusercontent.com]) or ORT
+(https://github.com/oss-review-toolkit/ort [v P0: README via raw.githubusercontent.com]) and we import their output (ScanCode JSON, ORT
 evaluated model, or SPDX/CycloneDX SBOM).
 
 **L4 Compatibility and obligations (policy, not legal advice)**: a customer-editable policy maps
 SPDX ids/categories to `allow` / `review` / `deny` per distribution type (SaaS, distributed
-binary, internal). Defaults ship as a conservative template modelled on ORT's rule approach [u];
+binary, internal). Defaults ship as a conservative template modelled on ORT's rule approach [v P0:
+ORT evaluates `evaluator.rules.kts` policy rules against `license-classifications.yml`,
+https://oss-review-toolkit.org/ort/docs/configuration/evaluator-rules];
 obligations text links to the licence text on spdx.org. Output: "component X (AGPL-3.0-only)
 needs review for distributed use", with the policy rule named.
 
 **L5 SBOM in and out**: import CycloneDX/SPDX SBOMs (Syft today; add file import); export a
-CycloneDX 1.5/1.6 SBOM with licences and our stability/funding annotations as properties [u spec
-URL https://cyclonedx.org/specification/overview/].
+CycloneDX 1.5/1.6 SBOM with licences and our stability/funding annotations as properties [v P0 spec
+URL https://cyclonedx.org/specification/overview/: current version 1.7 (2025-10-21), media type
+`application/vnd.cyclonedx+json`; P1 exports 1.6 with the OWASP library and validates it against
+the 1.6 schema].
 
 ### 3.5 Issues around it (I) — curated events with sources
 
@@ -410,16 +455,16 @@ replayed with the existing historical mode (`ctx.historical`) where data allows.
 |---|---|---|---|
 | 1 | `event-stream` (npm) | Handed to a new maintainer in 2018; malicious dependency `flatmap-stream` added (https://github.com/dominictarr/event-stream/issues/116, in KB `kb/incidents/2018-event-stream.yaml`) | S1: 1 maintainer before; `maintainer_change` (exists); **S5a** for 3.3.6: published by an account first seen in the repo < 180 days before; C1 "contributor base changed"; label Watch before the event, no claim of intent |
 | 2 | xz-utils (git history only, mirror `github.com/tukaani-project/xz`) | Backdoor CVE-2024-3094 in 5.6.0/5.6.1 (https://nvd.nist.gov/vuln/detail/CVE-2024-3094 , https://www.openwall.com/lists/oss-security/2024/03/29/4) | S2: CAF 1–2 over 2019–2021 (one long-standing maintainer); C1: a contributor first seen ~2021 becomes top committer and tags releases by 2024; C2/C3 shown as aggregate repo changes if present; wording "contributor base changed", no statement about any person |
-| 3 | `colors` and `faker` (npm) | Maintainer-published sabotage releases, January 2022 (GHSA-gh88-3pxp-6fm8, GHSA-5w9c-rv96-fr7g; KB `2022-colors-faker.yaml`) | Before: S1 = 1, S2 CAF = 1, label Watch; `faker` later deprecated → S3 `ended`; community fork `@faker-js/faker` shows org owner and OC collective (F1) [u: verify collective slug] |
-| 4 | `left-pad` (npm) | Unpublished March 2016 (https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm) | S1 = 1, CAF = 1; latest version deprecated → S3 `ended` [u: verify current deprecation message] |
+| 3 | `colors` and `faker` (npm) | Maintainer-published sabotage releases, January 2022 (GHSA-gh88-3pxp-6fm8, GHSA-5w9c-rv96-fr7g; KB `2022-colors-faker.yaml`) | Before: S1 = 1, S2 CAF = 1, label Watch; `faker` later deprecated → S3 `ended`; community fork `@faker-js/faker` shows org owner and OC collective (F1) [v P0: collective `fakerjs`, type COLLECTIVE, OC API] |
+| 4 | `left-pad` (npm) | Unpublished March 2016 (https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm) | S1 = 1, CAF = 1; latest version deprecated → S3 `ended` [v P0: 1.3.0 is deprecated, message "use String.prototype.padStart()"] |
 | 5 | `core-js` (npm) | Maintainer's 2023 funding statement (https://github.com/zloirock/core-js/blob/master/docs/2023-02-14-so-whats-next.md); README says not backed by a company [v via README text] | S2 CAF = 1; F1 ≥ 3 declared channels incl. Open Collective; F4 owner is a User, no company backer; F2/F3 from OC; I: `funding_change` event (curated, source = the post) |
-| 6 | `request` (npm) | Deprecated Feb 2020 (https://github.com/request/request/issues/3142) | S3 `ended` (npm deprecated + repo archived [u]); label Fragile if in production; high dependents (deps.dev) shown |
-| 7 | `moment` (npm) | Project declared maintenance mode in 2020 (https://momentjs.com/docs/#/-project-status/ [u]) | S3 `quiet`/`ended`-declared (low confidence text + release gap); S4 irregular; label Watch, not Fragile (team still exists) |
-| 8 | Terraform (Go module `github.com/hashicorp/terraform`) | MPL-2.0 → BUSL-1.1, August 2023 (https://www.hashicorp.com/blog/hashicorp-adopts-business-source-license [u]); OpenTofu fork | L2: category change permissive/weak-copyleft → source-available at v1.6.0 [u version]; I: `relicensing` proposal |
-| 9 | Elasticsearch | Apache-2.0 → SSPL/Elastic License in 2021, AGPL option added 2024 (https://www.elastic.co/blog/elasticsearch-is-open-source-again [u]) | L2 twice: to non-OSI (2021), then OSI option added (2024) |
-| 10 | Redis | BSD-3 → RSALv2/SSPLv1 on 2024-03-20 (https://www.theregister.com/2024/03/22/redis_changes_license [v]); AGPLv3 option in Redis 8 (2025) [u: exact date]; Valkey fork | L2 at 7.4 [u version]; `pkg:docker/redis` image licence shown as "declared by image metadata or unknown" |
-| 11 | `@babel/core`, `webpack` (npm) — positive controls | Long-funded via Open Collective [u slugs] | F1 OC channel; F2 multiple funders, top share < 0.5 [u]; S2 CAF ≥ 2; label Steady |
-| 12 | `express` (npm) — foundation control | OpenJS Foundation project [u] | F4 foundation backer; CAF ≥ 2 [u]; label Steady or Watch with reasons |
+| 6 | `request` (npm) | Deprecated Feb 2020 (https://github.com/request/request/issues/3142) | S3 `ended` (npm deprecated [v P0: 2.88.2 "request has been deprecated, see https://github.com/request/request/issues/3142"]; repo archived: corrected, the repo is **not** archived [v P0: OpenSSF Scorecard 2026-10-05 Maintained check reports "0 commit(s) and 0 issue activity … in the last 90 days", not "project is archived"]); label Fragile if in production; high dependents (deps.dev) shown |
+| 7 | `moment` (npm) | Project declared maintenance mode in 2020 (https://momentjs.com/docs/#/-project-status/ [v P0: docs say "Moment.js is a legacy project in maintenance mode"]) | S3 `quiet`/`ended`-declared (low confidence text + release gap); S4 irregular; label Watch, not Fragile (team still exists) |
+| 8 | Terraform (Go module `github.com/hashicorp/terraform`) | MPL-2.0 → BUSL-1.1, August 2023 (https://www.hashicorp.com/blog/hashicorp-adopts-business-source-license [u: answers 429 here]; [v P0: LICENSE at tag v1.5.7 is "Mozilla Public License, version 2.0", at v1.6.0 the Business Source License]); OpenTofu fork | L2: category change permissive/weak-copyleft → source-available at v1.6.0 [v P0 version]; I: `relicensing` proposal. **P1 result: not visible through deps.dev**, see the P1 gate below |
+| 9 | Elasticsearch | Apache-2.0 → SSPL/Elastic License in 2021, AGPL option added 2024 (https://www.elastic.co/blog/elasticsearch-is-open-source-again [v P0: Shay Banon, 2024-08-29]; LICENSE.txt at v7.10.2, v7.11.0, v8.16.0 [v P0]) | L2 twice: to non-OSI (2021), then OSI option added (2024) |
+| 10 | Redis | BSD-3 → RSALv2/SSPLv1 on 2024-03-20 (https://www.theregister.com/2024/03/22/redis_changes_license [v]); AGPLv3 option in Redis 8 (2025) [v P0: announced 2025-05-01, https://redis.io/blog/agplv3/; LICENSE.txt at tag 8.0.0]; Valkey fork | L2 at 7.4 [v P0: LICENSE.txt at tag 7.4.0 states RSALv2/SSPLv1 from 7.4]; `pkg:docker/redis` image licence shown as "declared by image metadata or unknown". **P1 result: not visible through deps.dev**, see the P1 gate below |
+| 11 | `@babel/core`, `webpack` (npm) — positive controls | Long-funded via Open Collective [v P0 slugs: `babel`, `webpack`, both COLLECTIVE] | F1 OC channel; F2 multiple funders, top share < 0.5 [u: a P4 measurement]; S2 CAF ≥ 2; label Steady |
+| 12 | `express` (npm) — foundation control | OpenJS Foundation project [v P0: listed on https://openjsf.org/projects] | F4 foundation backer; CAF ≥ 2 [u: a P2 measurement]; label Steady or Watch with reasons |
 
 Estate roll-up check: on the existing control repos and the logops scan used in
 `docs/NEXT-LEVEL.md`, R1 sentence numbers must equal a hand count from the API rows for one repo.
@@ -451,3 +496,56 @@ where Syft brings those components into an inventory.
 8. **Cost of history.** Blobless clones of large repos (hundreds of MB of commits). Mitigation:
    size cap, shallow-since 3 years (`--shallow-since`), shared cache across projects.
 9. **Coverage.** npm-first; Go/PyPI/Maven only via Syft. Stated on every roll-up.
+
+---
+
+## 10. Gate results
+
+### P0 Verify and record (2026-10-11)
+
+- **[u] resolved:** 28 of 34 now [v P0] from primary sources (official docs, API responses and
+  introspection, licence files at release tags); 6 left [u] with the reason inline. Nothing P1
+  depends on is still unverified.
+- **Fixtures (replay offline):** `blastradius/test/fixtures/licenses/recorded/` (deps.dev
+  GetPackage + GetVersionBatch, ClearlyDefined definitions, deps.dev GetProject for two actions) for
+  the licence validation subjects in `blastradius/test/licenses/subjects.ts`, and
+  `test/fixtures/licenses/e2e-repo/` for the dev-seed repository as of 2018-11-27. Recorded once
+  by `test/licenses/record.ts`, trimmed to the fields read. P2–P4 subjects get their fixtures in
+  their own phases (their collectors do not exist yet, so there is nothing to replay).
+- **Fact kinds:** `license`, `license_change`, `contributors`, `release_cadence`,
+  `funding_detail`, `org_profile` in `src/core/types.ts` with value types; a type test builds one
+  of each.
+
+### P1 Licences (2026-10-11)
+
+Built with established tools only: deps.dev (primary) and ClearlyDefined (second source) data,
+spdx-expression-parse 5.0.0 and spdx-correct 3.2.0 (corrections that add a version are refused),
+Blue Oak Council list and copyleft guide (@blueoak/list 15.0.0, @blueoak/copyleft 10.0.0, CC0-1.0)
+for categories, ScanCode LicenseDB categories (CC-BY-4.0) for licences Blue Oak does not cover,
+SPDX expression semantics for policy (cross-checked against spdx-satisfies 6.0.0 in tests), the
+OWASP CycloneDX library 10.3.0 for the CycloneDX 1.6 export and the SPDX 2.3 JSON schema for the
+SPDX export. Migration 11 adds the org licence policy table.
+
+Gate, on recorded deps.dev data (`test/licenses/licenses.test.ts`):
+
+| Subject | deps.dev shows | Result |
+|---|---|---|
+| Elasticsearch (`org.elasticsearch:elasticsearch`, Maven) | Apache-2.0 → Elastic-2.0 + SSPL-1.0 at **7.11.0 (2021-02-10)**; AGPL-3.0 added at **8.16.0 (2024-11-12)** | both changes reported; first is a category change (permissive → source-available); second adds AGPL-3.0 but deps.dev does not say the three are alternatives, so the category stays source-available (most restrictive) |
+| React (npm) | BSD-3-Clause → MIT at **15.6.2 (2017-09-26)** | reported; for 15.6.1 in use it is "upgrading past it changes the licence"; ClearlyDefined's `BSD-3-Clause AND LicenseRef-scancode-facebook-patent-rights-2` for 15.6.1 is shown as a source disagreement |
+| immutable (npm) | BSD-3-Clause → MIT at **3.8.2 (2017-10-03)** | reported |
+| sentry (PyPI) | "BSD" → "BSL-1.1" at **20.10.1** (both non-standard in deps.dev; 10.0.0–20.x have no licence data) | reported as a change of the author's strings, with the releases without data counted |
+| Terraform (Go, row 8) | MPL-2.0 (+ BSD-3-Clause from v1.1.0) for every release, also after v1.6.0 | **miss, explained:** deps.dev derives Go licences with licensecheck, which does not report BUSL-1.1; the LICENSE at tag v1.6.0 is BUSL-1.1 [v P0]. The deps.dev project record says `non-standard` today. Not fixable without our own scanner (out of scope); ClearlyDefined has MPL-2.0 for v1.5.7 |
+| Redis (row 10) | not in deps.dev (no Docker or C sources; the Go module `github.com/redis/redis` stops at 2010) | **not measurable through deps.dev**; the change is verified from LICENSE.txt at tags 7.4.0 and 8.0.0 [v P0] |
+| Controls: express, lodash, webpack, @babel/core, chalk (npm) | one licence across the releases compared | **0 changes** each |
+
+Also (new tests): 40 unit tests in `src/licenses/licenses.test.ts` (19 SPDX parsing and
+normalisation cases, categories, policy incl. "unknown is never allowed" and an spdx-satisfies
+cross-check over 196 expressions, history, values and report), 9 gate tests above, 7 SBOM tests
+(CycloneDX 1.6 validated against the official schema, SPDX 2.3 against the published schema,
+CycloneDX round-trip through the SBOM import), 8 API tests (policy applied at read time,
+validation, permissions, audit, SBOM downloads), 5 web component tests and 5 Playwright e2e tests
+for the Licences view (including axe, light and dark).
+
+Deferred: per-distribution-type rules (SaaS / distributed / internal) in the policy (L4); "previous
+version used by this project" (L2 a) needs a scan-to-scan licence diff on the Changes page;
+`relicensing` event proposals (P5); ScanCode/ORT result import (L3).

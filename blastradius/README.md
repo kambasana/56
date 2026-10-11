@@ -45,15 +45,16 @@ blastradius kb validate path/to/kb
 
 | `scan` option | Meaning |
 | --- | --- |
-| `--format <list>` | `json`, `sarif`, `html` (comma-separated) or `all` (default) |
-| `--out <dir>` | output directory (default `out`): `blastradius.json`, `.sarif`, `.html` |
+| `--format <list>` | `json`, `sarif`, `html`, `cyclonedx` (CycloneDX 1.6 SBOM), `spdx` (SPDX 2.3 SBOM), comma-separated, or `all`; default `json,sarif,html` |
+| `--out <dir>` | output directory (default `out`): `blastradius.json`, `.sarif`, `.html`, `.cdx.json`, `.spdx.json` |
 | `--offline` | no network; answer from fixtures and the cache only (git URL targets are refused: scan a local checkout) |
 | `--fixtures <dir>` | directory of recorded API responses, searched recursively (implies `--offline`) |
 | `--no-cache` | disable the on-disk HTTP cache (per-user: `$BLASTRADIUS_CACHE_DIR`, else `$XDG_CACHE_HOME/blastradius`, else `~/.cache/blastradius`) |
 | `--as-of <date>` | reference time for decay and history: registry versions, KB incidents and advisories published after it are ignored (backtests) |
 | `--kb <dir>` | incident KB directory (default: bundled `kb/incidents`) |
 | `--review <file>` | JSON review decisions that accept or reject probabilistic entity links |
-| `--syft` | also merge a Syft CycloneDX SBOM when `syft` is on PATH (optional) |
+| `--syft` | also merge a Syft CycloneDX SBOM when `syft` is on PATH (optional; its declared licences are kept) |
+| `--license-policy <file>` | licence policy JSON (`src/licenses/policy.ts`) for the HTML report's Licences section; default: permissive allowed, everything else needs review. Not legal advice |
 | `--fail-on critical\|high` | exit code 2 if any finding, including an outbound workflow finding, is at or above that level |
 | `--top <n>` | number of findings in the terminal summary (default 5) |
 

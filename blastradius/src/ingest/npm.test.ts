@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { npmPurl } from '../core/types.js';
-import { componentsFromManifest, nameFromInstallPath, parsePackageJson, parsePackageLock, resolveLockVersion } from './npm.js';
+import { componentsFromManifest, declaredLicenseStrings, nameFromInstallPath, parsePackageJson, parsePackageLock, resolveLockVersion } from './npm.js';
 
 const fx = (p: string) => readFileSync(fileURLToPath(new URL(`../../test/fixtures/ingest/${p}`, import.meta.url)), 'utf8');
 
@@ -141,5 +141,24 @@ describe('componentsFromManifest', () => {
     const r = componentsFromManifest(m, 'repo:tiny');
     expect(r.components.map((c) => c.purl).sort()).toEqual([npmPurl('chalk', '5.3.0'), npmPurl('left-pad', '1.3.0')]);
     expect(r.unresolved.sort()).toEqual(['typescript', 'ua-parser-js']);
+  });
+});
+
+describe('declared licences in lockfile entries', () => {
+  it('reads the license npm copies into package-lock.json (string, legacy object and array forms)', () => {
+    expect(declaredLicenseStrings('MIT')).toEqual(['MIT']);
+    expect(declaredLicenseStrings({ type: 'BSD-3-Clause', url: 'x' })).toEqual(['BSD-3-Clause']);
+    expect(declaredLicenseStrings([{ type: 'MIT' }, { type: 'Apache-2.0' }, 'MIT'])).toEqual(['MIT', 'Apache-2.0']);
+    expect(declaredLicenseStrings(42)).toEqual([]);
+    expect(declaredLicenseStrings('x'.repeat(500))[0]).toHaveLength(200);
+  });
+
+  it('attaches them to lockfile v3 components', () => {
+    const text = JSON.stringify({
+      lockfileVersion: 3,
+      packages: { '': { name: 'app', dependencies: { a: '^1' } }, 'node_modules/a': { version: '1.0.0', license: 'ISC' } },
+    });
+    const r = parsePackageLock(text, { assetIdFor: () => 'repo:app' });
+    expect(r.components.find((c) => c.name === 'a')?.declaredLicenses).toEqual({ values: ['ISC'], via: 'lockfile' });
   });
 });

@@ -322,6 +322,9 @@ export const WEB_ROUTES: readonly WebRoute[] = [
   { path: '/projects/:id/exposure', page: 'exposure', label: 'Exposure matrix' },
   { path: '/projects/:id/investigate', page: 'investigate', label: 'Investigate' },
   { path: '/projects/:id/scans', page: 'scans', label: 'Scans' },
+  // Licences (docs/WHO-BEHIND-PLAN.md P1): one project, and every project the viewer can see.
+  { path: '/projects/:id/licenses', page: 'exposure', label: 'Licences' },
+  { path: '/licenses', page: 'exposure', label: 'Licences' },
   { path: '/reports', page: 'reports', label: 'Reports' },
   { path: '/integrations', page: 'integrations', label: 'Integrations' },
   { path: '/settings', page: 'settings', label: 'Settings' },

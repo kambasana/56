@@ -454,6 +454,20 @@ CREATE INDEX incident_event_advisory ON incident_event (org_id, advisory_id, seq
       ),
     ].join('\n'),
   },
+  {
+    version: 11,
+    name: 'licence policy',
+    sql: `
+-- The org's licence policy (docs/WHO-BEHIND-PLAN.md L4): JSON validated by src/licenses/policy.ts.
+-- No row = the shipped default template (permissive allowed, everything else needs review).
+CREATE TABLE license_policy (
+  org_id      TEXT PRIMARY KEY REFERENCES org(id) ON DELETE CASCADE,
+  policy_json TEXT NOT NULL,
+  updated_at  TEXT NOT NULL,
+  updated_by  TEXT NOT NULL
+);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

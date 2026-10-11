@@ -6,7 +6,11 @@
  * duplicated here. Every mutating request sends `X-Requested-With: blastradius` (CSRF rule)
  * and the session cookie travels with `credentials: 'same-origin'`.
  */
+import { REPORT_EXTENSIONS } from '@server/api-types';
 import type {
+  LicensePolicy,
+  LicensePolicyResponse,
+  LicensesResponse,
   BulkUpdateFindingsRequest,
   BulkUpdateFindingsResponse,
   ListAssigneesResponse,
@@ -212,7 +216,13 @@ export const api = {
 
   reports: (q?: { project?: Id } & PageQuery, signal?: AbortSignal) => get<ListReportsResponse>('/api/reports', q, signal),
   /** Download URL for a report body (use as an <a href download>). */
-  reportUrl: (scanId: Id, format: ReportFormat) => `/api/reports/${enc(scanId)}.${format}`,
+  reportUrl: (scanId: Id, format: ReportFormat) => `/api/reports/${enc(scanId)}.${REPORT_EXTENSIONS[format]}`,
+
+  /** Licences of the latest scan of one project, or of every project the caller may see. */
+  licenses: (q: { project?: Id } = {}, signal?: AbortSignal) => get<LicensesResponse>('/api/licenses', q, signal),
+  licensePolicy: (signal?: AbortSignal) => get<LicensePolicyResponse>('/api/license-policy', undefined, signal),
+  updateLicensePolicy: (body: LicensePolicy) => request<LicensePolicyResponse>('PUT', '/api/license-policy', body),
+  resetLicensePolicy: () => del<LicensePolicyResponse>('/api/license-policy'),
 
   integrations: (signal?: AbortSignal) => get<ListIntegrationsResponse>('/api/integrations', undefined, signal),
 

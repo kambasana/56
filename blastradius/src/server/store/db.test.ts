@@ -20,7 +20,7 @@ describe('migrations', () => {
     db.close();
   });
 
-  it('numbers migrations 1..N with no gaps or repeats, the account index last', () => {
+  it('numbers migrations 1..N with no gaps or repeats, the licence policy last', () => {
     expect(MIGRATIONS.map((m) => m.version)).toEqual(MIGRATIONS.map((_, i) => i + 1));
     expect(MIGRATIONS.slice(5).map((m) => [m.version, m.name])).toEqual([
       [6, 'finding triage: fixing, resolved, owner, risk expiry'],
@@ -28,14 +28,16 @@ describe('migrations', () => {
       [8, 'alert rules'],
       [9, 'account index and compromised accounts'],
       [10, 'upgrade untouched built-in role defaults in every org'],
+      [11, 'licence policy'],
     ]);
-    expect(SCHEMA_VERSION).toBe(10);
+    expect(SCHEMA_VERSION).toBe(11);
   });
 
   it('upgrades untouched built-in AppSec and Auditor roles in every existing org (v10), never customised ones', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA foreign_keys = ON');
     migrate(db, MIGRATIONS.filter((m) => m.version < 10));
+    const upToV10 = MIGRATIONS.filter((m) => m.version <= 10);
     const legacyAppsec = ['home', 'projects', 'reports', 'integrations', 'changes', 'findings', 'exposure', 'investigate', 'scans'];
     const role = db.prepare(`INSERT INTO role (org_id, id, name, description, builtin, template, permissions, updated_at) VALUES (?, ?, ?, 'old', 1, ?, ?, 't0')`);
     for (const org of ['org_a', 'org_b']) {
@@ -49,7 +51,7 @@ describe('migrations', () => {
     // org_b: both customised.
     role.run('org_b', 'appsec', 'AppSec', 'appsec', JSON.stringify([...legacyAppsec, 'review']));
     role.run('org_b', 'auditor', 'Auditor', 'auditor', JSON.stringify(['reports', 'findings']));
-    expect(migrate(db)).toEqual([10]);
+    expect(migrate(db, upToV10)).toEqual([10]);
     const perms = (org: string, id: string) =>
       JSON.parse((db.prepare('SELECT permissions FROM role WHERE org_id = ? AND id = ?').get(org, id) as { permissions: string }).permissions) as string[];
     expect(perms('org_a', 'appsec')).toEqual([...ROLE_TEMPLATES.appsec.permissions]);
@@ -61,7 +63,19 @@ describe('migrations', () => {
     expect(perms('org_b', 'auditor')).toEqual(['reports', 'findings']);
     expect(perms('org_a', 'developer')).toEqual([...ROLE_TEMPLATES.developer.permissions]);
     // Idempotent: nothing left to apply, rows unchanged.
-    expect(migrate(db)).toEqual([]);
+    expect(migrate(db, upToV10)).toEqual([]);
+    db.close();
+  });
+
+  it('adds the licence policy table (v11) on a v10 database', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, MIGRATIONS.filter((m) => m.version <= 10));
+    expect(migrate(db)).toEqual([11]);
+    db.exec("INSERT INTO org (id, name, slug, created_at) VALUES ('org_1', 'Acme', 'acme', '2026-01-01T00:00:00Z')");
+    db.exec(`INSERT INTO license_policy (org_id, policy_json, updated_at, updated_by) VALUES ('org_1', '{}', 't', 'u')`);
+    db.exec("DELETE FROM org WHERE id = 'org_1'");
+    expect((db.prepare('SELECT count(*) AS n FROM license_policy').get() as { n: number }).n).toBe(0);
     db.close();
   });
 

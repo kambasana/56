@@ -25,6 +25,7 @@ General rules for all modules:
 | `src/enrich/osv` | `vuln`, `malware` facts |
 | `src/enrich/depsdev` | `scorecard`, `provenance`, `dependents`, `repo` facts (deps.dev + Scorecard API) |
 | `src/enrich/npm` | `maintainers`, `publisher`, `publisher_change`, `maintainer_change`, `install_script`, `release_age`, `funding`, `repo`, `provenance` |
+| `src/enrich/licenses` + `src/licenses` | `license`, `license_change` (deps.dev, ClearlyDefined, lockfile/SBOM declared); SPDX normalisation, categories, policy, `ScanResult.licenses` |
 | `src/enrich/github` | `repo_owner`, `repo_transfer`, `archived`, `funding` |
 | `src/entities` | `Entity` / `EntityLink` from facts |
 | `src/incidents` + `kb/incidents` | YAML incident KB loader + validator → `Incident[]` |
@@ -146,10 +147,17 @@ FACT_KINDS                             // readonly array of all kinds
 | `funding` | unversioned | `{ sources: { platform: string; handle?: string; url?: string }[]; via: string /*'package.json#funding'\|'FUNDING.yml'\|'opencollective'*/ }` | npm, github |
 | `archived` | unversioned | `{ archived: boolean; lastPushAt?: string }` | github, depsdev |
 | `release_age` | versioned | `{ version: string; publishedAt: string; ageDays: number; latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; deprecated?: string }` | npm |
+| `license` | versioned | `{ raw: string[]; expressions: string[] /*valid SPDX, sorted*/; status: 'spdx'\|'corrected'\|'non_standard'\|'unlicensed'\|'see_file'\|'unknown'; category: LicenseCategory; version: string; corrected?: {from,to}[]; score?: number /*ClearlyDefined*/; basis?: 'repository' /*GitHub Actions: repo licence today*/ }` (one fact per source) | licenses (source `depsdev`, `clearlydefined`, `lockfile`, `sbom`) |
+| `license_change` | unversioned | `{ version; previousVersion; from: string[]; to: string[]; fromStatus; toStatus; fromCategory; toCategory; added: string[]; removed: string[]; date?: string; unknownBetween?: number }` | licenses (`depsdev`) |
+| `contributors`, `release_cadence`, `funding_detail`, `org_profile` | unversioned | see `src/core/types.ts` (declared in P0 for P2–P7; no producer yet) | — |
 
 Notes:
 - `ageDays` / `daysSinceLatestRelease` are computed against `EnrichContext.now`, never the wall clock.
 - `email` fields are kept only when public in registry metadata; reports should not display them.
+- `LicenseCategory` = `'permissive'|'weak_copyleft'|'strong_copyleft'|'network_copyleft'|'source_available'|'proprietary'|'unknown'`,
+  from Blue Oak Council and ScanCode LicenseDB (`src/licenses/classify.ts`), never our own judgement.
+- `Component.declaredLicenses?: { values: string[]; via: 'lockfile' | 'sbom' }` carries the licence
+  strings the scanned files declare (package-lock `license`, CycloneDX `licenses`).
 - When a source has no data for a component, emit no fact (don't emit empty placeholders), except
   `install_script` / `provenance` which may emit `false` explicitly when the registry was checked.
 

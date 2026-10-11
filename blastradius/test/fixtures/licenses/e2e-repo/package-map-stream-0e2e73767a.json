@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T02:45:09.827Z by test/licenses/record.ts; response trimmed to the fields the licences enricher reads.",
+"request": {"url":"https://api.deps.dev/v3/systems/npm/packages/map-stream"},
+"status": 200,
+"response": {"packageKey":{"system":"NPM","name":"map-stream"},"versions":[{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.1"},"publishedAt":"2012-08-18T13:07:33Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.2"},"publishedAt":"2013-01-17T04:54:50Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.3"},"publishedAt":"2013-09-24T03:42:27Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.4"},"publishedAt":"2013-12-07T02:05:06Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.5"},"publishedAt":"2014-11-03T17:03:20Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.6"},"publishedAt":"2015-06-27T10:15:50Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.0.7"},"publishedAt":"2017-03-19T21:01:03Z"},{"versionKey":{"system":"NPM","name":"map-stream","version":"0.1.0"},"publishedAt":"2014-01-09T07:15:35Z"}]}
+}

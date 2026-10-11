@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FACT_KINDS,
+  LICENSE_CATEGORIES,
   factsFor,
   formatPurl,
   isFactOf,
@@ -111,5 +113,28 @@ describe('summarizeInventory', () => {
       byScope: { runtime: 2 },
       withInstallScripts: 1,
     });
+  });
+});
+
+describe('fact kinds for who is behind it (docs/WHO-BEHIND-PLAN.md P0)', () => {
+  it('lists the new kinds and builds typed facts for them', () => {
+    for (const k of ['license', 'license_change', 'contributors', 'release_cadence', 'funding_detail', 'org_profile'] as const) expect(FACT_KINDS).toContain(k);
+    const at = '2026-10-11T00:00:00Z';
+    const facts: Fact[] = [
+      makeFact('license', 'pkg:npm/a@1.0.0', { raw: ['MIT'], expressions: ['MIT'], status: 'spdx', category: 'permissive', version: '1.0.0' }, { source: 'depsdev', fetchedAt: at }),
+      makeFact(
+        'license_change',
+        'pkg:npm/a',
+        { version: '2.0.0', previousVersion: '1.0.0', from: ['MIT'], to: ['BUSL-1.1'], fromStatus: 'spdx', toStatus: 'spdx', fromCategory: 'permissive', toCategory: 'source_available', added: ['BUSL-1.1'], removed: ['MIT'] },
+        { source: 'depsdev', fetchedAt: at },
+      ),
+      makeFact('contributors', 'pkg:npm/a', { from: '2024-10-11', to: '2026-10-11', commits: 10, absenceFactor: 1, top: [{ id: 'octocat', share: 0.9 }], unmapped: 0 }, { source: 'git', fetchedAt: at }),
+      makeFact('release_cadence', 'pkg:npm/a', { releases: 10, medianDays: 30, cv: 0.5, latestGapDays: 40, irregular: false }, { source: 'npm', fetchedAt: at }),
+      makeFact('funding_detail', 'pkg:npm/a', { platform: 'open_collective', slug: 'a', currency: 'USD', last12Months: 100, previous12Months: 50, trend: 'growing' }, { source: 'opencollective', fetchedAt: at }),
+      makeFact('org_profile', 'pkg:npm/a', { entity: 'org:github/a', via: 'github.org', location: 'Earth' }, { source: 'github', fetchedAt: at }),
+    ];
+    expect(facts.filter(isFactOf('license'))[0]?.value.category).toBe('permissive');
+    expect(facts.filter(isFactOf('license_change'))[0]?.value.toCategory).toBe('source_available');
+    expect(LICENSE_CATEGORIES).toEqual(['permissive', 'weak_copyleft', 'strong_copyleft', 'network_copyleft', 'source_available', 'proprietary', 'unknown']);
   });
 });

@@ -21,6 +21,9 @@ import { createOsvEnricher } from './enrich/osv/index.js';
 import { createDepsDevEnricher } from './enrich/depsdev/index.js';
 import { createNpmEnricher } from './enrich/npm/index.js';
 import { createGithubEnricher } from './enrich/github/index.js';
+import { createLicenseEnricher } from './enrich/licenses/index.js';
+import { buildLicenseReport } from './licenses/report.js';
+import type { LicensePolicy } from './licenses/policy.js';
 import { incidentsFromMalwareFacts, loadIncidents, validateKbDir } from './incidents/index.js';
 import { applyReviewState, buildEntityGraph, loadReviewState, resolveEntities, type EntityGraphData } from './entities/index.js';
 import { buildScanResult, scoreInventory } from './scoring/index.js';
@@ -29,7 +32,10 @@ import { loadPack, type LoadedPack } from './pack/load.js';
 import { REPORT_FILENAMES, renderReport, type ReportFormat } from './report/index.js';
 
 export type OutputFormat = ReportFormat;
+/** Formats written by default. */
 export const OUTPUT_FORMATS: readonly OutputFormat[] = ['json', 'sarif', 'html'];
+/** Every format, including the SBOM exports (CycloneDX 1.6, SPDX 2.3). */
+export const ALL_OUTPUT_FORMATS: readonly OutputFormat[] = [...OUTPUT_FORMATS, 'cyclonedx', 'spdx'];
 
 /** Incident KB shipped with the package (works from src/ and dist/). */
 export const DEFAULT_KB_DIR = fileURLToPath(new URL('../kb/incidents', import.meta.url));
@@ -57,6 +63,8 @@ export interface ScanOptions {
   reviewFile?: string;
   /** Import a Syft SBOM when syft is on PATH. */
   syft?: boolean;
+  /** Licence policy for the HTML report's Licences section (default: the shipped template). */
+  licensePolicy?: LicensePolicy;
   /** Injected enrichers (tests). Defaults to osv, depsdev, npm, github. */
   enrichers?: (getFacts: () => readonly Fact[]) => Enricher[];
   /** Injected HttpClient (tests). */
@@ -92,7 +100,7 @@ function cachedPack(path: string): Promise<LoadedPack> {
 
 /** Default enricher set; github reads repo facts collected by the earlier enrichers. */
 export function defaultEnrichers(getFacts: () => readonly Fact[]): Enricher[] {
-  return [createOsvEnricher(), createDepsDevEnricher(), createNpmEnricher(), createGithubEnricher({ repoFacts: getFacts })];
+  return [createOsvEnricher(), createDepsDevEnricher(), createNpmEnricher(), createLicenseEnricher(), createGithubEnricher({ repoFacts: getFacts })];
 }
 
 /**
@@ -218,6 +226,10 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     workflows: ingested.workflows,
   });
   const result = buildScanResult({ target: opts.target, inventory, score, generatedAt: now, warnings: dedupe(warnings) });
+  // Licences (shown from others): declared values with their sources and changes; no score impact.
+  // Always present on new scans (components without data count as unknown), so a missing section
+  // means a scan made before licences were collected.
+  result.licenses = buildLicenseReport(inventory, facts);
 
   // 6. Reports.
   const files: string[] = [];
@@ -229,7 +241,13 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     await mkdir(opts.outDir, { recursive: true });
     await assertNoSymlinkedOutDir(opts.outDir, scanRoot);
     for (const format of opts.formats ?? OUTPUT_FORMATS) {
-      files.push(await writeReportFile(opts.outDir, REPORT_FILENAMES[format], renderReport(result, format, { assets: inventory.assets })));
+      files.push(
+        await writeReportFile(
+          opts.outDir,
+          REPORT_FILENAMES[format],
+          renderReport(result, format, { assets: inventory.assets, inventory, ...(opts.licensePolicy ? { licensePolicy: opts.licensePolicy, licensePolicyLabel: 'custom (--license-policy)' } : {}) }),
+        ),
+      );
     }
   }
   return { result, inventory, facts, incidents, workflows: ingested.workflows, entities, files };

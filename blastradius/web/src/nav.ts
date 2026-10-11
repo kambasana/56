@@ -3,7 +3,7 @@
  *
  *   Main (one level): Overview · Findings · Incidents · Projects · Alerts
  *   Footer:           Reports · Settings
- *   Project sub-nav (on /projects/:id/*): Changes · Findings · Exposure matrix · Investigate · Scans
+ *   Project sub-nav (on /projects/:id/*): Changes · Findings · Exposure matrix · Licences · Investigate · Scans
  *   Settings sub-nav (on /settings, /integrations): Members and roles · Sources
  *
  * Items are filtered with can() from the shared permission model, using the org-scope
@@ -80,6 +80,9 @@ export function accountPathForEntity(entityId: string): string | null {
   return accountPath(m[2]!, m[3]!);
 }
 
+/** Licences of every project the viewer can see. */
+export const LICENSES_PATH = '/licenses';
+
 /** The org-wide exposure matrix, optionally scoped to some projects. */
 export function exposurePath(projectIds: readonly string[] = []): string {
   return projectIds.length ? `/exposure?${new URLSearchParams({ projects: projectIds.join(',') })}` : '/exposure';
@@ -107,6 +110,7 @@ const PROJECT_ITEMS: { id: PagePermission; label: string; sub: string }[] = [
   { id: 'changes', label: 'Changes', sub: 'changes' },
   { id: 'findings', label: 'Findings', sub: 'findings' },
   { id: 'exposure', label: 'Exposure matrix', sub: 'exposure' },
+  { id: 'exposure', label: 'Licences', sub: 'licenses' },
   { id: 'investigate', label: 'Investigate', sub: 'investigate' },
   { id: 'scans', label: 'Scans', sub: 'scans' },
 ];
@@ -145,6 +149,7 @@ export function activeNavId(pathname: string): NavId | null {
     case 'accounts':
       return 'incidents';
     case 'exposure':
+    case 'licenses':
       return 'overview';
     case 'alerts':
       return 'alerts';

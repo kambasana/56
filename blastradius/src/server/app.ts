@@ -14,6 +14,7 @@ import { registerIncidentRoutes } from './routes/incidents.js';
 import { registerFindingRoutes } from './routes/findings.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerReportRoutes } from './routes/reports.js';
+import { registerLicenseRoutes } from './routes/licenses.js';
 import { registerSettingsRoutes } from './routes/settings.js';
 import { registerTriageRoutes } from './routes/triage.js';
 import { resolveStatic, SPA_CSP, staticBody } from './static.js';
@@ -78,6 +79,7 @@ export function createApp(deps: ServerDeps): Hono<AppEnv> {
   registerIncidentRoutes(app);
   registerAccountRoutes(app);
   registerReportRoutes(app);
+  registerLicenseRoutes(app);
   registerSettingsRoutes(app);
 
   app.all('/api/*', (c) => errorResponse(c, 'not_found', 'No such API endpoint'));

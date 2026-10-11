@@ -187,6 +187,17 @@ describe('syft adapter', () => {
     expect(res.inventory.edges.some((e) => e.to === 'pkg:pypi/urllib3@2.2.0' && e.direct)).toBe(false);
   });
 
+  it('keeps the licences a CycloneDX SBOM declares (id, name or expression)', () => {
+    const r = parseCycloneDx({
+      components: [
+        { purl: 'pkg:npm/a@1.0.0', licenses: [{ license: { id: 'MIT' } }, { license: { name: 'Custom terms' } }] },
+        { purl: 'pkg:npm/b@1.0.0', licenses: [{ expression: 'MIT OR Apache-2.0' }] },
+        { purl: 'pkg:npm/c@1.0.0', licenses: 'junk' },
+      ],
+    });
+    expect(r.components.map((c) => c.declaredLicenses)).toEqual([{ values: ['MIT', 'Custom terms'], via: 'sbom' }, { values: ['MIT OR Apache-2.0'], via: 'sbom' }, undefined]);
+  });
+
   it('skips quietly with a warning when syft is absent', async () => {
     const res = await ingestDetailed(path.join(FIX, 'no-lock'), { syft: true, syftRunner: async () => null });
     expect(res.warnings.some((w) => /syft not found/.test(w))).toBe(true);

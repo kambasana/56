@@ -63,7 +63,12 @@ export function parseCycloneDx(json: unknown): CycloneDxImport {
       continue;
     }
     const name = parsed.namespace ? `${parsed.namespace}/${parsed.name}` : parsed.name;
-    if (!components.has(purl)) components.set(purl, { purl, ecosystem: ecosystemOf(parsed.type), name: cap(name, 300), version: cap(parsed.version, 256) });
+    if (!components.has(purl)) {
+      const comp: Component = { purl, ecosystem: ecosystemOf(parsed.type), name: cap(name, 300), version: cap(parsed.version, 256) };
+      const licenses = cycloneDxLicenses(own(c, 'licenses'));
+      if (licenses.length > 0) comp.declaredLicenses = { values: licenses, via: 'sbom' };
+      components.set(purl, comp);
+    }
     const ref = own(c, 'bom-ref');
     if (typeof ref === 'string') refToPurl.set(ref, purl);
   }
@@ -81,6 +86,22 @@ export function parseCycloneDx(json: unknown): CycloneDxImport {
     }
   }
   return { components: [...components.values()], dependencies, warnings };
+}
+
+/**
+ * Licence strings of a CycloneDX component (spec 1.4–1.7 `licenses`): `{ license: { id } }`,
+ * `{ license: { name } }` or `{ expression }`. Kept as written (normalised later), capped.
+ */
+export function cycloneDxLicenses(list: unknown): string[] {
+  if (!Array.isArray(list)) return [];
+  const out: string[] = [];
+  for (const entry of list.slice(0, 20)) {
+    const expr = own(entry, 'expression');
+    const lic = own(entry, 'license');
+    const v = typeof expr === 'string' ? expr : typeof own(lic, 'id') === 'string' ? own(lic, 'id') : own(lic, 'name');
+    if (typeof v === 'string' && v.trim()) out.push(cap(v.trim(), 200));
+  }
+  return [...new Set(out)];
 }
 
 /** Run syft on a directory and import its CycloneDX output. Returns null when syft is not installed. */

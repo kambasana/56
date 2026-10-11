@@ -1,18 +1,23 @@
-/** /api/reports, /api/reports/:scanId.{html,json,sarif}, /api/integrations */
+/** /api/reports, /api/reports/:scanId.{html,json,sarif,cdx.json,spdx.json}, /api/integrations */
 import type { Hono } from 'hono';
 import { renderReport } from '../../report/index.js';
-import type { ListIntegrationsResponse, ListReportsResponse, ReportFormat } from '../api-types.js';
+import { REPORT_EXTENSIONS, REPORT_FORMATS, type ListIntegrationsResponse, type ListReportsResponse, type ReportFormat } from '../api-types.js';
 import { deps, requireOrg, requireOrgPerm, requireProjectPerm, visibleProjects, type AppEnv } from '../context.js';
 import { notFound } from '../errors.js';
 import { pageQuery, queryString } from '../request.js';
-import { getScanInventory, getScanResult, listReports } from '../store/index.js';
+import { getLicensePolicy, getScanInventory, getScanResult, listReports } from '../store/index.js';
 
-const REPORT_FILE_RE = /^([A-Za-z0-9_-]{1,100})\.(html|json|sarif)$/;
+const REPORT_FILE_RE = /^([A-Za-z0-9_-]{1,100})\.(html|json|sarif|cdx\.json|spdx\.json)$/;
+
+const FORMAT_OF_EXTENSION = new Map<string, ReportFormat>(REPORT_FORMATS.map((f) => [REPORT_EXTENSIONS[f], f]));
 
 const CONTENT_TYPES: Record<ReportFormat, string> = {
   html: 'text/html; charset=utf-8',
   json: 'application/json; charset=utf-8',
   sarif: 'application/sarif+json; charset=utf-8',
+  // https://cyclonedx.org/specification/overview/ (media types); SPDX 2.3 JSON has no registered type.
+  cyclonedx: 'application/vnd.cyclonedx+json; version=1.6; charset=utf-8',
+  spdx: 'application/spdx+json; charset=utf-8',
 };
 
 export const REPORT_HTML_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:";
@@ -32,16 +37,23 @@ export function registerReportRoutes(app: Hono<AppEnv>): void {
     const m = REPORT_FILE_RE.exec(c.req.param('file') ?? '');
     if (!m) throw notFound('Report not found');
     const scanId = m[1]!;
-    const format = m[2] as ReportFormat;
+    const ext = m[2]!;
+    const format = FORMAT_OF_EXTENSION.get(ext);
+    if (!format) throw notFound('Report not found');
     const { orgId } = requireOrg(c);
     const { store } = deps(c);
     const stored = getScanResult(store, orgId, scanId);
     if (!stored) throw notFound('Report not found');
     requireProjectPerm(c, stored.projectId, 'reports');
     const inventory = getScanInventory(store, orgId, scanId);
-    const body = renderReport(stored.result, format, inventory ? { assets: inventory.assets } : {});
+    const { policy, isDefault } = getLicensePolicy(store, orgId);
+    const body = renderReport(stored.result, format, {
+      ...(inventory ? { assets: inventory.assets, inventory } : {}),
+      licensePolicy: policy,
+      licensePolicyLabel: isDefault ? 'default template (permissive allowed, everything else needs review)' : 'org policy',
+    });
     c.header('Content-Type', CONTENT_TYPES[format]);
-    c.header('Content-Disposition', `attachment; filename="blastradius-${scanId}.${format}"`);
+    c.header('Content-Disposition', `attachment; filename="blastradius-${scanId}.${ext}"`);
     c.header('Cache-Control', 'private, no-store');
     if (format === 'html') c.header('Content-Security-Policy', REPORT_HTML_CSP);
     return c.body(body);

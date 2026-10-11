@@ -62,6 +62,7 @@ describe('sub-navs and links', () => {
       '/projects/a%2Fb/changes',
       '/projects/a%2Fb/findings',
       '/projects/a%2Fb/exposure',
+      '/projects/a%2Fb/licenses',
       '/projects/a%2Fb/investigate',
       '/projects/a%2Fb/scans',
     ]);
@@ -107,6 +108,8 @@ describe('routing helpers', () => {
     expect(activeNavId('/packages')).toBe('incidents');
     expect(activeNavId('/incidents/GHSA-1')).toBe('incidents');
     expect(activeNavId('/exposure')).toBe('overview');
+    expect(activeNavId('/licenses')).toBe('overview');
+    expect(activeNavId('/projects/p1/licenses')).toBe('projects');
     expect(activeNavId('/incidents')).toBe('incidents');
     expect(activeNavId('/alerts')).toBe('alerts');
     expect(activeNavId('/settings')).toBe('settings');
