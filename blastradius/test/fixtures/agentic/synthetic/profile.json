@@ -1,0 +1,8 @@
+{
+  "request": {
+    "url": "https://github.com/synthetic--profile"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>synthetic--profile (Synthetic Profile)</title></head><body><main><h1><span>Synthetic Profile</span> <span>synthetic--profile</span></h1><p>Synthetic test account. Writes parsers.</p><ul><li><span>Example Org</span></li><li itemprop=\"homeLocation\"><span>Lisbon, Portugal</span></li></ul></main></body></html>",
+  "_note": "SYNTHETIC TEST PAGE (not a real page): written for the agentic gap-filler tests. A public profile page with a self-written location field. GitHub logins cannot contain '--', so this cannot be a real account."
+}

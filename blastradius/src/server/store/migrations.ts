@@ -468,6 +468,43 @@ CREATE TABLE license_policy (
 );
 `,
   },
+  {
+    version: 12,
+    name: 'agentic fact proposals',
+    sql: `
+-- Agentic gap-filler proposals (src/agentic; docs/WHO-BEHIND-PLAN.md §10 "Agentic gap-filler").
+-- One row per org and proposal id (task + subject + value + source URL). Status: verified,
+-- pending_confirmation (org jurisdiction until a human confirms), confirmed, rejected, unverified
+-- (failed the gate; never shown as fact), removed (person data removed on request: value and
+-- quote wiped). Review decisions survive rescans: a rescan never overwrites a decided row.
+CREATE TABLE agent_proposal (
+  org_id         TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  id             TEXT NOT NULL,
+  task           TEXT NOT NULL,
+  subject        TEXT NOT NULL,
+  subject_kind   TEXT NOT NULL,
+  status         TEXT NOT NULL,
+  value_json     TEXT,
+  source_url     TEXT,
+  quote          TEXT,
+  label          TEXT,
+  confidence     TEXT NOT NULL DEFAULT '',
+  checks_json    TEXT NOT NULL DEFAULT '[]',
+  reasons_json   TEXT NOT NULL DEFAULT '[]',
+  retrieved_at   TEXT,
+  verified_at    TEXT,
+  first_seen_at  TEXT NOT NULL,
+  last_seen_at   TEXT NOT NULL,
+  scan_id        TEXT,
+  project_id     TEXT,
+  decided_by     TEXT,
+  decided_at     TEXT,
+  decision_note  TEXT,
+  PRIMARY KEY (org_id, id)
+);
+CREATE INDEX agent_proposal_status ON agent_proposal (org_id, status, task);
+`,
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;

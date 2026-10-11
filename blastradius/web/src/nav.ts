@@ -82,6 +82,8 @@ export function accountPathForEntity(entityId: string): string | null {
 
 /** Licences of every project the viewer can see. */
 export const LICENSES_PATH = '/licenses';
+/** Agentic gap-filler proposals for review (org-wide). */
+export const PROPOSED_FACTS_PATH = '/proposed-facts';
 
 /** The org-wide exposure matrix, optionally scoped to some projects. */
 export function exposurePath(projectIds: readonly string[] = []): string {

@@ -20,7 +20,7 @@ describe('migrations', () => {
     db.close();
   });
 
-  it('numbers migrations 1..N with no gaps or repeats, the licence policy last', () => {
+  it('numbers migrations 1..N with no gaps or repeats, the agentic proposals last', () => {
     expect(MIGRATIONS.map((m) => m.version)).toEqual(MIGRATIONS.map((_, i) => i + 1));
     expect(MIGRATIONS.slice(5).map((m) => [m.version, m.name])).toEqual([
       [6, 'finding triage: fixing, resolved, owner, risk expiry'],
@@ -29,8 +29,9 @@ describe('migrations', () => {
       [9, 'account index and compromised accounts'],
       [10, 'upgrade untouched built-in role defaults in every org'],
       [11, 'licence policy'],
+      [12, 'agentic fact proposals'],
     ]);
-    expect(SCHEMA_VERSION).toBe(11);
+    expect(SCHEMA_VERSION).toBe(12);
   });
 
   it('upgrades untouched built-in AppSec and Auditor roles in every existing org (v10), never customised ones', () => {
@@ -71,11 +72,24 @@ describe('migrations', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA foreign_keys = ON');
     migrate(db, MIGRATIONS.filter((m) => m.version <= 10));
-    expect(migrate(db)).toEqual([11]);
+    expect(migrate(db, MIGRATIONS.filter((m) => m.version <= 11))).toEqual([11]);
     db.exec("INSERT INTO org (id, name, slug, created_at) VALUES ('org_1', 'Acme', 'acme', '2026-01-01T00:00:00Z')");
     db.exec(`INSERT INTO license_policy (org_id, policy_json, updated_at, updated_by) VALUES ('org_1', '{}', 't', 'u')`);
     db.exec("DELETE FROM org WHERE id = 'org_1'");
     expect((db.prepare('SELECT count(*) AS n FROM license_policy').get() as { n: number }).n).toBe(0);
+    db.close();
+  });
+
+  it('adds the agentic proposal table (v12) on a v11 database; rows go with their org', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA foreign_keys = ON');
+    migrate(db, MIGRATIONS.filter((m) => m.version <= 11));
+    expect(migrate(db)).toEqual([12]);
+    db.exec("INSERT INTO org (id, name, slug, created_at) VALUES ('org_1', 'Acme', 'acme', '2026-01-01T00:00:00Z')");
+    db.exec(`INSERT INTO agent_proposal (org_id, id, task, subject, subject_kind, status, first_seen_at, last_seen_at) VALUES ('org_1', 'prop_1', 'funding', 'pkg:npm/x', 'package', 'unverified', 't', 't')`);
+    expect(() => db.exec(`INSERT INTO agent_proposal (org_id, id, task, subject, subject_kind, status, first_seen_at, last_seen_at) VALUES ('org_1', 'prop_1', 'funding', 'pkg:npm/x', 'package', 'unverified', 't', 't')`)).toThrow(/UNIQUE/);
+    db.exec("DELETE FROM org WHERE id = 'org_1'");
+    expect((db.prepare('SELECT count(*) AS n FROM agent_proposal').get() as { n: number }).n).toBe(0);
     db.close();
   });
 

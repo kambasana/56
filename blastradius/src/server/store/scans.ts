@@ -3,6 +3,7 @@
  * JSON (plus its SHA-256 and the SHA-256 of its JSON report download), a summary, the
  * inventory's asset metadata and the finding rows.
  */
+import { syncAgentProposals } from './agentic.js';
 import { createHash } from 'node:crypto';
 import { renderJson } from '../../report/json.js';
 import type { Page, ReportFormat, ReportRow, Scan, ScanRef, ScanStatus, ScanSummary } from '../api-types.js';
@@ -185,6 +186,7 @@ export function completeScan(s: Store, scanId: string, input: CompleteScanInput)
       scanId,
     );
     insertFindingRows(s, { id: scanId, projectId: row.project_id, orgId: row.org_id, createdAt: row.created_at }, input.result.findings, assets);
+    syncAgentProposals(s, { orgId: row.org_id, projectId: row.project_id, scanId }, input.result.agentic);
     return getScanById(s, scanId)!;
   });
 }

@@ -1,0 +1,8 @@
+{
+  "request": {
+    "url": "https://api.github.com/users/synthetic--profile/gpg_keys"
+  },
+  "status": 200,
+  "response": "[\n  {\n    \"id\": 1,\n    \"key_id\": \"3AA5C34371567BD2\",\n    \"emails\": [],\n    \"can_sign\": true,\n    \"created_at\": \"2016-03-24T11:31:04Z\"\n  }\n]",
+  "_note": "SYNTHETIC TEST DATA (not a real account): GitHub logins cannot contain '--'. Shape of the GitHub REST users API (https://docs.github.com/en/rest/users); api.github.com is not reachable from this environment, so this is a stub, not a recording."
+}

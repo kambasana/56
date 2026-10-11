@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://www.elastic.co/blog/licensing-change"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>Doubling down on open, Part II | Elastic Blog</title></head><body>\nUpcoming licensing changes to Elasticsearch and Kibana</h2><p>We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL) and the Elastic License, giving users the choice of which license to apply. This license change ensures our community and customers have free and open access to use, modify, redistribute, and collaborate on the code.\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}

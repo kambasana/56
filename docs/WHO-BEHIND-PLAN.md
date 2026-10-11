@@ -17,7 +17,7 @@ inline (Sponsors field visibility and Tidelift need a token or a JavaScript-only
 blog answers 429 here, the licence files at the tags verify the event instead; the SPDX
 license-list-data licence is not stated in its repos, and P1 uses CC0 npm packages instead; two
 are data expectations that only P2/P4 can measure; P2 measured the express one). One expectation
-was corrected: `request`'s repository is not archived. Gate results for P0, P1 and P2 are in §10.
+was corrected: `request`'s repository is not archived. Gate results for P0, P1 and P2 are in §10, with the agentic gap-filler's pipeline, gate and guardrails.
 
 ---
 
@@ -402,6 +402,26 @@ retention, objection route, sources and status on every claim, no nationality pr
   table (`src/entities/review.ts`) gets a `suppressed` state that wins over any automatic rule.
 - **Sanctions.** Org-level only, official lists only, "possible match, needs review" until a
   human confirms; never automated against people.
+- **Agentic gap-filler (§10 "Agentic gap-filler"), enforced in code and tested.** No task, prompt
+  or tool may infer or store an individual's nationality, ethnicity or country, from a name, email,
+  time zone, IP, language or any other indirect signal. Why: national origin is a protected
+  characteristic (and ethnicity special-category data under GDPR Art. 9); values inferred from such
+  signals are unreliable (a name, a time zone or an email domain says little about a person); and
+  storing them would create GDPR exposure for every customer who runs a scan (profiling, Art. 22,
+  and data they would have to justify, secure and answer access requests for). Enforcement:
+  task registration refuses person-level tasks other than the two below and any prompt that asks
+  for protected attributes or location inference; request screening refuses such questions before
+  any model call; every proposed value is screened (nationality, ethnicity, citizenship, religion,
+  time zone, UTC offset, IP keys or values are refused and **not stored at all**, not even as an
+  unverified proposal; location keys only in the org jurisdiction task); the gate binds task and
+  subject to the request. Person-level data is limited to (a) `person_self_declared_location`: the
+  location field as the person wrote it on their own profile, the whole field, labelled
+  "self-declared", with the profile URL; and (b) `contributor_identity` (owner scope, 2026-10-11):
+  what a contributor published themselves (account and creation date, display name, company,
+  website, bio, organisation memberships, location as (a), signing keys, and roles on public pages
+  that name the account). Both are off unless person tasks are turned on (`--agentic-people`),
+  shown only to `manage_projects`, removable on request (value, quote and URL wiped for good), and
+  never parsed into a country or used in any score or policy. Time zones stay repo-level (P2).
 
 ---
 
@@ -665,3 +685,121 @@ token can reach it (`npx tsx test/history/record.ts --graphql`); `--shallow-sinc
 repositories (the size cap is the guard today); monorepo subdirectories (`repo.directory` facts
 are skipped).
 
+### Agentic gap-filler (2026-10-11)
+
+Owner direction: "a reusable pipeline to do it agentically" with all our data sources. The
+deterministic collectors stay the primary path (deps.dev, npm registry, OSV, GitHub advisories,
+Scorecard, Open Collective, git history, licences); a Claude agent with tools fills only what they
+leave missing, and **the app, not the model, decides what is kept**. Off by default: `--agentic`
+plus `ANTHROPIC_API_KEY` in the environment (read from the environment only, never logged; errors
+are reduced to the SDK error class and status). Built with the Anthropic TypeScript SDK
+(`@anthropic-ai/sdk` 0.128.0): Messages API with adaptive thinking and explicit effort, client tools
+plus the server-side `web_search_20260209` / `web_fetch_20260209` tools limited to each task's
+evidence domains, top-level prompt caching (fixed system prompt and tool list per task, the request
+in the first user message), the server-side refusal fallback, `pause_turn` resumed and `refusal`
+handled. Model: `$BLASTRADIUS_AGENT_MODEL`, default the most capable current Opus model; effort
+`$BLASTRADIUS_AGENT_EFFORT` (default high).
+
+**Pipeline** (`blastradius/src/agentic/`): a typed fact request (subject, task, question, context)
+→ privacy screen → result cache (7-day TTL, on disk) and in-flight de-duplication → one agent run
+with the task's fixed tools (`agent.ts`, a manual loop that checks the shared per-scan budget before
+every request) → `submit_facts` (value, source URL, exact quote, confidence note; retrieval time
+from the web_fetch result, else the run time) → **verification gate** (`verify.ts`) → facts and
+proposals. Reusable: one pipeline, a **task spec** per fact type (`tasks.ts`: prompt, allowed
+tools, evidence domains, strict zod value schema, deterministic value ↔ quote rules); a new fact
+type is one `TaskRegistry.register(spec)`, which runs the privacy registration checks.
+
+**Tools.** Our collectors wrapped as tools, so the agent reuses them before browsing:
+`collected_facts` (everything this scan's collectors found for the subject; git history and
+person-level fields are not passed), `npm_package`, `pypi_package`, `depsdev_project`,
+`osv_query`, `opencollective_account` (our OC collector's query; organisations only),
+`github_user` (GitHub users API for the subject's own login only, with the configured token);
+`registry_fetch` (GET on registry.npmjs.org, pypi.org, api.deps.dev, api.osv.dev,
+api.securityscorecards.dev, raw.githubusercontent.com only); `web_search` and `web_fetch`. All
+client tools go through the scan's `HttpClient` (cache, rate limits, offline fixtures).
+
+**Verification gate** (deterministic, `verify.ts`): task and subject bound to the request (the
+model cannot change them) → privacy screen of the value (a refusal keeps nothing) → strict schema →
+source domain allowed for the task (its own list plus, for some tasks, domains our collectors
+derived for the subject, e.g. the npm homepage; never domains the model picked) → quote of 12–1,500
+characters → **the app re-fetches the source URL itself** → the quote is on the page after
+normalising HTML (scripts removed, block tags as spaces, inline tags dropped, entities decoded),
+Unicode, typographic quotes and dashes, whitespace and case → the task's rules (e.g. the
+organisation, amount and currency are in the quote; foundation membership only from that
+foundation's own site; a registry's country matches the record; licence families in a relicensing
+quote; neutral summaries pass the judgement-word lint; a location is the whole self-declared
+field). Pass → `verified` (an `agent_fact` with source `agent:<task>`, the evidence URL and the
+quote) or `pending_confirmation`; fail → `unverified` proposal, kept for review only.
+
+**Task specs shipped** (7): `funding` (funding.json, GitHub Sponsors, Open Collective, Tidelift,
+thanks.dev, corporate backers, foundations; P4), `governance` (foundation membership, governance
+documents, owner), `org_jurisdiction` (public registries only: Companies House, OpenCorporates, SEC
+EDGAR, foundation and charity filings, the organisation's own legal page; **always
+`pending_confirmation` until a person confirms it in the UI or API; P7 sanctions checks read only
+confirmed values**, `confirmedJurisdictions()`), `lifecycle_events` (relicensing, deprecation,
+end of life, archival, maintenance mode; P5), `incident_writeups` (post-mortems and advisories
+about compromise or sabotage; P5), `person_self_declared_location` and `contributor_identity` (see
+§5; off by default).
+
+**Integration.** `src/enrich/agentic` runs after every other enricher and plans only what is still
+missing: funding for direct dependencies with no funding facts, governance with no repository
+owner, lifecycle events when the collectors flag deprecation, archival or a licence change,
+incident write-ups for packages with malware facts, org jurisdiction for GitHub organisations that
+own direct dependencies; with `--agentic-people`, contributor identity for people git history
+already maps to a login (no-reply addresses, .mailmap, GraphQL mapping when a token is set; salted
+hashes are never sent). Budgets per scan: 60 model requests, 1.5 M tokens, 25 runs (exceeding one
+is reported in `ScanResult.agentic.budgetExhausted` and a warning). Proposals are stored per org
+(migration 12, `agent_proposal`); API `GET /api/agentic/proposals`, `POST …/:id/confirm|reject|remove`
+(`review_entity_links`, audited, decisions survive rescans, person-level rows only for
+`manage_projects`); web view **Proposed facts** (`/proposed-facts`, linked from the Overview).
+
+**Gate on real recorded pages** (`blastradius/test/agentic/gate.test.ts`; pages fetched once by
+`test/agentic/record.ts` on 2026-10-11 and trimmed, Open Collective "Individuals" lists and mail
+headers cut): **16 real quotes verified** (2 of them `pending_confirmation`) and **27 proposals
+rejected**:
+
+| Page | Accepted (real quote → value) | Rejected |
+|---|---|---|
+| opencollective.com/babel | fiscal host Open Source Collective; Airbnb $217,858 USD; Sovereign Tech Agency $207,511.35 USD | fabricated host, "funded entirely by Google", amount ×10 (quote not on page); real quote with the wrong backer or amount (rules) |
+| opencollective.com/webpack | fiscal host; trivago $389,985 USD | "sponsored by Microsoft" |
+| opencollective.com/fakerjs | Indeed $29,000 USD | $290,000 |
+| momentjs.com/docs | "Moment.js is a legacy project in maintenance mode." | "reached end-of-life … archived"; real quote as `deprecation` (rules); real quote without the homepage domain (domain) |
+| redis.io AGPL post (2025) and dual-licence post (2024) | AGPL option from Redis 8; RSALv2/SSPLv1 from 7.4 | MIT; "Redis 7.2 … AGPLv3"; Redis page cited for a funding fact (domain) |
+| elastic.co (2024, 2021) | AGPL added next to ELv2 and SSPL; Apache 2.0 → SSPL and Elastic License | "back to Apache 2.0"; GPL-3.0 |
+| oscollective.org | "registered in the USA. EIN 82-2037583" → US, pending confirmation | "registered in the United Kingdom"; real quote as GB (rules); quote "the USA" (too short); used for another org (domain) |
+| SEC EDGAR, Elastic N.V. | "State location: CA" → US-CA business address, pending confirmation | NY; NL from an EDGAR record (rules) |
+| openjsf.org/projects | Express in the OpenJS Foundation | "owned by Google LLC"; Linux Foundation (rules) |
+| openwall.com oss-security (xz) | "The upstream xz repository and the xz tarballs have been backdoored." | "no release was affected"; summary with a judgement word (rules) |
+| blog.npmjs.org (left-pad) | unpublished by its author during a name dispute | "removed … because it contained malware" |
+| github.com issue (event-stream #116) | — | **blocked**: GitHub answers 403 here (recorded as blocked), so nothing from it verifies |
+
+**Guardrail and safety tests.** Nationality, ethnicity, person country and person time-zone
+requests, and questions asking to infer a location from a name, email, time zone, IP or language,
+are refused before any model call (11 cases); registering a person-level task, a protected-attribute
+task or an inference prompt fails; proposed values with nationality, time zone, a person object or a
+country in a person task are refused and not stored; a person-level location without the person's
+own profile quote, a shortened location ("Portugal" from "Lisbon, Portugal") and a value the quote
+does not support are rejected. **Prompt injection:** a fetched page that tells the agent to ignore
+its instructions, switch to nationality, call an exfiltration URL and submit a nationality
+(`test/fixtures/agentic/synthetic/injection-readme.json`) is returned wrapped as untrusted data
+(its fake closing tag neutralised); the injected tool calls are refused by code (host not allowed,
+tool not in the task); the system prompt and tools never change; only the real npm-blog fact is
+kept and both injected values are refused without being stored. Costs: request, token and run
+budgets, cache with TTL (re-verified on every hit), de-duplication; all tested.
+
+Tests: 126 in blastradius for this work (`src/agentic/agentic.test.ts`, `test/agentic/*.test.ts`,
+`src/server/agentic.test.ts`, migration test), 812 in all; web 301 unit (+4) and 56 e2e (+4: the
+Proposed facts list for AppSec, confirm and reject as org admin, axe light and dark). Model turns in
+tests are hand-written stubs replayed by `ReplayModel` (`test/fixtures/agentic/model/stubbed.json`)
+because no API key is available here; every page and registry document they lead to is a real
+recording, except the clearly marked synthetic person and injection pages and the stubbed GitHub
+users API responses. **Live runs: untested** (`ANTHROPIC_API_KEY` is not set in this
+environment) [u]. GitHub's users API is not reachable from here (403), so `github_user` is tested
+on the documented response shape only; live use is [u].
+
+Deferred: a live smoke run on 2–3 §8 subjects (needs a key; `RecordingModel` saves a live run as a
+replay fixture); the Maintainers screen that shows contributor identity (P6; the data is in the
+proposals API); feeding verified `funding` / `governance` facts into the F1/F4 views (P4) and
+`lifecycle_events` / `incident_writeups` into KB event proposals (P5); the sanctions matcher itself
+(P7, which reads `confirmedJurisdictions()`); following HTTP redirects is not re-checked against
+the domain list (the stated URL is).

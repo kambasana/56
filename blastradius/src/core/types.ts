@@ -14,6 +14,9 @@
 // ---------------------------------------------------------------------------
 
 /** Ecosystems we model. Phase 1 scores npm only; the others are inventory-only. */
+import type { AgentFactValue, AgenticReport } from './agentic-types.js';
+export type * from './agentic-types.js';
+
 export type Ecosystem = 'npm' | 'githubactions' | 'docker' | 'generic';
 
 export interface Purl {
@@ -317,6 +320,8 @@ export const FACT_KINDS = [
   'release_cadence',
   'funding_detail',
   'org_profile',
+  // Agentic gap-filler (src/agentic): verified facts proposed by a model, source `agent:<task>`.
+  'agent_fact',
 ] as const;
 
 export type FactKind = (typeof FACT_KINDS)[number];
@@ -808,6 +813,7 @@ export interface FactValueMap {
   release_cadence: ReleaseCadenceValue;
   funding_detail: FundingDetailValue;
   org_profile: OrgProfileValue;
+  agent_fact: AgentFactValue;
 }
 
 /** A fact of one specific kind. */
@@ -1064,6 +1070,11 @@ export interface ScanResult {
    * when the scan ran with history collection. Repo-level and pseudonymous by construction.
    */
   history?: HistoryReport;
+  /**
+   * Agentic gap-filler (--agentic): proposals, gate results and usage. Verified proposals are also
+   * `agent_fact` facts; unverified ones are only here, for review.
+   */
+  agentic?: AgenticReport;
   /** Non-fatal problems (enricher failures, missing fixtures in offline mode). */
   warnings?: string[];
 }

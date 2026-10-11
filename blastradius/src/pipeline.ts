@@ -25,6 +25,8 @@ import { createLicenseEnricher } from './enrich/licenses/index.js';
 import { buildLicenseReport } from './licenses/report.js';
 import { createHistoryEnricher, type HistoryEnricherOptions } from './enrich/history/index.js';
 import { buildHistoryReport } from './history/report.js';
+import { createAgenticEnricher, type AgenticEnricherOptions } from './enrich/agentic/index.js';
+import type { AgenticReport } from './core/agentic-types.js';
 import type { LicensePolicy } from './licenses/policy.js';
 import { incidentsFromMalwareFacts, loadIncidents, validateKbDir } from './incidents/index.js';
 import { applyReviewState, buildEntityGraph, loadReviewState, resolveEntities, type EntityGraphData } from './entities/index.js';
@@ -70,6 +72,12 @@ export interface ScanOptions {
    * Off by default. An object passes options to the history enricher (tests: recorded histories).
    */
   history?: boolean | Omit<HistoryEnricherOptions, 'repoFacts'>;
+  /**
+   * Agentic gap-filler (src/agentic): after every deterministic collector, ask a model with tools
+   * for the facts that are still missing; only facts the app verifies are kept. Off by default;
+   * needs ANTHROPIC_API_KEY unless a model is injected (tests replay recorded responses).
+   */
+  agentic?: boolean | Omit<AgenticEnricherOptions, 'facts' | 'onReport'>;
   /** Licence policy for the HTML report's Licences section (default: the shipped template). */
   licensePolicy?: LicensePolicy;
   /** Injected enrichers (tests). Defaults to osv, depsdev, npm, github. */
@@ -185,6 +193,13 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     log(`knowledge pack ${loaded.path} (built ${loaded.pack.builtAt.slice(0, 10)}, ${loaded.pack.counts.compromisedVersions} bad releases, ${loaded.pack.counts.malwarePackages} malicious packages)`);
     enrichers.push(createPackEnricher(loaded, () => facts));
   }
+  let agenticReport: AgenticReport | undefined;
+  if (opts.agentic) {
+    const a = typeof opts.agentic === 'object' ? opts.agentic : {};
+    const cacheDir = a.cacheDir ?? (typeof opts.cacheDir === 'string' ? join(opts.cacheDir, 'agentic') : opts.cacheDir === false ? false : undefined);
+    // Last: it only asks for what every other collector left missing.
+    enrichers.push(createAgenticEnricher({ ...a, ...(cacheDir !== undefined ? { cacheDir } : {}), facts: () => facts, onReport: (r) => (agenticReport = r) }));
+  }
   // Independent enrichers (OSV, deps.dev, npm) talk to different hosts, so they run concurrently;
   // one that reads earlier facts (GitHub) waits for them. Facts and warnings are still appended
   // in the declared enricher order, so the result is the same as running them one by one.
@@ -244,6 +259,7 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   result.licenses = buildLicenseReport(inventory, facts);
   const history = buildHistoryReport(facts);
   if (history) result.history = history;
+  if (agenticReport) result.agentic = agenticReport;
 
   // 6. Reports.
   const files: string[] = [];

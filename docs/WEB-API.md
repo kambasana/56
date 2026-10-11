@@ -111,6 +111,10 @@ Permissions are data (`permissions.ts`):
 | GET | `/api/license-policy` | exposure or settings | — | `LicensePolicyResponse` |
 | PUT | `/api/license-policy` | manage_projects | `LicensePolicy` | `LicensePolicyResponse` (400 with the field on an invalid policy; audited as `license_policy.update`) |
 | DELETE | `/api/license-policy` | manage_projects | — | `LicensePolicyResponse` (back to the default template; audited as `license_policy.reset`) |
+| GET | `/api/agentic/proposals?status=&task=&limit=&cursor=` | investigate (org or per project) | — | `AgentProposalsResponse` (see Proposed facts; person-level rows only with manage_projects) |
+| POST | `/api/agentic/proposals/:id/confirm` | review_entity_links | `{ note? }` | `AgentProposalRow` (pending org jurisdiction → confirmed; 409 otherwise; audited as `agent_proposal.confirm`) |
+| POST | `/api/agentic/proposals/:id/reject` | review_entity_links | `{ note? }` | `AgentProposalRow` (pending, unverified or verified → rejected; audited) |
+| POST | `/api/agentic/proposals/:id/remove` | review_entity_links | `{ note? }` | `AgentProposalRow` (person-level rows only: value, quote and source URL wiped for good; audited without the value) |
 | GET | `/api/integrations` | integrations | — | `ListIntegrationsResponse` (read-only in 4a) |
 | GET | `/api/roles` | settings | — | `ListRolesResponse` |
 | POST | `/api/roles` | manage_members | `CreateRoleRequest` | `CreateRoleResponse` 201 |
@@ -203,6 +207,7 @@ Served by the same server. Unknown non-`/api` paths return `index.html` (SPA). E
 | `/projects/:id/scans` | scans | Scan list, plus "Run scan" when the user has manage_projects |
 | `/projects/:id/licenses` | exposure | Licences of the project's latest scan: categories, policy results, licence changes, sources |
 | `/licenses` | exposure | The same across every project the user can see (linked from the Overview) |
+| `/proposed-facts` | investigate | Proposed facts from the agentic gap-filler: status tiles, evidence (quote, source), gate result, and confirm / reject / remove for reviewers (linked from the Overview) |
 | `/reports` | reports | Report list and downloads |
 | `/integrations` | integrations | Integration status (read-only) |
 | `/settings` | settings | Project tier, roles matrix and bindings. Editing needs manage_projects or manage_members |
@@ -280,3 +285,22 @@ licences Blue Oak does not list, ScanCode LicenseDB; the response names both wit
 - **Scans made before licences existed** have no `licenses`; `LicensesResponse.scansWithoutLicences`
   counts them.
 - Not legal advice: every response carries `note` saying so.
+
+## Proposed facts
+
+Facts the agentic gap-filler (`--agentic`, src/agentic; docs/WHO-BEHIND-PLAN.md §10) proposed and
+the app's verification result for each. Stored per org in `agent_proposal` (migration 12) from each
+scan's `ScanResult.agentic`; types in `src/server/api-types-agentic.ts`.
+
+- **Status:** `verified` (re-fetched source contains the quote, allowed domain, value matches the
+  quote; used as an `agent_fact`), `pending_confirmation` (org jurisdiction: verified, but nothing
+  uses it until a person confirms), `confirmed`, `rejected`, `unverified` (failed the gate: shown
+  for review only, never used), `removed` (person data removed on request).
+- **Decisions survive rescans:** a rescan refreshes the gate result of undecided rows only.
+- **Person-level rows** (`contributor_identity`, `person_self_declared_location`) are listed only
+  for viewers with `manage_projects` (`personLevelShown` says whether they were included) and can
+  be removed on request; the audit entry never contains the value.
+- **Sanctions / jurisdiction policy (P7)** read only `confirmed` org jurisdiction rows
+  (`confirmedJurisdictions()` in `src/server/store/agentic.ts`).
+- Values, quotes and URLs are untrusted text; the web app renders them as text and links only
+  through `safeHref`.

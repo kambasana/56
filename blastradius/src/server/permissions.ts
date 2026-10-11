@@ -325,6 +325,8 @@ export const WEB_ROUTES: readonly WebRoute[] = [
   // Licences (docs/WHO-BEHIND-PLAN.md P1): one project, and every project the viewer can see.
   { path: '/projects/:id/licenses', page: 'exposure', label: 'Licences' },
   { path: '/licenses', page: 'exposure', label: 'Licences' },
+  // Agentic gap-filler proposals: review list for every project the viewer can investigate.
+  { path: '/proposed-facts', page: 'investigate', label: 'Proposed facts' },
   { path: '/reports', page: 'reports', label: 'Reports' },
   { path: '/integrations', page: 'integrations', label: 'Integrations' },
   { path: '/settings', page: 'settings', label: 'Settings' },

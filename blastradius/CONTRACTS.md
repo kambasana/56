@@ -27,6 +27,7 @@ General rules for all modules:
 | `src/enrich/npm` | `maintainers`, `publisher`, `publisher_change`, `maintainer_change`, `install_script`, `release_age`, `funding`, `repo`, `provenance` |
 | `src/enrich/licenses` + `src/licenses` | `license`, `license_change` (deps.dev, ClearlyDefined, lockfile/SBOM declared); SPDX normalisation, categories, policy, `ScanResult.licenses` |
 | `src/enrich/github` | `repo_owner`, `repo_transfer`, `archived`, `funding` |
+| `src/enrich/agentic` + `src/agentic` | `agent_fact` (opt-in `--agentic`): task specs, agent run, verification gate, privacy guardrails; `ScanResult.agentic` |
 | `src/enrich/history` + `src/history` | `contributors`, `commit_history` (opt-in `--history`: blobless bare clones, fixed-format `git log`, GitHub GraphQL login mapping within a point budget); `ScanResult.history` |
 | `src/entities` | `Entity` / `EntityLink` from facts |
 | `src/incidents` + `kb/incidents` | YAML incident KB loader + validator → `Incident[]` |
@@ -150,6 +151,7 @@ FACT_KINDS                             // readonly array of all kinds
 | `release_age` | versioned | `{ version: string; publishedAt: string; ageDays: number; latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; deprecated?: string }` | npm |
 | `license` | versioned | `{ raw: string[]; expressions: string[] /*valid SPDX, sorted*/; status: 'spdx'\|'corrected'\|'non_standard'\|'unlicensed'\|'see_file'\|'unknown'; category: LicenseCategory; version: string; corrected?: {from,to}[]; score?: number /*ClearlyDefined*/; basis?: 'repository' /*GitHub Actions: repo licence today*/ }` (one fact per source) | licenses (source `depsdev`, `clearlydefined`, `lockfile`, `sbom`) |
 | `license_change` | unversioned | `{ version; previousVersion; from: string[]; to: string[]; fromStatus; toStatus; fromCategory; toCategory; added: string[]; removed: string[]; date?: string; unknownBetween?: number }` | licenses (`depsdev`) |
+| `agent_fact` | unversioned purl, or an entity id (`org:…`, `funder:…`, `person:github/<login>`) | `AgentFactValue` (`src/core/agentic-types.ts`): `{ task; value; quote; sourceUrl; retrievedAt; verifiedAt; confidenceNote; status; label?: 'self-declared'; proposalId }`; only proposals that passed the verification gate | agentic (source `agent:<task>`) |
 | `contributors` | unversioned | `{ from; to; commits; absenceFactor /*CHAOSS CAF, 24 months*/; top: {id, share}[]; unmapped; contributors?; allHistory? }`; ids are GitHub logins or `hash:<salted HMAC>` | git |
 | `commit_history` | unversioned | `CommitHistoryValue`: repo-level 12-month windows (CAF, occasional/regular, continuity, signed share, releases, time-zone aggregate above the k-floor), `changes[]` with fixed wording, `people[]` (id, first/last seen, counts; no time, zone or location) | git |
 | `release_cadence`, `funding_detail`, `org_profile` | unversioned | see `src/core/types.ts` (declared in P0 for P3–P7; no producer yet) | — |

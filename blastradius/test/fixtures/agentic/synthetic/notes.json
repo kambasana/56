@@ -1,0 +1,8 @@
+{
+  "request": {
+    "url": "https://github.com/synthetic--profile/notes/issues/1"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>notes</title></head><body><p>Another user wrote: synthetic--profile is a Portugal based developer, judging by the commit times.</p></body></html>",
+  "_note": "SYNTHETIC TEST PAGE (not a real page): written for the agentic gap-filler tests. A page that is NOT the person's own profile."
+}

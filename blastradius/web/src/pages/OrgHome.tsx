@@ -11,7 +11,7 @@ import type { OverviewResponse } from '@server/api-types';
 import { api, isApiError } from '@/api';
 import { useAuth } from '@/auth';
 import { useProject } from '@/project';
-import { LICENSES_PATH, projectPath } from '@/nav';
+import { LICENSES_PATH, PROPOSED_FACTS_PATH, projectPath } from '@/nav';
 import { Button } from '@/components/Button';
 import { PageHeader } from '@/components/PageHeader';
 import { RANGE_LABEL, ScopeBar, SEVERITY_GLYPH, SEVERITY_LABEL, StateBlock, useScope, type Severity } from '@/components/br';
@@ -73,7 +73,7 @@ function IncidentBanner({ incident }: { incident: NonNullable<OverviewResponse['
   );
 }
 
-function BySeverity({ data, sp, exposureTo, licensesTo }: { data: OverviewResponse; sp: URLSearchParams; exposureTo: string | null; licensesTo: string | null }) {
+function BySeverity({ data, sp, exposureTo, licensesTo, proposedTo }: { data: OverviewResponse; sp: URLSearchParams; exposureTo: string | null; licensesTo: string | null; proposedTo: string | null }) {
   const max = Math.max(1, ...data.bySeverity.map((b) => b.open));
   const range = data.since ? RANGE_LABEL[(sp.get('range') as keyof typeof RANGE_LABEL) ?? '30d'] ?? 'Last 30 days' : null;
   return (
@@ -121,6 +121,7 @@ function BySeverity({ data, sp, exposureTo, licensesTo }: { data: OverviewRespon
         <Link to={findingsLink(sp, { status: OPEN })}>View all open findings</Link>
         {exposureTo && <Link to={exposureTo}>See where they sit (exposure matrix)</Link>}
         {licensesTo && <Link to={licensesTo}>Licences of your dependencies</Link>}
+        {proposedTo && <Link to={proposedTo}>Proposed facts to review</Link>}
       </span>
     </section>
   );
@@ -226,7 +227,7 @@ export default function OrgHome() {
           <StateBlock kind="no-results" title="No completed scan yet" description="The numbers appear after a project's first successful scan." actions={[{ label: 'See projects', to: '/projects' }]} />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
-            <BySeverity data={data} sp={sp} exposureTo={exposureTo} licensesTo={licensesTo} />
+            <BySeverity data={data} sp={sp} exposureTo={exposureTo} licensesTo={licensesTo} proposedTo={can('investigate') ? PROPOSED_FACTS_PATH : null} />
             <TopPackages data={data} />
           </div>
         )}

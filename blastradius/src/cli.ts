@@ -52,6 +52,8 @@ interface ScanCliOptions {
   pack?: string;
   syft: boolean;
   history: boolean;
+  agentic: boolean;
+  agenticPeople: boolean;
   licensePolicy?: string;
   failOn?: RiskLevel;
   top: string;
@@ -89,6 +91,8 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--review <file>', 'entity-link review decisions (JSON)')
     .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
     .option('--history', 'read the git history of source repositories (blobless clones): contributor absence factor, continuity, signed share', false)
+    .option('--agentic', 'fill facts the collectors could not find with a Claude agent (needs ANTHROPIC_API_KEY in the environment; every value is verified against its source before it is kept)', false)
+    .option('--agentic-people', 'with --agentic and --history: also collect what contributors published on their own public profiles (person-level data, removable on request, shown only to project managers; never nationality or country)', false)
     .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
     .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
     .option('--top <n>', 'findings to list in the terminal summary', '5')
@@ -102,6 +106,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         kbDir: o.kb,
         syft: o.syft,
         history: o.history,
+        agentic: o.agentic ? (o.agenticPeople ? { personTasks: true } : true) : false,
         log: (m) => err(`… ${m}\n`),
       };
       if (o.fixtures !== undefined) opts.fixturesDir = o.fixtures;
@@ -144,6 +149,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--allow-local-root <dir>', 'root under which local paths may be scanned (repeatable; default: $BLASTRADIUS_SCAN_ROOT or the cwd)', collect, [])
     .option('--web <dir>', 'built web app directory (default: web/dist next to the package)')
     .option('--concurrency <n>', 'scans run at once (1-4)', parseConcurrency, 2)
+    .option('--agentic', 'scans also run the agentic gap-filler (needs ANTHROPIC_API_KEY in the environment); proposals appear under Proposed facts', false)
     .option(
       '--trust-proxy <ips>',
       'comma-separated reverse proxy addresses whose X-Forwarded-For / X-Forwarded-Proto are honoured (default: $BLASTRADIUS_TRUST_PROXY, else none)',
@@ -165,6 +171,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         ...(o.allowLocalRoot.length > 0 ? { localRoots: o.allowLocalRoot.map((d) => resolvePath(d)) } : {}),
         ...(o.web !== undefined ? { webDir: resolvePath(o.web) } : {}),
         concurrency: o.concurrency,
+        ...(o.agentic ? { scanOptions: { agentic: true } } : {}),
         ...(trustProxy.length > 0 ? { trustProxy } : {}),
         log: (m) => err(`${m}\n`),
       });
@@ -185,6 +192,7 @@ interface ServeCliOptions {
   allowLocalRoot: string[];
   web?: string;
   concurrency: number;
+  agentic: boolean;
   trustProxy?: string[];
 }
 

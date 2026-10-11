@@ -1,0 +1,8 @@
+{
+  "request": {
+    "url": "https://github.com/synthetic--org/widget/blob/main/MAINTAINERS.md"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>MAINTAINERS.md</title></head><body><article><h1>widget maintainers</h1><ul><li>@synthetic--profile (lead maintainer of widget since 2019)</li></ul></article></body></html>",
+  "_note": "SYNTHETIC TEST DATA (not a real account): GitHub logins cannot contain '--'. A maintainers file that names the account for a role."
+}

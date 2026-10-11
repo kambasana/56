@@ -67,6 +67,7 @@ describe('routes', () => {
       ['/exposure', 'Exposure'],
       ['/licenses', 'Licences'],
       ['/projects/p1/licenses', 'Licences'],
+      ['/proposed-facts', 'Proposed facts'],
       ['/incidents/GHSA-1', 'GHSA-1'],
       ['/packages/behind?name=chalk', "Who's behind chalk"],
       ['/projects/p1/investigate', 'Investigate'],

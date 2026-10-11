@@ -28,6 +28,7 @@ export const PAGES: Record<string, Page> = {
   '/projects/:id/scans': lazy(() => import('./pages/Scans')),
   '/projects/:id/licenses': lazy(() => import('./pages/Licenses')),
   '/licenses': lazy(() => import('./pages/Licenses')),
+  '/proposed-facts': lazy(() => import('./pages/ProposedFacts')),
   '/reports': lazy(() => import('./pages/Reports')),
   '/integrations': lazy(() => import('./pages/Integrations')),
   '/settings': lazy(() => import('./pages/Settings')),

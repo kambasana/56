@@ -23,6 +23,7 @@
     "proof:account": "tsx test/replay/account/proof-account.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.128.0",
     "@blueoak/copyleft": "10.0.0",
     "@blueoak/list": "15.0.0",
     "@cyclonedx/cyclonedx-library": "10.3.0",
