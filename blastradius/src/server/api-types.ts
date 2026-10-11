@@ -13,6 +13,10 @@
  * This file only has type imports plus a few constant tables, so the web app can import it.
  */
 import type {
+  ContinuityEvent,
+  StabilityEntry,
+  StabilityLabel,
+  StabilityReason,
   ComponentLicense,
   LicenseCategory,
   LicenseChangeEntry,
@@ -701,6 +705,19 @@ export interface ChangesResponse {
   toScan: ScanRef | null;
   items: ChangeRow[];
   counts: Record<ChangeType, number>;
+  /**
+   * S5a release-continuity observations (docs/WHO-BEHIND-PLAN.md S5a) of the packages in the `to`
+   * scan, dated within the last 12 months; `isNew` when the `from` scan did not have it. Empty for
+   * scans made before stability labels existed. Not findings and not risk.
+   */
+  continuity?: ContinuityRow[];
+}
+
+export interface ContinuityRow extends ContinuityEvent {
+  /** Deterministic: `${kind}:${package}:${date}:${release ?? ''}`. */
+  id: string;
+  production: boolean;
+  isNew: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -1014,6 +1031,7 @@ export interface HealthResponse {
 
 /** Re-exported engine types the web app needs, so it imports from one place. */
 export type { AssetExposure, Finding, OutboundFinding, Reason, RiskLevel, EntityChainEntry, Environment, Criticality, Ecosystem };
+export type { ContinuityEvent, StabilityEntry, StabilityLabel, StabilityReason };
 
 /** GET /api/projects/:id/health: upkeep-only signals from the latest succeeded scan (not findings). */
 export interface HealthItem {
@@ -1027,6 +1045,21 @@ export interface HealthItem {
 export interface ProjectHealthResponse {
   scanId: string | null;
   items: HealthItem[];
+}
+
+/**
+ * GET /api/projects/:id/stability: stability labels of the newest succeeded scan
+ * (docs/WHO-BEHIND-PLAN.md §4; Maintenance tab). `entries` is null for a scan made before labels
+ * existed. Labels describe upkeep from public records; they are not risk and not a verdict.
+ */
+export interface ProjectStabilityResponse {
+  scanId: string | null;
+  asOf: IsoTime | null;
+  entries: StabilityEntry[] | null;
+  counts: Record<StabilityLabel, number> | null;
+  disclaimer: string;
+  /** F2/F3 (funding) are phase P4: never applied yet. */
+  funding: 'not_assessed';
 }
 
 /** Org-wide incident mode. */

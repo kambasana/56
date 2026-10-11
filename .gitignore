@@ -14,6 +14,8 @@
 *.7z
 *.dmg
 *.gz
+# Recorded test fixtures are committed even when gzipped (P3 stability control set).
+!blastradius/test/fixtures/**/*.json.gz
 *.iso
 *.jar
 *.rar

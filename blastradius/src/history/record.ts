@@ -56,6 +56,13 @@ export interface HistoryRecord {
   tzMonths: Record<string, TzMonth>;
   /** Hashed ids and the latest commit of each, for the GitHub login lookup. */
   lookup: { id: string; oid: string }[];
+  /**
+   * npm accounts that published the package(s) of this repository, mapped to their id in this
+   * history (P3, S5a): the registry e-mail address of the account (`_npmUser.email`) hashed with the
+   * same salt as commit e-mails, kept only when that id occurs in the history. The address itself
+   * is never kept. Absent when the link was not computed.
+   */
+  npmPublishers?: Record<string, string>;
 }
 
 /** Replace ids (e.g. hashed ids GitHub mapped to a login). Ids mapping to the same login merge. */

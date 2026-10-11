@@ -3,6 +3,7 @@
  */
 import type { HttpClient } from '../../core/http.js';
 import type { Packument } from './types.js';
+import { declaredStatusOf } from '../../stability/declared.js';
 
 export const NPM_REGISTRY = 'https://registry.npmjs.org';
 
@@ -94,6 +95,10 @@ function pick(src: Record<string, unknown>, keys: readonly string[]): Record<str
  */
 export function slimPackument(data: Record<string, unknown>): Packument {
   const out = pick(data, PACKUMENT_FIELDS);
+  // The README is dropped; only a declared maintenance status found in it is kept (plan S3, P3).
+  // Recorded fixtures carry the derived value instead of the README.
+  const declared = typeof data.readme === 'string' ? declaredStatusOf(data.readme) : data._declaredStatus;
+  if (declared) out._declaredStatus = declared;
   if (isObject(data.versions)) {
     const versions: Record<string, unknown> = {};
     for (const [v, m] of Object.entries(data.versions)) {

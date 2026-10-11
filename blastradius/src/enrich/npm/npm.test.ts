@@ -320,7 +320,7 @@ describe('yocto-queue (healthy package)', () => {
   it('emits only neutral facts', async () => {
     const p = await loadPackument('yocto-queue');
     const facts = packumentFacts(p, 'yocto-queue', '1.2.2', { now: NOW });
-    expect(kinds(facts)).toEqual(['funding', 'install_script', 'maintainers', 'provenance', 'publisher', 'release_age', 'repo']);
+    expect(kinds(facts)).toEqual(['funding', 'install_script', 'maintainers', 'provenance', 'publisher', 'release_age', 'release_cadence', 'release_publishers', 'repo']);
     expect(facts.find(isFactOf('install_script'))!.value.hasInstallScript).toBe(false);
     expect(facts.find(isFactOf('release_age'))!.value).toMatchObject({ version: '1.2.2', ageDays: 323, latestVersion: '1.2.2' });
     expect(facts.find(isFactOf('funding'))!.value.sources).toEqual([
@@ -413,7 +413,8 @@ describe('synthetic histories', () => {
   it('returns only package-level facts for a version missing from the packument', () => {
     const p = packument({ '1.0.0': { user: 'alice', maintainers: ['alice'], date: '2026-01-01' } });
     p.maintainers = [{ name: 'alice' }];
-    expect(kinds(packumentFacts(p, 'demo', '9.9.9', { now: new Date('2026-02-01') }))).toEqual(['maintainers']);
+    // release_publishers is package-level (stability, P3); release_cadence needs 4 stable releases.
+    expect(kinds(packumentFacts(p, 'demo', '9.9.9', { now: new Date('2026-02-01') }))).toEqual(['maintainers', 'release_publishers']);
   });
 });
 
@@ -448,7 +449,7 @@ describe('createNpmEnricher (offline, fixture envelopes)', () => {
         expect.stringContaining('1 packument(s) missing from fixtures/cache in offline mode: left-pad'),
       ]),
     );
-    expect(kinds(facts)).toEqual(['maintainers', 'repo']);
+    expect(kinds(facts)).toEqual(['maintainers', 'release_cadence', 'release_publishers', 'repo']);
   });
 });
 

@@ -101,7 +101,8 @@ Permissions are data (`permissions.ts`):
 | GET | `/api/assignees` | findings (org or per project) | — | `ListAssigneesResponse` |
 | GET | `/api/overview?projects=&env=&range=` | findings (org or per project) | `OverviewQuery` | `OverviewResponse` |
 | GET | `/api/exposure?project=&minLevel=&limit=` | exposure | `ExposureQuery` | `ExposureMatrixResponse` |
-| GET | `/api/changes?project=&from=&to=` | changes | `ChangesQuery` | `ChangesResponse` |
+| GET | `/api/changes?project=&from=&to=` | changes | `ChangesQuery` | `ChangesResponse` (adds `continuity`: S5a release-continuity observations of the `to` scan in the last 12 months, `isNew` when the `from` scan lacked them) |
+| GET | `/api/projects/:id/stability` | findings | — | `ProjectStabilityResponse` (stability labels of the newest succeeded scan, with rules, facts, sources and confidence; `entries` null for scans made before labels; `funding: 'not_assessed'`) |
 | GET | `/api/graph?finding=` or `?project=&node=` | investigate (or findings for `finding=`) | — | `GraphResponse` |
 | GET | `/api/investigate/search?project=&q=` | investigate | — | `InvestigateSearchResponse` |
 | GET | `/api/investigate/node?project=&id=` | investigate | — | `InvestigateNodeResponse` |
@@ -240,7 +241,7 @@ Answered from the stored inventory of each project's newest succeeded scan; noth
 | `GET /api/incidents/:id` | `findings` or `exposure` | Where it is (production first, brought in by, owner, finding), the last org-wide check, a typed timeline (alert, check, status, notified) and which actions are available, with the reason when not |
 | `PATCH /api/incidents/:id` `{ status }` | `review` (org) | Investigating › Fixing › Monitoring › Closed; recorded on the timeline and in the audit log |
 | `POST /api/incidents/:id/notify` | `send_to_destinations` or `manage_alert_rules` | Posts the affected projects and their owners to the Slack webhook (400 when none is configured or no project has an owner) |
-| `GET /api/packages/reach?name=&version=` | `exposure` | Projects, Sankey flows (package → brought in by → project → environment) and dependency paths with edge scopes; lifecycle phases the stored data knows |
+| `GET /api/packages/reach?name=&version=` | `exposure` | Projects, Sankey flows (package → brought in by → project → environment) and dependency paths with edge scopes; lifecycle phases the stored data knows; `stability`: the package's label from the newest scan that has one (null otherwise) |
 | `GET /api/packages/behind?name=` | `exposure` | Documented links (maintainers, repo owner, orgs, funders) merged from the newest findings, with confidence, method, review state and sources |
 | `GET /api/alert-rules` | `findings` or `exposure` | Team rules with "would have sent N in the last 30 days", whether the default rule applies, and whether a webhook is configured |
 | `POST /api/alert-rules`, `PATCH`/`DELETE /api/alert-rules/:id` | `manage_alert_rules` | WHEN severity ≥ `minLevel` [and it reaches production] THEN post to the webhook naming `channel` |

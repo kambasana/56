@@ -16,6 +16,7 @@ import {
   type OkResponse,
   type OrgHomeResponse,
   type ProjectHealthResponse,
+  type ProjectStabilityResponse,
   type UpdateProjectResponse,
 } from '../api-types.js';
 import { ORG_ADMIN_ROLE_ID } from '../permissions.js';
@@ -41,6 +42,7 @@ import {
   listProjects,
   listScans,
   orgHome,
+  projectStability,
   rolesForUser,
   setSessionOrg,
   updateProject,
@@ -193,6 +195,13 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
       signals: h.reasons.filter((r) => r.value > 0).map((r) => ({ factor: r.factor, detail: r.detail })),
     }));
     return c.json<ProjectHealthResponse>({ scanId, items });
+  });
+
+  // Stability labels of the newest succeeded scan (docs/WHO-BEHIND-PLAN.md §4): Maintenance tab.
+  app.get('/api/projects/:id/stability', (c) => {
+    const id = idParam(c, 'id');
+    const { orgId } = requireProjectPerm(c, id, 'findings');
+    return c.json<ProjectStabilityResponse>(projectStability(deps(c).store, orgId, id));
   });
 
   // ---- Scans ----------------------------------------------------------------

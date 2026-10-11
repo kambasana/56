@@ -54,7 +54,7 @@ blastradius kb validate path/to/kb
 | `--kb <dir>` | incident KB directory (default: bundled `kb/incidents`) |
 | `--review <file>` | JSON review decisions that accept or reject probabilistic entity links |
 | `--syft` | also merge a Syft CycloneDX SBOM when `syft` is on PATH (optional; its declared licences are kept) |
-| `--history` | read the git history of each source repository (blobless bare clone, cached 30 days, size-capped): contributor absence factor, continuity, signed share, repo-level time-zone change. Emails are hashed; `GITHUB_TOKEN` enables login mapping (≤ 2,000 GraphQL points per scan). Off by default |
+| `--history` | read the git history of each source repository (blobless bare clone, cached 30 days, size-capped): contributor absence factor, continuity, signed share, repo-level time-zone change. Emails are hashed; `GITHUB_TOKEN` enables login mapping (≤ 2,000 GraphQL points per scan). Off by default. Stability labels (Fragile, Watch, Steady, Unknown; `stability` in the JSON report) need it for anything beyond Unknown, except npm-deprecated or archived packages |
 | `--license-policy <file>` | licence policy JSON (`src/licenses/policy.ts`) for the HTML report's Licences section; default: permissive allowed, everything else needs review. Not legal advice |
 | `--fail-on critical\|high` | exit code 2 if any finding, including an outbound workflow finding, is at or above that level |
 | `--top <n>` | number of findings in the terminal summary (default 5) |

@@ -1,0 +1,171 @@
+/**
+ * The repo- and org-level inputs of a stability label, read from a scan's facts.
+ *
+ * This is the only place the label code reads fact values, and it reads repo-level fields only:
+ * counts, dates, flags, repo-level observations with fixed wording. It never reads a per-person
+ * field (contributor ids and shares, `people`, maintainer or publisher names, the npm publisher
+ * timeline) and never reads fact kinds that are about a person (publisher, publisher_change,
+ * maintainer_change, release_publishers). No location, time zone (C3) or nationality is read.
+ * Guarded by src/stability/stability.test.ts, which makes every per-person field throw when read.
+ */
+import { unversionedPurl, type CommitHistoryChange, type DeclaredStatusValue, type Fact, type PurlString, type ReleaseCadenceValue, type RepoValue } from '../core/types.js';
+
+/** Fact kinds the labels may read. Everything else is ignored before its value is touched. */
+export const LABEL_FACT_KINDS = ['maintainers', 'release_age', 'release_cadence', 'declared_status', 'scorecard', 'archived', 'repo', 'contributors', 'commit_history', 'license_change'] as const;
+type LabelKind = (typeof LABEL_FACT_KINDS)[number];
+
+/** Per-person fields that must never be read by the label code (test-enforced). */
+export const PER_PERSON_FIELDS = ['top', 'people', 'maintainers', 'accounts', 'email', 'login', 'id', 'by', 'added', 'removed', 'newPublisher', 'previousPublisher', 'previousPublishers', 'publisher', 'offsets', 'hourOfWeekUtc', 'timeZones', 'location', 'country'] as const;
+
+/** Repo-level observation kinds the labels use (C3 time zones are never used). */
+const EVENT_KINDS: ReadonlySet<CommitHistoryChange['kind']> = new Set(['contributor_base_changed', 'top_committer_new', 'release_takeover', 'release_by_new_person', 'release_handover', 'signed_share_changed', 'npm_release_by_new_account']);
+
+export interface RepoEvent {
+  kind: CommitHistoryChange['kind'];
+  date: string;
+  text: string;
+  release?: string;
+  daysSinceFirstSeen?: number;
+  before?: number;
+  after?: number;
+}
+
+export interface Sourced<T> {
+  value: T;
+  source: string;
+  evidence?: string[];
+  fetchedAt: string;
+}
+
+export interface StabilityInputs {
+  package: PurlString;
+  /** S1: number of npm maintainers (the count only). */
+  maintainerCount?: Sourced<number>;
+  /** npm: latest release, its deprecation, the version in use's deprecation. */
+  npm?: Sourced<{ latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; latestDeprecated?: string; inUse: { version: string; deprecated?: string }[] }>;
+  cadence?: Sourced<ReleaseCadenceValue>;
+  declared?: Sourced<Omit<DeclaredStatusValue, 'via'>>;
+  /** Scorecard Maintained check (repo-level). */
+  maintained?: Sourced<{ score: number; reason?: string; date?: string; repo: string }>;
+  archived?: Sourced<{ archived: boolean; lastPushAt?: string }>;
+  repo?: Sourced<Pick<RepoValue, 'url' | 'directory' | 'host'>>;
+  /** S2: CAF over the 24 months to the scan, and over the 24 months to the last commit. */
+  caf24?: Sourced<{ value: number; commits: number; from: string; to: string }>;
+  history?: Sourced<{
+    repo: string;
+    lastCommit: string;
+    daysSinceLastCommit: number;
+    cafAtLastCommit?: { from: string; to: string; commits: number; absenceFactor: number };
+    events: RepoEvent[];
+    npmPublishers?: { total: number; matched: number };
+    /** Identities that are salted e-mail hashes, and whether GitHub logins were mapped (repo-level counts). */
+    hashedIdentities: number;
+    loginsMapped: boolean;
+  }>;
+  licenseChanges: Sourced<{ version: string; fromCategory: string; toCategory: string; date?: string }>[];
+}
+
+const meta = (f: Fact) => ({ source: f.source, fetchedAt: f.fetchedAt, ...(f.evidence?.length ? { evidence: [...f.evidence] } : {}) });
+
+function isLabelKind(k: Fact['kind']): k is LabelKind {
+  return (LABEL_FACT_KINDS as readonly string[]).includes(k);
+}
+
+/** Group label inputs by unversioned package purl. Reads only the repo-level fields listed above. */
+export function collectInputs(facts: readonly Fact[]): Map<PurlString, StabilityInputs> {
+  const out = new Map<PurlString, StabilityInputs>();
+  const get = (purl: PurlString) => {
+    const key = unversionedPurl(purl);
+    let x = out.get(key);
+    if (!x) out.set(key, (x = { package: key, licenseChanges: [] }));
+    return x;
+  };
+  for (const f of facts) {
+    if (!isLabelKind(f.kind)) continue;
+    const x = get(f.subject);
+    switch (f.kind) {
+      case 'maintainers':
+        x.maintainerCount ??= { value: f.value.count, ...meta(f) };
+        break;
+      case 'release_age': {
+        const v = f.value;
+        const version = f.subject.slice(f.subject.lastIndexOf('@') + 1);
+        if (!x.npm) {
+          x.npm = { value: { inUse: [] }, ...meta(f) };
+          if (v.latestVersion !== undefined) x.npm.value.latestVersion = v.latestVersion;
+          if (v.latestPublishedAt !== undefined) x.npm.value.latestPublishedAt = v.latestPublishedAt;
+          if (v.daysSinceLatestRelease !== undefined) x.npm.value.daysSinceLatestRelease = v.daysSinceLatestRelease;
+          if (v.latestDeprecated !== undefined) x.npm.value.latestDeprecated = v.latestDeprecated;
+          else if (v.deprecated !== undefined && v.latestVersion === v.version) x.npm.value.latestDeprecated = v.deprecated;
+        }
+        x.npm.value.inUse.push(v.deprecated !== undefined ? { version, deprecated: v.deprecated } : { version });
+        break;
+      }
+      case 'release_cadence': {
+        const v = f.value;
+        const value: ReleaseCadenceValue = { releases: v.releases, medianDays: v.medianDays, cv: v.cv, latestGapDays: v.latestGapDays, irregular: v.irregular };
+        if (v.dates) value.dates = [...v.dates];
+        if (v.totalReleases !== undefined) value.totalReleases = v.totalReleases;
+        if (v.lastRelease) value.lastRelease = { version: v.lastRelease.version, date: v.lastRelease.date };
+        if (v.daysSinceLastRelease !== undefined) value.daysSinceLastRelease = v.daysSinceLastRelease;
+        x.cadence ??= { value, ...meta(f) };
+        break;
+      }
+      case 'declared_status':
+        x.declared ??= { value: { status: f.value.status, phrase: f.value.phrase }, ...meta(f) };
+        break;
+      case 'scorecard': {
+        const checks = f.value.checks;
+        const m = checks.find((c) => c.name === 'Maintained');
+        if (m && !x.maintained) {
+          const value: { score: number; reason?: string; date?: string; repo: string } = { score: m.score, repo: f.value.repo };
+          if (m.reason !== undefined) value.reason = m.reason;
+          if (f.value.date !== undefined) value.date = f.value.date;
+          x.maintained = { value, ...meta(f) };
+        }
+        break;
+      }
+      case 'archived':
+        x.archived ??= { value: f.value.lastPushAt !== undefined ? { archived: f.value.archived, lastPushAt: f.value.lastPushAt } : { archived: f.value.archived }, ...meta(f) };
+        break;
+      case 'repo':
+        x.repo ??= { value: f.value.directory !== undefined ? { url: f.value.url, host: f.value.host, directory: f.value.directory } : { url: f.value.url, host: f.value.host }, ...meta(f) };
+        break;
+      case 'contributors':
+        x.caf24 ??= { value: { value: f.value.absenceFactor, commits: f.value.commits, from: f.value.from, to: f.value.to }, ...meta(f) };
+        break;
+      case 'commit_history': {
+        if (x.history) break;
+        const v = f.value;
+        const events: RepoEvent[] = [];
+        for (const c of v.changes) {
+          if (!EVENT_KINDS.has(c.kind)) continue;
+          const e: RepoEvent = { kind: c.kind, date: c.date, text: c.text };
+          if (c.release !== undefined) e.release = c.release;
+          if (c.daysSinceFirstSeen !== undefined) e.daysSinceFirstSeen = c.daysSinceFirstSeen;
+          if (c.before !== undefined) e.before = c.before;
+          if (c.after !== undefined) e.after = c.after;
+          events.push(e);
+        }
+        const h: NonNullable<StabilityInputs['history']>['value'] = {
+          repo: v.repo,
+          lastCommit: v.lastCommit,
+          daysSinceLastCommit: v.daysSinceLastCommit,
+          events,
+          hashedIdentities: v.identity.hashed,
+          loginsMapped: v.identity.via.includes('github-graphql'),
+        };
+        if (v.cafAtLastCommit) h.cafAtLastCommit = { from: v.cafAtLastCommit.from, to: v.cafAtLastCommit.to, commits: v.cafAtLastCommit.commits, absenceFactor: v.cafAtLastCommit.absenceFactor };
+        if (v.npmPublishers) h.npmPublishers = { total: v.npmPublishers.total, matched: v.npmPublishers.matched };
+        x.history = { value: h, ...meta(f) };
+        break;
+      }
+      case 'license_change': {
+        const v = f.value;
+        x.licenseChanges.push({ value: { version: v.version, fromCategory: v.fromCategory, toCategory: v.toCategory, ...(v.date !== undefined ? { date: v.date } : {}) }, ...meta(f) });
+        break;
+      }
+    }
+  }
+  return out;
+}

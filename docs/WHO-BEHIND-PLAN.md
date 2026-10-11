@@ -17,7 +17,7 @@ inline (Sponsors field visibility and Tidelift need a token or a JavaScript-only
 blog answers 429 here, the licence files at the tags verify the event instead; the SPDX
 license-list-data licence is not stated in its repos, and P1 uses CC0 npm packages instead; two
 are data expectations that only P2/P4 can measure; P2 measured the express one). One expectation
-was corrected: `request`'s repository is not archived. Gate results for P0, P1 and P2 are in §10, with the agentic gap-filler's pipeline, gate and guardrails.
+was corrected: `request`'s repository is not archived. Gate results for P0, P1, P2 and P3 are in §10, with the agentic gap-filler's pipeline, gate and guardrails.
 
 ---
 
@@ -359,7 +359,13 @@ Stability is a **separate label per package**, not part of the risk score:
 
 Rules and thresholds live in one file (`src/stability/rules.ts`) like `weights.ts`. Every label
 lists its reasons with source and confidence; a label from low-confidence facts only is capped at
-Watch. The existing intrinsic risk score is unchanged (it is proven); the only cross-over is that
+Watch. **P3 clarifications** (built as written in §10): S3 `inactive` with CAF ≠ 1 (or CAF
+unknown) is Watch, since the table would otherwise make an inactive package Steady while a quiet
+one is Watch; `quiet` is "no commit for 6 months, not inactive" (the table's wording left out a
+package with a commit in the last 18 months but no release); C1 counts only together with another
+signal (CAF = 1, S3 quiet/inactive, S4 irregular, a new top committer, S5a, C2), alone it is context
+(P2 found it on healthy express); C2 counts only when the signed share fell; S5a, C1, C2 and L2
+count when dated within the last 12 months; C3 never counts. F2/F3 are not assessed before P4. The existing intrinsic risk score is unchanged (it is proven); the only cross-over is that
 S5a can be shown beside an existing ownership-change finding.
 
 Roll-up (R1) per project/org scope, production dependencies only by default:
@@ -473,18 +479,18 @@ replayed with the existing historical mode (`ctx.historical`) where data allows.
 
 | # | Subject | Known event (source) | Expected output |
 |---|---|---|---|
-| 1 | `event-stream` (npm) | Handed to a new maintainer in 2018; malicious dependency `flatmap-stream` added (https://github.com/dominictarr/event-stream/issues/116, in KB `kb/incidents/2018-event-stream.yaml`) | S1: 1 maintainer before; `maintainer_change` (exists); **S5a** for 3.3.6: published by an account first seen in the repo < 180 days before; C1 "contributor base changed"; label Watch before the event, no claim of intent. **P2 result (git part, met):** see §10 |
+| 1 | `event-stream` (npm) | Handed to a new maintainer in 2018; malicious dependency `flatmap-stream` added (https://github.com/dominictarr/event-stream/issues/116, in KB `kb/incidents/2018-event-stream.yaml`) | S1: 1 maintainer before; `maintainer_change` (exists); **S5a** for 3.3.6: published by an account first seen in the repo < 180 days before; C1 "contributor base changed"; label Watch before the event, no claim of intent. **P2 result (git part, met):** see §10. **P3 result: met** (Watch at 2018-11-26: CAF 1 and S5a; the npm side names 3.3.5, not 3.3.6: the account's first npm release, published 1 day after it was first seen in the repository) |
 | 2 | xz-utils (git history only, mirror `github.com/tukaani-project/xz`) | Backdoor CVE-2024-3094 in 5.6.0/5.6.1 (https://nvd.nist.gov/vuln/detail/CVE-2024-3094 , https://www.openwall.com/lists/oss-security/2024/03/29/4) | S2: CAF 1–2 over 2019–2021 (one long-standing maintainer); C1: a contributor first seen ~2021 becomes top committer and tags releases by 2024; C2/C3 shown as aggregate repo changes if present; wording "contributor base changed", no statement about any person. **P2 result: met**, with two corrections: the account's first commit is 2022-02 (not ~2021), and the C1 share rule fires on scans dated 2023-08 to 2024-02 but not at 2024-03-28 (see §10) |
-| 3 | `colors` and `faker` (npm) | Maintainer-published sabotage releases, January 2022 (GHSA-gh88-3pxp-6fm8, GHSA-5w9c-rv96-fr7g; KB `2022-colors-faker.yaml`) | Before: S1 = 1, S2 CAF = 1, label Watch; `faker` later deprecated → S3 `ended`; community fork `@faker-js/faker` shows org owner and OC collective (F1) [v P0: collective `fakerjs`, type COLLECTIVE, OC API] |
-| 4 | `left-pad` (npm) | Unpublished March 2016 (https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm) | S1 = 1, CAF = 1; latest version deprecated → S3 `ended` [v P0: 1.3.0 is deprecated, message "use String.prototype.padStart()"] |
-| 5 | `core-js` (npm) | Maintainer's 2023 funding statement (https://github.com/zloirock/core-js/blob/master/docs/2023-02-14-so-whats-next.md); README says not backed by a company [v via README text] | S2 CAF = 1; F1 ≥ 3 declared channels incl. Open Collective; F4 owner is a User, no company backer; F2/F3 from OC; I: `funding_change` event (curated, source = the post) |
-| 6 | `request` (npm) | Deprecated Feb 2020 (https://github.com/request/request/issues/3142) | S3 `ended` (npm deprecated [v P0: 2.88.2 "request has been deprecated, see https://github.com/request/request/issues/3142"]; repo archived: corrected, the repo is **not** archived [v P0: OpenSSF Scorecard 2026-10-05 Maintained check reports "0 commit(s) and 0 issue activity … in the last 90 days", not "project is archived"]); label Fragile if in production; high dependents (deps.dev) shown |
-| 7 | `moment` (npm) | Project declared maintenance mode in 2020 (https://momentjs.com/docs/#/-project-status/ [v P0: docs say "Moment.js is a legacy project in maintenance mode"]) | S3 `quiet`/`ended`-declared (low confidence text + release gap); S4 irregular; label Watch, not Fragile (team still exists) |
+| 3 | `colors` and `faker` (npm) | Maintainer-published sabotage releases, January 2022 (GHSA-gh88-3pxp-6fm8, GHSA-5w9c-rv96-fr7g; KB `2022-colors-faker.yaml`) | Before: S1 = 1, S2 CAF = 1, label Watch; `faker` later deprecated → S3 `ended`; community fork `@faker-js/faker` shows org owner and OC collective (F1) [v P0: collective `fakerjs`, type COLLECTIVE, OC API]. **P3 result: two misses** — colors at 2021-12-31 is **Fragile**, not Watch (CAF 1 and no commit or release since 2019-12-31 / 2019-09-22, the plan's own Fragile rule); faker is **Unknown**: its repository is no longer public and no faker release is deprecated on npm (see §10) |
+| 4 | `left-pad` (npm) | Unpublished March 2016 (https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm) | S1 = 1, CAF = 1; latest version deprecated → S3 `ended` [v P0: 1.3.0 is deprecated, message "use String.prototype.padStart()"]. **P3 result: met** (S3 ended: npm deprecation and Scorecard "project is archived"; Fragile in production; CAF of the last active 24 months is 2, CAF 1 at the 2016 unpublish per P2; S1 today is 2) |
+| 5 | `core-js` (npm) | Maintainer's 2023 funding statement (https://github.com/zloirock/core-js/blob/master/docs/2023-02-14-so-whats-next.md); README says not backed by a company [v via README text] | S2 CAF = 1; F1 ≥ 3 declared channels incl. Open Collective; F4 owner is a User, no company backer; F2/F3 from OC; I: `funding_change` event (curated, source = the post). **P3 result: met for S2** (CAF 1, label Watch with "funding not yet assessed"; F/I rows are P4/P5) |
+| 6 | `request` (npm) | Deprecated Feb 2020 (https://github.com/request/request/issues/3142) | S3 `ended` (npm deprecated [v P0: 2.88.2 "request has been deprecated, see https://github.com/request/request/issues/3142"]; repo archived: corrected, the repo is **not** archived [v P0: OpenSSF Scorecard 2026-10-05 Maintained check reports "0 commit(s) and 0 issue activity … in the last 90 days", not "project is archived"]); label Fragile if in production; high dependents (deps.dev) shown. **P3 result: met** (Fragile, rule "S3 ended while a production dependency", fact: the npm deprecation of 2.88.2; the README's "Deprecated!" is shown as low-confidence context) |
+| 7 | `moment` (npm) | Project declared maintenance mode in 2020 (https://momentjs.com/docs/#/-project-status/ [v P0: docs say "Moment.js is a legacy project in maintenance mode"]) | S3 `quiet`/`ended`-declared (low confidence text + release gap); S4 irregular; label Watch, not Fragile (team still exists). **P3 result: label met, reasons missed** — Watch, not Fragile, but through CAF 1 and S5a: moment released 2.31.0 on 2026-09-15 after a 993-day gap, so the declared maintenance mode has no second fact (context only), S3 is active and S4 is not irregular (CV 1.32 < 1.5); the S5a observation is an e-mail change of a long-standing maintainer (§10) |
 | 8 | Terraform (Go module `github.com/hashicorp/terraform`) | MPL-2.0 → BUSL-1.1, August 2023 (https://www.hashicorp.com/blog/hashicorp-adopts-business-source-license [u: answers 429 here]; [v P0: LICENSE at tag v1.5.7 is "Mozilla Public License, version 2.0", at v1.6.0 the Business Source License]); OpenTofu fork | L2: category change permissive/weak-copyleft → source-available at v1.6.0 [v P0 version]; I: `relicensing` proposal. **P1 result: not visible through deps.dev**, see the P1 gate below |
 | 9 | Elasticsearch | Apache-2.0 → SSPL/Elastic License in 2021, AGPL option added 2024 (https://www.elastic.co/blog/elasticsearch-is-open-source-again [v P0: Shay Banon, 2024-08-29]; LICENSE.txt at v7.10.2, v7.11.0, v8.16.0 [v P0]) | L2 twice: to non-OSI (2021), then OSI option added (2024) |
 | 10 | Redis | BSD-3 → RSALv2/SSPLv1 on 2024-03-20 (https://www.theregister.com/2024/03/22/redis_changes_license [v]); AGPLv3 option in Redis 8 (2025) [v P0: announced 2025-05-01, https://redis.io/blog/agplv3/; LICENSE.txt at tag 8.0.0]; Valkey fork | L2 at 7.4 [v P0: LICENSE.txt at tag 7.4.0 states RSALv2/SSPLv1 from 7.4]; `pkg:docker/redis` image licence shown as "declared by image metadata or unknown". **P1 result: not visible through deps.dev**, see the P1 gate below |
-| 11 | `@babel/core`, `webpack` (npm) — positive controls | Long-funded via Open Collective [v P0 slugs: `babel`, `webpack`, both COLLECTIVE] | F1 OC channel; F2 multiple funders, top share < 0.5 [u: a P4 measurement]; S2 CAF ≥ 2 (**P2: miss for webpack**, 24-month and all-history CAF = 1, see §10); label Steady |
-| 12 | `express` (npm) — foundation control | OpenJS Foundation project [v P0: listed on https://openjsf.org/projects] | F4 foundation backer; CAF ≥ 2 [measured P2: CAF = 6 over the 24 months to 2026-10-11, hand count 6]; label Steady or Watch with reasons |
+| 11 | `@babel/core`, `webpack` (npm) — positive controls | Long-funded via Open Collective [v P0 slugs: `babel`, `webpack`, both COLLECTIVE] | F1 OC channel; F2 multiple funders, top share < 0.5 [u: a P4 measurement]; S2 CAF ≥ 2 (**P2: miss for webpack**, 24-month and all-history CAF = 1, see §10); label Steady. **P3 result:** @babel/core Steady (CAF 2 on the whole babel repository); webpack **Watch** (CAF 1, follows the P2 miss) |
+| 12 | `express` (npm) — foundation control | OpenJS Foundation project [v P0: listed on https://openjsf.org/projects] | F4 foundation backer; CAF ≥ 2 [measured P2: CAF = 6 over the 24 months to 2026-10-11, hand count 6]; label Steady or Watch with reasons. **P3 result: met** (Steady; the 2025 "contributor base changed" is outside the 12-month window and alone would only be context) |
 
 Estate roll-up check: on the existing control repos and the logops scan used in
 `docs/NEXT-LEVEL.md`, R1 sentence numbers must equal a hand count from the API rows for one repo.
@@ -700,6 +706,161 @@ token can reach it (`npx tsx test/history/record.ts --graphql`); `--shallow-sinc
 repositories (the size cap is the guard today); monorepo subdirectories (`repo.directory` facts
 are skipped).
 
+
+### P3 Stability labels (2026-10-11)
+
+Built from established methods only: OpenSSF Scorecard's **Maintained** check
+(https://github.com/ossf/scorecard/blob/main/docs/checks.md; `checks/evaluation/maintained.go`
+returns the reason "project is archived" for archived repositories and counts commits and issue
+activity over 90 days [v]); **npm's deprecation semantics** (`npm deprecate <pkg>@<range> <message>`
+marks versions or ranges, https://docs.npmjs.com/cli/v10/commands/npm-deprecate [v], so only a
+deprecated **latest** release says the package as a whole is deprecated; moment's deprecated 2.10.5
+and 2.19.0 do not); **CHAOSS Release Frequency** (https://chaoss.community/kb/metric-release-frequency/
+[v]) measured as the median gap and the coefficient of variation of the gaps between the last 10
+stable releases (plan S4); the **CHAOSS Contributor Absence Factor** from P2; the plan's 6/18-month
+and 180-day lines.
+
+Code: `src/stability/` (thresholds in `STABILITY_RULES`, rule names in `LABEL_RULES`, both in
+`rules.ts`; S4 and the npm publisher timeline `cadence.ts`; README status `declared.ts`; the only
+reader of fact values `signals.ts`; S3, S5a and the label `label.ts`; production reach
+`production.ts`; `ScanResult.stability` `report.ts`). New npm facts `release_cadence` (S4),
+`release_publishers` (who published each package's releases; S5a input) and `declared_status`
+(README, low confidence), `release_age.latestDeprecated`; `commit_history` gains `cafAtLastCommit`
+(the CAF of the last active 24 months) and the S5a npm side (`src/history/continuity.ts`). The
+Maintenance tab shows the labels above the upkeep signals with a side panel of the rules and facts
+(`/api/projects/:id/stability`), the Package page has a Stability section (`stability` in
+`/api/packages/reach`), and the Changes page lists S5a observations (`continuity` in
+`/api/changes`). No migration: labels live in the stored scan result (highest migration stays 11).
+
+How a label is made. S3: `ended` with high confidence when the latest npm release is deprecated or
+the repository is archived (GitHub `archived`, or Scorecard Maintained "project is archived");
+`inactive` = no commit (bots excluded) and no release in 18 months; `quiet` = no commit in 6 months,
+not inactive; a README status from a short fixed phrase list ("# Deprecated", "fully deprecated",
+"this package is no longer maintained", "legacy project / maintenance mode") counts only with a
+second fact (no release in 18 months, no commit in 6 months, or S4 irregular) and stays low
+confidence, so it can reach Watch, never Fragile. S2 for the rules: the 24-month CAF when that
+window has ≥ 5 commits, else the CAF of the 24 months up to the last commit. S5a: a release made
+(tag or `npm version` commit, P2) or published on npm (`_npmUser`, new here) by an identity first
+seen in the repository < 180 days earlier, in the last 12 months. The npm account is matched to
+the history only through its registry e-mail address, hashed in memory with the same salt as
+commit e-mails; unmatched accounts and npm trusted publishing give no observation. Funding (F2,
+F3) is P4: its two rules are listed and never applied, and every label says **"funding not yet
+assessed"**. "Contributor base changed" alone is context (it never reaches Fragile; with another
+signal it is Watch). A replay of an earlier date does not read a later archival back: a Scorecard
+run dated more than a month after the scan, and a GitHub `archived` flag on a repository pushed to
+after the scan, are not used. Every label names the rules that fired and each fact's source,
+confidence and evidence URL; wording is factual ("No commit and no release in 18 months (last
+commit 2019-03-27, last release 2019-03-27)"), names no person, and passes the judgement-word lint.
+
+**Gate: §8 expectations on recorded real data (`test/stability/stability.test.ts`) — request,
+left-pad, core-js, event-stream, express met; moment label met with other reasons; colors and
+faker missed (written up, code not bent).** Recorded 2026-10-11T20:50Z; P2 histories reused for
+left-pad, core-js, express and webpack.
+
+| Subject (row) | Label | Triggering facts (source) |
+|---|---|---|
+| request (6) | **Fragile** | npm marks the latest release (2.88.2) deprecated: "request has been deprecated, see https://github.com/request/request/issues/3142" (npm, high); production dependency. Context: README "Deprecated!" (low), Scorecard Maintained 0/10 "0 commit(s) and 0 issue activity … 90 days" (not archived, as P0 found), CAF 2 in the last active 24 months |
+| moment (7) | **Watch** (not Fragile) | CAF 1 (68 commits, 24 months; git, medium); S5a: release 2.31.0 (2026-09-15) made by an identity first seen 51 days earlier (git). Context only: README "Moment.js is a legacy project, now in maintenance mode" (no second fact), S4 regular (median 80 days, CV 1.32, latest gap 993 days), Scorecard Maintained 10/10. **Miss on the reasons:** the plan expected quiet/declared and S4 irregular; moment released 2.31.0 in September 2026 and has commits every month. **Miss on S5a by person:** 2.31.0 was tagged on a commit by a maintainer active in the repository since 2014 under another e-mail address (the new address was first used on 2026-07-26); without GitHub login mapping (blocked here) a new address is a new identity. CAF 1 alone keeps the label Watch |
+| left-pad (4) | **Fragile** | npm deprecation of 1.3.0 "use String.prototype.padStart()" (npm, high) and Scorecard "project is archived" (run 2026-08-24, high); production dependency. CAF of the last active 24 months 2 (24 commits to 2019-03-14) |
+| colors (3), scan 2021-12-31 | **Fragile** | CAF 1 (116 commits, 2018-01-01 to 2019-12-31) and no commit or release in 18 months (last commit 2019-12-31, last release 1.4.0 on 2019-09-22). **Miss:** the plan expected Watch; on the real history colors had been inactive for two years before January 2022, which is the plan's own Fragile rule. Today: Watch (inactive; the January 2022 commits are the only ones in their window, < 5, so no CAF) |
+| faker (3) | **Unknown** | **Miss:** `github.com/Marak/Faker.js` is no longer public (clone answers with an authentication prompt; deps.dev has no Scorecard for it) and no faker release is deprecated on npm (latest 6.6.6 of 2022-01-05, 0 of 29 versions deprecated), so "later deprecated → S3 ended" does not hold on today's data; the label says the history could not be read |
+| core-js (5) | **Watch** | CAF 1 (1,635 commits, 24 months; git, medium). The package sits in `packages/core-js`: P3 reads the whole repository's history for monorepo packages (P2 skipped them) and says so in the label |
+| event-stream (1), scan 2018-11-26 | **Watch** | CAF 1 (22 commits); S5a: "Release 3.3.5 was published on npm by an account first seen in this repository 1 days earlier (release 82 of the package; account matched by its registry e-mail address)" (npm + git), and release 3.3.5 made by the same identity (git); with them, contributor base changed 33 % → 0 %. Today: Fragile (CAF 1 and inactive since 2018; Scorecard "project is archived") |
+| express (12) | **Steady** | no rule: commits within 6 months, CAF 6; the 2025 "contributor base changed" is older than 12 months and alone would be context |
+| @babel/core (11) | **Steady** | no rule: CAF 2 over 953 commits of the babel repository (monorepo, whole-repository facts) |
+| webpack (11) | **Watch** | CAF 1 (2,289 commits; the P2 miss carries over) |
+
+**Gate: hand review on the control repositories — 30 of 30 facts correct as stated; 27 of 30 under
+a strict per-person reading (≥ 27 needed): met.** Control repositories: the six real public
+repositories of the replay "Acme" org (`test/replay/data/org`, docs/NEXT-LEVEL.md). Their 227
+production npm dependencies were recorded (packuments, Scorecard via deps.dev, 219 histories; 5
+repositories under `github.com/substack/` are no longer public) and labelled as of the recording
+time: **72 Fragile, 131 Watch, 8 Steady, 16 Unknown** (Unknown: 9 with fewer than 5 commits in
+their last active 24 months, 6 without a readable history, 1 without a declared repository). Rules
+that fired: CAF 1 and inactive 59, ended in production 21, inactive 61, quiet 30, CAF 1 44, S5a
+10, C1 with another signal 6. The sample is 30 of the 203 Fragile/Watch labels (one per package),
+drawn with a seeded shuffle (mulberry32, seed 20261011; `test/stability/sample.ts`, asserted in
+the gate test). Method, independent of the code: a fresh blobless clone per repository,
+`git log` committer dates in UTC with bot commits removed by hand, `git -c mailmap.blob=HEAD:.mailmap
+shortlog -sne --since --until` over the label's window with the 50 % rule counted by hand, tags
+with `git for-each-ref`; the npm registry document (`dist-tags.latest`, `versions[latest].deprecated`,
+`time`); the deps.dev project's Scorecard Maintained check.
+
+| # | Package (in use) | Label | Facts checked against the primary source | Result |
+|---|---|---|---|---|
+| 1 | clone-stats 1.0.0 | Watch: inactive | last commit 2016-05-17, last release 2016-05-17 (git log; npm time) | correct |
+| 2 | finalhandler 1.1.1 | Watch: CAF 1, S5a | 33 of 38 non-bot commits by one address (24 months); tag v2.1.1 (lightweight) on a commit by an author whose first commit here is that day, 2025-12-01 (any address, by name too) | correct |
+| 3 | hoek 2.16.3 | Fragile: ended in production | latest 6.1.3 deprecated "This module has moved and is now available at @hapi/hoek…" | correct |
+| 4 | once 1.4.0 | Watch: quiet | last commit 2025-10-25, last release 2016-09-06 | correct |
+| 5 | rimraf 2.6.2 | Watch: CAF 1 | 29 of 38 commits, 24 months | correct |
+| 6 | aurelia-event-aggregator 1.0.3 | Watch: inactive | last commit and release 2019-03-27; CAF 2 (9 + 5 of 22) | correct |
+| 7 | path-is-absolute 1.0.1 | Fragile: ended in production | latest 2.0.0 deprecated "This package is no longer relevant as Node.js 0.12 is unmaintained."; Scorecard 2026-08-24 "project is archived" | correct |
+| 8 | concat-with-sourcemaps 1.1.0 | Watch: inactive | last commit 2018-05-02 (UTC; 2018-05-03 in the committer's zone), release 2018-05-02; CAF 2 by address (5 + 2 of 11) | correct as stated; **per person CAF 1** (one person, two addresses): the label would be Fragile |
+| 9 | jsprim 1.4.1 | Watch: inactive | last commit 2021-11-17 (UTC), last release 1.4.2 on 2021-11-29 | correct |
+| 10 | forwarded 0.1.2 | Watch: quiet | last non-bot commit 2025-07-23 (two dependabot commits on 2026-03-01 excluded), last release 2021-05-31 | correct |
+| 11 | aurelia-http-client 1.3.1 | Watch: inactive | last commit and release 2019-03-27; CAF 3 by address (11, 7, 7 of 43) | correct as stated; **per person CAF 2** (one person, two addresses); label unchanged |
+| 12 | debug 2.6.9 | Watch: CAF 1, quiet | 5 of 9 commits; last non-bot commit 2026-04-01; last release 4.4.3 on 2025-09-13 | correct |
+| 13 | jsonpointer 4.0.1 | Watch: CAF 1 | 5 of 6 commits | correct |
+| 14 | vue-router 3.5.3 | Watch: quiet | `vuejs/vue-router` (the repository of 3.5.3) last commit 2025-11-28; last npm release 5.4.0 on 2026-10-07 | correct (the current release line lives in `vuejs/router`; the label is about the repository the version in use names) |
+| 15 | accepts 1.3.5 | Watch: quiet | last non-bot commit 2026-04-02, last release 2.0.0 on 2024-08-31 | correct |
+| 16 | buffer-from 1.1.1 | Watch: inactive | last commit and release 2021-07-29 | correct |
+| 17 | inherits 2.0.4 | Watch: quiet | last commit 2025-10-25, last release 2019-06-19 | correct |
+| 18 | http-https 1.0.0 | Fragile: CAF 1 and inactive | 5 of 5 commits (2012-01-03 to 2014-01-02); last commit 2014-01-02 (UTC), release 2014-01-02 | correct |
+| 19 | requirejs 2.3.6 | Watch: CAF 1, quiet | `jrburke/r.js`: 5 of 5 commits (2023-12-01 to 2025-11-30); last commit and release 2025-11-30 | correct |
+| 20 | graceful-fs 2.0.3 | Watch: quiet | last commit 2025-10-25, last release 2023-03-16 | correct |
+| 21 | aurelia-bootstrapper 1.0.1 | Watch: inactive | last commit and release 2024-04-19 | correct |
+| 22 | semver 5.5.1 | Watch: C1 with a new top committer | long-standing share 64 % (7 of 11) → 19 % (3 of 16), 12 months to 2026-10-11; top committer first seen (as committer) 2026-05-07 | correct |
+| 23 | event-stream 3.3.6 | Fragile: CAF 1 and inactive; ended | 16 of 22 commits; last commit 2018-09-20, last release 4.0.1 on 2018-09-29; Scorecard "project is archived" | correct |
+| 24 | getpass 0.1.7 | Fragile: CAF 1 and inactive | 15 of 15 commits; last commit and release 2017-04-25 | correct |
+| 25 | aurelia-pal-browser 1.8.1 | Fragile: CAF 1 and inactive | 14 of 26 commits by one address (two name spellings); last commit 2019-02-01, release 2019-01-18 | correct |
+| 26 | destroy 1.0.4 | Fragile: CAF 1 and inactive | 46 of 47 commits; last commit and release 2022-03-20 | correct |
+| 27 | aurelia-router 1.7.1 | Watch: inactive | last commit 2022-04-12, last release 2019-05-03 | correct |
+| 28 | aurelia-polyfills 1.3.4 | Watch: inactive | last commit and release 2019-03-26; CAF 2 (19 + 6 of 43; per person also 2) | correct |
+| 29 | glob 7.1.3 | Watch: CAF 1 | 66 of 71 commits | correct |
+| 30 | co 4.6.0 | Watch: inactive | last commit 2016-10-17 (UTC), last release 2015-07-09; CAF 4 by address | correct as stated; **per person CAF 2** (one person, three addresses); label unchanged |
+
+What the review found: every date, count, deprecation message and archived flag matched its
+primary source. The three per-person differences are all one known limitation (P2's identity is
+the commit e-mail address or no-reply login; GitHub's login mapping is blocked here): a CAF above
+1 can overstate the number of people, never understate it, and one of them (row 8) hid a CAF 1.
+The CAF facts now say "contributor identities (e-mail addresses or GitHub logins; one person may
+use several)", and every label with CAF, S5a or C1 facts carries that caveat as context. The same limitation
+gives moment's false S5a above.
+
+**Gate: guardrails — met** (`src/stability/stability.test.ts`). Labels read repo- and org-level
+fields only: a test wraps every fact value so that reading any per-person field (`top`, `people`,
+maintainer, publisher and account names, ids, logins, e-mails, time-zone fields, location,
+country) throws, and makes facts about a person (`publisher`, `publisher_change`,
+`maintainer_change`, `release_publishers`) throw on any read; all labels build. A source scan of
+`src/stability/` finds no location, country, nationality or time-zone read. Time zones exist only
+as P2's repo-level aggregates and C3 is never a label input. Labels, facts and the recorded
+fixtures contain no e-mail address (deprecation messages that name one are shown with it removed)
+and no contributor id. Stability adds no reason to any finding.
+
+Fixtures: `blastradius/test/fixtures/stability/recorded/` (`subjects.json`, `history/` for request,
+moment, colors, event-stream and babel with the npm publisher links, `control.json.gz` ≈ 1 MB),
+recorded once by `test/stability/record.ts` with the P2 collector and a discarded salt. The
+dev-seed replay now also replays recorded P2 histories, so the e2e fixture shows event-stream as
+Watch on the Maintenance tab, the Package page and the Changes page.
+
+Tests: 26 unit tests (`src/stability/stability.test.ts`: S4 maths, README phrases, S3 states and
+their as-of guards, every label rule, C1 alone, funding never applied, wording lint, the
+per-person guard, production reach, the S5a npm side), 12 gate tests
+(`test/stability/stability.test.ts`), 5 API tests (`src/server/stability.test.ts`): 43 new, 756 in
+blastradius in all (with the P1 fix merged); web 303 unit (5 new) and 56 Playwright e2e (4 new, axe
+in light and dark).
+
+Misses and limits, written up rather than fixed: colors (Fragile, not Watch), faker (Unknown),
+moment's reasons and its S5a by person (above); webpack Watch follows P2's CAF 1. Registry
+deprecations carry no date, so a replay of an earlier date uses today's deprecation state (none of
+the dated subjects is affected). Monorepo packages get whole-repository facts. vue-router-style
+cases: the repository named by the version in use can differ from the current release line.
+
+Deferred: F2/F3 rules (P4, "funding not yet assessed"); the Stability view and roll-up (P6);
+GitHub login mapping to merge one person's addresses (needs GraphQL, blocked here); the Account
+page "first seen in these repos" (P6); event proposals from S3 (P5); per-package history for
+monorepo subdirectories.
+
 ### Agentic gap-filler (2026-10-11)
 
 Owner direction: "a reusable pipeline to do it agentically" with all our data sources. The
@@ -803,7 +964,7 @@ kept and both injected values are refused without being stored. Costs: request, 
 budgets, cache with TTL (re-verified on every hit), de-duplication; all tested.
 
 Tests: 126 in blastradius for this work (`src/agentic/agentic.test.ts`, `test/agentic/*.test.ts`,
-`src/server/agentic.test.ts`, migration test), 823 in all after merging the P1 fix; web 302 unit (+4) and 56 e2e (+4: the
+`src/server/agentic.test.ts`, migration test), 866 in all after merging the P1 fix and P3; web 307 unit (+4 for this work) and 60 e2e (+4: the
 Proposed facts list for AppSec, confirm and reject as org admin, axe light and dark). Model turns in
 tests are hand-written stubs replayed by `ReplayModel` (`test/fixtures/agentic/model/stubbed.json`)
 because no API key is available here; every page and registry document they lead to is a real
