@@ -13,7 +13,7 @@ import { gunzipSync } from 'node:zlib';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { StabilityEntry, StabilityReport } from '../../src/core/types.js';
 import { findJudgementWord } from '../../src/incidents/schema.js';
-import { controlLabels, productionInventory, registryFacts, stabilityOf } from './build.js';
+import { advisoriesRecorded, controlLabels, productionInventory, registryFacts, stabilityOf } from './build.js';
 import { loadControl, loadSubjects, STABILITY_DIR, subjectHistory } from './fixture.js';
 import { reviewPopulation, reviewSample } from './sample.js';
 import { STABILITY_SUBJECTS } from './subjects.js';
@@ -25,7 +25,7 @@ async function label(slug: string, asOf?: string): Promise<StabilityEntry> {
   const pkg = subjects.packages[slug]!;
   const at = new Date(asOf ? `${asOf}T00:00:00Z` : subjects.recordedAt);
   const hist = subjectHistory(s.history, slug);
-  const { report } = await stabilityOf(productionInventory([{ name: s.name, version: s.version }]), registryFacts(pkg, at, pkg.project, subjects.recordedAt), () => hist, at);
+  const { report } = await stabilityOf(productionInventory([{ name: s.name, version: s.version }]), registryFacts(pkg, at, pkg.project, subjects.recordedAt), () => hist, at, advisoriesRecorded([pkg]));
   return report.packages[0]!;
 }
 
@@ -36,12 +36,14 @@ describe('§8 subjects on recorded data (P3 gate)', () => {
   it('row 6 request: Fragile in production because npm deprecated it; the repository is not archived', async () => {
     const e = await label('request');
     expect(e.label).toBe('fragile');
-    expect(rules(e)).toEqual(['fragile_ended_production']);
+    // P3 refinement: OSV also lists an advisory for 2.88.2 with no fixed release (SSRF, GHSA-p8p7-x288-28g6).
+    expect(rules(e)).toEqual(['fragile_ended_production', 'fragile_unfixed_advisory_inactive']);
     expect(facts(e)[0]).toBe('npm marks the latest release (2.88.2) deprecated: "request has been deprecated, see https://github.com/request/request/issues/3142".');
+    expect(facts(e)).toContain('OSV advisory GHSA-p8p7-x288-28g6 affects version 2.88.2; OSV lists no fixed release.');
     expect(e.s3).toMatchObject({ state: 'ended', confidence: 'high', lastRelease: '2020-02-11', declared: 'deprecated' });
     expect(e.context.some((c) => c.source === 'scorecard' && /0 commit\(s\)/.test(c.text))).toBe(true);
     expect(JSON.stringify(e)).not.toContain('project is archived');
-    expect(e.summary).toBe('Deprecated on npm, used in production.');
+    expect(e.summary).toBe('Deprecated on npm, used in production; Open advisory with no fixed release.');
   });
 
   it('row 7 moment: Watch, not Fragile; the declared maintenance mode is context only (miss: no second fact, S4 not irregular)', async () => {
@@ -60,6 +62,10 @@ describe('§8 subjects on recorded data (P3 gate)', () => {
     expect(facts(e).join(' ')).toMatch(/"project is archived"/);
     expect(facts(e).join(' ')).toMatch(/deprecated: "use String.prototype.padStart\(\)"/);
     expect(e.caf).toMatchObject({ value: 2, commits: 24, to: '2019-03-14' });
+    // Small (1.3.0 is a few kB) but deprecated: never "finished", stays Fragile.
+    expect(rules(e)).toEqual(['fragile_ended_production']);
+    expect(e.finished?.state).toBe('no');
+    expect(e.finished?.notMet).toContain('deprecated or archived');
   });
 
   it('row 3 colors before January 2022: CAF 1 and inactive since 2019 → Fragile (miss: the plan expected Watch)', async () => {
@@ -139,8 +145,20 @@ describe('control repositories and the hand-review sample', () => {
     expect(all.size).toBe(227);
     const by = { fragile: 0, watch: 0, steady: 0, unknown: 0 };
     for (const p of all.values()) by[p.label]++;
-    expect(by).toEqual({ fragile: 72, watch: 131, steady: 8, unknown: 16 });
+    // P3 refinement: 26 small, finished packages move from Fragile to Watch (was 72 / 131 / 8 / 16).
+    expect(by).toEqual({ fragile: 46, watch: 157, steady: 8, unknown: 16 });
     expect(pop).toHaveLength(203);
+    const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
+    expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);
+    for (const p of finished) {
+      expect(p.label).toBe('watch');
+      expect(p.summary).toBe('Small, finished package: single maintainer, no recent activity.');
+      expect(p.finished?.state).toBe('yes');
+    }
+    // Fragile stays for CAF 1 + inactive on packages that are not small and finished, with the reason shown.
+    const stillFragile = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'fragile_single_contributor_inactive'));
+    expect(stillFragile).toHaveLength(33);
+    for (const p of stillFragile) expect(p.finished?.state).not.toBe('yes');
   });
 
   it('the sample is reproducible (seed 20261011) and matches the reviewed table in the plan', () => {
@@ -158,6 +176,36 @@ describe('control repositories and the hand-review sample', () => {
     expect(gunzipSync(readFileSync(join(STABILITY_DIR, 'control.json.gz'))).toString('utf8')).not.toMatch(EMAIL);
   });
 });
+
+/** Packages the finished / low-surface tier moved from Fragile to Watch (all 26 reviewed by hand, plan §10). */
+const FINISHED = [
+  'aws-sign2',
+  'browser-request',
+  'bytes',
+  'combined-stream',
+  'cookie-signature',
+  'core-util-is',
+  'depd',
+  'destroy',
+  'ecc-jsbn',
+  'escape-html',
+  'extend',
+  'from',
+  'from2',
+  'getpass',
+  'http-https',
+  'is-property',
+  'json-schema-traverse',
+  'json-stringify-safe',
+  'oauth-sign',
+  'patch-package-json',
+  'safe-buffer',
+  'stream-combiner',
+  'stream-each',
+  'stream-shift',
+  'unpipe',
+  'utils-merge',
+];
 
 /** The 30 labels reviewed by hand (docs/WHO-BEHIND-PLAN.md §10 P3), in sample order. */
 const REVIEWED = [
@@ -178,15 +226,15 @@ const REVIEWED = [
   'accepts:watch',
   'buffer-from:watch',
   'inherits:watch',
-  'http-https:fragile',
+  'http-https:watch', // Fragile before the finished / low-surface tier
   'requirejs:watch',
   'graceful-fs:watch',
   'aurelia-bootstrapper:watch',
   'semver:watch',
   'event-stream:fragile',
-  'getpass:fragile',
+  'getpass:watch', // Fragile before the finished / low-surface tier
   'aurelia-pal-browser:fragile',
-  'destroy:fragile',
+  'destroy:watch', // Fragile before the finished / low-surface tier
   'aurelia-router:watch',
   'aurelia-polyfills:watch',
   'glob:watch',

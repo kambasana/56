@@ -17,7 +17,9 @@ import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, npmPurl } from '../../core/types.js';
 import type { Component, Fact, Inventory } from '../../core/types.js';
-import { firstPublishedMs, markYoungDependencies, packumentFacts, summarizePackument } from './packument.js';
+import { STABILITY_RULES } from '../../stability/rules.js';
+import { firstPublishedMs, markYoungDependencies, needsTarballSize, packageSize, packumentFacts, summarizePackument, tarballUrl } from './packument.js';
+import { tarballFootprint } from './tarball.js';
 import { NPM_REGISTRY, fetchPackument, isValidNpmName, npmPackagePage } from './registry.js';
 import { NpmSnapshotStore, diffSnapshots } from './snapshots.js';
 import type { NpmMaintainerChangeValue, Packument } from './types.js';
@@ -100,6 +102,7 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
       const skipped = new SkippedHosts();
       // First release per package (null: none by ctx.now), for dependency_added.
       const firstPublished = new Map<string, number | null>();
+      const tarballProblems: string[] = [];
       await mapLimit(names, concurrency, async (name) => {
         let packument: Packument | null;
         try {
@@ -132,6 +135,21 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
             if (f.subject === npmPurl(name) && facts.some((g) => g.kind === f.kind && g.subject === f.subject)) continue;
             facts.push(f);
           }
+          // Finished / low-surface test (P3): versions the registry has no size for are measured from
+          // their tarball, only for packages without a release for STABILITY_RULES.inactiveMonths.
+          if (!vf.some((f) => f.kind === 'package_size')) {
+            const url = tarballUrl(packument, c.version);
+            if (url && needsTarballSize(packument, ctx.now, STABILITY_RULES.inactiveMonths)) {
+              try {
+                const gz = await ctx.http.fetchBytesOrNull(url, { ttlMs: 30 * 86_400_000 });
+                const size = gz ? packageSize(packument, c.version, tarballFootprint(gz)) : undefined;
+                if (size) facts.push(makeFact('package_size', npmPurl(name, c.version), size, { source: SOURCE, fetchedAt: ctx.now, evidence: [npmPackagePage(name, c.version), url] }));
+              } catch (err) {
+                // Offline without the tarball: the size stays unknown and the label says so.
+                if (!skipped.add(err) && !(err instanceof OfflineMissError)) tarballProblems.push(`${name}@${c.version} (${errorMessage(err)})`);
+              }
+            }
+          }
         }
         if (store) facts.push(...(await snapshotFacts(store, packument, name, ctx)));
       });
@@ -154,6 +172,10 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
       const live = Math.abs(Date.now() - ctx.now.getTime()) < 7 * 86_400_000;
       if (downloadsApi && live) await addWeeklyDownloads(facts, ctx, downloadsApi, concurrency);
       skipped.flush('npm', ctx.warn);
+      if (tarballProblems.length > 0) {
+        tarballProblems.sort();
+        ctx.warn?.(`npm: package size not read from ${tarballProblems.length} tarball(s): ${tarballProblems.slice(0, 5).join(', ')}${tarballProblems.length > 5 ? ', …' : ''}`);
+      }
       if (offlineMisses.length > 0) {
         const shown = offlineMisses.sort().slice(0, 10).map((n) => n.slice(0, 100));
         ctx.warn?.(

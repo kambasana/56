@@ -256,6 +256,9 @@ describe('event-stream (publisher handover, 2018)', () => {
       latestVersion: '3.3.6',
       latestPublishedAt: '2018-09-09T08:28:59.503Z',
       daysSinceLatestRelease: 0,
+      // Finished / low-surface inputs: first release, and 3.3.5 + 3.3.6 in the final year (4.0.0 is after `now`).
+      firstPublishedAt: '2014-12-27T06:59:21.624Z',
+      releasesInFinalYear: 2,
     });
     expect(versionHistory(p, now).map((h) => h.version)).not.toContain('4.0.0');
   });

@@ -31,11 +31,17 @@ export interface TransportRequest {
   timeoutMs: number;
   /** Max response body size in bytes; transports must stop reading (and throw ResponseTooLargeError) beyond it. */
   maxBytes?: number;
+  /** Binary response (e.g. an npm tarball): the transport returns the body base64-encoded. */
+  binary?: boolean;
+  /** 'manual': do not follow redirects; a 3xx is returned with its Location (default: follow). */
+  redirect?: 'manual';
 }
 
 export interface TransportResponse {
   status: number;
   body: string;
+  /** Location header of a 3xx response to a request with redirect 'manual'. */
+  location?: string;
 }
 
 /** Performs a single request. Replace in tests. */
@@ -49,6 +55,13 @@ export interface RequestOptions {
   /** Cache TTL for this request in ms. 0 disables caching for it. */
   ttlMs?: number;
   timeoutMs?: number;
+  /** Binary response: the body is returned (and cached) base64-encoded. See fetchBytesOrNull. */
+  binary?: boolean;
+  /**
+   * 'manual': redirects are not followed; a 3xx comes back with `location` so the caller can check
+   * each hop. Cached under its own key, so a followed response is never served in its place.
+   */
+  redirect?: 'manual';
 }
 
 export interface FixtureEnvelope {
@@ -206,6 +219,7 @@ interface CacheEntry {
 interface StoredResponse {
   status: number;
   body: string;
+  location?: string;
 }
 
 const defaultTransport: Transport = async (req) => {
@@ -213,10 +227,16 @@ const defaultTransport: Transport = async (req) => {
     method: req.method,
     headers: req.headers,
     signal: AbortSignal.timeout(req.timeoutMs),
-    redirect: 'follow',
+    redirect: req.redirect ?? 'follow',
   };
   if (req.body !== undefined) init.body = req.body;
   const res = await fetch(req.url, init);
+  if (req.redirect === 'manual' && res.status >= 300 && res.status < 400) {
+    await res.body?.cancel().catch(() => {});
+    const location = res.headers.get('location');
+    return location ? { status: res.status, body: '', location } : { status: res.status, body: '' };
+  }
+  if (req.binary) return { status: res.status, body: (await readBytesLimited(res, req.url, req.maxBytes)).toString('base64') };
   return { status: res.status, body: await readBodyLimited(res, req.url, req.maxBytes) };
 };
 
@@ -226,12 +246,17 @@ const defaultTransport: Transport = async (req) => {
  * ResponseTooLargeError is thrown, so an oversized response is never buffered whole.
  */
 export async function readBodyLimited(res: Response, url: string, maxBytes = Number.POSITIVE_INFINITY): Promise<string> {
+  return new TextDecoder().decode(await readBytesLimited(res, url, maxBytes));
+}
+
+/** readBodyLimited, as bytes. */
+export async function readBytesLimited(res: Response, url: string, maxBytes = Number.POSITIVE_INFINITY): Promise<Buffer> {
   const declared = Number(res.headers.get('content-length') ?? Number.NaN);
   if (Number.isFinite(declared) && declared > maxBytes) {
     await res.body?.cancel().catch(() => {});
     throw new ResponseTooLargeError(url, res.status, maxBytes);
   }
-  if (!res.body) return '';
+  if (!res.body) return Buffer.alloc(0);
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -245,7 +270,7 @@ export async function readBodyLimited(res: Response, url: string, maxBytes = Num
     }
     chunks.push(value);
   }
-  return new TextDecoder().decode(Buffer.concat(chunks, total));
+  return Buffer.concat(chunks, total);
 }
 
 export class HttpClient {
@@ -300,6 +325,9 @@ export class HttpClient {
       isEnvelopeLike(value) && typeof value.status === 'number'
         ? { status: value.status, body: toBody(value.response) }
         : { status: 200, body: toBody(value) };
+    // A redirect fixture: {status: 301, response: '', location: 'https://…'}.
+    const location = isEnvelopeLike(value) ? (value as { location?: unknown }).location : undefined;
+    if (typeof location === 'string') stored.location = location;
     this.fixtures.set(key, stored);
   }
 
@@ -325,12 +353,24 @@ export class HttpClient {
     return res.body;
   }
 
+  /**
+   * Binary GET (e.g. an npm tarball); null on 404. Cached and served from fixtures base64-encoded
+   * (a fixture's response is the base64 string). Throws HttpError on other non-2xx.
+   */
+  async fetchBytesOrNull(url: string, opts: Omit<RequestOptions, 'binary' | 'method' | 'body'> = {}): Promise<Buffer | null> {
+    const res = await this.request(url, { ...opts, binary: true });
+    if (res.status === 404) return null;
+    if (res.status < 200 || res.status >= 300) throw new HttpError(url, res.status);
+    return Buffer.from(res.body, 'base64');
+  }
+
   /** Low-level: returns status + body after fixtures/cache/rate limit/retries. */
   async request(url: string, opts: RequestOptions = {}): Promise<StoredResponse> {
     const parsed = safeUrl(url);
     const method = opts.method ?? 'GET';
     const body = encodeBody(opts.body);
-    const key = fixtureKey(url, method, body);
+    // Binary bodies are stored base64-encoded under their own key.
+    const key = `${fixtureKey(url, method, body)}${opts.binary ? ' base64' : ''}${opts.redirect === 'manual' ? ' manual-redirect' : ''}`;
     const ttl = opts.ttlMs ?? this.defaultTtlMs;
 
     const fixture = await this.lookupFixture(key, url);
@@ -342,16 +382,18 @@ export class HttpClient {
     }
     if (this.offline) throw new OfflineMissError(url, key);
 
-    const headers: Record<string, string> = { 'user-agent': this.userAgent, accept: 'application/json', ...opts.headers };
+    const headers: Record<string, string> = { 'user-agent': this.userAgent, accept: opts.binary ? '*/*' : 'application/json', ...opts.headers };
     if (body !== undefined && typeof opts.body !== 'string' && !hasHeader(headers, 'content-type')) {
       headers['content-type'] = 'application/json';
     }
     const req: TransportRequest = { url, method, headers, timeoutMs: opts.timeoutMs ?? 30_000, maxBytes: this.maxBytes };
     if (body !== undefined) req.body = body;
+    if (opts.binary) req.binary = true;
+    if (opts.redirect) req.redirect = opts.redirect;
 
     const res = await this.sendWithRetry(parsed.host, req);
     // Backstop for transports that ignore req.maxBytes: measure bytes, not UTF-16 code units.
-    if (Buffer.byteLength(res.body, 'utf8') > this.maxBytes) throw new ResponseTooLargeError(url, res.status, this.maxBytes);
+    if ((opts.binary ? Buffer.byteLength(res.body, 'base64') : Buffer.byteLength(res.body, 'utf8')) > this.maxBytes) throw new ResponseTooLargeError(url, res.status, this.maxBytes);
     if (ttl > 0 && ((res.status >= 200 && res.status < 300) || res.status === 404)) {
       await this.writeCache({ key, storedAt: this.now(), status: res.status, body: res.body });
     }
@@ -446,7 +488,8 @@ export class HttpClient {
       if (!isFixtureEnvelope(data)) continue;
       const method = data.request.method ?? 'GET';
       const key = data.request.body === undefined ? data.request.url : fixtureKey(data.request.url, method, data.request.body);
-      if (!this.fixtures.has(key)) this.addFixture(key, { status: data.status ?? 200, response: data.response });
+      const location = (data as { location?: unknown }).location;
+      if (!this.fixtures.has(key)) this.addFixture(key, { status: data.status ?? 200, response: data.response, ...(typeof location === 'string' ? { location } : {}) });
     }
   }
 

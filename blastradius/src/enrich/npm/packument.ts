@@ -15,6 +15,7 @@ import type {
   MaintainersValue,
   ProvenanceValue,
   PublisherValue,
+  PackageSizeValue,
   ReleaseAgeValue,
   DependencyAddedValue,
   RepoValue,
@@ -22,6 +23,7 @@ import type {
 import { isObject, npmPackagePage } from './registry.js';
 import { fundingFromManifestField, repoFromManifestField } from './repo.js';
 import { analyzeInstallScripts, markNewInstallHooks } from './scripts.js';
+import { addMonths } from '../../history/aggregate.js';
 import { releaseCadence, releasePublishers } from '../../stability/cadence.js';
 import type {
   NpmMaintainerChangeValue,
@@ -336,11 +338,52 @@ export function deriveReleaseAge(p: Packument, version: string, now: Date): Rele
   }
   const newest = history[history.length - 1];
   if (newest) value.daysSinceLatestRelease = Math.max(0, daysBetween(newest.publishedMs, nowMs));
+  // Finished / low-surface inputs (P3): the first release, and the stable releases in the final
+  // year of the history (a burst of releases right before it stopped is churn, not a finished package).
+  if (history[0]) value.firstPublishedAt = history[0].publishedAt;
+  const stable = history.filter((h) => !h.version.includes('-'));
+  const lastStable = stable[stable.length - 1];
+  if (lastStable) value.releasesInFinalYear = stable.filter((h) => h.publishedMs > lastStable.publishedMs - 365 * DAY_MS).length;
   const deprecated = str(manifest(p, version)?.deprecated, 500);
   if (deprecated) value.deprecated = deprecated;
   const latestDeprecated = latestRec ? str(manifest(p, latestRec.version)?.deprecated, 500) : undefined;
   if (latestDeprecated) value.latestDeprecated = latestDeprecated;
   return value;
+}
+
+/**
+ * package_size from the registry's `dist.unpackedSize` / `dist.fileCount` of `version` (both
+ * needed), or from a tarball footprint read by the caller. Undefined when neither is known.
+ */
+export function packageSize(p: Packument, version: string, tarball?: { unpackedSize: number; fileCount: number }): PackageSizeValue | undefined {
+  const m = manifest(p, version);
+  if (!m) return undefined;
+  const dist = isObject(m.dist) ? m.dist : undefined;
+  const size = dist?.unpackedSize;
+  const files = dist?.fileCount;
+  const dependencies = dependencyNames(m).size;
+  if (typeof size === 'number' && Number.isSafeInteger(size) && size >= 0 && typeof files === 'number' && Number.isSafeInteger(files) && files >= 0) {
+    return { version, unpackedSize: size, fileCount: files, dependencies, via: 'npm.dist' };
+  }
+  return tarball ? { version, unpackedSize: tarball.unpackedSize, fileCount: tarball.fileCount, dependencies, via: 'npm.tarball' } : undefined;
+}
+
+/**
+ * Whether the size of a version without `dist.unpackedSize` is worth reading from its tarball: only
+ * when the package has had no release for `inactiveMonths` (the finished / low-surface test applies
+ * to inactive packages only).
+ */
+export function needsTarballSize(p: Packument, now: Date, inactiveMonths: number): boolean {
+  const newest = versionHistory(p, now).at(-1);
+  if (!newest) return false;
+  return newest.publishedMs < addMonths(now, -inactiveMonths).getTime();
+}
+
+/** The tarball URL of `version` (registry `dist.tarball`), https only. */
+export function tarballUrl(p: Packument, version: string): string | undefined {
+  const m = manifest(p, version);
+  const u = isObject(m?.dist) ? str(m.dist.tarball, 2048) : undefined;
+  return u?.startsWith('https://') ? u : undefined;
 }
 
 /** The README status slimPackument derived (registry.ts), validated again (packuments are untrusted). */
@@ -439,6 +482,9 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
 
   const age = deriveReleaseAge(p, version, opts.now);
   if (age) facts.push(makeFact('release_age', subject, age, meta([versionPage])));
+
+  const size = packageSize(p, version);
+  if (size) facts.push(makeFact('package_size', subject, size, meta([versionPage])));
 
   const repo = repoFromManifestField(m.repository) ?? repoFromManifestField(p.repository);
   if (repo) {

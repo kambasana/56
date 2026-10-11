@@ -61,7 +61,7 @@ describe('slimPackument', () => {
           devDependencies: { big: '1' },
           files: ['a'],
           scripts: { postinstall: 'node x' },
-          dist: { tarball: 'https://t', integrity: 'sha512-x', attestations: { url: 'https://a', provenance: { predicateType: 'p' } } },
+          dist: { tarball: 'https://t', integrity: 'sha512-x', unpackedSize: 4046, fileCount: 4, shasum: 's', attestations: { url: 'https://a', provenance: { predicateType: 'p' } } },
         },
         'weird': 'not-an-object',
       },
@@ -73,7 +73,8 @@ describe('slimPackument', () => {
         name: 'x',
         version: '1.0.0',
         scripts: { postinstall: 'node x' },
-        dist: { attestations: { url: 'https://a', provenance: { predicateType: 'p' } } },
+        // Size inputs of the finished / low-surface test and the tarball URL stay (P3).
+        dist: { attestations: { url: 'https://a', provenance: { predicateType: 'p' } }, unpackedSize: 4046, fileCount: 4, tarball: 'https://t' },
       },
       weird: 'not-an-object',
     });

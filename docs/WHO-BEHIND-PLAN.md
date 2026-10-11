@@ -352,8 +352,8 @@ Stability is a **separate label per package**, not part of the risk score:
 
 | Label | Rule (any) | Shown as |
 |---|---|---|
-| **Fragile** | (CAF = 1 **and** S3 `inactive`) · (CAF = 1 **and** F3 `stopped`) · S3 `ended` while a production dependency | amber, with the triggering rules |
-| **Watch** | CAF = 1 · S3 `quiet` · F2 concentrated ≥ 0.5 with F3 `declining` · S5a release-continuity · L2 category change · C1/C2 change | neutral with dot |
+| **Fragile** | (CAF = 1 **and** S3 `inactive`, on a package that is **not** small and finished) · (CAF = 1 **and** F3 `stopped`) · S3 `ended` while a production dependency · an open OSV advisory with no fixed release on a version in use **and** S3 `inactive` or `ended` | amber, with the triggering rules |
+| **Watch** | CAF = 1 **and** S3 `inactive` on a small, finished package ("small, finished package: single maintainer, no recent activity") · CAF = 1 · S3 `quiet` · F2 concentrated ≥ 0.5 with F3 `declining` · S5a release-continuity · L2 category change · C1/C2 change | neutral with dot |
 | **Steady** | none of the above with ≥ medium-confidence data for S2 and S3 | plain |
 | **Unknown** | no git history or no repo | grey, says what is missing |
 
@@ -860,6 +860,146 @@ Deferred: F2/F3 rules (P4, "funding not yet assessed"); the Stability view and r
 GitHub login mapping to merge one person's addresses (needs GraphQL, blocked here); the Account
 page "first seen in these repos" (P6); event proposals from S3 (P5); per-package history for
 monorepo subdirectories.
+
+### P3 refinement: small, finished packages (2026-10-11)
+
+**Why.** On the 227 production dependencies of the control repositories P3 gave 72 Fragile, 131
+Watch, 8 Steady and 16 Unknown. The facts were right (30 of 30 in the hand review above), but 51 of
+the 72 Fragile labels were "CAF = 1 and S3 inactive" alone, and most of those are small npm
+packages that have had nothing to change for years (escape-html, utils-merge, unpipe). A third of
+the dependencies marked Fragile is not something a user can act on. The owner approved a tier for
+small, finished packages.
+
+**Definition: finished / low-surface** (`finishedTest` in `src/stability/label.ts`, thresholds in
+`STABILITY_RULES`). Published or deterministic facts only; every condition must hold, and any
+unknown input means "not shown finished" (the label stays as it was and says what is missing):
+
+| Condition | Threshold | Source |
+|---|---|---|
+| Small | every version in use ≤ 32 KiB unpacked and ≤ 10 files | npm `dist.unpackedSize` / `dist.fileCount`; for versions published before npm recorded them (2018), the same two numbers read from the published tarball, computed as npm publish computes them (`npm/cli` `lib/utils/tar.js`: sum of entry sizes, entry count) [v: equal to npm's numbers on destroy 1.2.0, inherits 2.0.4, path-is-absolute 2.0.0, psl 1.1.29, aurelia-framework 1.3.1] |
+| Few dependencies of its own | ≤ 2 runtime + optional dependencies | the version's manifest on npm |
+| Not deprecated, not archived | S3 not `ended`; no version in use deprecated | npm, GitHub / Scorecard (as S3) |
+| No open advisory | no OSV advisory affects a version in use, **and** the scan's OSV lookup completed | the scan's OSV `vuln` facts (OpenSSF Scorecard's Vulnerabilities check uses the same source for "open, unfixed vulnerabilities" [v, checks.md]) |
+| Long history | first release ≥ 36 months before the scan (twice the 18-month inactive line) | npm `time` |
+| No release churn | ≤ 3 stable releases in the final 12 months of its release history | npm `time` (CHAOSS Release Frequency, counted at the end of the history: a burst of releases right before a package stopped is not a finished package) |
+
+Reasoning for the thresholds. Abdalkareem et al., "Why Do Developers Use Trivial Packages? An
+Empirical Case Study on npm" (ESEC/FSE 2017, doi:10.1145/3106237.3106267 [v via
+neverworkintheory.org: "no more than 35 lines of code and a McCabe complexity score no greater than
+10"]) found 16.8 % of npm packages trivial, and that developers' main concern with them is the
+dependency overhead, not their upkeep: a trivial package has little that can need changing. The
+registry has no line counts, so the bound is on bytes; 32 KiB holds a few hundred lines together
+with the README, licence and package.json, a deliberate margin above the 35-line trivial line
+rather than a fit to this data. The dependency bound follows the same study (dependencies are the
+part of a small package that does change). The advisory condition needs the OSV lookup to have run:
+a missing `vuln` fact proves nothing offline. Tarballs are read only for packages whose newest
+release is older than the inactive line (the only ones the test can change), through the shared
+HTTP client (cached, rate-limited; `HttpClient.fetchBytesOrNull`, a binary GET; the tar headers are
+read, contents never interpreted, decompressed size capped at 64 MB).
+
+**Rules.** For a small, finished package, "CAF = 1 and inactive" gives **Watch** with the rule
+"Watch: small, finished package: single maintainer, no recent activity" and the size, history and
+advisory facts. **Fragile stays** for deprecated or archived packages in production; for CAF = 1 and
+inactive on packages that are not small and finished (the label's context names the condition that
+failed, e.g. "Not a small, finished package: 443.5 kB unpacked (more than 32.0 kB); 26 files (more
+than 10)"); and, new, for an **open OSV advisory with no fixed release** on a version in use of a
+package that is inactive or ended ("Fragile: open advisory with no fixed release, and S3 inactive or
+ended"; "open" = affects the version in use, "no fixed release" = OSV lists no `fixed` event for
+this package). Release-takeover signals (S5a, including `release_takeover`) are unchanged: they are
+Watch, as in P3 and §8 row 1, and a finished package never hides them (S5a is its own Watch rule).
+`rulesVersion` is 2.
+
+**Label choice: Watch, not a fifth "Steady (finished)" label.** Watch is the clearer option for
+users: a single maintainer with no activity for 18 months is still a fact a user should see when
+an advisory arrives (nobody may publish the fix), which is what Watch means ("look at the facts"),
+while "Steady" says no rule fired. A fifth label would also make the label set, its colours, the
+filters and the counts larger for a distinction the rule name already carries. The Watch row says
+"Small, finished package: single maintainer, no recent activity", and the side panel shows the
+finished test ("Small, finished package: Yes · 3.6 kB, 5 files, 0 dependencies", or which condition
+was not met).
+
+**Gate: label distribution on the 227 control production dependencies — before 72 Fragile, 131
+Watch, 8 Steady, 16 Unknown; after 46 Fragile, 157 Watch, 8 Steady, 16 Unknown.** 26 labels changed,
+all Fragile → Watch through the finished rule; none went up. Rules that fired after: CAF 1 and
+inactive 33 (was 59 counting packages also ended), finished 26, ended in production 21, open
+advisory with no fixed release 2 (hoek and request, both already Fragile as deprecated), inactive
+61, quiet 30, CAF 1 44, S5a 10, C1 with another signal 6. The 33 that stay Fragile through CAF 1
+and inactive fail a condition: size or files (the aurelia packages, json, dashdash, psl,
+follow-registry, delayed-stream), dependencies (cloneable-readable, concat-stream, mississippi),
+release churn (aws4 30 releases in its final year, ee-first, fast-deep-equal, punycode, serr,
+isstream, remove-trailing-separator, davlog, har-schema), an open advisory (json-schema,
+tunnel-agent, aurelia-framework), or deprecated / archived (also Fragile through the ended rule).
+New inputs recorded with the existing recorder (`test/stability/record.ts --augment`, 2026-10-11,
+real registry, tarball and OSV data; added to the existing fixtures without re-recording what was
+there, so the labels keep their recording time): `dist.unpackedSize` / `fileCount` and dependencies
+for the versions in use and the latest release, tarball sizes for versions without them, and the
+OSV records affecting each version in use (64 records, trimmed to what the OSV enricher reads; no
+credits).
+
+**Gate: §8 subjects — met.** request **Fragile** (ended in production; now also the open advisory
+GHSA-p8p7-x288-28g6, SSRF, which OSV lists as affecting request up to 2.88.2 with no fixed release
+[v OSV API]); left-pad **Fragile** (deprecated 1.3.0 and Scorecard "project is archived"; small,
+but deprecated, so never finished); event-stream at 2018-11-26 **Watch** with the S5a fact (release
+3.3.5 published by an account first seen 1 day earlier); express and @babel/core **Steady**;
+core-js and moment **Watch**. All asserted in `test/stability/stability.test.ts`.
+
+**Gate: hand review of every changed label (26, fewer than 30) — 26 of 26 correct.** Method,
+independent of the code: a Python script (not the product code) reading the npm registry document
+(`dist`, the manifest's dependencies, `time`, `deprecated`), each tarball through Python's
+`tarfile` where the registry has no size, the OSV API (`/v1/query` per version in use), the deps.dev
+project's Scorecard Maintained check, and a fresh blobless clone per repository (`git log`, bot
+commits removed, author e-mail addresses counted over the label's CAF window, top identity ≥ half).
+
+| # | Package (in use) | CAF 1 and inactive (git, npm) | Small and settled (npm, tarball) | Advisories (OSV), deprecation, archive | Result |
+|---|---|---|---|---|---|
+| 1 | aws-sign2 0.5.0, 0.7.0 | 7 of 10 commits (2015-04-13 to 2017-04-12); last commit 2017-04-12, last release 2017-04-12 | 13.8 kB, 4 files (tarball), 0 deps; first release 2013-12-04, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 2 | browser-request 0.3.3 | 35 of 59 commits (2012-02-14 to 2014-02-13); last commit 2014-02-13, last release 2014-11-24 | 30.0 kB, 7 files (tarball), 0 deps; first release 2011-12-21, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 3 | bytes 3.0.0 | 27 of 29 commits (2020-01-29 to 2022-01-28); last commit 2022-01-28, last release 2022-01-28 | 10.5 kB, 5 files (tarball), 0 deps; first release 2012-06-11, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 4 | combined-stream 0.0.7, 1.0.6, 1.0.7 | 9 of 14 commits (2017-05-13 to 2019-05-12); last commit 2019-05-12, last release 2019-05-12 | 10.8 kB, 7 files (dist, tarball), 1 deps; first release 2011-05-24, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 5 | cookie-signature 1.0.6 | 8 of 12 commits (2022-10-30 to 2024-10-29); last commit 2024-10-29, last release 2024-10-29 | 3.8 kB, 5 files (tarball), 0 deps; first release 2012-10-15, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 6 | core-util-is 1.0.3 | 8 of 9 commits (2019-09-01 to 2021-08-31); last commit 2021-08-31, last release 2021-08-31 | 4.9 kB, 4 files (dist), 0 deps; first release 2013-08-26, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 7 | depd 1.1.1, 1.1.2 | 53 of 53 commits (2019-11-13 to 2021-11-12); last commit 2021-11-12, last release 2018-10-26 | 29.8 kB, 9 files (tarball), 0 deps; first release 2014-06-15, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 8 | destroy 1.0.4 | 46 of 47 commits (2020-03-21 to 2022-03-20); last commit 2022-03-20, last release 2022-03-20 | 5.1 kB, 4 files (tarball), 0 deps; first release 2014-08-15, 3 in final year | none; not deprecated; Scorecard not archived | correct |
+| 9 | ecc-jsbn 0.1.2 | 5 of 6 commits (2016-07-30 to 2018-07-29); last commit 2018-07-29, last release 2018-07-29 | 27.1 kB, 10 files (dist), 2 deps; first release 2014-03-06, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 10 | escape-html 1.0.3 | 17 of 17 commits (2017-01-12 to 2019-01-11); last commit 2019-01-11, last release 2015-09-01 | 3.6 kB, 4 files (tarball), 0 deps; first release 2012-08-20, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 11 | extend 3.0.2 | 4 of 5 commits (2024-10-11 to 2026-10-11); last commit 2025-03-06, last release 2018-07-19 | 22.9 kB, 10 files (dist), 0 deps; first release 2011-05-14, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 12 | from 0.1.7 | 6 of 8 commits (2015-03-12 to 2017-03-11); last commit 2017-03-11, last release 2017-03-11 | 8.3 kB, 8 files (tarball), 0 deps; first release 2012-07-04, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 13 | from2 2.3.0 | 26 of 33 commits (2014-08-16 to 2016-08-15); last commit 2016-08-15, last release 2016-08-15 | 9.1 kB, 6 files (tarball), 2 deps; first release 2014-02-10, 3 in final year | none; not deprecated; Scorecard not archived | correct |
+| 14 | getpass 0.1.7 | 15 of 15 commits (2015-04-26 to 2017-04-25); last commit 2017-04-25, last release 2017-04-25 | 5.5 kB, 6 files (tarball), 1 deps; first release 2016-04-21, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 15 | http-https 1.0.0 | 5 of 5 commits (2012-01-03 to 2014-01-02); last commit 2014-01-02, last release 2014-01-02 | 2.3 kB, 5 files (tarball), 0 deps; first release 2014-01-02, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 16 | is-property 1.0.2 | 6 of 7 commits (2012-12-26 to 2014-12-25); last commit 2014-12-25, last release 2014-12-25 | 13.3 kB, 5 files (tarball), 0 deps; first release 2013-07-18, 3 in final year | none; not deprecated; Scorecard not archived | correct |
+| 17 | json-schema-traverse 0.3.1 | 14 of 18 commits (2019-01-06 to 2021-01-05); last commit 2021-01-05, last release 2020-12-13 | 16.4 kB, 10 files (tarball), 0 deps; first release 2017-06-04, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 18 | json-stringify-safe 5.0.1 | 15 of 19 commits (2013-05-21 to 2015-05-20); last commit 2015-05-20, last release 2015-05-19 | 12.4 kB, 9 files (tarball), 0 deps; first release 2013-02-19, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 19 | oauth-sign 0.6.0, 0.9.0 | 3 of 5 commits (2016-08-03 to 2018-08-02); last commit 2018-08-02, last release 2018-08-02 | 15.7 kB, 5 files (dist, tarball), 0 deps; first release 2013-03-01, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 20 | patch-package-json 0.0.4 | 9 of 10 commits (2013-10-17 to 2015-10-16); last commit 2015-10-16, last release 2015-10-16 | 8.5 kB, 7 files (tarball), 0 deps; first release 2014-05-02, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 21 | safe-buffer 5.1.2 | 16 of 16 commits (2018-10-30 to 2020-10-29); last commit 2020-10-29, last release 2020-05-10 | 30.9 kB, 5 files (dist), 0 deps; first release 2016-01-13, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 22 | stream-combiner 0.2.2 | 12 of 24 commits (2013-06-06 to 2015-06-05); last commit 2015-06-05, last release 2015-06-05 | 5.4 kB, 7 files (tarball), 2 deps; first release 2012-11-27, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 23 | stream-each 1.2.3 | 8 of 9 commits (2016-07-30 to 2018-07-29); last commit 2018-07-29, last release 2018-07-30 | 6.6 kB, 7 files (dist), 2 deps; first release 2015-10-18, 3 in final year | none; not deprecated; Scorecard not archived | correct |
+| 24 | stream-shift 1.0.0 | 3 of 5 commits (2022-01-18 to 2024-01-17); last commit 2024-01-17, last release 2024-01-17 | 3.8 kB, 7 files (tarball), 0 deps; first release 2016-07-08, 2 in final year | none; not deprecated; Scorecard not archived | correct |
+| 25 | unpipe 1.0.0 | 55 of 55 commits (2016-06-30 to 2018-06-29); last commit 2018-06-29, last release 2015-06-14 | 4.2 kB, 5 files (tarball), 0 deps; first release 2015-06-14, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+| 26 | utils-merge 1.0.1 | 5 of 5 commits (2018-06-18 to 2020-06-17); last commit 2020-06-17, last release 2017-09-20 | 3.6 kB, 5 files (tarball), 0 deps; first release 2013-07-11, 1 in final year | none; not deprecated; Scorecard not archived | correct |
+
+What the review found: every size, file and dependency count, first-release date, final-year count,
+last commit and release date and CAF window count matched. Two notes: destroy's first release is
+1.0.0 of 2014-08-15 (the registry's `time.created` is 2013-10-03, from versions no longer listed);
+stream-combiner's top identity has exactly half of the window's commits (12 of 24), which is CAF 1
+by the CHAOSS definition. CAF by e-mail address can overstate the number of people, never
+understate it, so none of these CAF 1 values hides a CAF above 1. The three earlier sample rows
+that changed (http-https, getpass, destroy) are now Watch through the finished rule; the P3 sample
+test records it.
+
+Tests: blastradius 879 (13 new: 4 label unit tests for the finished tier and the advisory rule, 4
+tarball and package-size tests, 2 HttpClient tests for binary bodies and manual redirects, 3
+verification-gate redirect tests; the gate tests assert the new counts, the 26 changed packages and
+the §8 rows), proof and build green; web 308 unit (1 new: the finished rule and the panel row), 60
+Playwright e2e including axe in light and dark.
+
+Also in this change (coordinator request, `src/agentic/verify.ts`): the verification gate re-fetches
+a proposal's source URL with redirects followed by hand (at most 5); any hop or final URL that is
+not plain https on the task's evidence domains rejects the proposal with "redirected off allowed
+domain", and the final URL is recorded as the evidence (`src/agentic/redirect.test.ts`). The HTTP
+client's manual-redirect responses are cached under their own key, so a followed response is never
+served in their place.
 
 ### Agentic gap-filler (2026-10-11)
 

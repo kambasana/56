@@ -24,6 +24,9 @@ export interface NpmDist {
   shasum?: unknown;
   integrity?: unknown;
   attestations?: { url?: unknown; provenance?: { predicateType?: unknown } };
+  /** Set by npm publish since 2018 (absent on older versions). */
+  unpackedSize?: unknown;
+  fileCount?: unknown;
 }
 
 export interface NpmVersionManifest {

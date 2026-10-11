@@ -21,6 +21,10 @@ export interface RecordedPackage {
   versions: string[];
   packument: Record<string, any>;
   repo?: { url: string; directory?: string };
+  /** Size of versions in use the registry has no dist.unpackedSize for, read from the tarball (--augment). */
+  tarballs?: Record<string, { unpackedSize: number; fileCount: number }>;
+  /** OSV records affecting each version in use, trimmed (--augment). Absent: advisories not recorded. */
+  osv?: Record<string, Record<string, any>[]>;
 }
 
 export interface ControlFixture {
@@ -33,6 +37,8 @@ export interface ControlFixture {
   histories: Record<string, HistoryFixture>;
   /** Repositories that could not be read, with git's message. */
   historyErrors: Record<string, string>;
+  /** When --augment added the size and OSV inputs. */
+  augmentedAt?: string;
 }
 
 export interface SubjectsFixture {

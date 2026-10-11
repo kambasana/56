@@ -832,6 +832,33 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/request/request"
+      },
+      "dist": {
+       "unpackedSize": 209281,
+       "fileCount": 17,
+       "tarball": "https://registry.npmjs.org/request/-/request-2.88.2.tgz"
+      },
+      "dependencies": {
+       "qs": "~6.5.2",
+       "aws4": "^1.8.0",
+       "uuid": "^3.3.2",
+       "extend": "~3.0.2",
+       "caseless": "~0.12.0",
+       "isstream": "~0.1.2",
+       "aws-sign2": "~0.7.0",
+       "form-data": "~2.3.2",
+       "mime-types": "~2.1.19",
+       "oauth-sign": "~0.9.0",
+       "safe-buffer": "^5.1.2",
+       "tough-cookie": "~2.5.0",
+       "tunnel-agent": "^0.6.0",
+       "forever-agent": "~0.6.1",
+       "har-validator": "~5.1.3",
+       "is-typedarray": "~1.0.0",
+       "http-signature": "~1.2.0",
+       "combined-stream": "~1.0.6",
+       "performance-now": "^2.1.0",
+       "json-stringify-safe": "~5.0.1"
       }
      }
     },
@@ -862,6 +889,58 @@
       }
      ]
     }
+   },
+   "osv": {
+    "2.88.2": [
+     {
+      "id": "GHSA-p8p7-x288-28g6",
+      "aliases": [
+       "CVE-2023-28155"
+      ],
+      "summary": "Server-Side Request Forgery in Request",
+      "published": "2023-03-16T15:30:19Z",
+      "modified": "2026-09-10T03:49:52.915755034Z",
+      "severity": [
+       {
+        "type": "CVSS_V3",
+        "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+       }
+      ],
+      "affected": [
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "request"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "0"
+           },
+           {
+            "last_affected": "2.88.2"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "references": [
+       {
+        "type": "ADVISORY",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-28155"
+       }
+      ],
+      "database_specific": {
+       "severity": "MODERATE",
+       "cwe_ids": [
+        "CWE-918"
+       ]
+      }
+     }
+    ]
    }
   },
   "moment": {
@@ -1350,6 +1429,11 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/moment/moment"
+      },
+      "dist": {
+       "unpackedSize": 4229440,
+       "fileCount": 533,
+       "tarball": "https://registry.npmjs.org/moment/-/moment-2.29.4.tgz"
       }
      },
      "2.30.0": {
@@ -1373,6 +1457,11 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/moment/moment"
+      },
+      "dist": {
+       "unpackedSize": 4497001,
+       "fileCount": 545,
+       "tarball": "https://registry.npmjs.org/moment/-/moment-2.31.0.tgz"
       }
      }
     },
@@ -1403,6 +1492,58 @@
       }
      ]
     }
+   },
+   "osv": {
+    "2.29.4": [
+     {
+      "id": "GHSA-4p3w-j4w9-5jqw",
+      "aliases": [
+       "CVE-2026-17495"
+      ],
+      "summary": "moment vulnerable to Path Traversal via crafted non-string locale name",
+      "published": "2026-09-29T23:46:02Z",
+      "modified": "2026-09-30T00:00:03.858466235Z",
+      "severity": [
+       {
+        "type": "CVSS_V3",
+        "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+       }
+      ],
+      "affected": [
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "moment"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "2.29.2"
+           },
+           {
+            "fixed": "2.31.0"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "references": [
+       {
+        "type": "ADVISORY",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-17495"
+       }
+      ],
+      "database_specific": {
+       "severity": "MODERATE",
+       "cwe_ids": [
+        "CWE-27"
+       ]
+      }
+     }
+    ]
    }
   },
   "left-pad": {
@@ -1539,6 +1680,11 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/stevemao/left-pad"
+      },
+      "dist": {
+       "unpackedSize": 9752,
+       "fileCount": 10,
+       "tarball": "https://registry.npmjs.org/left-pad/-/left-pad-1.3.0.tgz"
       }
      }
     }
@@ -1565,6 +1711,9 @@
       }
      ]
     }
+   },
+   "osv": {
+    "1.3.0": []
    }
   },
   "colors": {
@@ -1738,6 +1887,11 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/Marak/colors.js"
+      },
+      "dist": {
+       "unpackedSize": 39506,
+       "fileCount": 21,
+       "tarball": "https://registry.npmjs.org/colors/-/colors-1.4.0.tgz"
       }
      }
     }
@@ -1764,6 +1918,9 @@
       }
      ]
     }
+   },
+   "osv": {
+    "1.4.0": []
    }
   },
   "faker": {
@@ -1961,7 +2118,13 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/Marak/Faker.js"
-      }
+      },
+      "dist": {
+       "unpackedSize": 10068256,
+       "fileCount": 1793,
+       "tarball": "https://registry.npmjs.org/faker/-/faker-5.5.3.tgz"
+      },
+      "dependencies": {}
      },
      "6.6.6": {
       "_npmUser": {
@@ -1970,7 +2133,13 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/Marak/Faker.js"
-      }
+      },
+      "dist": {
+       "unpackedSize": 3816,
+       "fileCount": 8,
+       "tarball": "https://registry.npmjs.org/faker/-/faker-6.6.6.tgz"
+      },
+      "dependencies": {}
      }
     }
    },
@@ -1983,7 +2152,10 @@
      "id": "github.com/marak/faker.js"
     }
    },
-   "historyError": "git clone failed: fatal: could not read Username for 'https://github.com': terminal prompts disabled"
+   "historyError": "git clone failed: fatal: could not read Username for 'https://github.com': terminal prompts disabled",
+   "osv": {
+    "5.5.3": []
+   }
   },
   "core-js": {
    "name": "core-js",
@@ -3983,6 +4155,11 @@
        "type": "git",
        "url": "https://github.com/zloirock/core-js",
        "directory": "packages/core-js"
+      },
+      "dist": {
+       "unpackedSize": 1360020,
+       "fileCount": 3728,
+       "tarball": "https://registry.npmjs.org/core-js/-/core-js-3.50.0.tgz"
       }
      }
     }
@@ -4010,6 +4187,9 @@
       }
      ]
     }
+   },
+   "osv": {
+    "3.50.0": []
    }
   },
   "event-stream": {
@@ -4470,6 +4650,20 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/dominictarr/event-stream"
+      },
+      "dist": {
+       "unpackedSize": 46911,
+       "fileCount": 25,
+       "tarball": "https://registry.npmjs.org/event-stream/-/event-stream-4.0.1.tgz"
+      },
+      "dependencies": {
+       "duplexer": "^0.1.1",
+       "from": "^0.1.7",
+       "map-stream": "0.0.7",
+       "pause-stream": "^0.0.11",
+       "split": "^1.0.1",
+       "stream-combiner": "^0.2.2",
+       "through": "^2.3.8"
       }
      }
     }
@@ -4496,6 +4690,55 @@
       }
      ]
     }
+   },
+   "osv": {
+    "3.3.6": [
+     {
+      "id": "GHSA-mh6f-8j2x-4483",
+      "summary": "Critical severity vulnerability that affects event-stream and flatmap-stream",
+      "published": "2018-11-26T23:58:21Z",
+      "modified": "2021-09-15T20:08:26Z",
+      "severity": [
+       {
+        "type": "CVSS_V3",
+        "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+       }
+      ],
+      "affected": [
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "event-stream"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "3.3.6"
+           },
+           {
+            "fixed": "4.0.0"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "references": [
+       {
+        "type": "ADVISORY",
+        "url": "https://github.com/advisories/GHSA-mh6f-8j2x-4483"
+       }
+      ],
+      "database_specific": {
+       "severity": "CRITICAL",
+       "cwe_ids": [
+        "CWE-506"
+       ]
+      }
+     }
+    ]
    }
   },
   "express": {
@@ -6237,6 +6480,40 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/expressjs/express"
+      },
+      "dist": {
+       "unpackedSize": 197014,
+       "fileCount": 11,
+       "tarball": "https://registry.npmjs.org/express/-/express-5.1.0.tgz"
+      },
+      "dependencies": {
+       "qs": "^6.14.0",
+       "etag": "^1.8.1",
+       "once": "^1.4.0",
+       "send": "^1.1.0",
+       "vary": "^1.1.2",
+       "debug": "^4.4.0",
+       "fresh": "^2.0.0",
+       "cookie": "^0.7.1",
+       "router": "^2.2.0",
+       "accepts": "^2.0.0",
+       "type-is": "^2.0.1",
+       "parseurl": "^1.3.3",
+       "statuses": "^2.0.1",
+       "encodeurl": "^2.0.0",
+       "mime-types": "^3.0.0",
+       "proxy-addr": "^2.0.7",
+       "body-parser": "^2.2.0",
+       "escape-html": "^1.0.3",
+       "http-errors": "^2.0.0",
+       "on-finished": "^2.4.1",
+       "content-type": "^1.0.5",
+       "finalhandler": "^2.1.0",
+       "range-parser": "^1.2.1",
+       "serve-static": "^2.2.0",
+       "cookie-signature": "^1.2.1",
+       "merge-descriptors": "^2.0.0",
+       "content-disposition": "^1.0.0"
       }
      },
      "4.22.0": {
@@ -6284,6 +6561,41 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/expressjs/express"
+      },
+      "dist": {
+       "unpackedSize": 76638,
+       "fileCount": 10,
+       "tarball": "https://registry.npmjs.org/express/-/express-5.3.0.tgz"
+      },
+      "dependencies": {
+       "qs": "^6.16.0",
+       "depd": "^2.0.0",
+       "etag": "^1.8.1",
+       "once": "^1.4.0",
+       "send": "^1.1.0",
+       "vary": "^1.1.2",
+       "debug": "^4.4.0",
+       "fresh": "^2.0.0",
+       "cookie": "^0.7.1",
+       "router": "^2.2.0",
+       "accepts": "^2.0.0",
+       "type-is": "^2.1.0",
+       "parseurl": "^1.3.3",
+       "statuses": "^2.0.1",
+       "encodeurl": "^2.0.0",
+       "mime-types": "^3.0.0",
+       "proxy-addr": "^2.0.8",
+       "body-parser": "^2.3.0",
+       "escape-html": "^1.0.3",
+       "http-errors": "^2.0.0",
+       "on-finished": "^2.4.1",
+       "content-type": "^2.0.0",
+       "finalhandler": "^2.1.0",
+       "range-parser": "^1.2.1",
+       "serve-static": "^2.2.0",
+       "cookie-signature": "^1.2.1",
+       "merge-descriptors": "^2.0.0",
+       "content-disposition": "^2.0.1"
       }
      }
     }
@@ -6310,6 +6622,9 @@
       }
      ]
     }
+   },
+   "osv": {
+    "5.1.0": []
    }
   },
   "webpack": {
@@ -11441,6 +11756,38 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/webpack/webpack"
+      },
+      "dist": {
+       "unpackedSize": 5450230,
+       "fileCount": 700,
+       "tarball": "https://registry.npmjs.org/webpack/-/webpack-5.101.0.tgz"
+      },
+      "dependencies": {
+       "acorn": "^8.15.0",
+       "events": "^3.2.0",
+       "tapable": "^2.1.1",
+       "neo-async": "^2.6.2",
+       "watchpack": "^2.4.1",
+       "mime-types": "^2.1.27",
+       "graceful-fs": "^4.2.11",
+       "browserslist": "^4.24.0",
+       "eslint-scope": "5.1.1",
+       "schema-utils": "^4.3.2",
+       "@types/estree": "^1.0.8",
+       "loader-runner": "^4.2.0",
+       "glob-to-regexp": "^0.4.1",
+       "es-module-lexer": "^1.2.1",
+       "webpack-sources": "^3.3.3",
+       "enhanced-resolve": "^5.17.2",
+       "@types/json-schema": "^7.0.15",
+       "@webassemblyjs/ast": "^1.14.1",
+       "chrome-trace-event": "^1.0.2",
+       "@types/eslint-scope": "^3.7.7",
+       "acorn-import-phases": "^1.0.3",
+       "terser-webpack-plugin": "^5.3.11",
+       "@webassemblyjs/wasm-edit": "^1.14.1",
+       "@webassemblyjs/wasm-parser": "^1.14.1",
+       "json-parse-even-better-errors": "^2.3.1"
       }
      },
      "5.101.1": {
@@ -11710,6 +12057,30 @@
       "repository": {
        "type": "git",
        "url": "https://github.com/webpack/webpack"
+      },
+      "dist": {
+       "unpackedSize": 10822027,
+       "fileCount": 887,
+       "tarball": "https://registry.npmjs.org/webpack/-/webpack-5.111.1.tgz"
+      },
+      "dependencies": {
+       "events": "^3.2.0",
+       "mime-db": "^1.54.0",
+       "tapable": "^2.3.0",
+       "watchpack": "^2.5.2",
+       "graceful-fs": "^4.2.11",
+       "browserslist": "^4.28.1",
+       "schema-utils": "^4.5.0",
+       "@types/estree": "^1.0.8",
+       "es-module-lexer": "^2.1.0",
+       "webpack-sources": "^3.5.1",
+       "enhanced-resolve": "^5.25.0",
+       "@types/json-schema": "^7.0.15",
+       "@webassemblyjs/ast": "^1.14.1",
+       "chrome-trace-event": "^1.0.2",
+       "@webassemblyjs/wasm-edit": "^1.14.1",
+       "minimizer-webpack-plugin": "^5.7.0",
+       "@webassemblyjs/wasm-parser": "^1.14.1"
       }
      }
     }
@@ -11736,6 +12107,106 @@
       }
      ]
     }
+   },
+   "osv": {
+    "5.101.0": [
+     {
+      "id": "GHSA-38r7-794h-5758",
+      "aliases": [
+       "CVE-2025-68157"
+      ],
+      "summary": "webpack buildHttp HttpUriPlugin allowedUris bypass via HTTP redirects → SSRF + cache persistence",
+      "published": "2026-02-05T18:35:28Z",
+      "modified": "2026-09-10T03:50:33.757470252Z",
+      "severity": [
+       {
+        "type": "CVSS_V3",
+        "score": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:L/I:L/A:N"
+       }
+      ],
+      "affected": [
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "webpack"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "5.49.0"
+           },
+           {
+            "fixed": "5.104.0"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "references": [
+       {
+        "type": "ADVISORY",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-68157"
+       }
+      ],
+      "database_specific": {
+       "severity": "LOW",
+       "cwe_ids": [
+        "CWE-918"
+       ]
+      }
+     },
+     {
+      "id": "GHSA-8fgc-7cc6-rx7x",
+      "aliases": [
+       "CVE-2025-68458"
+      ],
+      "summary": "webpack buildHttp: allowedUris allow-list bypass via URL userinfo (@) leading to build-time SSRF behavior",
+      "published": "2026-02-05T18:38:10Z",
+      "modified": "2026-09-10T03:50:34.472343977Z",
+      "severity": [
+       {
+        "type": "CVSS_V3",
+        "score": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:L/I:L/A:N"
+       }
+      ],
+      "affected": [
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "webpack"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "5.49.0"
+           },
+           {
+            "fixed": "5.104.1"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "references": [
+       {
+        "type": "ADVISORY",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-68458"
+       }
+      ],
+      "database_specific": {
+       "severity": "LOW",
+       "cwe_ids": [
+        "CWE-918"
+       ]
+      }
+     }
+    ]
    }
   },
   "babel-core": {
@@ -13060,6 +13531,28 @@
        "type": "git",
        "url": "https://github.com/babel/babel",
        "directory": "packages/babel-core"
+      },
+      "dist": {
+       "unpackedSize": 795766,
+       "fileCount": 119,
+       "tarball": "https://registry.npmjs.org/@babel/core/-/core-7.28.0.tgz"
+      },
+      "dependencies": {
+       "debug": "^4.1.0",
+       "json5": "^2.2.3",
+       "semver": "^6.3.1",
+       "gensync": "^1.0.0-beta.2",
+       "@babel/types": "^7.28.0",
+       "@babel/parser": "^7.28.0",
+       "@babel/helpers": "^7.27.6",
+       "@babel/template": "^7.27.2",
+       "@babel/traverse": "^7.28.0",
+       "@babel/generator": "^7.28.0",
+       "@babel/code-frame": "^7.27.1",
+       "convert-source-map": "^2.0.0",
+       "@ampproject/remapping": "^2.2.0",
+       "@babel/helper-module-transforms": "^7.27.3",
+       "@babel/helper-compilation-targets": "^7.27.2"
       }
      },
      "8.0.0-beta.1": {
@@ -13247,6 +13740,29 @@
        "type": "git",
        "url": "https://github.com/babel/babel",
        "directory": "packages/babel-core"
+      },
+      "dist": {
+       "unpackedSize": 167878,
+       "fileCount": 18,
+       "tarball": "https://registry.npmjs.org/@babel/core/-/core-8.0.7.tgz"
+      },
+      "dependencies": {
+       "obug": "^3.0.0",
+       "json5": "^2.2.3",
+       "verkit": "^0.5.0",
+       "gensync": "^1.0.0-beta.2",
+       "empathic": "^2.0.1",
+       "@babel/types": "^8.0.6",
+       "@babel/parser": "^8.0.7",
+       "@babel/helpers": "^8.0.7",
+       "@types/gensync": "^1.0.5",
+       "@babel/template": "^8.0.0",
+       "@babel/traverse": "^8.0.7",
+       "@babel/generator": "^8.0.6",
+       "@babel/code-frame": "^8.0.6",
+       "convert-source-map": "^2.0.0",
+       "import-meta-resolve": "^4.2.0",
+       "@babel/helper-compilation-targets": "^8.0.7"
       }
      }
     }
@@ -13274,7 +13790,80 @@
       }
      ]
     }
+   },
+   "osv": {
+    "7.28.0": [
+     {
+      "id": "GHSA-4x5r-pxfx-6jf8",
+      "aliases": [
+       "CVE-2026-49356"
+      ],
+      "summary": "@babel/core: Arbitrary File Read via sourceMappingURL Comment",
+      "published": "2026-06-15T17:14:14Z",
+      "modified": "2026-09-10T03:50:48.280629201Z",
+      "severity": [
+       {
+        "type": "CVSS_V3",
+        "score": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:L/I:N/A:N"
+       }
+      ],
+      "affected": [
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "@babel/core"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "8.0.0-alpha.0"
+           },
+           {
+            "fixed": "8.0.0-rc.6"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "package": {
+         "ecosystem": "npm",
+         "name": "@babel/core"
+        },
+        "ranges": [
+         {
+          "type": "SEMVER",
+          "events": [
+           {
+            "introduced": "0"
+           },
+           {
+            "fixed": "7.29.6"
+           }
+          ]
+         }
+        ]
+       }
+      ],
+      "references": [
+       {
+        "type": "ADVISORY",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-49356"
+       }
+      ],
+      "database_specific": {
+       "severity": "LOW",
+       "cwe_ids": [
+        "CWE-200",
+        "CWE-22"
+       ]
+      }
+     }
+    ]
    }
   }
- }
+ },
+ "augmentedAt": "2026-10-11T22:04:52.027Z"
 }

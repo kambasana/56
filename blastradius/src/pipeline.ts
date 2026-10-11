@@ -204,6 +204,9 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   // Independent enrichers (OSV, deps.dev, npm) talk to different hosts, so they run concurrently;
   // one that reads earlier facts (GitHub) waits for them. Facts and warnings are still appended
   // in the declared enricher order, so the result is the same as running them one by one.
+  // Whether OSV answered for every component (no warning, no failure): the stability labels' finished /
+  // low-surface test needs "no advisory" to be a checked fact, not a missing one.
+  let osvComplete = false;
   for (const stage of enricherStages(enrichers)) {
     const results = await Promise.all(
       stage.map(async (e) => {
@@ -211,7 +214,9 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
         const notes: string[] = [];
         const ectx: EnrichContext = { ...ctx, warn: (m) => notes.push(m) };
         try {
-          return { facts: await e.enrich(inventory, ectx), notes };
+          const out = await e.enrich(inventory, ectx);
+          if (e.name === 'osv' && notes.length === 0) osvComplete = true;
+          return { facts: out, notes };
         } catch (err) {
           notes.push(`enricher ${e.name} failed: ${(err as Error).message}`);
           return { facts: [] as Fact[], notes };
@@ -262,7 +267,7 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   if (history) result.history = history;
   if (agenticReport) result.agentic = agenticReport;
   // Stability labels (plan §4, P3): repo-level facts only; not risk, no effect on findings.
-  result.stability = buildStabilityReport(inventory, facts, now);
+  result.stability = buildStabilityReport(inventory, facts, now, { advisoriesChecked: osvComplete });
 
   // 6. Reports.
   const files: string[] = [];

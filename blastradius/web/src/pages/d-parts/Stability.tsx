@@ -17,8 +17,9 @@ export const STABILITY_LABEL_TEXT: Record<StabilityLabel, string> = { fragile: '
 
 /** One line per label: what it means, in plain words. */
 export const STABILITY_LABEL_HINT: Record<StabilityLabel, string> = {
-  fragile: 'A Fragile rule fired: single active contributor and no activity in 18 months, or ended (deprecated or archived) while used in production.',
-  watch: 'A Watch rule fired; see the facts behind it.',
+  fragile:
+    'A Fragile rule fired: single active contributor and no activity in 18 months (not a small, finished package), ended (deprecated or archived) while used in production, or an open advisory with no fixed release and no activity.',
+  watch: 'A Watch rule fired (for example a small, finished package with a single maintainer); see the facts behind it.',
   steady: 'No stability rule fired, with git history and maintenance status known.',
   unknown: 'Not enough data for a label; it says what is missing.',
 };
@@ -38,6 +39,14 @@ export function StabilityBadge({ label, className }: { label: StabilityLabel; cl
       {STABILITY_LABEL_TEXT[label]}
     </Badge>
   );
+}
+
+const FINISHED_TEXT = { yes: 'Yes', no: 'No', unknown: 'Not known' } as const;
+
+/** Finished / low-surface test: the answer, the size of the largest version in use, what was not met. */
+function finishedText(f: NonNullable<StabilityEntry['finished']>): string {
+  const size = f.size ? ` · ${(f.size.unpackedSize / 1024).toFixed(1)} kB, ${fmtNum(f.size.fileCount)} files, ${fmtNum(f.size.dependencies)} dependencies` : '';
+  return `${FINISHED_TEXT[f.state]}${size}${f.notMet.length ? ` · ${f.notMet.join('; ')}` : ''}`;
 }
 
 const STATE_TEXT: Record<StabilityEntry['s3']['state'], string> = { active: 'Active', quiet: 'Quiet', inactive: 'Inactive', ended: 'Ended', unknown: 'Unknown' };
@@ -140,6 +149,7 @@ function StabilityPanel({ entry, disclaimer, onClose }: { entry: StabilityEntry;
               ['Where', <ReachTag reach={entry.production ? 'production' : 'dev'} />],
               ['Maintenance (S3)', `${STATE_TEXT[entry.s3.state]} (${entry.s3.confidence} confidence)${entry.s3.lastCommit ? ` · last commit ${entry.s3.lastCommit}` : ''}${entry.s3.lastRelease ? ` · last release ${entry.s3.lastRelease}` : ''}`],
               ['Contributor absence factor (S2)', entry.caf ? `${entry.caf.value} over ${fmtNum(entry.caf.commits)} commits, ${entry.caf.from} to ${entry.caf.to}` : 'Not known'],
+              ...(entry.finished ? ([['Small, finished package', finishedText(entry.finished)]] as [string, string][]) : []),
               ['Release regularity (S4)', entry.s4 ? `${entry.s4.irregular ? 'Irregular' : 'Regular'}: median ${Math.round(entry.s4.medianDays)} days, CV ${entry.s4.cv}` : 'Not known'],
               ['Package ID', <span className="break-all font-mono text-xs text-muted-foreground">{entry.package}</span>],
             ]}

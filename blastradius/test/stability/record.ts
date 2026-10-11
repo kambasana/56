@@ -16,12 +16,22 @@
  *
  * Output: test/fixtures/stability/recorded/subjects.json and history/<slug>.json (subjects), and
  * control.json.gz (control set). Clones go to a temporary directory, each deleted once read.
+ *
+ *   npx tsx test/stability/record.ts --augment
+ * adds the finished / low-surface inputs to the existing fixtures without touching what is there
+ * (so the labels keep their recording time): for each version in use and the latest release, the
+ * registry's `dist.unpackedSize` / `dist.fileCount` and declared dependencies; for versions in use
+ * the registry has no size for, the same numbers read from the published tarball (`tarballs`); and
+ * the OSV advisories affecting each version in use (`osv`, querybatch + /vulns/{id}, trimmed to the
+ * fields the OSV enricher reads; no credits). Published sizes and tarballs are immutable.
  */
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
+import { readFileSync } from 'node:fs';
+import { tarballFootprint } from '../../src/enrich/npm/tarball.js';
 import { installEnvProxy } from '../../src/core/proxy.js';
 import { repoFromManifestField } from '../../src/enrich/npm/repo.js';
 import { packumentUrl } from '../../src/enrich/npm/registry.js';
@@ -38,8 +48,9 @@ import { STABILITY_DIR, type ControlFixture, type RecordedPackage } from './fixt
 
 await installEnvProxy();
 const args = process.argv.slice(2);
-const doSubjects = args.length === 0 || args.includes('--subjects');
-const doControl = args.length === 0 || args.includes('--control');
+const doAugment = args.includes('--augment');
+const doSubjects = !doAugment && (args.length === 0 || args.includes('--subjects'));
+const doControl = !doAugment && (args.length === 0 || args.includes('--control'));
 const recordedAt = new Date();
 const salt = randomBytes(32);
 const cacheDir = mkdtempSync(join(process.env.BR_RECORD_TMP ?? tmpdir(), 'br-stability-'));
@@ -179,7 +190,91 @@ async function recordPackage(name: string, versions: string[]): Promise<{ pkg: R
   return { pkg, emails };
 }
 
+/** OSV record trimmed to what osvRecordsToFacts reads, for `name` only (no credits, no details). */
+function trimOsv(rec: Json, name: string): Json {
+  const out: Json = { id: rec.id };
+  for (const k of ['aliases', 'summary', 'published', 'modified', 'withdrawn', 'severity']) if (rec[k] !== undefined) out[k] = rec[k];
+  out.affected = (rec.affected ?? []).filter((a: Json) => a?.package?.ecosystem === 'npm' && String(a?.package?.name).toLowerCase() === name.toLowerCase()).map((a: Json) => ({ package: { ecosystem: 'npm', name: a.package.name }, ranges: a.ranges ?? [], ...(a.database_specific?.severity ? { database_specific: { severity: a.database_specific.severity } } : {}) }));
+  out.references = (rec.references ?? []).filter((r: Json) => r?.type === 'ADVISORY' || r?.type === 'REPORT').map((r: Json) => ({ type: r.type, url: r.url }));
+  const db = rec.database_specific ?? {};
+  const keep: Json = {};
+  if (db.severity !== undefined) keep.severity = db.severity;
+  if (Array.isArray(db.cwe_ids)) keep.cwe_ids = db.cwe_ids;
+  if (db.malicious !== undefined) keep.malicious = db.malicious;
+  if (Object.keys(keep).length) out.database_specific = keep;
+  return out;
+}
+
+async function osvFor(name: string, version: string, records: Map<string, Json>): Promise<Json[]> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch('https://api.osv.dev/v1/query', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ package: { name, ecosystem: 'npm' }, version }) });
+      if (res.status !== 200) throw new Error(`OSV ${res.status}`);
+      const body = (await res.json()) as Json;
+      if (body.next_page_token) throw new Error('OSV paging not expected for one version');
+      const out: Json[] = [];
+      for (const v of body.vulns ?? []) {
+        if (!records.has(v.id)) records.set(v.id, v);
+        out.push(trimOsv(records.get(v.id)!, name));
+      }
+      return out.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    } catch (e) {
+      if (attempt === 2) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
+  }
+  return [];
+}
+
+/** Add size, dependency, tarball and OSV inputs to one recorded package (in place). */
+async function augmentPackage(pkg: RecordedPackage, osvRecords: Map<string, Json>): Promise<void> {
+  const res = await getJson(packumentUrl(pkg.name));
+  if (!res.body) throw new Error(`npm ${pkg.name}: ${res.status}`);
+  const raw = res.body;
+  const versions = pkg.packument.versions as Json;
+  const latest = pkg.packument['dist-tags']?.latest;
+  const tarballs: Record<string, { unpackedSize: number; fileCount: number }> = {};
+  for (const v of new Set([...pkg.versions, ...(typeof latest === 'string' ? [latest] : [])])) {
+    const m = raw.versions?.[v];
+    if (!m || !versions[v]) continue;
+    const dist: Json = {};
+    if (typeof m.dist?.unpackedSize === 'number') dist.unpackedSize = m.dist.unpackedSize;
+    if (typeof m.dist?.fileCount === 'number') dist.fileCount = m.dist.fileCount;
+    if (typeof m.dist?.tarball === 'string') dist.tarball = m.dist.tarball;
+    versions[v].dist = dist;
+    for (const k of ['dependencies', 'optionalDependencies']) if (m[k] && typeof m[k] === 'object') versions[v][k] = m[k];
+    if (pkg.versions.includes(v) && (dist.unpackedSize === undefined || dist.fileCount === undefined) && dist.tarball) {
+      const t = await fetch(dist.tarball);
+      if (t.status !== 200) throw new Error(`tarball ${dist.tarball}: ${t.status}`);
+      tarballs[v] = tarballFootprint(Buffer.from(await t.arrayBuffer()));
+    }
+  }
+  if (Object.keys(tarballs).length) pkg.tarballs = tarballs;
+  const osv: Record<string, Json[]> = {};
+  for (const v of pkg.versions) osv[v] = await osvFor(pkg.name, v, osvRecords);
+  pkg.osv = osv;
+}
+
 try {
+  if (doAugment) {
+    const osvRecords = new Map<string, Json>();
+    const subjects = JSON.parse(readFileSync(join(STABILITY_DIR, 'subjects.json'), 'utf8')) as { _note: string; augmentedAt?: string; packages: Record<string, RecordedPackage> };
+    for (const [slug, pkg] of Object.entries(subjects.packages)) {
+      await augmentPackage(pkg, osvRecords);
+      console.log(`subject ${slug}: osv ${Object.values(pkg.osv ?? {}).flat().length}, tarballs ${Object.keys(pkg.tarballs ?? {}).length}`);
+    }
+    subjects.augmentedAt = recordedAt.toISOString();
+    writeFileSync(join(STABILITY_DIR, 'subjects.json'), `${JSON.stringify(subjects, null, 1)}\n`);
+    const control = JSON.parse(gunzipSync(readFileSync(join(STABILITY_DIR, 'control.json.gz'))).toString('utf8')) as ControlFixture;
+    let n = 0;
+    for (const pkg of Object.values(control.packages)) {
+      await augmentPackage(pkg, osvRecords);
+      if (++n % 25 === 0) console.log(`control: ${n}/${Object.keys(control.packages).length}`);
+    }
+    control.augmentedAt = recordedAt.toISOString();
+    writeFileSync(join(STABILITY_DIR, 'control.json.gz'), gzipSync(JSON.stringify(control), { level: 9 }));
+    console.log(`augmented ${n} control packages; ${osvRecords.size} OSV records`);
+  }
   if (doSubjects) {
     const out: { _note: string; recordedAt: string; packages: Record<string, RecordedPackage & { project?: Json; historyError?: string }> } = {
       _note: `Recorded live ${recordedAt.toISOString()} by test/stability/record.ts: npm packuments (trimmed, no e-mail addresses), deps.dev / Scorecard Maintained check. Histories in history/.`,

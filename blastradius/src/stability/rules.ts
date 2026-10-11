@@ -14,6 +14,19 @@
  *   - S2 input: CHAOSS Contributor Absence Factor (https://chaoss.community/?p=3944), computed in P2.
  *   - S5a release continuity: the 180-day line of the plan, computed from git history (P2) and the npm
  *     publisher of each release (`_npmUser`).
+ *   - Finished / low-surface (P3 refinement, plan §10): a small, settled package. Abdalkareem et al.,
+ *     "Why Do Developers Use Trivial Packages? An Empirical Case Study on npm" (ESEC/FSE 2017,
+ *     doi:10.1145/3106237.3106267) found 16.8 % of npm packages trivial (≤ 35 lines of code, McCabe
+ *     complexity ≤ 10) and the developers' main concern with them was the dependency overhead, not
+ *     upkeep; a trivial package has little that can need changing. Size is read from npm's own
+ *     `dist.unpackedSize` / `dist.fileCount` (computed by npm publish from the tarball, npm/cli
+ *     lib/utils/tar.js), or the same numbers from the tarball for versions published before npm
+ *     recorded them. Lines of code are not in the registry, so the bound is on bytes: 32 KiB holds
+ *     a few hundred lines with the README, licence and package.json, well above the 35-line
+ *     trivial line (a deliberate margin, not a fit). Open advisories: OSV through the scan's
+ *     vulnerability facts (OpenSSF Scorecard's Vulnerabilities check uses the same source for "open,
+ *     unfixed vulnerabilities"). Release churn: CHAOSS Release Frequency, counted as the stable
+ *     releases in the final year of the history.
  */
 export const STABILITY_RULES = {
   /** S3 `inactive`: no commit and no release for this many months (the owner's example, plan S3). */
@@ -34,6 +47,15 @@ export const STABILITY_RULES = {
   newReleaserDays: 180,
   /** F2/F3 (funding): concentrated at or above this top-funder share. Funding is P4: not yet assessed. */
   fundingConcentrated: 0.5,
+  /** Finished / low-surface: every version in use at most this many bytes unpacked and this many files. */
+  finishedMaxUnpackedBytes: 32 * 1024,
+  finishedMaxFiles: 10,
+  /** ... with at most this many runtime (and optional) dependencies of its own. */
+  finishedMaxDependencies: 2,
+  /** ... first released at least this many months before the scan (twice the inactive line). */
+  finishedMinAgeMonths: 36,
+  /** ... with at most this many stable releases in the final 12 months of its history (no churn). */
+  finishedMaxReleasesInFinalYear: 3,
 } as const;
 
 /** Label rules, as named on screen and in reports. Each label lists the rules that fired. */
@@ -41,6 +63,8 @@ export const LABEL_RULES = {
   fragile_single_contributor_inactive: 'Fragile: CAF = 1 and S3 inactive',
   fragile_single_contributor_funding_stopped: 'Fragile: CAF = 1 and F3 funding stopped',
   fragile_ended_production: 'Fragile: S3 ended (high confidence) while a production dependency',
+  fragile_unfixed_advisory_inactive: 'Fragile: open advisory with no fixed release, and S3 inactive or ended',
+  watch_finished_single_contributor_inactive: 'Watch: small, finished package: single maintainer, no recent activity',
   watch_single_contributor: 'Watch: CAF = 1',
   watch_quiet: 'Watch: S3 quiet',
   watch_inactive: 'Watch: S3 inactive (CAF not 1, or unknown)',

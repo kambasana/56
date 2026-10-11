@@ -11,7 +11,7 @@
 import { unversionedPurl, type CommitHistoryChange, type DeclaredStatusValue, type Fact, type PurlString, type ReleaseCadenceValue, type RepoValue } from '../core/types.js';
 
 /** Fact kinds the labels may read. Everything else is ignored before its value is touched. */
-export const LABEL_FACT_KINDS = ['maintainers', 'release_age', 'release_cadence', 'declared_status', 'scorecard', 'archived', 'repo', 'contributors', 'commit_history', 'license_change'] as const;
+export const LABEL_FACT_KINDS = ['maintainers', 'release_age', 'release_cadence', 'declared_status', 'scorecard', 'archived', 'repo', 'contributors', 'commit_history', 'license_change', 'package_size', 'vuln'] as const;
 type LabelKind = (typeof LABEL_FACT_KINDS)[number];
 
 /** Per-person fields that must never be read by the label code (test-enforced). */
@@ -42,7 +42,14 @@ export interface StabilityInputs {
   /** S1: number of npm maintainers (the count only). */
   maintainerCount?: Sourced<number>;
   /** npm: latest release, its deprecation, the version in use's deprecation. */
-  npm?: Sourced<{ latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; latestDeprecated?: string; inUse: { version: string; deprecated?: string }[] }>;
+  npm?: Sourced<{ latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; latestDeprecated?: string; firstPublishedAt?: string; releasesInFinalYear?: number; inUse: { version: string; deprecated?: string }[] }>;
+  /** Finished / low-surface input: size and dependency count of each version in use (npm dist or tarball). */
+  sizes?: Sourced<{ version: string; unpackedSize: number; fileCount: number; dependencies: number; via: 'npm.dist' | 'npm.tarball' }>[];
+  /**
+   * OSV advisories affecting a version in use (vuln facts): the advisory page, whether a fixed
+   * release exists, and when it was published. Package-level facts, nothing about a person.
+   */
+  advisories?: Sourced<{ version: string; advisory: string; page: string; fixed: boolean; published?: string }>[];
   cadence?: Sourced<ReleaseCadenceValue>;
   declared?: Sourced<Omit<DeclaredStatusValue, 'via'>>;
   /** Scorecard Maintained check (repo-level). */
@@ -97,6 +104,8 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
           if (v.daysSinceLatestRelease !== undefined) x.npm.value.daysSinceLatestRelease = v.daysSinceLatestRelease;
           if (v.latestDeprecated !== undefined) x.npm.value.latestDeprecated = v.latestDeprecated;
           else if (v.deprecated !== undefined && v.latestVersion === v.version) x.npm.value.latestDeprecated = v.deprecated;
+          if (v.firstPublishedAt !== undefined) x.npm.value.firstPublishedAt = v.firstPublishedAt;
+          if (v.releasesInFinalYear !== undefined) x.npm.value.releasesInFinalYear = v.releasesInFinalYear;
         }
         x.npm.value.inUse.push(v.deprecated !== undefined ? { version, deprecated: v.deprecated } : { version });
         break;
@@ -158,6 +167,22 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
         if (v.cafAtLastCommit) h.cafAtLastCommit = { from: v.cafAtLastCommit.from, to: v.cafAtLastCommit.to, commits: v.cafAtLastCommit.commits, absenceFactor: v.cafAtLastCommit.absenceFactor };
         if (v.npmPublishers) h.npmPublishers = { total: v.npmPublishers.total, matched: v.npmPublishers.matched };
         x.history = { value: h, ...meta(f) };
+        break;
+      }
+      case 'package_size': {
+        const v = f.value;
+        const sizes = (x.sizes ??= []);
+        if (!sizes.some((s) => s.value.version === v.version)) sizes.push({ value: { version: v.version, unpackedSize: v.unpackedSize, fileCount: v.fileCount, dependencies: v.dependencies, via: v.via }, ...meta(f) });
+        break;
+      }
+      case 'vuln': {
+        // The advisory is named by its OSV page (the fact's first evidence URL, or `url`).
+        const v = f.value;
+        const page = f.evidence?.[0] ?? v.url;
+        if (!page) break;
+        const advisory = decodeURIComponent(page.slice(page.lastIndexOf('/') + 1));
+        const version = f.subject.slice(f.subject.lastIndexOf('@') + 1);
+        (x.advisories ??= []).push({ value: { version, advisory, page, fixed: v.fixedVersions.length > 0, ...(v.published !== undefined ? { published: v.published } : {}) }, ...meta(f) });
         break;
       }
       case 'license_change': {

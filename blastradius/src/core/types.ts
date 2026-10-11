@@ -320,6 +320,7 @@ export const FACT_KINDS = [
   'release_cadence',
   'release_publishers',
   'declared_status',
+  'package_size',
   'funding_detail',
   'org_profile',
   // Agentic gap-filler (src/agentic): verified facts proposed by a model, source `agent:<task>`.
@@ -544,6 +545,27 @@ export interface ReleaseAgeValue {
    * (`npm deprecate`), so only a deprecated latest release says the package as a whole is.
    */
   latestDeprecated?: string;
+  /** First release of the package (any version) up to the scan time (finished / low-surface test, P3). */
+  firstPublishedAt?: string;
+  /** Stable releases in the 365 days up to and including the latest release (release churn, P3). */
+  releasesInFinalYear?: number;
+}
+
+/**
+ * Size of a published npm version (finished / low-surface test, P3): the registry's
+ * `dist.unpackedSize` and `dist.fileCount` (npm publish computes them from the tarball, npm/cli
+ * lib/utils/tar.js), or the same numbers read from the version's tarball when the registry has
+ * none (versions published before npm recorded them). `dependencies` counts the runtime and
+ * optional dependencies the version declares.
+ */
+export interface PackageSizeValue {
+  version: string;
+  /** Sum of the sizes of the tarball's entries, in bytes. */
+  unpackedSize: number;
+  /** Files in the tarball. */
+  fileCount: number;
+  dependencies: number;
+  via: 'npm.dist' | 'npm.tarball';
 }
 
 /**
@@ -880,6 +902,7 @@ export interface FactValueMap {
   release_cadence: ReleaseCadenceValue;
   release_publishers: ReleasePublishersValue;
   declared_status: DeclaredStatusValue;
+  package_size: PackageSizeValue;
   funding_detail: FundingDetailValue;
   org_profile: OrgProfileValue;
   agent_fact: AgentFactValue;
@@ -1311,13 +1334,18 @@ export interface StabilityEntry {
   s5a: ContinuityEvent[];
   /** F2/F3 are P4: always "not_assessed" until funding data exists. */
   funding: 'not_assessed';
+  /**
+   * Finished / low-surface test (STABILITY_RULES): `yes` when every condition holds, `no` when one
+   * fails, `unknown` when an input is missing. `notMet` says which conditions failed or are unknown.
+   */
+  finished?: { state: 'yes' | 'no' | 'unknown'; notMet: string[]; size?: { unpackedSize: number; fileCount: number; dependencies: number } };
 }
 
 export interface StabilityReport {
   /** Scan time the labels are computed at. */
   asOf: string;
-  /** Rule set version (bumped when STABILITY_RULES change meaning). */
-  rulesVersion: 1;
+  /** Rule set version (bumped when STABILITY_RULES change meaning; 2 adds the finished / low-surface tier and the open-advisory rule). */
+  rulesVersion: 1 | 2;
   packages: StabilityEntry[];
   counts: Record<StabilityLabel, number>;
   /** Wording shown with every label. */

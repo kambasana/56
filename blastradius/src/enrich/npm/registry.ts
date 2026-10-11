@@ -107,7 +107,8 @@ export function slimPackument(data: Record<string, unknown>): Packument {
         continue;
       }
       const slim = pick(m, MANIFEST_FIELDS);
-      if (Object.hasOwn(m, 'dist')) slim.dist = isObject(m.dist) ? pick(m.dist, ['attestations']) : m.dist;
+      // dist: provenance attestations, and the size inputs of the finished / low-surface test (P3).
+      if (Object.hasOwn(m, 'dist')) slim.dist = isObject(m.dist) ? pick(m.dist, ['attestations', 'unpackedSize', 'fileCount', 'tarball']) : m.dist;
       versions[v] = slim;
     }
     out.versions = versions;

@@ -96,6 +96,37 @@ describe('stability labels', () => {
     expect(within(panel).getByText(/2 over 70 commits/)).toBeVisible();
   });
 
+  it('a small, finished package: Watch with its rule and facts, and the finished test in the side panel', async () => {
+    const utils: StabilityEntry = {
+      ...request,
+      package: 'pkg:npm/utils-merge',
+      name: 'utils-merge',
+      versions: ['1.0.1'],
+      label: 'watch',
+      summary: 'Small, finished package: single maintainer, no recent activity.',
+      rules: [
+        {
+          rule: 'watch_finished_single_contributor_inactive',
+          name: 'Watch: small, finished package: single maintainer, no recent activity',
+          facts: [{ signal: 'S3', text: 'Small package: 1.0.1 is 3.6 kB unpacked in 5 files, with 0 dependencies of its own (read from the published tarball).', source: 'npm', confidence: 'high' }],
+        },
+      ],
+      s3: { state: 'inactive', confidence: 'medium', lastCommit: '2017-07-08', lastRelease: '2017-07-08' },
+      finished: { state: 'yes', notMet: [], size: { unpackedSize: 3720, fileCount: 5, dependencies: 0 } },
+    };
+    render(
+      <MemoryRouter>
+        <StabilitySection data={{ ...data, entries: [utils], counts: { fragile: 0, watch: 1, steady: 0, unknown: 0 } }} loading={false} />
+      </MemoryRouter>,
+    );
+    const table = screen.getByRole('table', { name: 'Stability labels' });
+    await userEvent.click(within(table).getByText('utils-merge'));
+    const panel = await screen.findByRole('complementary', { name: 'Stability details' });
+    expect(within(panel).getByRole('heading', { name: 'Watch: small, finished package: single maintainer, no recent activity' })).toBeVisible();
+    expect(within(panel).getByText('Small, finished package')).toBeVisible();
+    expect(within(panel).getByText('Yes · 3.6 kB, 5 files, 0 dependencies')).toBeVisible();
+  });
+
   it('says so when the newest scan predates labels', () => {
     render(
       <MemoryRouter>

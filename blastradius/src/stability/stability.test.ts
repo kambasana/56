@@ -46,17 +46,22 @@ function contributors(caf: number, commits = 60, over: Partial<ContributorsValue
   return { from: '2024-10-11', to: '2026-10-11', commits, absenceFactor: caf, top: [{ id: 'hash:0123456789abcdef', share: 0.9 }], unmapped: commits, ...over };
 }
 
-function facts(opts: { caf?: number; commits?: number; lastCommit?: string; lastRelease?: string; latestDeprecated?: string; declared?: 'deprecated' | 'maintenance_mode'; changes?: CommitHistoryChange[]; irregular?: boolean; archived?: boolean; noHistory?: boolean; cafAtLast?: { commits: number; absenceFactor: number } } = {}): Fact[] {
+function facts(opts: { caf?: number; commits?: number; lastCommit?: string; lastRelease?: string; latestDeprecated?: string; declared?: 'deprecated' | 'maintenance_mode'; changes?: CommitHistoryChange[]; irregular?: boolean; archived?: boolean; noHistory?: boolean; cafAtLast?: { commits: number; absenceFactor: number }; size?: { unpackedSize: number; fileCount: number; dependencies: number }; firstPublished?: string; finalYear?: number; vulns?: { id: string; fixed: string[]; published?: string }[] } = {}): Fact[] {
   const lastRelease = opts.lastRelease ?? '2026-09-01';
   const out: Fact[] = [
     makeFact('maintainers', PKG, { maintainers: [{ name: 'alice' }], count: 1 }, meta),
-    makeFact('release_age', npmPurl('demo', '1.0.0'), { version: '1.0.0', publishedAt: `${lastRelease}T00:00:00.000Z`, ageDays: 1, latestVersion: '1.0.0', latestPublishedAt: `${lastRelease}T00:00:00.000Z`, ...(opts.latestDeprecated ? { deprecated: opts.latestDeprecated, latestDeprecated: opts.latestDeprecated } : {}) }, meta),
+    makeFact('release_age', npmPurl('demo', '1.0.0'), { version: '1.0.0', publishedAt: `${lastRelease}T00:00:00.000Z`, ageDays: 1, latestVersion: '1.0.0', latestPublishedAt: `${lastRelease}T00:00:00.000Z`, ...(opts.latestDeprecated ? { deprecated: opts.latestDeprecated, latestDeprecated: opts.latestDeprecated } : {}), ...(opts.firstPublished ? { firstPublishedAt: `${opts.firstPublished}T00:00:00.000Z` } : {}), ...(opts.finalYear !== undefined ? { releasesInFinalYear: opts.finalYear } : {}) }, meta),
     makeFact('release_cadence', PKG, { releases: 10, medianDays: 30, cv: opts.irregular ? 2 : 0.5, latestGapDays: opts.irregular ? 400 : 30, irregular: opts.irregular === true, lastRelease: { version: '1.0.0', date: lastRelease } }, meta),
     makeFact('release_publishers', PKG, { releases: 10, accounts: [{ name: 'alice', firstVersion: '0.1.0', firstAt: '2015-01-01T00:00:00Z', index: 0, releases: 10, trusted: false }] }, meta),
     makeFact('publisher', npmPurl('demo', '1.0.0'), { name: 'alice', version: '1.0.0' }, meta),
     makeFact('maintainer_change', npmPurl('demo', '1.0.0'), { added: ['bob'], removed: ['carol'], changedAt: '2026-01-01' }, meta),
     makeFact('repo', PKG, { url: 'https://github.com/example/demo', host: 'github', via: 'npm.repository' }, meta),
   ];
+  if (opts.size) out.push(makeFact('package_size', npmPurl('demo', '1.0.0'), { version: '1.0.0', ...opts.size, via: 'npm.tarball' }, meta));
+  for (const v of opts.vulns ?? []) {
+    const url = `https://osv.dev/vulnerability/${v.id}`;
+    out.push(makeFact('vuln', npmPurl('demo', '1.0.0'), { id: v.id, aliases: [], severity: 'high', fixedVersions: v.fixed, url, ...(v.published ? { published: v.published } : {}) }, { source: 'osv', fetchedAt: NOW, evidence: [url] }));
+  }
   if (opts.declared) out.push(makeFact('declared_status', PKG, { status: opts.declared, phrase: 'This project is deprecated.', via: 'npm.readme' }, meta));
   if (opts.archived) out.push(makeFact('scorecard', PKG, { score: 3, repo: 'github.com/example/demo', date: '2026-08-24', checks: [{ name: 'Maintained', score: 0, reason: 'project is archived' }] }, { source: 'depsdev', fetchedAt: NOW }));
   if (!opts.noHistory) {
@@ -72,7 +77,9 @@ function inv(production = true): Inventory {
   return { assets: [asset], components: [{ purl: npmPurl('demo', '1.0.0'), ecosystem: 'npm', name: 'demo', version: '1.0.0' }], edges: [{ from: asset.id, to: npmPurl('demo', '1.0.0'), scope: production ? 'runtime' : 'dev', direct: true }] };
 }
 
-const entryOf = (f: Fact[], production = true) => buildStabilityReport(inv(production), f, NOW).packages[0]!;
+const entryOf = (f: Fact[], production = true, advisoriesChecked = true) => buildStabilityReport(inv(production), f, NOW, { advisoriesChecked }).packages[0]!;
+/** A small package with one contributor, inactive since 2019, first released 2014. */
+const SMALL = { caf: 1, commits: 2, lastCommit: '2019-06-01', lastRelease: '2019-06-01', cafAtLast: { commits: 30, absenceFactor: 1 }, size: { unpackedSize: 4046, fileCount: 4, dependencies: 1 }, firstPublished: '2014-01-02', finalYear: 2 } as const;
 
 describe('S4 release regularity (CHAOSS Release Frequency)', () => {
   it('median and coefficient of variation of the gaps', () => {
@@ -167,6 +174,60 @@ describe('labels', () => {
     expect(entryOf(facts({ latestDeprecated: 'gone' }), false)).toMatchObject({ label: 'watch', production: false });
     expect(entryOf(facts({ latestDeprecated: 'gone', noHistory: true }), true).label).toBe('fragile');
   });
+  it('finished / low-surface: CAF = 1 and inactive on a small, finished package is Watch, with the facts', () => {
+    const e = entryOf(facts(SMALL));
+    expect(e.label).toBe('watch');
+    expect(e.rules.map((r) => r.rule)).toEqual(['watch_finished_single_contributor_inactive']);
+    expect(e.rules[0]!.name).toBe('Watch: small, finished package: single maintainer, no recent activity');
+    expect(e.summary).toBe('Small, finished package: single maintainer, no recent activity.');
+    const texts = e.rules[0]!.facts.map((f) => f.text);
+    expect(texts).toContain('Small package: 1.0.0 is 4.0 kB unpacked in 4 files, with 1 dependency of its own (read from the published tarball).');
+    expect(texts).toContain('Long, settled history: first release 2014-01-02; 2 stable releases in the final 12 months before the last release (2019-06-01).');
+    expect(texts).toContain('Not deprecated or archived, and no OSV advisory affects the version in use (1.0.0).');
+    expect(e.finished).toEqual({ state: 'yes', notMet: [], size: { unpackedSize: 4046, fileCount: 4, dependencies: 1 } });
+  });
+  it('finished / low-surface: each failed condition keeps Fragile and is shown', () => {
+    const cases: [Parameters<typeof facts>[0], RegExp][] = [
+      [{ ...SMALL, size: { unpackedSize: 40_000, fileCount: 4, dependencies: 0 } }, /39\.1 kB unpacked \(more than 32\.0 kB\)/],
+      [{ ...SMALL, size: { unpackedSize: 4046, fileCount: 11, dependencies: 0 } }, /11 files \(more than 10\)/],
+      [{ ...SMALL, size: { unpackedSize: 4046, fileCount: 4, dependencies: 3 } }, /3 dependencies \(more than 2\)/],
+      [{ ...SMALL, firstPublished: '2024-01-02' }, /first release 2024-01-02, less than 36 months/],
+      [{ ...SMALL, finalYear: 4 }, /4 releases in the final 12 months of its history \(more than 3\)/],
+      [{ ...SMALL, vulns: [{ id: 'GHSA-aaaa-bbbb-cccc', fixed: ['1.0.1'] }] }, /open OSV advisory for the version in use \(GHSA-aaaa-bbbb-cccc\)/],
+    ];
+    for (const [f, why] of cases) {
+      const e = entryOf(facts(f));
+      expect(e.label, String(why)).toBe('fragile');
+      expect(e.rules.map((r) => r.rule)).toEqual(['fragile_single_contributor_inactive']);
+      expect(e.finished?.state).toBe('no');
+      expect(e.finished?.notMet.join('; ')).toMatch(why);
+      expect(e.context.some((c) => /^Not a small, finished package: /.test(c.text))).toBe(true);
+    }
+    // Deprecated (ended): Fragile through the ended rule, never finished.
+    const dep = entryOf(facts({ ...SMALL, latestDeprecated: 'use x' }));
+    expect(dep.rules.map((r) => r.rule)).toEqual(['fragile_single_contributor_inactive', 'fragile_ended_production']);
+    expect(dep.finished?.notMet).toContain('deprecated or archived');
+  });
+  it('finished / low-surface: an unknown input (size, or advisories not checked) keeps Fragile and says what is missing', () => {
+    const noSize = entryOf(facts({ ...SMALL, size: undefined }));
+    expect(noSize.label).toBe('fragile');
+    expect(noSize.finished?.state).toBe('unknown');
+    expect(noSize.missing.join(' ')).toMatch(/Finished \/ low-surface test not complete \(package size not known for 1\.0\.0\)/);
+    const unchecked = entryOf(facts(SMALL), true, false);
+    expect(unchecked.label).toBe('fragile');
+    expect(unchecked.missing.join(' ')).toMatch(/advisories not checked in this scan/);
+  });
+  it('Fragile: an open advisory with no fixed release on an inactive package (any CAF); a fixed one does not count', () => {
+    const base = { caf: 2, lastCommit: '2019-06-01', lastRelease: '2019-06-01' };
+    const e = entryOf(facts({ ...base, vulns: [{ id: 'GHSA-aaaa-bbbb-cccc', fixed: [], published: '2023-03-16T00:00:00Z' }] }));
+    expect(e.label).toBe('fragile');
+    expect(e.rules.map((r) => r.rule)).toEqual(['fragile_unfixed_advisory_inactive']);
+    expect(e.rules[0]!.facts[0]).toMatchObject({ text: 'OSV advisory GHSA-aaaa-bbbb-cccc affects version 1.0.0; OSV lists no fixed release.', source: 'osv', date: '2023-03-16', evidence: ['https://osv.dev/vulnerability/GHSA-aaaa-bbbb-cccc'] });
+    expect(e.summary).toBe('Open advisory with no fixed release, and no commit or release in 18 months.');
+    expect(entryOf(facts({ ...base, vulns: [{ id: 'GHSA-aaaa-bbbb-cccc', fixed: ['1.0.1'] }] })).label).toBe('watch');
+    // An active package with an unfixed advisory: not a stability rule (the finding is the vulnerability itself).
+    expect(entryOf(facts({ vulns: [{ id: 'GHSA-aaaa-bbbb-cccc', fixed: [] }] })).label).toBe('steady');
+  });
   it('Watch: CAF = 1 alone, quiet alone, inactive with CAF > 1', () => {
     expect(entryOf(facts({ caf: 1 })).rules.map((r) => r.rule)).toEqual(['watch_single_contributor']);
     expect(entryOf(facts({ lastCommit: '2026-01-01' })).rules.map((r) => r.rule)).toEqual(['watch_quiet']);
@@ -207,7 +268,7 @@ describe('labels', () => {
     }
   });
   it('wording: factual, passes the judgement-word lint, names no account', () => {
-    const variants = [facts(), facts({ caf: 1 }), facts({ latestDeprecated: 'use x' }), facts({ archived: true }), facts({ lastCommit: '2026-01-01' }), facts({ caf: 1, commits: 2, lastCommit: '2023-06-01', lastRelease: '2023-06-01', cafAtLast: { commits: 80, absenceFactor: 1 } }), facts({ noHistory: true })];
+    const variants = [facts(SMALL), facts({ ...SMALL, finalYear: 9 }), facts({ ...SMALL, size: undefined }), facts({ caf: 2, lastCommit: '2019-06-01', lastRelease: '2019-06-01', vulns: [{ id: 'GHSA-aaaa-bbbb-cccc', fixed: [] }] }), facts(), facts({ caf: 1 }), facts({ latestDeprecated: 'use x' }), facts({ archived: true }), facts({ lastCommit: '2026-01-01' }), facts({ caf: 1, commits: 2, lastCommit: '2023-06-01', lastRelease: '2023-06-01', cafAtLast: { commits: 80, absenceFactor: 1 } }), facts({ noHistory: true })];
     for (const f of variants) {
       const e = entryOf(f);
       const texts = [e.summary, ...e.rules.flatMap((r) => [r.name, ...r.facts.map((x) => x.text)]), ...e.context.map((c) => c.text), ...e.missing];
@@ -248,7 +309,7 @@ describe('guardrail: labels read repo- and org-level facts only', () => {
   }
 
   it('builds every label without touching a per-person field or a fact about a person', () => {
-    const variants = [facts(), facts({ caf: 1 }), facts({ latestDeprecated: 'x' }), facts({ archived: true, declared: 'deprecated' }), facts({ changes: [{ kind: 'contributor_base_changed', date: '2026-10-11', text: 't', before: 0.5, after: 0.1 }], irregular: true })];
+    const variants = [facts(), facts({ caf: 1 }), facts({ latestDeprecated: 'x' }), facts({ archived: true, declared: 'deprecated' }), facts({ changes: [{ kind: 'contributor_base_changed', date: '2026-10-11', text: 't', before: 0.5, after: 0.1 }], irregular: true }), facts(SMALL), facts({ ...SMALL, vulns: [{ id: 'GHSA-aaaa-bbbb-cccc', fixed: [] }] })];
     for (const f of variants) {
       const wrapped = f.map((x) => ({ ...x, value: FORBIDDEN_KINDS.has(x.kind) ? sealed(x.value, x.kind) : guard(x.value, x.kind) }) as Fact);
       expect(() => buildStabilityReport(inv(), wrapped, NOW)).not.toThrow();

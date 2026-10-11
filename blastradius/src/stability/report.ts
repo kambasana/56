@@ -15,7 +15,15 @@ export function emptyLabelCounts(): Record<StabilityLabel, number> {
   return Object.fromEntries(STABILITY_LABELS.map((l) => [l, 0])) as Record<StabilityLabel, number>;
 }
 
-export function buildStabilityReport(inventory: Inventory, facts: readonly Fact[], asOf: Date): StabilityReport {
+export interface StabilityReportOptions {
+  /**
+   * The scan's OSV lookup ran to completion, so a package without a vuln fact has no known advisory.
+   * Without it the finished / low-surface test cannot pass (an absent fact proves nothing).
+   */
+  advisoriesChecked?: boolean;
+}
+
+export function buildStabilityReport(inventory: Inventory, facts: readonly Fact[], asOf: Date, opts: StabilityReportOptions = {}): StabilityReport {
   const inputs = collectInputs(facts);
   const prod = productionComponents(inventory);
   const byPkg = new Map<PurlString, { name: string; versions: Set<string>; production: boolean }>();
@@ -29,8 +37,8 @@ export function buildStabilityReport(inventory: Inventory, facts: readonly Fact[
   }
   const counts = emptyLabelCounts();
   const packages = [...byPkg]
-    .map(([purl, p]) => labelPackage(inputs.get(purl) ?? { package: purl, licenseChanges: [] }, { name: p.name, versions: [...p.versions].sort(), production: p.production }, asOf))
+    .map(([purl, p]) => labelPackage(inputs.get(purl) ?? { package: purl, licenseChanges: [] }, { name: p.name, versions: [...p.versions].sort(), production: p.production, advisoriesChecked: opts.advisoriesChecked === true }, asOf))
     .sort((a, b) => LABEL_ORDER[a.label] - LABEL_ORDER[b.label] || Number(b.production) - Number(a.production) || a.name.localeCompare(b.name));
   for (const e of packages) counts[e.label]++;
-  return { asOf: asOf.toISOString(), rulesVersion: 1, packages, counts, disclaimer: STABILITY_DISCLAIMER };
+  return { asOf: asOf.toISOString(), rulesVersion: 2, packages, counts, disclaimer: STABILITY_DISCLAIMER };
 }

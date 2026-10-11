@@ -8,7 +8,11 @@ import { HttpClient } from '../../src/core/http.js';
 import { makeFact, npmPurl, type Fact, type Inventory, type StabilityReport } from '../../src/core/types.js';
 import { scorecardFromApi, scorecardFromDepsDev } from '../../src/enrich/depsdev/index.js';
 import { createHistoryEnricher } from '../../src/enrich/history/index.js';
-import { packumentFacts } from '../../src/enrich/npm/packument.js';
+import { needsTarballSize, packageSize, packumentFacts } from '../../src/enrich/npm/packument.js';
+import { npmPackagePage } from '../../src/enrich/npm/registry.js';
+import { osvRecordsToFacts } from '../../src/enrich/osv/index.js';
+import { factsKnownAt } from '../../src/pipeline.js';
+import { STABILITY_RULES } from '../../src/stability/rules.js';
 import { slimPackument } from '../../src/enrich/npm/registry.js';
 import type { HistoryRecord } from '../../src/history/record.js';
 import { buildStabilityReport } from '../../src/stability/report.js';
@@ -25,6 +29,16 @@ export function registryFacts(pkg: RecordedPackage, asOf: Date, project: Record<
       if (f.subject === npmPurl(pkg.name) && facts.some((g) => g.kind === f.kind && g.subject === f.subject)) continue;
       facts.push(f);
     }
+    // Size from the recorded tarball when the registry has none, as the npm enricher does (index.ts).
+    const t = pkg.tarballs?.[v];
+    if (t && !facts.some((f) => f.kind === 'package_size' && f.subject === npmPurl(pkg.name, v)) && needsTarballSize(p, asOf, STABILITY_RULES.inactiveMonths)) {
+      const size = packageSize(p, v, t);
+      if (size) facts.push(makeFact('package_size', npmPurl(pkg.name, v), size, { source: 'npm', fetchedAt: recordedAt, evidence: [npmPackagePage(pkg.name, v)] }));
+    }
+    // OSV advisories for the version in use, as the OSV enricher turns them into facts; the pipeline
+    // drops those published after the scan time.
+    const osv = pkg.osv?.[v];
+    if (osv) facts.push(...factsKnownAt(osvRecordsToFacts({ purl: npmPurl(pkg.name, v), name: pkg.name }, osv, asOf), asOf));
   }
   const live = Math.abs(Date.parse(recordedAt) - asOf.getTime()) < 7 * 86_400_000;
   if (project && live && pkg.repo) {
@@ -52,10 +66,15 @@ export function productionInventory(pkgs: readonly { name: string; version: stri
   };
 }
 
-export async function stabilityOf(inventory: Inventory, registry: Fact[], histories: (url: string) => HistoryRecord | undefined, asOf: Date): Promise<{ report: StabilityReport; facts: Fact[] }> {
+/** Advisories were recorded (OSV) for every package in the fixture: the scan's OSV lookup "ran". */
+export function advisoriesRecorded(pkgs: readonly RecordedPackage[]): boolean {
+  return pkgs.every((p) => p.versions.every((v) => p.osv?.[v] !== undefined));
+}
+
+export async function stabilityOf(inventory: Inventory, registry: Fact[], histories: (url: string) => HistoryRecord | undefined, asOf: Date, advisoriesChecked = false): Promise<{ report: StabilityReport; facts: Fact[] }> {
   const facts = [...registry];
   facts.push(...(await historyFacts(inventory, facts, histories, asOf)));
-  return { report: buildStabilityReport(inventory, facts, asOf), facts };
+  return { report: buildStabilityReport(inventory, facts, asOf, { advisoriesChecked }), facts };
 }
 
 /** Labels of the control repositories (test/replay/data/org) on the recorded control fixture. */
@@ -90,7 +109,7 @@ export async function controlLabels(control: import('./fixture.js').ControlFixtu
       const projectKey = key?.startsWith('https://github.com/') ? key.toLowerCase() : key;
       registry.push(...registryFacts({ ...pkg, versions: [...vs].sort() }, asOf, projectKey ? control.projects[projectKey] : undefined, control.recordedAt));
     }
-    const { report } = await stabilityOf(recorded, registry, histories, asOf);
+    const { report } = await stabilityOf(recorded, registry, histories, asOf, advisoriesRecorded([...versions.keys()].map((n) => control.packages[n]!)));
     out.push({ repo: d.replace('__', '/'), report });
   }
   return out;

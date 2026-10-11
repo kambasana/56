@@ -3,14 +3,21 @@
  * (docs/WHO-BEHIND-PLAN.md §4), from repo-level inputs only (signals.ts).
  *
  * Label rules (any one fires; Fragile is checked first):
- *   Fragile  CAF = 1 and S3 inactive · CAF = 1 and F3 funding stopped (P4: not assessed) ·
- *            S3 ended (high confidence: archived, or the latest npm release deprecated) in production
- *   Watch    CAF = 1 · S3 quiet · S3 inactive with CAF > 1 · S3 ended outside production or declared
+ *   Fragile  CAF = 1 and S3 inactive, unless the package is small and finished (below) ·
+ *            CAF = 1 and F3 funding stopped (P4: not assessed) ·
+ *            S3 ended (high confidence: archived, or the latest npm release deprecated) in production ·
+ *            an open OSV advisory with no fixed release on a version in use, and S3 inactive or ended
+ *   Watch    CAF = 1 and S3 inactive on a small, finished package · CAF = 1 · S3 quiet ·
+ *            S3 inactive with CAF > 1 · S3 ended outside production or declared
  *            only · S5a release continuity · L2 licence category change · C2 signed share fell ·
  *            C1 contributor base changed together with another signal ·
  *            F2 concentrated with F3 declining (P4: not assessed)
  *   Steady   none of the above, with S2 (CAF) and S3 known from the git history
  *   Unknown  none of the above and no git history (says what is missing)
+ * Finished / low-surface (STABILITY_RULES): every version in use small (unpacked size, files) with
+ * few dependencies of its own, no OSV advisory for it (the scan's OSV lookup must have run), not
+ * deprecated or archived, first released long ago and no burst of releases at the end of its
+ * history. Published or deterministic facts only; any unknown input means "not shown finished".
  * A label from low-confidence facts only is capped at Watch (the declared-README rule is low and
  * never reaches Fragile). C1 alone is context: it fired on healthy express in P2.
  * Wording is factual and names no person.
@@ -196,6 +203,10 @@ function shortText(h: StabilityRuleHit, s3: S3Result, caf?: { value: number }): 
       return `Single active contributor and no commit or release in ${R.inactiveMonths} months`;
     case 'fragile_ended_production':
       return `${endedWords(s3)}, used in production`;
+    case 'fragile_unfixed_advisory_inactive':
+      return s3.endedHigh ? 'Open advisory with no fixed release' : `Open advisory with no fixed release, and no commit or release in ${R.inactiveMonths} months`;
+    case 'watch_finished_single_contributor_inactive':
+      return 'Small, finished package: single maintainer, no recent activity';
     case 'watch_ended':
       return s3.endedHigh ? `${endedWords(s3)}, not a production dependency here` : 'README declares the project ended, with a second fact';
     case 'watch_single_contributor':
@@ -224,7 +235,69 @@ function endedWords(s3: S3Result): string {
   return 'Repository archived';
 }
 
-export function labelPackage(x: StabilityInputs, info: { name: string; versions: string[]; production: boolean }, asOf: Date): StabilityEntry {
+const kb = (n: number) => `${(n / 1024).toFixed(1)} kB`;
+
+export interface FinishedResult {
+  state: 'yes' | 'no' | 'unknown';
+  /** Conditions that failed or could not be checked (plain sentences). */
+  notMet: string[];
+  /** Facts that make the package finished (when state is yes). */
+  facts: StabilityReason[];
+  /** Largest version in use. */
+  size?: { unpackedSize: number; fileCount: number; dependencies: number };
+}
+
+/** Finished / low-surface test (STABILITY_RULES, rules.ts). */
+export function finishedTest(x: StabilityInputs, name: string, versions: readonly string[], s3: S3Result, asOf: Date, advisoriesChecked: boolean): FinishedResult {
+  const no: string[] = [];
+  const unknown: string[] = [];
+  const facts: StabilityReason[] = [];
+  const npm = x.npm?.value;
+  // Not deprecated, not archived.
+  if (s3.endedHigh || s3.endedDeclared) no.push('deprecated or archived');
+  const inUseDeprecated = (npm?.inUse ?? []).filter((u) => u.deprecated && versions.includes(u.version));
+  if (inUseDeprecated.length) no.push(`version in use deprecated (${inUseDeprecated.map((u) => u.version).join(', ')})`);
+  // Size and dependencies of every version in use.
+  const sizes = versions.map((v) => x.sizes?.find((s) => s.value.version === v));
+  let size: FinishedResult['size'];
+  if (sizes.some((s) => !s)) unknown.push(`package size not known for ${versions.filter((_, i) => !sizes[i]).join(', ')}`);
+  else {
+    const all = sizes.map((s) => s!.value);
+    size = { unpackedSize: Math.max(...all.map((s) => s.unpackedSize)), fileCount: Math.max(...all.map((s) => s.fileCount)), dependencies: Math.max(...all.map((s) => s.dependencies)) };
+    if (size.unpackedSize > R.finishedMaxUnpackedBytes) no.push(`${kb(size.unpackedSize)} unpacked (more than ${kb(R.finishedMaxUnpackedBytes)})`);
+    if (size.fileCount > R.finishedMaxFiles) no.push(`${plural(size.fileCount, 'file')} (more than ${R.finishedMaxFiles})`);
+    if (size.dependencies > R.finishedMaxDependencies) no.push(`${plural(size.dependencies, 'dependency', 'dependencies')} (more than ${R.finishedMaxDependencies})`);
+    const largest = all.reduce((a, b) => (b.unpackedSize > a.unpackedSize ? b : a));
+    const via = sizes.some((s) => s!.value.via === 'npm.tarball') ? 'read from the published tarball' : 'npm dist.unpackedSize and dist.fileCount';
+    facts.push({
+      signal: 'S3',
+      text: `Small package: ${all.length > 1 ? 'largest version in use ' : ''}${largest.version} is ${kb(largest.unpackedSize)} unpacked in ${plural(largest.fileCount, 'file')}, with ${plural(largest.dependencies, 'dependency', 'dependencies')} of its own (${via}).`,
+      source: 'npm',
+      confidence: 'high',
+      evidence: [...new Set(sizes.flatMap((s) => s!.evidence ?? [npmPage(name, s!.value.version)]))],
+    });
+  }
+  // Long stable history.
+  const first = npm?.firstPublishedAt ? day(npm.firstPublishedAt) : undefined;
+  const finalYear = npm?.releasesInFinalYear;
+  if (!first || finalYear === undefined) unknown.push('release history not known');
+  else {
+    if (first > before(asOf, R.finishedMinAgeMonths)) no.push(`first release ${first}, less than ${R.finishedMinAgeMonths} months before the scan`);
+    if (finalYear > R.finishedMaxReleasesInFinalYear) no.push(`${plural(finalYear, 'release')} in the final 12 months of its history (more than ${R.finishedMaxReleasesInFinalYear})`);
+    facts.push({ signal: 'S4', text: `Long, settled history: first release ${first}; ${plural(finalYear, 'stable release')} in the final 12 months before the last release${s3.lastRelease ? ` (${s3.lastRelease})` : ''}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+  }
+  // Open advisories (OSV) for the versions in use.
+  const adv = (x.advisories ?? []).filter((a) => versions.includes(a.value.version));
+  if (adv.length) no.push(`open OSV advisory for the version in use (${[...new Set(adv.map((a) => a.value.advisory))].join(', ')})`);
+  else if (!advisoriesChecked) unknown.push('advisories not checked in this scan (OSV lookup off or incomplete)');
+  else facts.push({ signal: 'S3', text: `Not deprecated or archived, and no OSV advisory affects ${versions.length > 1 ? 'the versions' : 'the version'} in use (${versions.join(', ')}).`, source: 'osv', confidence: 'high', evidence: [`https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(name)}`] });
+  const state = no.length ? 'no' : unknown.length ? 'unknown' : 'yes';
+  const out: FinishedResult = { state, notMet: [...no, ...unknown], facts: state === 'yes' ? facts : [] };
+  if (size) out.size = size;
+  return out;
+}
+
+export function labelPackage(x: StabilityInputs, info: { name: string; versions: string[]; production: boolean; advisoriesChecked?: boolean }, asOf: Date): StabilityEntry {
   const name = info.name;
   const context: StabilityReason[] = [];
   const missing: string[] = [];
@@ -295,14 +368,27 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
   // L2: licence category changes dated within the recent window.
   const l2 = x.licenseChanges.filter((c) => c.value.fromCategory !== c.value.toCategory && c.value.fromCategory !== 'unknown' && c.value.toCategory !== 'unknown' && c.value.date !== undefined && isRecent(day(c.value.date), asOf));
 
+  // Finished / low-surface, and open advisories (OSV) on the versions in use.
+  const fin = finishedTest(x, name, info.versions, s3, asOf, info.advisoriesChecked === true);
+  const unfixed = (x.advisories ?? []).filter((a) => info.versions.includes(a.value.version) && !a.value.fixed);
+
   // Rules.
   const rules: StabilityRuleHit[] = [];
   const cafIs1 = caf?.value === 1;
-  if (cafIs1 && s3.inactive) rules.push(hit('fragile_single_contributor_inactive', [cafFact!, ...s3.facts.filter((f) => /No commit and no release/.test(f.text))]));
+  const inactiveFacts = () => s3.facts.filter((f) => /No commit and no release/.test(f.text));
+  const finishedInactive = cafIs1 && s3.inactive && fin.state === 'yes';
+  if (cafIs1 && s3.inactive && !finishedInactive) rules.push(hit('fragile_single_contributor_inactive', [cafFact!, ...inactiveFacts()]));
   if (s3.endedHigh && info.production) rules.push(hit('fragile_ended_production', [...s3.facts.filter((f) => f.confidence === 'high'), { signal: 'S3', text: 'Reached through a runtime (non-dev) dependency path in this scan.', source: 'inventory', confidence: 'high' }]));
+  if (unfixed.length && (s3.inactive || s3.endedHigh)) {
+    const advFacts: StabilityReason[] = unfixed.map((a) => ({ signal: 'S3', text: `OSV advisory ${a.value.advisory} affects version ${a.value.version}; OSV lists no fixed release.`, source: 'osv', confidence: 'high' as const, evidence: [a.value.page], ...(a.value.published ? { date: day(a.value.published) } : {}) }));
+    rules.push(hit('fragile_unfixed_advisory_inactive', [...advFacts, ...(s3.endedHigh ? s3.facts.filter((f) => f.confidence === 'high') : inactiveFacts())]));
+  }
+  if (cafIs1 && s3.inactive && fin.state === 'no') context.push({ signal: 'S3', text: `Not a small, finished package: ${fin.notMet.join('; ')}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+  if (cafIs1 && s3.inactive && fin.state === 'unknown') missing.push(`Finished / low-surface test not complete (${fin.notMet.join('; ')}): single contributor and inactive stays Fragile.`);
   const fragile = rules.length > 0;
   if (!fragile) {
-    if (cafIs1) rules.push(hit('watch_single_contributor', [cafFact!]));
+    if (finishedInactive) rules.push(hit('watch_finished_single_contributor_inactive', [cafFact!, ...inactiveFacts(), ...fin.facts]));
+    else if (cafIs1) rules.push(hit('watch_single_contributor', [cafFact!]));
     if (s3.quiet || s3.quietDeclared) rules.push(hit('watch_quiet', s3.facts.filter((f) => /No commit in|maintenance mode/.test(f.text))));
     if (s3.inactive && !cafIs1) rules.push(hit('watch_inactive', [...s3.facts.filter((f) => /No commit and no release/.test(f.text)), ...(cafFact ? [cafFact] : [])]));
     if (s3.endedHigh || s3.endedDeclared) rules.push(hit('watch_ended', s3.facts.filter((f) => !/No commit/.test(f.text))));
@@ -372,6 +458,7 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
     funding: 'not_assessed',
   };
   if (caf) entry.caf = { value: caf.value, commits: caf.commits, from: caf.from, to: caf.to };
+  entry.finished = { state: fin.state, notMet: fin.notMet, ...(fin.size ? { size: fin.size } : {}) };
   if (cadence) entry.s4 = cadence;
   return entry;
 }
