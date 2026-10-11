@@ -54,6 +54,13 @@ const facts = [
     { version: '7.11.0', previousVersion: '7.10.2', from: ['Apache-2.0'], to: ['Elastic-2.0', 'SSPL-1.0'], fromStatus: 'spdx', toStatus: 'spdx', fromCategory: 'permissive', toCategory: 'source_available', added: ['Elastic-2.0', 'SSPL-1.0'], removed: ['Apache-2.0'], date: '2021-02-10T19:02:31Z' },
     { source: 'depsdev', fetchedAt: at },
   ),
+  // A change found across releases without licence data (as deps.dev alone shows sentry): a range.
+  makeFact(
+    'license_change',
+    'pkg:pypi/sentry',
+    { version: '20.10.1', previousVersion: '9.1.2', from: ['BSD'], to: ['BSL-1.1'], fromStatus: 'non_standard', toStatus: 'non_standard', fromCategory: 'unknown', toCategory: 'unknown', added: [], removed: [], unknownBetween: 7 },
+    { source: 'depsdev', fetchedAt: at },
+  ),
 ];
 
 const result: ScanResult = {
@@ -89,6 +96,9 @@ describe('CycloneDX 1.6 export', () => {
       ]),
     );
     expect(byPurl.get('pkg:pypi/sentry@20.10.1').licenses).toEqual([{ license: { name: 'BSL-1.1', acknowledgement: 'declared' } }]);
+    expect(byPurl.get('pkg:pypi/sentry@20.10.1').properties).toEqual(
+      expect.arrayContaining([{ name: 'blastradius:license:change', value: 'changed between 9.1.2 and 20.10.1; 7 releases in between had no licence data: BSD → BSL-1.1' }]),
+    );
     expect(byPurl.get('pkg:npm/nolicense@1.0.0').licenses).toBeUndefined();
     expect(bom.dependencies).toEqual(expect.arrayContaining([{ ref: 'root', dependsOn: ['pkg:npm/express@4.21.2'] }]));
   });
@@ -144,6 +154,7 @@ describe('HTML report Licences section', () => {
     expect(html).toContain('not legal advice');
     expect(html).toContain('category Source-available (Elastic-2.0)');
     expect(html).toContain('7.10.2 → 7.11.0');
+    expect(html).toContain('changed between 9.1.2 and 20.10.1; 7 releases in between had no licence data');
     expect(html).not.toMatch(/<script/i);
   });
 });

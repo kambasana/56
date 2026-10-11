@@ -16,6 +16,7 @@
 import { createHash } from 'node:crypto';
 import * as CDX from '@cyclonedx/cyclonedx-library';
 import { parsePurl, unversionedPurl, type ComponentLicense, type Inventory, type ScanResult } from '../core/types.js';
+import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { parseSpdx } from '../licenses/spdx.js';
 
 const TOOL = { vendor: 'blastradius', name: 'blastradius', version: '0.1.0' };
@@ -71,7 +72,9 @@ export function toCycloneDxBom(result: ScanResult, inventory?: Pick<Inventory, '
   const changes = new Map<string, string[]>();
   for (const ch of result.licenses?.changes ?? []) {
     const list = changes.get(ch.purl) ?? [];
-    list.push(`${ch.previousVersion} → ${ch.version}: ${ch.from.join(' · ')} → ${ch.to.join(' · ')}${ch.date ? ` (${ch.date.slice(0, 10)})` : ''}`);
+    // A change across releases without licence data is a range, written as such.
+    const where = isRangeChange(ch) ? describeChangePlacement(ch) : `${ch.previousVersion} → ${ch.version}`;
+    list.push(`${where}: ${ch.from.join(' · ')} → ${ch.to.join(' · ')}${ch.date ? ` (${ch.date.slice(0, 10)})` : ''}`);
     changes.set(ch.purl, list);
   }
 

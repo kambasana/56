@@ -533,10 +533,25 @@ Gate, on recorded deps.dev data (`test/licenses/licenses.test.ts`):
 | Elasticsearch (`org.elasticsearch:elasticsearch`, Maven) | Apache-2.0 → Elastic-2.0 + SSPL-1.0 at **7.11.0 (2021-02-10)**; AGPL-3.0 added at **8.16.0 (2024-11-12)** | both changes reported; first is a category change (permissive → source-available); second adds AGPL-3.0 but deps.dev does not say the three are alternatives, so the category stays source-available (most restrictive) |
 | React (npm) | BSD-3-Clause → MIT at **15.6.2 (2017-09-26)** | reported; for 15.6.1 in use it is "upgrading past it changes the licence"; ClearlyDefined's `BSD-3-Clause AND LicenseRef-scancode-facebook-patent-rights-2` for 15.6.1 is shown as a source disagreement |
 | immutable (npm) | BSD-3-Clause → MIT at **3.8.2 (2017-10-03)** | reported |
-| sentry (PyPI) | "BSD" → "BSL-1.1" at **20.10.1** (both non-standard in deps.dev; 10.0.0–20.x have no licence data) | reported as a change of the author's strings, with the releases without data counted |
+| sentry (PyPI) | "BSD" for 9.1.2, **no licence data for the 7 releases 10.0.0–20.8.0**, "BSL-1.1" from 20.10.1 (both non-standard) | **corrected 2026-10-11.** First result was wrong: we reported the change *at 20.10.1*, the first release deps.dev had data for again. PyPI's own metadata says `info.license` "BSL-1.1" (classifier "Other/Proprietary License") for 10.0.0, uploaded **2020-01-07**, and "BSD" for 9.1.2. Now reported at **9.1.2 → 10.0.0** from source `registry` (evidence `https://pypi.org/pypi/sentry/10.0.0/json`), with deps.dev's own view shown beside it: "between 9.1.2 and 20.10.1, 7 releases without licence data". For 10.0.0 in use it now says "already in the version you use" (before: "upgrading past it changes the licence") |
 | Terraform (Go, row 8) | MPL-2.0 (+ BSD-3-Clause from v1.1.0) for every release, also after v1.6.0 | **miss, explained:** deps.dev derives Go licences with licensecheck, which does not report BUSL-1.1; the LICENSE at tag v1.6.0 is BUSL-1.1 [v P0]. The deps.dev project record says `non-standard` today. Not fixable without our own scanner (out of scope); ClearlyDefined has MPL-2.0 for v1.5.7 |
 | Redis (row 10) | not in deps.dev (no Docker or C sources; the Go module `github.com/redis/redis` stops at 2010) | **not measurable through deps.dev**; the change is verified from LICENSE.txt at tags 7.4.0 and 8.0.0 [v P0] |
 | Controls: express, lodash, webpack, @babel/core, chalk (npm) | one licence across the releases compared | **0 changes** each |
+
+Gaps (correction, 2026-10-11): a change found across releases without licence data is a range
+("changed between 9.1.2 and 20.10.1; 7 releases in between had no licence data"), never pinned to
+the next release with data; a version in use inside the range is "cannot place it". Gaps are
+filled from the package registry's own declared metadata, source `registry` with an evidence URL:
+PyPI JSON API `info.license_expression` (PEP 639), else `info.license`, else the License
+classifiers; npm packument `versions[v].license`. Asked only for the releases around a gap a change
+was found across (sentry: 9 PyPI requests, recorded in `test/fixtures/licenses/recorded/pypi-*`).
+Values from the two sources are compared like with like when the registry has both sides, so a
+different spelling of the same licence is not a change. Elasticsearch, React, immutable and the
+controls are unchanged (no gaps there, no registry request). Tests added: 4 history unit tests
+(range wording and placement, registry fill, partial fill, like-with-like), 7 gate tests (sentry
+at 10.0.0 from the registry with deps.dev's range; the same data without the registry as a range;
+the in-use relation for 9.1.2 / 10.0.0 / 20.7.0; the registry asked only for sentry; synthetic
+npm-packument and PyPI field-order cases), range wording in the HTML report and SBOM, 1 web test.
 
 Also (new tests): 40 unit tests in `src/licenses/licenses.test.ts` (19 SPDX parsing and
 normalisation cases, categories, policy incl. "unknown is never allowed" and an spdx-satisfies

@@ -590,9 +590,12 @@ export interface LicenseValue {
 
 /** The declared licence changed between two releases of a package (version order). */
 export interface LicenseChangeValue {
-  /** First release with the new licence. */
+  /**
+   * First release known to carry the new licence. When `unknownBetween` > 0 the change is a
+   * range: it happened at some release after `previousVersion`, up to and including this one.
+   */
   version: string;
-  /** Previous release with a known licence (unknown releases in between are skipped). */
+  /** Last release known to carry the old licence (releases without licence data are skipped). */
   previousVersion: string;
   /**
    * Before and after, sorted: normalised SPDX expressions, or the author's strings when they have
@@ -609,8 +612,16 @@ export interface LicenseChangeValue {
   removed: string[];
   /** Publication time of `version` (ISO), when known. */
   date?: string;
-  /** Releases between the two with no licence data. */
+  /** Releases between the two with no licence data from any source (the change is a range). */
   unknownBetween?: number;
+  /**
+   * Sources of the before / after values, set when one of them is not the primary source
+   * (e.g. "registry": the package registry's own metadata filled a deps.dev gap).
+   */
+  fromSource?: string;
+  toSource?: string;
+  /** How the primary source alone places this change, when gap filling placed it more precisely. */
+  primary?: { source: string; previousVersion: string; version: string; unknownBetween?: number };
 }
 
 /** Contributor concentration from git history (plan S2; produced in P2). */

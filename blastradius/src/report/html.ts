@@ -5,6 +5,7 @@
 import { LICENSE_CATEGORIES, type Finding, type LicenseReport, type OutboundFinding, type Reason, type RiskLevel, type ScanResult } from '../core/types.js';
 import { CATEGORY_LABEL } from '../licenses/classify.js';
 import { DEFAULT_LICENSE_POLICY, type LicensePolicy } from '../licenses/policy.js';
+import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { applyPolicy, SOURCE_LABEL } from '../licenses/report.js';
 import { escapeHtml as h, safeHttpUrl } from './escape.js';
 import { findingReach, nameAndVersion } from './json.js';
@@ -133,7 +134,7 @@ function licenseSection(report: LicenseReport, policy: LicensePolicy, policyLabe
         .slice(0, MAX_LICENSE_ROWS)
         .map(
           (c) =>
-            `<tr><td><code>${h(c.name)}</code></td><td><code>${h(c.from.join(' · '))}</code> <span class="muted">${h(CATEGORY_LABEL[c.fromCategory])}</span></td><td><code>${h(c.to.join(' · '))}</code> <span class="muted">${h(CATEGORY_LABEL[c.toCategory])}</span></td><td>${h(c.previousVersion)} → ${h(c.version)}</td><td>${h(c.date?.slice(0, 10) ?? '')}</td><td>${h(c.inUse.join(', '))}</td><td>${h(SOURCE_LABEL[c.source] ?? c.source)}</td></tr>`,
+            `<tr><td><code>${h(c.name)}</code></td><td><code>${h(c.from.join(' · '))}</code> <span class="muted">${h(CATEGORY_LABEL[c.fromCategory])}</span></td><td><code>${h(c.to.join(' · '))}</code> <span class="muted">${h(CATEGORY_LABEL[c.toCategory])}</span></td><td>${h(isRangeChange(c) ? describeChangePlacement(c) : `${c.previousVersion} → ${c.version}`)}${c.primary ? ` <span class="muted">(${h(SOURCE_LABEL[c.primary.source] ?? c.primary.source)} alone: ${h(describeChangePlacement(c.primary))})</span>` : ''}</td><td>${h(c.date?.slice(0, 10) ?? '')}</td><td>${h(c.inUse.join(', '))}</td><td>${h(SOURCE_LABEL[c.source] ?? c.source)}</td></tr>`,
         )
         .join('')}</tbody></table></div>`
     : '';
