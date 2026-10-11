@@ -36,6 +36,7 @@ export const DECISION_GLYPH: Readonly<Record<LicensePolicyDecision, string>> = {
 export const SOURCE_LABEL: Readonly<Record<string, string>> = {
   depsdev: 'deps.dev',
   clearlydefined: 'ClearlyDefined',
+  registry: 'Package registry',
   lockfile: 'package-lock.json',
   sbom: 'SBOM',
   none: 'No source',

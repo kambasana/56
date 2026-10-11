@@ -136,6 +136,37 @@ describe('<Licenses>', () => {
     expect(within(changes).getByText('15.6.1 → 15.6.2')).toBeInTheDocument();
   });
 
+  it('shows a change across releases without licence data as a range, and a registry-placed change with deps.dev\'s range', async () => {
+    const base = licensesFixture().changes[0]!;
+    const sentry = { ...base, purl: 'pkg:pypi/sentry', name: 'sentry', from: ['BSD'], to: ['BSL-1.1'], fromStatus: 'non_standard' as const, toStatus: 'non_standard' as const, fromCategory: 'unknown' as const, toCategory: 'unknown' as const, added: [], removed: [], inUse: ['9.1.2'] };
+    const changes = [
+      { ...sentry, previousVersion: '9.1.2', version: '20.10.1', unknownBetween: 7, date: '2020-10-16T18:25:21Z', source: 'depsdev', evidence: ['https://deps.dev/pypi/sentry/20.10.1'] },
+      {
+        ...sentry,
+        name: 'sentry-registry',
+        previousVersion: '9.1.2',
+        version: '10.0.0',
+        date: '2020-01-07T19:47:57Z',
+        fromSource: 'depsdev',
+        toSource: 'registry',
+        primary: { source: 'depsdev', previousVersion: '9.1.2', version: '20.10.1', unknownBetween: 7 },
+        source: 'registry',
+        evidence: ['https://pypi.org/pypi/sentry/10.0.0/json'],
+      },
+    ];
+    fakeApi({ 'GET /api/licenses': () => licensesFixture({ changes }), 'GET /api/license-policy': () => policyResponse() });
+    renderPage(<Licenses />, { path: '/licenses', at: '/licenses', me: meFor('appsec') });
+    const table = await screen.findByRole('table', { name: 'Licence changes' });
+    const [range, exact] = within(table).getAllByRole('row').slice(1);
+    expect(range).toHaveTextContent('Between 9.1.2 and 20.10.1');
+    expect(range).toHaveTextContent('7 releases in between had no licence data');
+    expect(range).not.toHaveTextContent('9.1.2 → 20.10.1');
+    expect(exact).toHaveTextContent('9.1.2 → 10.0.0');
+    expect(exact).toHaveTextContent('2020-01-07');
+    expect(exact).toHaveTextContent('deps.dev alone: between 9.1.2 and 20.10.1, 7 releases without licence data');
+    expect(within(exact!).getByRole('link', { name: 'Package registry' })).toHaveAttribute('href', 'https://pypi.org/pypi/sentry/10.0.0/json');
+  });
+
   it('filters the table from a tile, through the URL', async () => {
     fakeApi({ 'GET /api/licenses': () => licensesFixture(), 'GET /api/license-policy': () => policyResponse() });
     renderPage(<Licenses />, { path: '/licenses', at: '/licenses', me: meFor('appsec') });

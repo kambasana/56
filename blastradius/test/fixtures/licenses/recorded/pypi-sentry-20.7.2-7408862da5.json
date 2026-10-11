@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T21:04:28.440Z by test/licenses/record.ts; response trimmed to the fields the licences enricher reads.",
+"request": {"url":"https://pypi.org/pypi/sentry/20.7.2/json"},
+"status": 200,
+"response": {"info":{"name":"sentry","version":"20.7.2","license":"BSL-1.1","license_expression":null,"classifiers":["License :: Other/Proprietary License"]},"urls":[{"filename":"sentry-20.7.2-py27-none-any.whl","upload_time_iso_8601":"2020-07-21T19:40:42.048257Z"}]}
+}

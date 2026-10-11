@@ -1,7 +1,7 @@
 /**
  * Licences (/licenses org-wide, /projects/:id/licenses for one project; docs/WHO-BEHIND-PLAN.md
- * L1, L2, L4). Shown from others: declared licences from deps.dev, ClearlyDefined and the scanned
- * lockfiles, each value with its source. Computed here: the obligation category (Blue Oak Council,
+ * L1, L2, L4). Shown from others: declared licences from deps.dev, ClearlyDefined, the package
+ * registry (where deps.dev has no data) and the scanned lockfiles, each value with its source. Computed here: the obligation category (Blue Oak Council,
  * ScanCode LicenseDB), the org policy result with the rule that decided, and licence changes
  * between releases. Not legal advice.
  *
@@ -233,6 +233,10 @@ function ComponentTable({ rows, orgWide }: { rows: readonly LicenseRow[]; orgWid
   );
 }
 
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+
 const RELATION_TEXT: Record<LicenseChangeRow['relation'], string> = {
   in_use_or_earlier: 'Already in the version you use',
   after_in_use: 'Upgrading past it changes the licence',
@@ -250,7 +254,7 @@ function ChangesTable({ changes, orgWide }: { changes: readonly LicenseChangeRow
             <th scope="col" className="px-3 py-2 font-medium">Package</th>
             <th scope="col" className="px-2 py-2 font-medium">From</th>
             <th scope="col" className="px-2 py-2 font-medium">To</th>
-            <th scope="col" className="px-2 py-2 font-medium">At release</th>
+            <th scope="col" className="px-2 py-2 font-medium">Where</th>
             <th scope="col" className="px-2 py-2 font-medium">In use</th>
             <th scope="col" className="px-3 py-2 font-medium">Source</th>
           </tr>
@@ -278,13 +282,30 @@ function ChangesTable({ changes, orgWide }: { changes: readonly LicenseChangeRow
                 </td>
                 <td className="px-2 py-2">
                   <span className="flex flex-col">
-                    <span className="tabular-nums">
-                      {c.previousVersion} → {c.version}
-                    </span>
-                    <span className="text-caption text-text-secondary">
-                      {c.date ? c.date.slice(0, 10) : 'date unknown'}
-                      {c.unknownBetween ? ` · ${c.unknownBetween} release(s) between had no licence data` : ''}
-                    </span>
+                    {c.unknownBetween ? (
+                      <>
+                        <span className="tabular-nums">
+                          Between {c.previousVersion} and {c.version}
+                        </span>
+                        <span className="text-caption text-text-secondary">
+                          {plural(c.unknownBetween, 'release')} in between had no licence data
+                          {c.date ? ` · ${c.version} published ${c.date.slice(0, 10)}` : ''}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="tabular-nums">
+                          {c.previousVersion} → {c.version}
+                        </span>
+                        <span className="text-caption text-text-secondary">{c.date ? c.date.slice(0, 10) : 'date unknown'}</span>
+                      </>
+                    )}
+                    {c.primary && (
+                      <span className="text-caption text-text-secondary">
+                        {SOURCE_LABEL[c.primary.source] ?? c.primary.source} alone: between {c.primary.previousVersion} and {c.primary.version}
+                        {c.primary.unknownBetween ? `, ${plural(c.primary.unknownBetween, 'release')} without licence data` : ''}
+                      </span>
+                    )}
                   </span>
                 </td>
                 <td className="px-2 py-2">
@@ -476,7 +497,7 @@ export default function Licenses() {
       <PageHeader crumbs={crumbs} title="Licences" meta={data ? `${data.counts.components} components · ${data.policyIsDefault ? 'default policy' : 'org policy'}` : undefined} />
       <div className="flex flex-col gap-4 p-4">
         <p className="m-0 text-text-secondary">
-          Declared licences from deps.dev, ClearlyDefined and your lockfiles, each with its source. Policy results apply your rules. This is not legal advice.
+          Declared licences from deps.dev, ClearlyDefined, the package registry and your lockfiles, each with its source. Policy results apply your rules. This is not legal advice.
         </p>
         {data && data.scansWithoutLicences > 0 && data.counts.components > 0 && (
           <p className="m-0 text-label text-text-secondary" role="note">

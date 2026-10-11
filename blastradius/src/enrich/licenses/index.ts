@@ -11,6 +11,10 @@
  *   - "clearlydefined" (second source, for disagreement and curation): POST /definitions with
  *     `expand=-files`, `licensed.declared` and the licence score. ClearlyDefined data is CC0; the
  *     POST endpoint is limited to 250 requests a minute (https://docs.clearlydefined.io/docs/get-involved/using-data).
+ *   - "registry": the package registry's own metadata (PyPI JSON API `info.license_expression`,
+ *     `info.license`, License classifiers; npm packument `versions[v].license`), asked only for
+ *     releases deps.dev has no licence data for when a change is found across them (and the
+ *     releases on either side), so the change is placed at the release that made it. See registry.ts.
  *   - "lockfile" / "sbom": the `license` npm copies into package-lock.json, or an imported SBOM's
  *     licences (Component.declaredLicenses). As declared in the scanned files.
  *
@@ -27,6 +31,7 @@ import type { Component, Fact, Inventory, LicenseChangeValue, Purl, PurlString }
 import { detectLicenseChanges, releaseSegments, sortReleases, type ReleaseLicense } from '../../licenses/history.js';
 import { licenseValue, licenseValueFromStrings } from '../../licenses/value.js';
 import { errorMessage, mapLimit } from '../depsdev/util.js';
+import { fetchRegistryReleases, PYPI_API, registrySupports, type RegistryRelease } from './registry.js';
 
 export const DEPSDEV_API = 'https://api.deps.dev';
 export const CLEARLYDEFINED_API = 'https://api.clearlydefined.io';
@@ -52,6 +57,15 @@ export interface LicenseEnricherOptions {
   maxChangesPerPackage?: number;
   /** Packages whose history is fetched in parallel (default 4). */
   concurrency?: number;
+  /**
+   * Fill releases without deps.dev licence data from the package registry's own metadata (PyPI
+   * JSON API, npm packument) when a licence change is found across them (default true).
+   */
+  registry?: boolean;
+  /** PyPI base URL (default https://pypi.org). */
+  pypiUrl?: string;
+  /** Most registry lookups per package (default 100); releases beyond stay gaps. */
+  maxRegistryPerPackage?: number;
 }
 
 /** deps.dev system for a purl type. */
@@ -179,6 +193,9 @@ export function createLicenseEnricher(opts: LicenseEnricherOptions = {}): Enrich
   const historyBefore = opts.historyBefore ?? 20;
   const maxChanges = opts.maxChangesPerPackage ?? 20;
   const concurrency = opts.concurrency ?? 4;
+  const wantRegistry = opts.registry ?? true;
+  const pypiBase = opts.pypiUrl ?? PYPI_API;
+  const maxRegistry = opts.maxRegistryPerPackage ?? 100;
 
   return {
     name: 'licenses',
@@ -272,16 +289,63 @@ export function createLicenseEnricher(opts: LicenseEnricherOptions = {}): Enrich
         const releases: ReleaseLicense[] = [];
         for (const h of p.history) {
           const v = versions.get(versionKey(p.system, p.name, h.version));
-          if (!v) continue;
-          const lv = licenseValue(entriesOf(v), h.version);
-          const r: ReleaseLicense = { version: h.version, expressions: lv.expressions, status: lv.status, raw: lv.raw };
-          const at = h.publishedAt ?? v.publishedAt;
+          const lv = v ? licenseValue(entriesOf(v), h.version) : undefined;
+          // A release deps.dev has no record for is a gap too (counted, never a change).
+          const r: ReleaseLicense = { version: h.version, expressions: lv?.expressions ?? [], status: lv?.status ?? 'unknown', raw: lv?.raw ?? [] };
+          const at = h.publishedAt ?? v?.publishedAt;
           if (typeof at === 'string') r.publishedAt = at;
           releases.push(r);
         }
-        const changes: LicenseChangeValue[] = detectLicenseChanges(releases).slice(-maxChanges);
-        for (const ch of changes) {
-          facts.push(makeFact('license_change', p.purl, ch, { source: 'depsdev', fetchedAt: ctx.now, evidence: [`${p.page}/${encodeURIComponent(ch.version)}`, `${p.page}/${encodeURIComponent(ch.previousVersion)}`] }));
+        let changes: LicenseChangeValue[] = detectLicenseChanges(releases);
+
+        // 2a. A change across releases without deps.dev licence data: ask the package registry
+        // for those releases (and the two around them, so values are compared like with like).
+        const evidenceOf = new Map<string, string>();
+        if (wantRegistry && registrySupports(p.system) && changes.some((c) => (c.unknownBetween ?? 0) > 0)) {
+          const order = sortReleases(releases);
+          const ask = new Set<string>();
+          for (const c of changes) {
+            if (!c.unknownBetween) continue;
+            const lo = order.findIndex((r) => r.version === c.previousVersion);
+            const hi = order.findIndex((r) => r.version === c.version);
+            if (lo < 0 || hi < 0) continue;
+            for (const r of order.slice(lo, hi + 1)) ask.add(r.version);
+          }
+          const list = order.map((r) => r.version).filter((v) => ask.has(v));
+          if (list.length > maxRegistry) ctx.warn?.(`licenses: ${p.system.toLowerCase()}/${p.name}: ${list.length} releases around licence-data gaps, registry checked for the first ${maxRegistry}`);
+          let fill: RegistryRelease[] = [];
+          try {
+            fill = await fetchRegistryReleases(ctx.http, p.system, p.name, list.slice(0, maxRegistry), { pypiBase });
+          } catch (e) {
+            problems.add(e, `registry metadata for ${p.system.toLowerCase()}/${p.name}`);
+          }
+          if (fill.length > 0) {
+            const published = new Map(releases.map((r) => [r.version, r.publishedAt]));
+            const fillReleases: ReleaseLicense[] = fill.map((f) => {
+              const lv = licenseValue(f.entries, f.version);
+              evidenceOf.set(f.version, f.evidence);
+              const r: ReleaseLicense = { version: f.version, expressions: lv.expressions, status: lv.status, raw: lv.raw, source: 'registry' };
+              const at = published.get(f.version) ?? f.publishedAt;
+              if (at) r.publishedAt = at;
+              return r;
+            });
+            changes = detectLicenseChanges(releases, { fill: fillReleases, primarySource: 'depsdev' });
+            // The registry's statement for each version in use it was asked about, as its own source.
+            for (const c of components) {
+              const k = byComponent.get(c.purl);
+              if (!k || k.system !== p.system || k.name !== p.name) continue;
+              const f = fill.find((x) => x.version === k.version);
+              if (f) facts.push(makeFact('license', c.purl, licenseValue(f.entries, k.version), { source: 'registry', fetchedAt: ctx.now, evidence: [f.evidence] }));
+            }
+          }
+        }
+
+        for (const ch of changes.slice(-maxChanges)) {
+          const fromRegistry = ch.fromSource === 'registry' || ch.toSource === 'registry';
+          const evidence = fromRegistry
+            ? [...new Set([evidenceOf.get(ch.version), evidenceOf.get(ch.previousVersion), `${p.page}/${encodeURIComponent(ch.version)}`, `${p.page}/${encodeURIComponent(ch.previousVersion)}`].filter((x): x is string => !!x))]
+            : [`${p.page}/${encodeURIComponent(ch.version)}`, `${p.page}/${encodeURIComponent(ch.previousVersion)}`];
+          facts.push(makeFact('license_change', p.purl, ch, { source: fromRegistry ? 'registry' : 'depsdev', fetchedAt: ctx.now, evidence }));
         }
       }
 

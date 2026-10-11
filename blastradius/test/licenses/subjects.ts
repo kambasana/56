@@ -15,7 +15,7 @@ export const LICENSE_SUBJECTS: readonly LicenseSubject[] = [
   { purl: 'pkg:maven/org.elasticsearch/elasticsearch@7.10.2', role: 'relicensed', note: 'Apache-2.0 → SSPL-1.0/Elastic-2.0 at 7.11.0 (2021); AGPL-3.0 added at 8.16.0 (2024)' },
   { purl: 'pkg:npm/react@15.6.1', role: 'relicensed', note: 'BSD-3-Clause (+ patents grant) → MIT at 15.6.2 (2017-09-26)' },
   { purl: 'pkg:npm/immutable@3.8.2', role: 'relicensed', note: 'BSD-3-Clause → MIT at 3.8.2 (2017-10)' },
-  { purl: 'pkg:pypi/sentry@9.1.2', role: 'relicensed', note: '"BSD" → "BSL-1.1" (non-standard in deps.dev; no licence data from 10.0.0 to 20.x)' },
+  { purl: 'pkg:pypi/sentry@9.1.2', role: 'relicensed', note: '"BSD" → "BSL-1.1" at 10.0.0 (2020-01-07, PyPI info.license); deps.dev has no licence data for 10.0.0–20.8.0' },
   // Plan row 8: deps.dev reads Go licences with licensecheck, which does not report BUSL-1.1.
   { purl: 'pkg:golang/github.com/hashicorp/terraform@v1.5.7', role: 'plan-row', note: 'MPL-2.0 → BUSL-1.1 at v1.6.0 upstream; deps.dev shows MPL-2.0 for every release' },
   // Controls: no relicensing known; licence history must stay quiet.
