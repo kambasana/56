@@ -19,12 +19,16 @@ import { CLASSIFICATION_SOURCES, NOT_LEGAL_ADVICE } from './classify.js';
 import { changeRelation, isCategoryChange } from './history.js';
 import { evaluatePolicy, type LicensePolicy, type PolicyDecision } from './policy.js';
 
-/** Preference when sources disagree: deps.dev (primary), ClearlyDefined, then what the repo declares. */
-export const SOURCE_ORDER = ['depsdev', 'clearlydefined', 'lockfile', 'sbom'] as const;
+/**
+ * Preference when sources disagree: deps.dev (primary), ClearlyDefined, the package registry's
+ * own metadata (only asked where deps.dev has no data), then what the repo declares.
+ */
+export const SOURCE_ORDER = ['depsdev', 'clearlydefined', 'registry', 'lockfile', 'sbom'] as const;
 
 export const SOURCE_LABEL: Readonly<Record<string, string>> = {
   depsdev: 'deps.dev',
   clearlydefined: 'ClearlyDefined',
+  registry: 'Package registry',
   lockfile: 'package-lock.json',
   sbom: 'SBOM',
   none: 'No source',

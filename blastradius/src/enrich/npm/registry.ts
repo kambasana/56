@@ -74,6 +74,9 @@ const MANIFEST_FIELDS = [
   'deprecated',
   'gypfile',
   'hasInstallScript',
+  // Read by the licences enricher (gap fill from registry metadata).
+  'license',
+  'licenses',
 ] as const;
 
 function pick(src: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {

@@ -28,6 +28,9 @@ export interface NpmDist {
 
 export interface NpmVersionManifest {
   name?: unknown;
+  /** Declared licence (string, or legacy {type}); legacy `licenses` array. Read by the licences enricher. */
+  license?: unknown;
+  licenses?: unknown;
   version?: unknown;
   _npmUser?: NpmPerson;
   maintainers?: unknown;

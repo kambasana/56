@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import satisfies from 'spdx-satisfies';
 import { categoryOfExpression, categoryOfId, categoryOfSet, CLASSIFICATION_SOURCES } from './classify.js';
 import { DEFAULT_LICENSE_POLICY, evaluatePolicy, parseLicensePolicy, type LicensePolicy } from './policy.js';
-import { changeRelation, detectLicenseChanges, sortReleases } from './history.js';
+import { changeRelation, describeChangePlacement, detectLicenseChanges, sortReleases } from './history.js';
 import { currentId, licenseIds, normalizeLicense } from './spdx.js';
 import { licenseValue, licenseValueFromStrings } from './value.js';
 import { buildLicenseReport } from './report.js';
@@ -164,6 +164,68 @@ describe('licence history', () => {
     expect(changeRelation({ version: '15.6.2' }, '16.0.0')).toBe('in_use_or_earlier');
     expect(changeRelation({ version: '15.6.2' }, 'git-sha')).toBe('unknown');
     expect(sortReleases([{ version: 'v1.10.0' }, { version: 'v1.9.8' }, { version: 'v0.0.0-2014-abc' }]).map((x) => x.version)).toEqual(['v1.9.8', 'v1.10.0']);
+  });
+});
+
+describe('licence history: gaps are ranges, registry metadata fills them', () => {
+  type R = Parameters<typeof detectLicenseChanges>[0][number];
+  const nonStd = (version: string, raw: string[], extra: Partial<R> = {}): R => ({ version, expressions: [], status: 'non_standard', raw, ...extra });
+  const gap = (version: string): R => ({ version, expressions: [], status: 'unknown', raw: [] });
+  const spdx = (version: string, expressions: string[], extra: Partial<R> = {}): R => ({ version, expressions, status: 'spdx', ...extra });
+  // Synthetic: deps.dev-like data with three releases without licence data.
+  const primary = [nonStd('1.0.0', ['BSD']), gap('2.0.0'), gap('2.1.0'), gap('2.2.0'), nonStd('3.0.0', ['BSL-1.1'], { publishedAt: '2021-01-01T00:00:00Z' })];
+
+  it('without registry data a change across a gap is a range, never pinned to the next release with data', () => {
+    const [c, ...rest] = detectLicenseChanges(primary);
+    expect(rest).toEqual([]);
+    expect(c).toMatchObject({ previousVersion: '1.0.0', version: '3.0.0', unknownBetween: 3 });
+    expect(c).not.toHaveProperty('fromSource');
+    expect(describeChangePlacement(c!)).toBe('changed between 1.0.0 and 3.0.0; 3 releases in between had no licence data');
+    expect(describeChangePlacement({ previousVersion: '1.0.0', version: '1.1.0', unknownBetween: 1 })).toBe('changed between 1.0.0 and 1.1.0; 1 release in between had no licence data');
+    expect(describeChangePlacement({ previousVersion: '15.6.1', version: '15.6.2' })).toBe('changed at 15.6.2 (previous release 15.6.1)');
+    // A version in use inside the range cannot be placed; on either side it can.
+    expect(changeRelation(c!, '2.1.0')).toBe('unknown');
+    expect(changeRelation(c!, '1.0.0')).toBe('after_in_use');
+    expect(changeRelation(c!, '0.9.0')).toBe('after_in_use');
+    expect(changeRelation(c!, '3.0.0')).toBe('in_use_or_earlier');
+  });
+
+  it('registry values place the change at the release that made it and keep the primary range', () => {
+    const fill = [nonStd('1.0.0', ['BSD'], { source: 'registry' }), nonStd('2.0.0', ['BSL-1.1'], { source: 'registry', publishedAt: '2020-01-07T00:00:00Z' }), nonStd('2.1.0', ['BSL-1.1'], { source: 'registry' })];
+    const changes = detectLicenseChanges(primary, { fill, primarySource: 'depsdev' });
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toEqual({
+      previousVersion: '1.0.0',
+      version: '2.0.0',
+      from: ['BSD'],
+      to: ['BSL-1.1'],
+      fromStatus: 'non_standard',
+      toStatus: 'non_standard',
+      fromCategory: 'unknown',
+      toCategory: 'unknown',
+      added: [],
+      removed: [],
+      date: '2020-01-07T00:00:00Z',
+      fromSource: 'depsdev',
+      toSource: 'registry',
+      primary: { source: 'depsdev', previousVersion: '1.0.0', version: '3.0.0', unknownBetween: 3 },
+    });
+    expect(changeRelation(changes[0]!, '2.1.0')).toBe('in_use_or_earlier');
+  });
+
+  it('a partial fill narrows the range but still reports a range', () => {
+    const fill = [nonStd('1.0.0', ['BSD'], { source: 'registry' }), nonStd('2.0.0', ['BSD'], { source: 'registry' }), nonStd('3.0.0', ['BSL-1.1'], { source: 'registry' })];
+    const [c] = detectLicenseChanges(primary, { fill });
+    expect(c).toMatchObject({ previousVersion: '2.0.0', version: '3.0.0', unknownBetween: 2, fromSource: 'registry', primary: { previousVersion: '1.0.0', version: '3.0.0' } });
+  });
+
+  it('compares like with like across sources: another spelling of the same licence is not a change', () => {
+    // deps.dev says "MIT"; the registry spells it as a classifier ("MIT License", corrected to MIT
+    // or not): with registry values on both sides the registry values are compared.
+    const p = [spdx('1.0.0', ['MIT']), gap('1.1.0'), spdx('1.2.0', ['MIT'])];
+    const fill = [nonStd('1.0.0', ['MIT License'], { source: 'registry' }), nonStd('1.1.0', ['MIT License'], { source: 'registry' }), nonStd('1.2.0', ['MIT License'], { source: 'registry' })];
+    expect(detectLicenseChanges(p, { fill })).toEqual([]);
+    expect(detectLicenseChanges(p)).toEqual([]);
   });
 });
 

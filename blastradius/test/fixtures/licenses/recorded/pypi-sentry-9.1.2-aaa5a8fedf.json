@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T21:04:28.440Z by test/licenses/record.ts; response trimmed to the fields the licences enricher reads.",
+"request": {"url":"https://pypi.org/pypi/sentry/9.1.2/json"},
+"status": 200,
+"response": {"info":{"name":"sentry","version":"9.1.2","license":"BSD","license_expression":null,"classifiers":[]},"urls":[{"filename":"sentry-9.1.2-py27-none-any.whl","upload_time_iso_8601":"2019-07-23T01:00:48.325720Z"},{"filename":"sentry-9.1.2.tar.gz","upload_time_iso_8601":"2019-07-23T01:02:16.767821Z"}]}
+}
