@@ -23,6 +23,8 @@ import { createNpmEnricher } from './enrich/npm/index.js';
 import { createGithubEnricher } from './enrich/github/index.js';
 import { createLicenseEnricher } from './enrich/licenses/index.js';
 import { buildLicenseReport } from './licenses/report.js';
+import { createHistoryEnricher, type HistoryEnricherOptions } from './enrich/history/index.js';
+import { buildHistoryReport } from './history/report.js';
 import type { LicensePolicy } from './licenses/policy.js';
 import { incidentsFromMalwareFacts, loadIncidents, validateKbDir } from './incidents/index.js';
 import { applyReviewState, buildEntityGraph, loadReviewState, resolveEntities, type EntityGraphData } from './entities/index.js';
@@ -63,6 +65,11 @@ export interface ScanOptions {
   reviewFile?: string;
   /** Import a Syft SBOM when syft is on PATH. */
   syft?: boolean;
+  /**
+   * Collect git history of the source repositories (blobless clones; docs/WHO-BEHIND-PLAN.md P2).
+   * Off by default. An object passes options to the history enricher (tests: recorded histories).
+   */
+  history?: boolean | Omit<HistoryEnricherOptions, 'repoFacts'>;
   /** Licence policy for the HTML report's Licences section (default: the shipped template). */
   licensePolicy?: LicensePolicy;
   /** Injected enrichers (tests). Defaults to osv, depsdev, npm, github. */
@@ -167,6 +174,11 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   const ctx: EnrichContext = { http, now, offline: opts.offline || http.offline, warn, historical };
   const facts: Fact[] = [];
   const enrichers = (opts.enrichers ?? defaultEnrichers)(() => facts);
+  if (opts.history) {
+    const h = typeof opts.history === 'object' ? opts.history : {};
+    const cache = h.cache ?? (typeof opts.cacheDir === 'string' ? { dir: join(opts.cacheDir, 'git-history') } : undefined);
+    enrichers.push(createHistoryEnricher({ ...h, ...(cache ? { cache } : {}), repoFacts: () => facts }));
+  }
   const packFile = opts.packFile ?? process.env.BLASTRADIUS_PACK;
   if (packFile) {
     const loaded = await cachedPack(packFile);
@@ -230,6 +242,8 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   // Always present on new scans (components without data count as unknown), so a missing section
   // means a scan made before licences were collected.
   result.licenses = buildLicenseReport(inventory, facts);
+  const history = buildHistoryReport(facts);
+  if (history) result.history = history;
 
   // 6. Reports.
   const files: string[] = [];

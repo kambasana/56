@@ -313,6 +313,7 @@ export const FACT_KINDS = [
   'license',
   'license_change',
   'contributors',
+  'commit_history',
   'release_cadence',
   'funding_detail',
   'org_profile',
@@ -624,6 +625,126 @@ export interface ContributorsValue {
   top: { id: string; share: number }[];
   /** Commits whose author could not be mapped to a login. */
   unmapped: number;
+  /** Distinct contributors in the window (bots excluded). */
+  contributors?: number;
+  /** CAF over the whole default-branch history, for context. */
+  allHistory?: { from: string; commits: number; absenceFactor: number; contributors: number };
+}
+
+/**
+ * Repo-level aggregates of default-branch history (plan C1, C2, C3, S3 activity; produced in P2).
+ *
+ * Privacy (plan §5): per-person data is limited to `people` (counts and first/last-seen dates);
+ * time zones exist only as repo-level histograms per window, never per person; emails never
+ * appear (ids are GitHub logins or `hash:` salted hashes).
+ */
+export interface CommitHistoryValue {
+  /** Repository the history was read from (https URL). */
+  repo: string;
+  /** Default-branch head commit at collection time. */
+  head: string;
+  /** Reference time the windows end at (ISO). */
+  asOf: string;
+  firstCommit: string;
+  lastCommit: string;
+  commits: number;
+  /** 12-month windows ending at asOf, newest first. */
+  windows: CommitHistoryWindow[];
+  /** Neutral, factual changes between windows and release continuity observations. */
+  changes: CommitHistoryChange[];
+  /** Per-person counts (no time zone, no hour, no email): CAF set, release taggers, top contributors. */
+  people: HistoryPerson[];
+  /** Days since the last commit at asOf, and the longest gap between commits in the last 24 months. */
+  daysSinceLastCommit: number;
+  longestGapDays24m: number;
+  /** GitHub's signature verification for the latest commits (GraphQL), when it was queried. */
+  verified?: { checked: number; verified: number };
+  /** How identities were resolved. */
+  identity: { mapped: number; hashed: number; via: string[] };
+}
+
+export interface CommitHistoryWindow {
+  from: string;
+  to: string;
+  commits: number;
+  contributors: number;
+  absenceFactor: number;
+  /** CHAOSS Occasional Contributors with "minimum contributions" = 3: people with 1–2 commits in the window. */
+  occasional: number;
+  regular: number;
+  /** Share of commits by people first seen ≥ 2 years before the window end (C1). */
+  longStandingShare: number;
+  /** Share of commits by people first seen inside the window. */
+  newShare: number;
+  /** Share of commits with a signature header (gpgsig / gpgsig-sha256) (C2). */
+  signedShare: number;
+  releases: number;
+  /** Share of releases in the window made by long-standing people (null without releases). */
+  releasesByLongStandingShare: number | null;
+  signedReleaseShare: number | null;
+  /** Whether the top committer of the window was first seen less than 36 months before its end. */
+  topCommitterFirstSeenRecently: boolean;
+  /** Repo-level time-zone aggregate (C3); absent below the k-anonymity floor. */
+  timeZones?: RepoTimeZones;
+  /** Why timeZones is absent. */
+  timeZonesWithheld?: 'below_floor';
+}
+
+/** Repo-level only: commit counts per recorded UTC offset and per UTC hour of week. */
+export interface RepoTimeZones {
+  /** UTC offset as git records it ("+0300") → commits. */
+  offsets: Record<string, number>;
+  /** 168 counts, Monday 00:00 UTC first. */
+  hourOfWeekUtc: number[];
+}
+
+export type CommitHistoryChangeKind =
+  | 'contributor_base_changed'
+  | 'top_committer_new'
+  /** The window's top committer is a recent account and also made most of the window's releases (the xz pattern, plan §8 row 2). */
+  | 'release_takeover'
+  | 'release_by_new_person'
+  | 'release_handover'
+  | 'signed_share_changed'
+  | 'time_zone_pattern_changed';
+
+export interface CommitHistoryChange {
+  kind: CommitHistoryChangeKind;
+  /** When it shows (window end, release date). */
+  date: string;
+  /** Plain-language statement with fixed wording; never about intent. */
+  text: string;
+  /** Numbers behind the statement. */
+  before?: number;
+  after?: number;
+  /** For release observations: the release and days between the releaser's first commit and it. */
+  release?: string;
+  daysSinceFirstSeen?: number;
+}
+
+/** ScanResult.history: one entry per source repository read. */
+export interface HistoryReport {
+  repos: HistoryReportRepo[];
+}
+
+export interface HistoryReportRepo {
+  repo: string;
+  /** Packages (unversioned purls) that declare this repository. */
+  packages: PurlString[];
+  contributors: ContributorsValue;
+  history: CommitHistoryValue;
+  fetchedAt: string;
+}
+
+/** One contributor's per-repo counts. Deliberately no location, time-zone or hour fields. */
+export interface HistoryPerson {
+  /** GitHub login or `hash:<salted hash>`. */
+  id: string;
+  firstSeen: string;
+  lastSeen: string;
+  commits: number;
+  commits24m: number;
+  releases: number;
 }
 
 /** Release regularity from registry publish times (plan S4; produced in P3). */
@@ -683,6 +804,7 @@ export interface FactValueMap {
   license: LicenseValue;
   license_change: LicenseChangeValue;
   contributors: ContributorsValue;
+  commit_history: CommitHistoryValue;
   release_cadence: ReleaseCadenceValue;
   funding_detail: FundingDetailValue;
   org_profile: OrgProfileValue;
@@ -937,6 +1059,11 @@ export interface ScanResult {
    * L1, L2). Shown from others: no policy result is stored here, policies are applied when read.
    */
   licenses?: LicenseReport;
+  /**
+   * Git history aggregates per source repository (docs/WHO-BEHIND-PLAN.md S2, C1–C3), present
+   * when the scan ran with history collection. Repo-level and pseudonymous by construction.
+   */
+  history?: HistoryReport;
   /** Non-fatal problems (enricher failures, missing fixtures in offline mode). */
   warnings?: string[];
 }

@@ -27,6 +27,7 @@ General rules for all modules:
 | `src/enrich/npm` | `maintainers`, `publisher`, `publisher_change`, `maintainer_change`, `install_script`, `release_age`, `funding`, `repo`, `provenance` |
 | `src/enrich/licenses` + `src/licenses` | `license`, `license_change` (deps.dev, ClearlyDefined, lockfile/SBOM declared); SPDX normalisation, categories, policy, `ScanResult.licenses` |
 | `src/enrich/github` | `repo_owner`, `repo_transfer`, `archived`, `funding` |
+| `src/enrich/history` + `src/history` | `contributors`, `commit_history` (opt-in `--history`: blobless bare clones, fixed-format `git log`, GitHub GraphQL login mapping within a point budget); `ScanResult.history` |
 | `src/entities` | `Entity` / `EntityLink` from facts |
 | `src/incidents` + `kb/incidents` | YAML incident KB loader + validator → `Incident[]` |
 | `src/scoring` | intrinsic, entity, combined risk, inbound blast radius → `Finding[]` (PLAN §3.6) |
@@ -149,11 +150,15 @@ FACT_KINDS                             // readonly array of all kinds
 | `release_age` | versioned | `{ version: string; publishedAt: string; ageDays: number; latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; deprecated?: string }` | npm |
 | `license` | versioned | `{ raw: string[]; expressions: string[] /*valid SPDX, sorted*/; status: 'spdx'\|'corrected'\|'non_standard'\|'unlicensed'\|'see_file'\|'unknown'; category: LicenseCategory; version: string; corrected?: {from,to}[]; score?: number /*ClearlyDefined*/; basis?: 'repository' /*GitHub Actions: repo licence today*/ }` (one fact per source) | licenses (source `depsdev`, `clearlydefined`, `lockfile`, `sbom`) |
 | `license_change` | unversioned | `{ version; previousVersion; from: string[]; to: string[]; fromStatus; toStatus; fromCategory; toCategory; added: string[]; removed: string[]; date?: string; unknownBetween?: number }` | licenses (`depsdev`) |
-| `contributors`, `release_cadence`, `funding_detail`, `org_profile` | unversioned | see `src/core/types.ts` (declared in P0 for P2–P7; no producer yet) | — |
+| `contributors` | unversioned | `{ from; to; commits; absenceFactor /*CHAOSS CAF, 24 months*/; top: {id, share}[]; unmapped; contributors?; allHistory? }`; ids are GitHub logins or `hash:<salted HMAC>` | git |
+| `commit_history` | unversioned | `CommitHistoryValue`: repo-level 12-month windows (CAF, occasional/regular, continuity, signed share, releases, time-zone aggregate above the k-floor), `changes[]` with fixed wording, `people[]` (id, first/last seen, counts; no time, zone or location) | git |
+| `release_cadence`, `funding_detail`, `org_profile` | unversioned | see `src/core/types.ts` (declared in P0 for P3–P7; no producer yet) | — |
 
 Notes:
 - `ageDays` / `daysSinceLatestRelease` are computed against `EnrichContext.now`, never the wall clock.
 - `email` fields are kept only when public in registry metadata; reports should not display them.
+- Git author emails never leave memory: `contributors`/`commit_history` carry logins or salted
+  hashes only, and time zones only as repo-level window aggregates (docs/WHO-BEHIND-PLAN.md §5).
 - `LicenseCategory` = `'permissive'|'weak_copyleft'|'strong_copyleft'|'network_copyleft'|'source_available'|'proprietary'|'unknown'`,
   from Blue Oak Council and ScanCode LicenseDB (`src/licenses/classify.ts`), never our own judgement.
 - `Component.declaredLicenses?: { values: string[]; via: 'lockfile' | 'sbom' }` carries the licence

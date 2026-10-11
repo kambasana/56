@@ -51,6 +51,7 @@ interface ScanCliOptions {
   review?: string;
   pack?: string;
   syft: boolean;
+  history: boolean;
   licensePolicy?: string;
   failOn?: RiskLevel;
   top: string;
@@ -87,6 +88,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--pack <file>', 'knowledge pack (pack.json.gz) with the known-bad list; default $BLASTRADIUS_PACK')
     .option('--review <file>', 'entity-link review decisions (JSON)')
     .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
+    .option('--history', 'read the git history of source repositories (blobless clones): contributor absence factor, continuity, signed share', false)
     .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
     .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
     .option('--top <n>', 'findings to list in the terminal summary', '5')
@@ -99,6 +101,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         offline,
         kbDir: o.kb,
         syft: o.syft,
+        history: o.history,
         log: (m) => err(`… ${m}\n`),
       };
       if (o.fixtures !== undefined) opts.fixturesDir = o.fixtures;

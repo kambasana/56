@@ -16,8 +16,8 @@ to it (official docs, an API response, a licence file at a release tag).
 inline (Sponsors field visibility and Tidelift need a token or a JavaScript-only page; the HashiCorp
 blog answers 429 here, the licence files at the tags verify the event instead; the SPDX
 license-list-data licence is not stated in its repos, and P1 uses CC0 npm packages instead; two
-are data expectations that only P2/P4 can measure). One expectation was corrected: `request`'s
-repository is not archived. Gate results for P0 and P1 are in §10.
+are data expectations that only P2/P4 can measure; P2 measured the express one). One expectation
+was corrected: `request`'s repository is not archived. Gate results for P0, P1 and P2 are in §10.
 
 ---
 
@@ -453,8 +453,8 @@ replayed with the existing historical mode (`ctx.historical`) where data allows.
 
 | # | Subject | Known event (source) | Expected output |
 |---|---|---|---|
-| 1 | `event-stream` (npm) | Handed to a new maintainer in 2018; malicious dependency `flatmap-stream` added (https://github.com/dominictarr/event-stream/issues/116, in KB `kb/incidents/2018-event-stream.yaml`) | S1: 1 maintainer before; `maintainer_change` (exists); **S5a** for 3.3.6: published by an account first seen in the repo < 180 days before; C1 "contributor base changed"; label Watch before the event, no claim of intent |
-| 2 | xz-utils (git history only, mirror `github.com/tukaani-project/xz`) | Backdoor CVE-2024-3094 in 5.6.0/5.6.1 (https://nvd.nist.gov/vuln/detail/CVE-2024-3094 , https://www.openwall.com/lists/oss-security/2024/03/29/4) | S2: CAF 1–2 over 2019–2021 (one long-standing maintainer); C1: a contributor first seen ~2021 becomes top committer and tags releases by 2024; C2/C3 shown as aggregate repo changes if present; wording "contributor base changed", no statement about any person |
+| 1 | `event-stream` (npm) | Handed to a new maintainer in 2018; malicious dependency `flatmap-stream` added (https://github.com/dominictarr/event-stream/issues/116, in KB `kb/incidents/2018-event-stream.yaml`) | S1: 1 maintainer before; `maintainer_change` (exists); **S5a** for 3.3.6: published by an account first seen in the repo < 180 days before; C1 "contributor base changed"; label Watch before the event, no claim of intent. **P2 result (git part, met):** see §10 |
+| 2 | xz-utils (git history only, mirror `github.com/tukaani-project/xz`) | Backdoor CVE-2024-3094 in 5.6.0/5.6.1 (https://nvd.nist.gov/vuln/detail/CVE-2024-3094 , https://www.openwall.com/lists/oss-security/2024/03/29/4) | S2: CAF 1–2 over 2019–2021 (one long-standing maintainer); C1: a contributor first seen ~2021 becomes top committer and tags releases by 2024; C2/C3 shown as aggregate repo changes if present; wording "contributor base changed", no statement about any person. **P2 result: met**, with two corrections: the account's first commit is 2022-02 (not ~2021), and the C1 share rule fires on scans dated 2023-08 to 2024-02 but not at 2024-03-28 (see §10) |
 | 3 | `colors` and `faker` (npm) | Maintainer-published sabotage releases, January 2022 (GHSA-gh88-3pxp-6fm8, GHSA-5w9c-rv96-fr7g; KB `2022-colors-faker.yaml`) | Before: S1 = 1, S2 CAF = 1, label Watch; `faker` later deprecated → S3 `ended`; community fork `@faker-js/faker` shows org owner and OC collective (F1) [v P0: collective `fakerjs`, type COLLECTIVE, OC API] |
 | 4 | `left-pad` (npm) | Unpublished March 2016 (https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm) | S1 = 1, CAF = 1; latest version deprecated → S3 `ended` [v P0: 1.3.0 is deprecated, message "use String.prototype.padStart()"] |
 | 5 | `core-js` (npm) | Maintainer's 2023 funding statement (https://github.com/zloirock/core-js/blob/master/docs/2023-02-14-so-whats-next.md); README says not backed by a company [v via README text] | S2 CAF = 1; F1 ≥ 3 declared channels incl. Open Collective; F4 owner is a User, no company backer; F2/F3 from OC; I: `funding_change` event (curated, source = the post) |
@@ -463,8 +463,8 @@ replayed with the existing historical mode (`ctx.historical`) where data allows.
 | 8 | Terraform (Go module `github.com/hashicorp/terraform`) | MPL-2.0 → BUSL-1.1, August 2023 (https://www.hashicorp.com/blog/hashicorp-adopts-business-source-license [u: answers 429 here]; [v P0: LICENSE at tag v1.5.7 is "Mozilla Public License, version 2.0", at v1.6.0 the Business Source License]); OpenTofu fork | L2: category change permissive/weak-copyleft → source-available at v1.6.0 [v P0 version]; I: `relicensing` proposal. **P1 result: not visible through deps.dev**, see the P1 gate below |
 | 9 | Elasticsearch | Apache-2.0 → SSPL/Elastic License in 2021, AGPL option added 2024 (https://www.elastic.co/blog/elasticsearch-is-open-source-again [v P0: Shay Banon, 2024-08-29]; LICENSE.txt at v7.10.2, v7.11.0, v8.16.0 [v P0]) | L2 twice: to non-OSI (2021), then OSI option added (2024) |
 | 10 | Redis | BSD-3 → RSALv2/SSPLv1 on 2024-03-20 (https://www.theregister.com/2024/03/22/redis_changes_license [v]); AGPLv3 option in Redis 8 (2025) [v P0: announced 2025-05-01, https://redis.io/blog/agplv3/; LICENSE.txt at tag 8.0.0]; Valkey fork | L2 at 7.4 [v P0: LICENSE.txt at tag 7.4.0 states RSALv2/SSPLv1 from 7.4]; `pkg:docker/redis` image licence shown as "declared by image metadata or unknown". **P1 result: not visible through deps.dev**, see the P1 gate below |
-| 11 | `@babel/core`, `webpack` (npm) — positive controls | Long-funded via Open Collective [v P0 slugs: `babel`, `webpack`, both COLLECTIVE] | F1 OC channel; F2 multiple funders, top share < 0.5 [u: a P4 measurement]; S2 CAF ≥ 2; label Steady |
-| 12 | `express` (npm) — foundation control | OpenJS Foundation project [v P0: listed on https://openjsf.org/projects] | F4 foundation backer; CAF ≥ 2 [u: a P2 measurement]; label Steady or Watch with reasons |
+| 11 | `@babel/core`, `webpack` (npm) — positive controls | Long-funded via Open Collective [v P0 slugs: `babel`, `webpack`, both COLLECTIVE] | F1 OC channel; F2 multiple funders, top share < 0.5 [u: a P4 measurement]; S2 CAF ≥ 2 (**P2: miss for webpack**, 24-month and all-history CAF = 1, see §10); label Steady |
+| 12 | `express` (npm) — foundation control | OpenJS Foundation project [v P0: listed on https://openjsf.org/projects] | F4 foundation backer; CAF ≥ 2 [measured P2: CAF = 6 over the 24 months to 2026-10-11, hand count 6]; label Steady or Watch with reasons |
 
 Estate roll-up check: on the existing control repos and the logops scan used in
 `docs/NEXT-LEVEL.md`, R1 sentence numbers must equal a hand count from the API rows for one repo.
@@ -549,3 +549,119 @@ for the Licences view (including axe, light and dark).
 Deferred: per-distribution-type rules (SaaS / distributed / internal) in the policy (L4); "previous
 version used by this project" (L2 a) needs a scan-to-scan licence diff on the Changes page;
 `relicensing` event proposals (P5); ScanCode/ORT result import (L3).
+
+### P2 Git history collector (2026-10-11)
+
+Built from established methods only: git partial clone (`--filter=blob:none`,
+https://git-scm.com/docs/partial-clone), git's fixed log formats (https://git-scm.com/docs/pretty-formats,
+https://git-scm.com/docs/git-for-each-ref) and `.mailmap` (https://git-scm.com/docs/gitmailmap); the
+CHAOSS Contributor Absence Factor (https://chaoss.community/?p=3944, its worked example is a unit
+test) and Occasional Contributors (https://chaoss.community/?p=3466, filter "minimum number of
+contributions" set to 3: 1–2 commits = occasional, the rest regular); GitHub's documented no-reply
+address forms (https://docs.github.com/en/account-and-profile/reference/email-addresses-reference [v])
+and GraphQL cost formula (https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api,
+read from the docs source; worked example 5,101 requests → 51 points is a unit test); the field
+names `Commit.history`, `Commit.author.user`, `Commit.signature.isValid`, `Repository.object(oid:)`
+checked in GitHub's published schema file; `npm version`'s default commit message `"%s"`
+(https://docs.npmjs.com/cli/v10/using-npm/config#message [v]) to see untagged releases.
+
+Code: `src/history/` (clone cache and reader `git.ts`, identities `identity.ts`, aggregates
+`aggregate.ts` with every threshold in `HISTORY_RULES`, GraphQL mapping `graphql.ts`, report
+`report.ts`), enricher `src/enrich/history/` (opt-in `--history`), fact kind `commit_history` next
+to P0's `contributors`, and `ScanResult.history`. No migration: the aggregates are stored inside
+the scan result, like licences (highest migration stays 11).
+
+How it reads history. Bare blobless clone of the default branch plus all tags, hook-free (same
+config as `src/ingest/git.ts`, plus `--template=`, no working tree), killed past a size cap (300 MB
+default) or a timeout; cached 30 days. Reads run with `protocol.allow=never`, so nothing can fetch
+blobs; the only blob fetched on purpose is `.mailmap`. Three `git log` passes: people (author and
+committer with mailmap, committer date, subject; **no time zone**), signature headers
+(`gpgsig`/`gpgsig-sha256` presence), and time zones (author offset and hour of week, **no person
+fields**, summed per month at once). Emails become `hash:` + HMAC-SHA256 under an installation
+secret (or the login in a GitHub no-reply address) as they are read; names, messages and emails are
+never returned. Windows use the committer date, as `git log --since` does.
+
+**Gate: CAF within ±1 of a hand count on 3 repositories — met (difference 0 on all three).**
+Method: on the recorded head, `git shortlog -sne --since=2024-10-12T00:00:00Z
+--until=2026-10-11T23:59:59Z <head>` (the computed window: 24 months to the recording time
+2026-10-11T19:52Z), remove bots, merge by hand the entries that are one person (same email under
+two names, or the same name under two emails), sort, and take the smallest number of people that
+reach 50 % (CHAOSS).
+
+| Repository (head) | Hand count | Computed |
+|---|---|---|
+| xz (`3b1efb04`) | 446 commits, 16 people, no bots or duplicates; top person 426 (95.5 %) → **CAF 1** | 446 commits, CAF **1**, top share 0.955 |
+| core-js (`b848c61f`) | 1,635 commits, 15 entries, one person under two emails (5 + 4) → 14 people; top 1,513 (92.5 %) → **CAF 1** | 1,635 commits, CAF **1** (the two-email person stays split: 15 ids, no effect) |
+| express (`a419aa73`) | 196 entries, 55 dependabot commits removed → 141; merged: one email under two name spellings (15 + 3), one email under two names (14 + 2), one name under two emails (1 + 1); top 21, 18, 16, 8, 7, 4 → cumulative 70 < 70.5 at five, 74 at six → **CAF 6** | 141 commits, CAF **6**, same top counts (one email = one id merges the first two pairs; the two-email person stays split, outside the CAF set) |
+| xz, 24 months to 2021-12-31 | 104 commits, top 96 (92.3 %) → **CAF 1** | 104 commits, CAF **1** |
+
+**Gate: §8 rows on recorded real data (`test/history/history.test.ts`) — met, two corrections.**
+
+- Row 2, xz-utils: CAF 1 over 2019–2021 (every 12-month window). The account that later released
+  5.6.0 first appears in the history on 2022-02-06 (committer date; the plan said ~2021). Its first
+  release is v5.2.11 on 2023-03-18, 405 days after first seen ("release handover"). Scans dated
+  2023-08-01 to 2024-02-01 report "contributor base changed" (long-standing share 85 % → 52 % at
+  2023-08-01, 78 % → 29 % at 2024-02-01); from 2023-12-01 the window's top committer is a recent
+  account that also made most of the window's releases (`release_takeover`; 8 of 8 at 2024-02-01,
+  9 of 9 at 2024-03-28); from 2023-09-01 the repo-level time-zone pattern changed (distance 0.48 at 2024-02-01; both
+  windows above the k-floor). **Limitation found:** at 2024-03-28 the C1 share rule no longer fires,
+  because that account passes the 24-month "long-standing" line in 2024-02 and its commits count as
+  long-standing again (share back to 95 %); the takeover observation still shows. C2: signed share
+  stayed at 0–1 % around the event (no change to report); it rose from 0 % to 98 % in the 12 months
+  to 2025-10-11.
+- Row 1, event-stream, scan of 2018-11-26: CAF 1 (24 months, 22 commits); "contributor base
+  changed" 33 % → 0 %; `release_takeover`: the top committer, first seen 2018-09-04, made 4 of the 4
+  releases of the year (3.3.5, 3.3.6, 4.0.0, 4.0.1 — the version commits `npm version` makes and two
+  lightweight tags); S5a git part: 3.3.6 was made 5 days after that account was first seen (its
+  first release, 3.3.5, 1 day after). No takeover on a scan of 2018-08-01. The npm-publisher side
+  of S5a is P3.
+- Controls express, webpack, core-js: no `release_takeover` in the last three years. express
+  shows "contributor base changed" (50 % → 16 %, 12 months to 2025-10-11); checked by hand by
+  name, it is real (the three most active people of that year first committed between 2024-02 and
+  2024-10), so it is a factual C1 observation, not a false flag (row 12 allows Watch with reasons).
+- Other rows measured: core-js CAF 1 (row 5, met); left-pad CAF 1 at the 2016-03-23 unpublish
+  (row 4, met; 2 over all history today); **webpack CAF 1** over 24 months (top 58.7 %) and over all
+  history, so row 11's "CAF ≥ 2" is a miss: the expectation does not hold on the real history.
+- Every generated sentence passes the existing judgement-word lint and contains no id or email.
+
+**Gate: storage privacy — met** (`src/server/history-privacy.test.ts`). A real local repository
+(known names, emails, offsets, a `.mailmap`, a bot, a signature header) is read by the real reader
+and stored as a scan with the recorded xz history; the test then reads the SQLite file bytes and
+finds none of the contributor emails or names (the only email-shaped string is the app user's own
+login), walks every stored JSON value and finds no object with a person key (`id`, `login`,
+`author`, `by`, …) that has an offset, zone, hour, location or country field, finds time zones only
+as `windows[].timeZones` with ≥ 5 contributors, and finds no such column in any table. Other
+guardrail tests: history facts do not change the risk score; the history code contains no
+country, location or IANA-zone mapping; per-person rows are exactly `{id, firstSeen, lastSeen,
+commits, commits24m, releases}`. No location is collected in P2 at all.
+
+**Gate: GraphQL budget ≤ 2,000 points per 300-repository scan — met by measurement through the
+enricher with a stub transport: 300 points in 300 requests.** Each repository needs one request
+(`history(first: 100)` = 1 connection request, `object(oid:)` lookups are not connections → 1 point
+by the documented formula) while it has ≤ 100 people to map; the people looked up per recorded
+repository are 28, 19, 53, 24, 75 and 18 (CAF window, release makers, top 20). The budget charges the
+predicted cost before sending and GitHub's `rateLimit.cost` after. [u: GitHub's GraphQL API and the
+REST API for third-party repositories answer 403 from this environment ("GitHub GraphQL is not
+available from Claude Code sessions"; MCP access is limited to this repository), so no real
+GraphQL response could be recorded: login mapping and `signature.isValid` verification are tested
+on the documented response shape only, and the real `rateLimit.cost` was not observed. Without
+mapping, identities fall back to `.mailmap`, no-reply logins and salted hashes, which the hand
+counts above show is enough for CAF on these repositories.]
+
+Fixtures: `blastradius/test/fixtures/history/recorded/` (xz, event-stream, express, core-js,
+webpack, left-pad), recorded once by `test/history/record.ts` (≈ 1.7 MB in all): per commit only
+the shortened oid, parent count, pseudonymous author/committer ids (salt discarded after
+recording), day, signature-header flag and version subject; release tags; per-month time-zone
+counts without persons.
+
+Tests: 30 unit tests (`src/history/history.test.ts`: CAF incl. the CHAOSS example, identities,
+release points, time-zone floor and change, the reader on a real local repository, clone safety
+and cache, GraphQL query/cost/budget), 22 gate tests (`test/history/history.test.ts`), 4 storage
+privacy tests: 56 new, 702 in blastradius in all; web unchanged (297 unit, 52 e2e incl. axe).
+
+Deferred: the "Maintainers and commit origins" screen (P6 views; the data is in
+`ScanResult.history`); S5a's npm-publisher side and labels (P3); real GraphQL recording once a
+token can reach it (`npx tsx test/history/record.ts --graphql`); `--shallow-since` for very large
+repositories (the size cap is the guard today); monorepo subdirectories (`repo.directory` facts
+are skipped).
+
