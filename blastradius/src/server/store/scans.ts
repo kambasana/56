@@ -70,6 +70,8 @@ export function summarizeResult(result: ScanResult): ScanSummary {
     health: result.health?.length ?? 0,
     outbound: result.outbound?.length ?? 0,
     warnings: (result.warnings ?? []).slice(0, 200),
+    ...(result.notAnalysed?.length ? { notAnalysed: result.notAnalysed.slice(0, 200) } : {}),
+    ...(result.coverage?.sources ? { sources: result.coverage.sources } : {}),
   };
 }
 

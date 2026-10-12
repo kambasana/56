@@ -112,6 +112,7 @@ describe('summarizeInventory', () => {
       byEcosystem: { npm: 2 },
       byScope: { runtime: 2 },
       withInstallScripts: 1,
+      byComponentScope: { runtime: 2 },
     });
   });
 });

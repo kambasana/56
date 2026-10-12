@@ -157,3 +157,12 @@ describe('fetch through the proxy', () => {
     }
   });
 });
+
+describe('ensureEnvProxy (Tier 0: every HttpClient honours HTTPS_PROXY)', () => {
+  it('installs at most once per process and is a no-op without proxy variables', async () => {
+    const { ensureEnvProxy } = await import('./proxy.js');
+    const a = ensureEnvProxy({});
+    expect(ensureEnvProxy({ HTTPS_PROXY: 'http://proxy.invalid:3128' })).toBe(a);
+    expect(await a).toBe(false);
+  });
+});

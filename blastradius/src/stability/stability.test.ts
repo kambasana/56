@@ -347,7 +347,7 @@ describe('guardrail: labels read repo- and org-level facts only', () => {
 });
 
 describe('production dependencies', () => {
-  it('follows runtime, optional and peer edges from an asset, never dev or build', () => {
+  it('Tier 0: only runtime is production (src/core/scope.ts); optional, peer, dev and build are not', () => {
     const asset = { id: 'repo:app', kind: 'repo' as const, name: 'app', environment: 'prod' as const, criticality: 3 as const, sourceFile: 'package.json' };
     const p = (n: string) => npmPurl(n, '1.0.0');
     const i: Inventory = {
@@ -360,7 +360,7 @@ describe('production dependencies', () => {
         { from: p('c'), to: p('d'), scope: 'runtime', direct: false },
       ],
     };
-    expect([...productionComponents(i)].sort()).toEqual([p('a'), p('b')]);
+    expect([...productionComponents(i)].sort()).toEqual([p('a')]);
   });
 });
 

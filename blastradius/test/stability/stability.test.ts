@@ -148,7 +148,8 @@ describe('control repositories and the hand-review sample', () => {
     const pop = reviewPopulation(reports);
     const all = new Map<string, StabilityEntry>();
     for (const r of reports) for (const p of r.report.packages) if (p.production && !all.has(p.name)) all.set(p.name, p);
-    expect(all.size).toBe(227);
+    // Tier 0 scope: sshpk's optional bcrypt-pbkdf, ecc-jsbn, jsbn, tweetnacl and vue (a peer) are not production.
+    expect(all.size).toBe(222);
     const by = { fragile: 0, watch: 0, steady: 0, unknown: 0 };
     for (const p of all.values()) by[p.label]++;
     // P3 refinement: 26 small, finished packages move from Fragile to Watch (was 72 / 131 / 8 / 16).
@@ -158,8 +159,9 @@ describe('control repositories and the hand-review sample', () => {
     // without resolved identities (these histories were recorded before display-name keys);
     // content-disposition and range-parser lose their S5a Watch because the npm account that
     // published those releases had already published sibling jshttp packages (a team member).
-    expect(by).toEqual({ fragile: 46, watch: 154, steady: 17, unknown: 10 });
-    expect(pop).toHaveLength(197);
+    // Tier 0 scope removes 4 Watch (bcrypt-pbkdf, ecc-jsbn, tweetnacl, vue) and 1 Unknown (jsbn).
+    expect(by).toEqual({ fragile: 46, watch: 150, steady: 17, unknown: 9 });
+    expect(pop).toHaveLength(193);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
     expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);
     for (const p of finished) {

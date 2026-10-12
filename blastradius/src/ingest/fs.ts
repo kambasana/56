@@ -8,6 +8,7 @@
  */
 import { open, readdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { unsupportedKind } from './manifests.js';
 
 export const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024; // manifests, workflows, Dockerfiles
 export const DEFAULT_MAX_LOCKFILE_BYTES = 64 * 1024 * 1024;
@@ -15,7 +16,24 @@ export const DEFAULT_MAX_FILES = 200_000;
 export const DEFAULT_MAX_DEPTH = 40;
 
 /** Directories never descended into. */
-const SKIP_DIRS = new Set(['node_modules', '.git', '.hg', '.svn', 'bower_components', '.yarn', '.pnpm-store']);
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.hg',
+  '.svn',
+  'bower_components',
+  '.yarn',
+  '.pnpm-store',
+  // Installed Python environments and caches: their metadata is not the project's manifest.
+  '.venv',
+  'venv',
+  '.tox',
+  '.nox',
+  '__pycache__',
+  'site-packages',
+  '.mypy_cache',
+  '.pytest_cache',
+]);
 
 export interface WalkOptions {
   maxFiles?: number;
@@ -29,6 +47,10 @@ export interface FoundFiles {
   lockfiles: string[];
   /** Other lockfiles we recognise but cannot parse (yarn.lock, pnpm-lock.yaml). */
   unsupportedLockfiles: string[];
+  /** Python manifests we parse: requirements*.txt, uv.lock, poetry.lock, Pipfile.lock, pyproject.toml. */
+  python: string[];
+  /** Manifests of ecosystems we recognise but do not analyse (src/ingest/manifests.ts), yarn/pnpm included. */
+  otherManifests: string[];
   /** .github/workflows/*.yml|yaml */
   workflows: string[];
   /** Dockerfile, Dockerfile.*, *.dockerfile, Containerfile */
@@ -66,6 +88,8 @@ export async function walkTarget(root: string, opts: WalkOptions = {}): Promise<
     packageJsons: [],
     lockfiles: [],
     unsupportedLockfiles: [],
+    python: [],
+    otherManifests: [],
     workflows: [],
     dockerfiles: [],
     visited: 0,
@@ -131,14 +155,29 @@ export async function walkTarget(root: string, opts: WalkOptions = {}): Promise<
   return out;
 }
 
+/** requirements.txt, requirements-dev.txt, requirements_test.txt, dev-requirements.txt, requirements/base.txt. */
+export function isRequirementsFile(rel: string): boolean {
+  const base = path.posix.basename(rel).toLowerCase();
+  if (!base.endsWith('.txt') || base.startsWith('constraint')) return false;
+  if (/^requirements([-_.].*)?\.txt$/.test(base) || /[-_.]requirements\.txt$/.test(base)) return true;
+  const dir = path.posix.basename(path.posix.dirname(rel)).toLowerCase();
+  return dir === 'requirements' || dir === 'reqs';
+}
+
+const PYTHON_FILES = new Set(['uv.lock', 'poetry.lock', 'pipfile.lock', 'pyproject.toml']);
+
 function classify(out: FoundFiles, rel: string, base: string, atRoot: boolean): void {
   if (base === 'package.json') out.packageJsons.push(rel);
   else if (base === 'package-lock.json' || base === 'npm-shrinkwrap.json') out.lockfiles.push(rel);
-  else if (base === 'yarn.lock' || base === 'pnpm-lock.yaml') out.unsupportedLockfiles.push(rel);
+  else if (base === 'yarn.lock' || base === 'pnpm-lock.yaml') {
+    out.unsupportedLockfiles.push(rel);
+    out.otherManifests.push(rel);
+  } else if (PYTHON_FILES.has(base.toLowerCase()) || isRequirementsFile(rel)) out.python.push(rel);
   // GitHub only runs workflows from the repository root's .github/workflows (not subdirectories).
   else if (/^\.github\/workflows\/[^/]+\.ya?ml$/i.test(rel)) out.workflows.push(rel);
   else if (isDockerfileName(base)) out.dockerfiles.push(rel);
   else if (atRoot && (base === '.blastradius.yml' || base === '.blastradius.yaml')) out.config = rel;
+  else if (unsupportedKind(base)) out.otherManifests.push(rel);
 }
 
 export class FileTooLargeError extends Error {

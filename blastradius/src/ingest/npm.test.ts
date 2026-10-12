@@ -162,3 +162,11 @@ describe('declared licences in lockfile entries', () => {
     expect(r.components.find((c) => c.name === 'a')?.declaredLicenses).toEqual({ values: ['ISC'], via: 'lockfile' });
   });
 });
+
+describe('placeholder versions from release tarballs (Tier 0)', () => {
+  it('takes the release tag as the version (jitsi-meet lib-jitsi-meet at 36d4c1c7)', () => {
+    const url = 'https://github.com/jitsi/lib-jitsi-meet/releases/download/v2223.0.0+a8e7d0b1/lib-jitsi-meet.tgz';
+    expect(resolveLockVersion('lib-jitsi-meet', '0.0.0', url)).toEqual({ name: 'lib-jitsi-meet', version: 'v2223.0.0+a8e7d0b1', qualifiers: { download_url: url } });
+    expect(resolveLockVersion('x', '0.0.0', 'https://registry.npmjs.org/x/-/x-0.0.0.tgz')).toEqual({ name: 'x', version: '0.0.0' });
+  });
+});

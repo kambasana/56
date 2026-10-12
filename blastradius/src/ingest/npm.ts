@@ -233,6 +233,12 @@ export function resolveLockVersion(name: string, version: string | undefined, re
     const ref = hash >= 0 ? ver.slice(hash + 1) : '';
     return { name: realName, version: cap(ref || 'unknown', MAX_VERSION), qualifiers: { vcs_url: cap(url, MAX_URL) } };
   }
+  // A placeholder version (0.0.0) installed from a release tarball: the release tag in the URL is
+  // the real identity (jitsi-meet's lib-jitsi-meet: .../releases/download/v2223.0.0+a8e7d0b1/x.tgz).
+  if (/^0\.0\.0(-.*)?$/.test(ver) && resolved) {
+    const tag = /^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/download\/([^/]+)\//.exec(resolved);
+    if (tag) return { name: realName, version: cap(decodeURIComponent(tag[1]!), MAX_VERSION), qualifiers: { download_url: cap(resolved, MAX_URL) } };
+  }
   const out: ResolvedVersion = { name: realName, version: cap(ver, MAX_VERSION) };
   if (resolved && /^git(\+|:)/i.test(resolved)) {
     const hash = resolved.indexOf('#');

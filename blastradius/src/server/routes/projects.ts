@@ -16,6 +16,7 @@ import {
   type OkResponse,
   type OrgHomeResponse,
   type ProjectHealthResponse,
+  type ProjectCoverageResponse,
   type ProjectStabilityResponse,
   type UpdateProjectResponse,
 } from '../api-types.js';
@@ -195,6 +196,20 @@ export function registerProjectRoutes(app: Hono<AppEnv>): void {
       signals: h.reasons.filter((r) => r.value > 0).map((r) => ({ factor: r.factor, detail: r.detail })),
     }));
     return c.json<ProjectHealthResponse>({ scanId, items });
+  });
+
+  // Tier 0: what the newest succeeded scan found but did not analyse (the project header banner).
+  app.get('/api/projects/:id/coverage', (c) => {
+    const id = idParam(c, 'id');
+    const { orgId } = requireProjectPerm(c, id, 'findings', 'exposure', 'scans');
+    const store = deps(c).store;
+    const scanId = latestSucceededScanId(store, orgId, id);
+    const scan = scanId ? getScan(store, orgId, scanId) : null;
+    return c.json<ProjectCoverageResponse>({
+      scanId,
+      notAnalysed: scan?.summary?.notAnalysed ?? [],
+      degradedSources: (scan?.summary?.sources ?? []).filter((x) => x.status !== 'ok'),
+    });
   });
 
   // Stability labels of the newest succeeded scan (docs/WHO-BEHIND-PLAN.md §4): Maintenance tab.

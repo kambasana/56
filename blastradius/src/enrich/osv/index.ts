@@ -25,6 +25,7 @@ import type { Component, Fact, Inventory, MalwareValue, PurlString, Severity, Vu
 import { cvss3BaseScore, severityForCvss, severityFromLabel } from './cvss.js';
 import type { OsvBatchResponse, OsvQuery, OsvVuln } from './types.js';
 import { cap, errorMessage, isExactVersion, mapLimit, safeHttpUrl } from './util.js';
+import { isExactPypiVersion, normalizePypiName } from '../../ingest/python.js';
 
 export { cvss3BaseScore, severityForCvss, severityFromLabel } from './cvss.js';
 export type * from './types.js';
@@ -64,7 +65,7 @@ export function createOsvEnricher(opts: OsvEnricherOptions = {}): Enricher {
     name: SOURCE,
     async enrich(inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
       const problems = new Problems(ctx);
-      const components = npmComponents(inv);
+      const components = osvComponents(inv);
       if (components.length === 0) return [];
 
       // purl → OSV ids
@@ -94,7 +95,7 @@ export function createOsvEnricher(opts: OsvEnricherOptions = {}): Enricher {
         let pending: { c: Component; token?: string }[] = chunk.map((c) => ({ c }));
         for (let page = 0; page < maxPages && pending.length > 0; page++) {
           const queries: OsvQuery[] = pending.map(({ c, token }) => {
-            const q: OsvQuery = { package: { name: c.name, ecosystem: 'npm' }, version: c.version };
+            const q: OsvQuery = { package: { name: c.name, ecosystem: OSV_ECOSYSTEMS[c.ecosystem] ?? 'npm' }, version: c.version };
             if (token) q.page_token = token;
             return q;
           });
@@ -105,7 +106,7 @@ export function createOsvEnricher(opts: OsvEnricherOptions = {}): Enricher {
               body: { queries },
             });
           } catch (e) {
-            problems.add(e, `querybatch for ${pending.length} npm package(s)`);
+            problems.add(e, `querybatch for ${pending.length} package(s)`);
             return;
           }
           const results = Array.isArray(res?.results) ? res.results : [];
@@ -143,10 +144,19 @@ export function createOsvEnricher(opts: OsvEnricherOptions = {}): Enricher {
   };
 }
 
-/** npm components with an exact version, sorted by purl (deterministic batches). */
-function npmComponents(inv: Inventory): Component[] {
+/** OSV ecosystem names for the purl types we query (https://ossf.github.io/osv-schema/#affectedpackage-field). */
+export const OSV_ECOSYSTEMS: Readonly<Partial<Record<Component['ecosystem'], string>>> = Object.freeze({ npm: 'npm', pypi: 'PyPI' });
+
+/** npm and PyPI components with an exact version, sorted by purl (deterministic batches). */
+function osvComponents(inv: Inventory): Component[] {
   return inv.components
-    .filter((c) => c.ecosystem === 'npm' && typeof c.name === 'string' && c.name.length > 0 && c.name.length <= 214 && isExactVersion(c.version))
+    .filter(
+      (c) =>
+        typeof c.name === 'string' &&
+        c.name.length > 0 &&
+        c.name.length <= 214 &&
+        ((c.ecosystem === 'npm' && isExactVersion(c.version)) || (c.ecosystem === 'pypi' && isExactPypiVersion(c.version))),
+    )
     .sort((a, b) => (a.purl < b.purl ? -1 : a.purl > b.purl ? 1 : 0));
 }
 
@@ -154,7 +164,8 @@ function npmComponents(inv: Inventory): Component[] {
  * Convert OSV records already known to affect `component` into facts.
  * Exported for unit tests and for reuse (e.g. replaying recorded advisories).
  */
-export function osvRecordsToFacts(component: Pick<Component, 'purl' | 'name'>, records: readonly OsvVuln[], now: Date): Fact[] {
+export function osvRecordsToFacts(component: Pick<Component, 'purl' | 'name'> & { ecosystem?: Component['ecosystem'] }, records: readonly OsvVuln[], now: Date): Fact[] {
+  const osvEcosystem = OSV_ECOSYSTEMS[component.ecosystem ?? 'npm'] ?? 'npm';
   const facts: Fact[] = [];
   const malwareSeen = new Set<string>();
   const vulnSeen = new Set<string>();
@@ -186,7 +197,7 @@ export function osvRecordsToFacts(component: Pick<Component, 'purl' | 'name'>, r
     if (group.some((x) => vulnSeen.has(x))) continue;
     group.forEach((x) => vulnSeen.add(x));
 
-    const value: VulnValue = { id, aliases, severity: 'unknown', fixedVersions: fixedVersions(rec, component.name), url };
+    const value: VulnValue = { id, aliases, severity: 'unknown', fixedVersions: fixedVersions(rec, component.name, osvEcosystem), url };
     if (summary) value.summary = summary;
     const sev = severityOf(rec);
     value.severity = sev.severity;
@@ -235,13 +246,14 @@ export function severityOf(rec: OsvVuln): { severity: Severity; cvss?: number; v
   return anyVector ? { severity, vector: anyVector } : { severity };
 }
 
-/** "fixed" events from SEMVER/ECOSYSTEM ranges of npm `affected` entries for this package. */
-export function fixedVersions(rec: OsvVuln, packageName: string): string[] {
+/** "fixed" events from SEMVER/ECOSYSTEM ranges of the `affected` entries for this package (npm or PyPI). */
+export function fixedVersions(rec: OsvVuln, packageName: string, ecosystem = 'npm'): string[] {
   const out = new Set<string>();
-  const want = packageName.toLowerCase();
+  const norm = (n: string) => (ecosystem === 'PyPI' ? normalizePypiName(n) : n.toLowerCase());
+  const want = norm(packageName);
   for (const a of Array.isArray(rec.affected) ? rec.affected : []) {
     const pkg = a?.package;
-    if (pkg?.ecosystem !== 'npm' || typeof pkg.name !== 'string' || pkg.name.toLowerCase() !== want) continue;
+    if (pkg?.ecosystem !== ecosystem || typeof pkg.name !== 'string' || norm(pkg.name) !== want) continue;
     for (const r of Array.isArray(a.ranges) ? a.ranges : []) {
       if (r?.type !== 'SEMVER' && r?.type !== 'ECOSYSTEM') continue;
       for (const ev of Array.isArray(r.events) ? r.events : []) {

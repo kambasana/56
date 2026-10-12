@@ -92,3 +92,8 @@ export function useProject(): ProjectContextValue {
   if (!ctx) throw new Error('useProject must be used inside <ProjectProvider>');
   return ctx;
 }
+
+/** The project context when inside a <ProjectProvider>, else null (shared components rendered alone in tests). */
+export function useOptionalProject(): ProjectContextValue | null {
+  return useContext(ProjectContext);
+}

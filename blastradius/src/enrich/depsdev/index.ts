@@ -16,6 +16,7 @@
  * A 404 for a version (e.g. a package removed from the registry) yields no facts
  * and no warning. Offline misses are summarised in one warning.
  */
+import { isExactPypiVersion } from '../../ingest/python.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import { makeFact, unversionedPurl } from '../../core/types.js';
@@ -65,7 +66,7 @@ export function createDepsDevEnricher(opts: DepsDevEnricherOptions = {}): Enrich
     async enrich(inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
       const problems = new Problems(ctx);
       const components = inv.components
-        .filter((c) => c.ecosystem === 'npm' && c.name.length > 0 && c.name.length <= 214 && isExactVersion(c.version))
+        .filter((c) => c.name.length > 0 && c.name.length <= 214 && ((c.ecosystem === 'npm' && isExactVersion(c.version)) || (c.ecosystem === 'pypi' && isExactPypiVersion(c.version))))
         .sort((a, b) => (a.purl < b.purl ? -1 : a.purl > b.purl ? 1 : 0));
 
       const projects = new Map<string, Promise<SourcedScorecard | undefined>>();
@@ -99,7 +100,9 @@ export function createDepsDevEnricher(opts: DepsDevEnricherOptions = {}): Enrich
         const name = encodeURIComponent(c.name);
         const version = encodeURIComponent(c.version);
         const pkg = unversionedPurl(c.purl);
-        const page = `https://deps.dev/npm/${name}/${version}`;
+        // deps.dev system: npm, or pypi (Tier 0 Python ingestion).
+        const system = c.ecosystem === 'pypi' ? 'pypi' : 'npm';
+        const page = `https://deps.dev/${system}/${name}/${version}`;
         const meta = (evidence: (string | undefined)[], source = SOURCE) => ({
           source,
           fetchedAt: ctx.now,
@@ -108,15 +111,18 @@ export function createDepsDevEnricher(opts: DepsDevEnricherOptions = {}): Enrich
 
         let v: DepsDevVersion | null;
         try {
-          v = await ctx.http.fetchJsonOrNull<DepsDevVersion>(`${base}/v3/systems/npm/packages/${name}/versions/${version}`);
+          v = await ctx.http.fetchJsonOrNull<DepsDevVersion>(`${base}/v3/systems/${system}/packages/${name}/versions/${version}`);
         } catch (e) {
           problems.add(e, `version ${c.name}@${c.version}`);
           return out;
         }
         if (!v || typeof v !== 'object') return out;
 
-        const provenance = provenanceOf(v);
-        out.push(makeFact('provenance', c.purl, provenance, meta([page, provenance.url])));
+        // deps.dev reports npm attestations; for PyPI a missing one says nothing, so emit no fact.
+        if (system === 'npm') {
+          const provenance = provenanceOf(v);
+          out.push(makeFact('provenance', c.purl, provenance, meta([page, provenance.url])));
+        }
 
         const repo = repoOf(v);
         if (repo) {
@@ -138,7 +144,7 @@ export function createDepsDevEnricher(opts: DepsDevEnricherOptions = {}): Enrich
         if (wantDependents) {
           try {
             const d = await ctx.http.fetchJsonOrNull<DepsDevDependents>(
-              `${base}/v3alpha/systems/npm/packages/${name}/versions/${version}:dependents`,
+              `${base}/v3alpha/systems/${system}/packages/${name}/versions/${version}:dependents`,
             );
             const value = d ? dependentsOf(d) : undefined;
             if (value) out.push(makeFact('dependents', pkg, value, meta([`${page}/dependents`])));

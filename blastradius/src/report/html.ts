@@ -9,6 +9,8 @@ import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { applyPolicy, SOURCE_LABEL } from '../licenses/report.js';
 import { escapeHtml as h, safeHttpUrl } from './escape.js';
 import { findingReach, nameAndVersion } from './json.js';
+import { SCOPE_LABEL } from '../core/scope.js';
+import { coverageLine, degradedLine, degradedSources } from './coverage.js';
 import { behindSection, notAnalysedBanner, reviewState, stabilitySection } from './html-behind.js';
 
 export interface HtmlOptions {
@@ -38,7 +40,21 @@ th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;le
 .lvl{display:inline-block;border-radius:4px;padding:0 6px;font-size:12px;font-weight:600;color:#fff}.lvl-critical{background:var(--critical)}.lvl-high{background:var(--high)}.lvl-medium{background:var(--medium)}.lvl-low{background:var(--low)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0;overflow-wrap:anywhere}
 code{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}.path{margin:2px 0}a{color:var(--link)}ul{margin:4px 0;padding-left:20px}
-.scroll{overflow-x:auto}.banner{border:2px solid var(--critical);border-radius:8px;padding:10px 14px;margin:16px 0}`;
+.scroll{overflow-x:auto}.na{border:2px solid var(--critical);border-radius:8px;padding:12px 16px;margin:16px 0}.na strong{color:var(--critical)}
+.banner{border:2px solid var(--critical);border-radius:8px;padding:10px 14px;margin:16px 0}
+.scope{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:12px}.scope-runtime{border-color:var(--high)}`;
+
+function scopeBadge(scope: Finding['scope']): string {
+  return scope ? `<span class="scope scope-${h(scope)}">${h(SCOPE_LABEL[scope])}</span>` : '';
+}
+
+/** Tier 0: sources (OSV, deps.dev, ...) that did not fully answer, shown before any finding. */
+function sourcesBanner(result: ScanResult): string {
+  const bad = degradedSources(result);
+  if (bad.length === 0) return '';
+  return `<section class="na" role="alert"><p><strong>${h(degradedLine(bad))}</strong></p>
+<p class="muted">These sources did not fully answer, so a missing finding here does not mean the package is clean. Sources: ${h(coverageLine(result.coverage?.sources ?? []))}.</p></section>`;
+}
 
 function levelBadge(level: RiskLevel): string {
   return `<span class="lvl lvl-${h(level)}">${h(level)}</span>`;
@@ -87,7 +103,8 @@ function findingCard(f: Finding, idx: number, opts: Required<Pick<HtmlOptions, '
     : '';
   return `<section class="card" id="f${idx}">
 <h3>${h(idx + 1)}. ${h(name)}${version ? `@${h(version)}` : ''} ${levelBadge(f.level)}</h3>
-<p class="muted"><code>${h(f.purl)}</code> · risk ${h(f.score)}/100 · blast radius ${h(f.blastRadius.score)} · ${h(reach.assets)} asset(s), ${h(reach.directAssets)} direct, ${h(reach.paths)} path(s) shown</p>
+<p class="muted"><code>${h(f.purl)}</code> ${scopeBadge(f.scope)} · risk ${h(f.score)}/100 · blast radius ${h(f.blastRadius.score)} · ${h(reach.assets)} asset(s), ${h(reach.directAssets)} direct, ${h(reach.paths)} path(s) shown</p>
+${f.gate ? `<p>${h(f.gate.detail)}</p>` : ''}
 <h4>Why</h4>${reasonsTable(f.reasons)}
 ${chain}
 <h4>Dependency paths</h4>${pathsHtml}
@@ -158,10 +175,10 @@ export function renderHtml(result: ScanResult, opts: HtmlOptions = {}): string {
   const inv = result.inventory;
 
   const summaryTable = top.length
-    ? `<div class="scroll"><table><thead><tr><th>#</th><th>Component</th><th>Level</th><th>Risk</th><th>Blast radius</th><th>Assets</th><th>Top reason</th></tr></thead><tbody>${top
+    ? `<div class="scroll"><table><thead><tr><th>#</th><th>Component</th><th>Scope</th><th>Level</th><th>Risk</th><th>Blast radius</th><th>Assets</th><th>Top reason</th></tr></thead><tbody>${top
         .map((f, i) => {
           const r = f.reasons[0];
-          return `<tr><td class="num"><a href="#f${i}">${i + 1}</a></td><td><code>${h(f.purl)}</code></td><td>${levelBadge(f.level)}</td><td class="num">${h(f.score)}</td><td class="num">${h(f.blastRadius.score)}</td><td class="num">${h(f.blastRadius.assets.length)}</td><td>${r ? h(r.detail) : ''}</td></tr>`;
+          return `<tr><td class="num"><a href="#f${i}">${i + 1}</a></td><td><code>${h(f.purl)}</code></td><td>${scopeBadge(f.scope)}</td><td>${levelBadge(f.level)}</td><td class="num">${h(f.score)}</td><td class="num">${h(f.blastRadius.score)}</td><td class="num">${h(f.blastRadius.assets.length)}</td><td>${r ? h(r.detail) : ''}</td></tr>`;
         })
         .join('')}</tbody></table></div>`
     : '<p class="muted">No findings.</p>';
@@ -184,6 +201,7 @@ export function renderHtml(result: ScanResult, opts: HtmlOptions = {}): string {
 <h1>${h(title)}</h1>
 <p class="muted">Target <code>${h(result.target)}</code> · generated ${h(result.generatedAt)} · schema v${h(result.schemaVersion)}</p>
 ${notAnalysedBanner(result)}
+${sourcesBanner(result)}
 <div class="tiles">
 ${LEVELS.map((l) => `<div class="tile">${levelBadge(l)}<strong>${h(counts[l])}</strong></div>`).join('\n')}
 <div class="tile"><span class="muted">Components</span><strong>${h(inv.components)}</strong></div>
@@ -192,7 +210,7 @@ ${LEVELS.map((l) => `<div class="tile">${levelBadge(l)}<strong>${h(counts[l])}</
 <div class="tile"><span class="muted">Install scripts</span><strong>${h(inv.withInstallScripts)}</strong></div>
 </div>
 <p class="muted">Scores combine intrinsic signals and recorded incidents linked through public evidence (machine-derived links are labelled as such; reviewed means a person accepted the link). They describe risk signals, not judgements about any person or organisation.</p>
-<h2>Top ${h(top.length)} of ${h(result.findings.length)} findings</h2>
+<h2>Top ${h(top.length)} of ${h(result.findings.length)} findings${result.findings.some((f) => f.scope) ? `, production first (${h(result.findings.filter((f) => f.scope === 'runtime').length)} runtime)` : ''}</h2>
 ${result.health?.length ? `<p class="muted">${h(result.health.length)} more component(s) have upkeep signals only (no provenance, single maintainer, weak posture, unmaintained). They are listed in the JSON report under <code>health</code>, not counted as findings.</p>` : ''}
 ${summaryTable}
 ${top.map((f, i) => findingCard(f, i, cardOpts)).join('\n')}

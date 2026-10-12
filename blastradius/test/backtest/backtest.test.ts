@@ -55,7 +55,10 @@ describe('backtest (a): event-stream 3.3.6, 2018', () => {
     const es = finding(result, 'pkg:npm/event-stream@3.3.6');
     expect(es.reasons.some((r) => r.factor === 'malware')).toBe(false);
     expect(es.reasons[0]!.factor).toBe('publisher_change');
-    expect(['high', 'critical']).toContain(es.level);
+    // Tier 0: posture (no provenance, single maintainer) only breaks ties, so the publisher change
+    // alone is medium; it still ranks first.
+    expect(['medium', 'high', 'critical']).toContain(es.level);
+    expect(es.gate?.signalScore).toBeGreaterThanOrEqual(30);
     expect(result.findings[0]!.purl).toBe('pkg:npm/event-stream@3.3.6');
     // flatmap-stream had no advisory and no incident yet.
     const fm = result.findings.find((f) => f.purl === 'pkg:npm/flatmap-stream@0.1.1');

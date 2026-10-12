@@ -31,9 +31,16 @@ const CheckBody = z.object({
     .optional(),
 });
 
-/** "chalk", "chalk@5.6.1", "@scope/pkg" or "@scope/pkg@1.0.0". */
+/**
+ * "chalk", "chalk@5.6.1", "@scope/pkg", "@scope/pkg@1.0.0", "requests==2.32.3", "actions/checkout@v4",
+ * or a full purl ("pkg:pypi/paramiko@3.5.1", "pkg:githubactions/actions/checkout@v4").
+ */
 export function parseExposureQuery(q: string): { name: string; version?: string } | null {
-  const m = /^(@?[^@\s]+)(?:@([^@\s]+))?$/.exec(q.trim());
+  const t = q.trim();
+  if (t.startsWith('pkg:')) return /^pkg:[a-z][a-z0-9.+-]*\/\S+$/i.test(t) ? { name: t } : null;
+  const py = /^([A-Za-z0-9][A-Za-z0-9._-]*)==([^=\s]+)$/.exec(t);
+  if (py) return { name: py[1]!, version: py[2]! };
+  const m = /^(@?[^@\s]+)(?:@([^@\s]+))?$/.exec(t);
   if (!m) return null;
   return m[2] ? { name: m[1]!, version: m[2] } : { name: m[1]! };
 }
@@ -44,10 +51,20 @@ export function registerAlertRoutes(app: Hono<AppEnv>): void {
   app.get('/api/search/exposure', (c) => {
     const q = queryString(c, 'q', 300);
     const query = q ? parseExposureQuery(q) : null;
-    if (!query) throw badRequest('Give a package name, optionally with @version', ['q']);
+    if (!query) throw badRequest('Give a package name, optionally with @version, or a purl', ['q']);
     const { orgId, projectIds } = visibleProjects(c, 'exposure');
     const inventories = latestInventories(deps(c).store, orgId, projectIds);
-    const items = searchExposure(inventories, query).map(({ projectId, projectName, purl, name, version, production, reachText }) => ({ projectId, projectName, purl, name, version, production, reachText }));
+    const items = searchExposure(inventories, query).map(({ projectId, projectName, purl, name, version, production, reachText, scope, ecosystem }) => ({
+      projectId,
+      projectName,
+      purl,
+      name,
+      version,
+      production,
+      reachText,
+      ...(scope ? { scope } : {}),
+      ...(ecosystem ? { ecosystem } : {}),
+    }));
     return c.json<SearchExposureResponse>({ query: { name: query.name, version: query.version ?? null }, projectsSearched: inventories.length, items });
   });
 

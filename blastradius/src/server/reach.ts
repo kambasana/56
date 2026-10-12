@@ -3,16 +3,16 @@
  * package reach page (path tree, Sankey) and the incident "brought in by" column. Pure.
  */
 import { parsePurl, type DepScope, type Inventory } from '../core/types.js';
-import { buildDependencyGraph, inboundExposure, scopeExposure, type DependencyGraph } from '../scoring/blast.js';
-
-/** Below this a path only comes through dev or optional dependencies (as in report/reach.ts). */
-const DEV_EXPOSURE = 0.5;
+import { buildDependencyGraph, inboundExposure, type DependencyGraph } from '../scoring/blast.js';
+import { isProductionScope, pathScope, scopeStrength, type ComponentScope } from '../core/scope.js';
 
 export interface InventoryPath {
   assetId: string;
   assetName: string;
   environment: 'prod' | 'staging' | 'dev' | 'ci';
   production: boolean;
+  /** Scope of this path (src/core/scope.ts). */
+  scope: ComponentScope;
   /** [assetId, purl, ..., target purl] */
   nodes: string[];
   scopes: DepScope[];
@@ -47,8 +47,13 @@ export function npmNameVersion(purl: string): { name: string; version: string } 
 }
 
 function edgeScope(g: DependencyGraph, from: string, to: string): DepScope {
-  return g.out.get(from)?.find((e) => e.other === to)?.scope ?? 'runtime';
+  const e = g.out.get(from)?.find((x) => x.other === to);
+  if (!e) return 'runtime';
+  // The strongest scope of the pair (a package both optional and dev here counts as optional).
+  return SCOPE_TO_DEP[e.cscope] ?? e.scope;
 }
+
+const SCOPE_TO_DEP: Partial<Record<ComponentScope, DepScope>> = { runtime: 'runtime', peer: 'peer', optional: 'optional', ci: 'build', dev: 'dev' };
 
 /** Every displayed path (engine caps apply) from the inventory's assets to `purl`. */
 export function pathsTo(inv: Inventory, purl: string, graph: DependencyGraph = buildDependencyGraph(inv)): InventoryPath[] {
@@ -57,18 +62,20 @@ export function pathsTo(inv: Inventory, purl: string, graph: DependencyGraph = b
     const asset = graph.assets.get(a.assetId);
     for (const nodes of a.paths) {
       const scopes = nodes.slice(1).map((to, i) => edgeScope(graph, nodes[i]!, to));
-      const width = Math.min(...scopes.map(scopeExposure));
+      // One scope rule for every view (src/core/scope.ts): production = a runtime path from a production asset.
+      const scope = pathScope(asset, scopes);
       out.push({
         assetId: a.assetId,
         assetName: asset?.name ?? a.assetId,
         environment: asset?.environment ?? 'dev',
-        production: asset?.environment === 'prod' && width >= DEV_EXPOSURE,
+        production: asset?.environment === 'prod' && isProductionScope(scope),
+        scope,
         nodes,
         scopes,
       });
     }
   }
-  return out.sort((x, y) => Number(y.production) - Number(x.production) || x.nodes.length - y.nodes.length || x.assetName.localeCompare(y.assetName));
+  return out.sort((x, y) => Number(y.production) - Number(x.production) || scopeStrength(y.scope) - scopeStrength(x.scope) || x.nodes.length - y.nodes.length || x.assetName.localeCompare(y.assetName));
 }
 
 /** The direct dependency each path starts with, or "(direct)" when the package itself is direct. */

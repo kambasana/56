@@ -13,6 +13,9 @@
  * This file only has type imports plus a few constant tables, so the web app can import it.
  */
 import type {
+  ComponentScope,
+  NotAnalysedManifest,
+  SourceCoverage,
   ContinuityEvent,
   StabilityCoverage,
   StabilityDecision,
@@ -305,6 +308,10 @@ export interface ScanSummary {
   health?: number;
   outbound: number;
   warnings: string[];
+  /** Manifests found but not analysed (Tier 0). Absent when everything was analysed or on older scans. */
+  notAnalysed?: NotAnalysedManifest[];
+  /** Per-source coverage (Tier 0). Absent on older scans. */
+  sources?: SourceCoverage[];
 }
 
 export interface Scan extends ScanRef {
@@ -394,6 +401,11 @@ export interface FindingRow {
   /** Reach in plain words, e.g. "Brought in by event-stream · used by api (production)". */
   reachText: string;
   blastScore: number;
+  /**
+   * The package's one scope in the project (runtime, peer, optional, ci, dev, unreachable; Tier 0).
+   * Null for findings stored before scopes existed. Lists are production first.
+   */
+  scope?: ComponentScope | null;
   /** Last entity in the chain (e.g. an incident or funder), if any. */
   behind: { entityId: string; relation: EntityChainEntry['relation']; confidence: number } | null;
   status: FindingStatus;
@@ -1038,6 +1050,15 @@ export type { AssetExposure, Finding, OutboundFinding, Reason, RiskLevel, Entity
 export type { ContinuityEvent, StabilityCoverage, StabilityDecision, StabilityEntry, StabilityLabel, StabilityReason };
 export type { StabilityEvent } from '../stability/events.js';
 import type { StabilityEvent } from '../stability/events.js';
+export type { ComponentScope, NotAnalysedManifest, SourceCoverage };
+
+/** GET /api/projects/:id/coverage: manifests the newest succeeded scan found but did not analyse (Tier 0). */
+export interface ProjectCoverageResponse {
+  scanId: Id | null;
+  notAnalysed: NotAnalysedManifest[];
+  /** Sources that did not fully answer in that scan (status partial or failed). */
+  degradedSources: SourceCoverage[];
+}
 
 /** GET /api/projects/:id/health: upkeep-only signals from the latest succeeded scan (not findings). */
 export interface HealthItem {
@@ -1082,6 +1103,10 @@ export interface ExposureHitRow {
   production: boolean;
   /** e.g. "Brought in by npm-run-all · used by a11ymap (dev/test dependencies only)". */
   reachText: string;
+  /** The package's one scope in that project (Tier 0). */
+  scope?: ComponentScope;
+  /** purl type: npm, pypi, githubactions, docker, ... */
+  ecosystem?: string;
 }
 /** GET /api/search/exposure?q=name or name@version: "is X anywhere?" across visible projects. */
 export interface SearchExposureResponse {

@@ -66,7 +66,7 @@ const BASE_FILTERS: FilterDef[] = [
   {
     key: 'reach',
     label: 'Reach',
-    info: 'Production: a dependency path reaches a production asset. Dev and test: only dev, test or CI assets.',
+    info: 'Production: a runtime dependency path from a production project (one scope per project and package). Dev and test: dev, test, CI, optional or peer dependencies only.',
     options: [
       { value: 'production', label: 'In production' },
       { value: 'dev', label: 'Dev and test only' },
