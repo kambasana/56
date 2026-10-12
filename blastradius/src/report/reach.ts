@@ -55,10 +55,12 @@ export function describeReach(f: Pick<Finding, 'blastRadius'>, assetOf: (id: str
   const where = names.length === 1 ? names[0]! : `${names.length} parts of this project (${list(names)})`;
   let qualifier = '';
   if (assets.every((a) => a.scope !== undefined)) {
-    // One scope per (project, package): production only when a runtime path from a production asset reaches it.
+    // One scope per (project, package): production when a runtime, peer or optional path (npm
+    // installs all three, Tier 0.5) from a production asset reaches it; peer and optional say so.
     const prod = assets.filter((a) => isProductionScope(a.scope) && a.environment === 'prod').length;
     const best = assets.reduce<ComponentScope>((m, a) => strongerScope(m, a.scope!), 'unreachable');
-    if (prod > 0) qualifier = prod === assets.length ? ' (production)' : ` (${prod} in production)`;
+    const how = best === 'optional' ? ', optional: platform-dependent' : best === 'peer' ? ', peer' : '';
+    if (prod > 0) qualifier = prod === assets.length ? ` (production${how})` : ` (${prod} in production${how})`;
     else qualifier = ` (${SCOPE_ONLY[best]})`;
   } else {
     const prod = assets.filter((a) => a.environment === 'prod').length;

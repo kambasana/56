@@ -439,6 +439,11 @@ export interface PublisherChangeValue {
   changedAt: string;
   /** Whether newPublisher had ever published this package before. */
   firstTimePublisher: boolean;
+  /**
+   * Tier 0.5: the new publisher already maintains or published sibling packages in the scan (same
+   * npm scope, repository or repository owner): a team event, context only.
+   */
+  sibling?: { packages: number; by: 'scope' | 'repository' | 'owner' };
 }
 
 export interface MaintainerChangeValue {
@@ -452,10 +457,12 @@ export interface MaintainerChangeValue {
   /** Days between the change and the next release, if known. */
   daysBeforeRelease?: number;
   /**
-   * Tier 0: every added account already maintains this many sibling packages in the scan (same npm
-   * scope or the same source repository). A team event, not scored.
+   * Tier 0: every added account already maintains (or, Tier 0.5, published) this many sibling
+   * packages in the scan (same npm scope, the same source repository, or the same repository owner:
+   * ulisesgascon added to proxy-addr maintains forwarded and the other jshttp packages). A team
+   * event, not scored.
    */
-  sibling?: { packages: number; by: 'scope' | 'repository' };
+  sibling?: { packages: number; by: 'scope' | 'repository' | 'owner' };
 }
 
 export type InstallHook = 'preinstall' | 'install' | 'postinstall' | 'prepare';
@@ -1149,6 +1156,11 @@ export interface Reason {
   /** Human-readable, factual explanation. Never a judgement about people. */
   detail: string;
   evidence: string[];
+  /**
+   * Tier 0.5: shown as context, not scored as a signal. Set on a maintainer-list change that no
+   * other signal backs up (it only breaks ties, like posture).
+   */
+  context?: boolean;
 }
 
 export interface AssetExposure {
@@ -1207,6 +1219,12 @@ export interface Finding {
    */
   entityChain: EntityChainEntry[];
   /**
+   * Tier 0.5: the lockfile installs this version from a tarball outside the npm registry (xlsx
+   * 0.20.3 from cdn.sheetjs.com). Advisory version ranges are written for registry releases, so
+   * they may not apply; the finding is kept and says so.
+   */
+  installedFrom?: { host: string; url: string; note: string };
+  /**
    * Who is behind the package, incident or not: its own documented links up to two hops out
    * (npm accounts and the repo owner, then the orgs they belong to and who funds them). Same entry
    * shape as `entityChain`, without the incident hop. Absent when nothing is known.
@@ -1244,6 +1262,11 @@ export interface ScanResult {
   schemaVersion: '1';
   /** What was scanned: local path or repo URL as given. */
   target: string;
+  /**
+   * The product the SBOMs describe (Tier 0.5): `--product-name` / `--product-version`, else the
+   * repository or directory name of the target. Never an absolute path.
+   */
+  product?: { name: string; version?: string };
   /** ISO timestamp. */
   generatedAt: string;
   inventory: InventorySummary;

@@ -3,6 +3,7 @@
  */
 import type { FundingSource, RepoValue } from '../../core/types.js';
 import { isObject } from './registry.js';
+import { isNonRepositoryUrl } from '../../core/repo-url.js';
 
 const MAX_URL = 2048;
 const SEGMENT_RE = /^[A-Za-z0-9_.-]{1,100}$/;
@@ -37,6 +38,8 @@ export function parseRepoUrl(input: string): Omit<RepoValue, 'via'> | undefined 
   if (scp && !/^[a-z+]+:\/\//i.test(s)) s = `https://${scp[1]}/${scp[2]}`;
 
   s = s.replace(/^git\+/, '').replace(/^(git|ssh|git\+ssh):\/\//, 'https://');
+  // A funding page (github.com/sponsors/<x>, opencollective.com/<x>) is never a source repository.
+  if (isNonRepositoryUrl(s)) return undefined;
 
   let u: URL;
   try {

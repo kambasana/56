@@ -61,6 +61,16 @@ describe('<OrgHome> (Overview)', () => {
     await waitFor(() => expect(api.calls.find((c) => c.url.pathname === '/api/overview')!.url.searchParams.get('env')).toBe('prod'));
   });
 
+  it('says when the demo project (serve --dev-seed) is left out of the totals, or is all there is (Tier 0.5)', async () => {
+    fakeApi([['GET', /^\/api\/overview$/, () => ({ ...OVERVIEW, demo: { projects: 1, excluded: true } })]]);
+    const { unmount } = renderPage(<OrgHome />, at('/'));
+    expect(await screen.findByText(/The demo project is left out of these totals\./)).toBeInTheDocument();
+    unmount();
+    fakeApi([['GET', /^\/api\/overview$/, () => ({ ...OVERVIEW, demo: { projects: 1, excluded: false } })]]);
+    renderPage(<OrgHome />, at('/'));
+    expect(await screen.findByText(/Demo data: these numbers come from the demo project/)).toBeInTheDocument();
+  });
+
   it('links the severity panel to the org-wide Exposure matrix, keeping the project scope', async () => {
     fakeApi([['GET', /^\/api\/overview$/, () => OVERVIEW]]);
     renderPage(<OrgHome />, at('/'));

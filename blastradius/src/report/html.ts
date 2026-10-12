@@ -9,7 +9,7 @@ import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { applyPolicy, SOURCE_LABEL } from '../licenses/report.js';
 import { escapeHtml as h, safeHttpUrl } from './escape.js';
 import { findingReach, nameAndVersion } from './json.js';
-import { SCOPE_LABEL } from '../core/scope.js';
+import { isProductionScope, SCOPE_LABEL } from '../core/scope.js';
 import { coverageLine, degradedLine, degradedSources } from './coverage.js';
 import { behindSection, notAnalysedBanner, reviewState, stabilitySection } from './html-behind.js';
 
@@ -210,7 +210,7 @@ ${LEVELS.map((l) => `<div class="tile">${levelBadge(l)}<strong>${h(counts[l])}</
 <div class="tile"><span class="muted">Install scripts</span><strong>${h(inv.withInstallScripts)}</strong></div>
 </div>
 <p class="muted">Scores combine intrinsic signals and recorded incidents linked through public evidence (machine-derived links are labelled as such; reviewed means a person accepted the link). They describe risk signals, not judgements about any person or organisation.</p>
-<h2>Top ${h(top.length)} of ${h(result.findings.length)} findings${result.findings.some((f) => f.scope) ? `, production first (${h(result.findings.filter((f) => f.scope === 'runtime').length)} runtime)` : ''}</h2>
+<h2>Top ${h(top.length)} of ${h(result.findings.length)} findings${result.findings.some((f) => f.scope) ? `, production first (${h(result.findings.filter((f) => isProductionScope(f.scope)).length)} in production: runtime, peer or optional)` : ''}</h2>
 ${result.health?.length ? `<p class="muted">${h(result.health.length)} more component(s) have upkeep signals only (no provenance, single maintainer, weak posture, unmaintained). They are listed in the JSON report under <code>health</code>, not counted as findings.</p>` : ''}
 ${summaryTable}
 ${top.map((f, i) => findingCard(f, i, cardOpts)).join('\n')}

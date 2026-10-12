@@ -45,8 +45,10 @@ describe('describeReach with scopes (Tier 0)', () => {
     ]);
     expect(describeReach(f, () => ({ name: 'parse-server', environment: 'prod' }))).toBe('Brought in by express, @babel/core · used by parse-server (production)');
   });
-  it('says optional only for an optional path, never production or dev', () => {
-    const f = finding([{ assetId: 'repo:app', exposure: 0.2, scope: 'optional', paths: [['repo:app', 'pkg:npm/chokidar@3.6.0', 'pkg:npm/fsevents@2.3.3']], pathScopes: ['optional'] } as never]);
-    expect(describeReach(f, () => ({ name: 'app', environment: 'prod' }))).toBe('Brought in by chokidar · used by app (optional dependency only)');
+  it('says optional for an optional path: production (npm installs it), platform-dependent (Tier 0.5)', () => {
+    const f = finding([{ assetId: 'repo:app', exposure: 1, scope: 'optional', paths: [['repo:app', 'pkg:npm/chokidar@3.6.0', 'pkg:npm/fsevents@2.3.3']], pathScopes: ['optional'] } as never]);
+    expect(describeReach(f, () => ({ name: 'app', environment: 'prod' }))).toBe('Brought in by chokidar · used by app (production, optional: platform-dependent)');
+    // In a dev project an optional path is still not production.
+    expect(describeReach(f, () => ({ name: 'app', environment: 'dev' }))).toBe('Brought in by chokidar · used by app (optional dependency only)');
   });
 });

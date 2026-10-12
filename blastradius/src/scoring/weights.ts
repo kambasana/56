@@ -30,7 +30,9 @@ export const DEFAULT_WEIGHTS: Readonly<FactorWeights> = Object.freeze({
   install_script: 0.3,
   weak_posture: 0.3,
   no_provenance: 0.15,
-  provenance_dropped: 0.5,
+  // Tier 0.5: 0.5 → 0.3. Alone it is a medium (30) early warning (nx 21.5.0), ranked below a
+  // production advisory of CVSS 7.5 or more (jitsi: svgo 8.2, bigint-buffer 7.5).
+  provenance_dropped: 0.3,
   dependency_added: 0.4,
   single_maintainer: 0.15,
   abandoned: 0.2,
@@ -123,13 +125,16 @@ export const COMPROMISED_RELEASE_TYPES: readonly IncidentType[] = Object.freeze(
   'typosquat',
 ]);
 
-/** Inbound blast radius (PLAN §3.6 step 4). `peer` is treated as runtime. */
+/**
+ * Inbound blast radius (PLAN §3.6 step 4). `peer` and `optional` are treated as runtime (Tier 0.5):
+ * npm installs both by default, so they are in the production install.
+ */
 export const SCOPE_EXPOSURE: Readonly<Record<DepScope, number>> = Object.freeze({
   runtime: 1,
   peer: 1,
   build: 0.8,
   dev: 0.3,
-  optional: 0.2,
+  optional: 1,
 });
 export const INSTALL_SCRIPT_EXPOSURE = 0.9;
 export const ENVIRONMENT_WEIGHT: Readonly<Record<Environment, number>> = Object.freeze({

@@ -10,6 +10,7 @@ import { all, get, isConstraintError, newId, nowIso, parseJson, placeholders, ru
 import { emptyCounts, latestSucceededScan, scanFindingStats } from './findings.js';
 import { getOrg } from './orgs.js';
 import { latestScan, recentScans, succeededSummaries } from './scans.js';
+import { isDemoTarget } from '../demo.js';
 
 interface ProjectRowSql {
   id: string;
@@ -35,6 +36,7 @@ function toProject(r: ProjectRowSql): Project {
     owner: r.owner,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    ...(isDemoTarget(r.target) ? { demo: true } : {}),
   };
 }
 
@@ -247,7 +249,9 @@ export function orgHome(s: Store, orgId: string, projectIds: readonly string[] |
   let assets = 0;
   let components = 0;
   let toReview = 0;
-  for (const p of projects) {
+  // The demo project (--dev-seed) is listed, badged, and never counted (Tier 0.5).
+  const real = projects.filter((p) => !p.demo);
+  for (const p of real) {
     assets += p.assets;
     components += p.components;
     toReview += p.toReview;
@@ -255,7 +259,7 @@ export function orgHome(s: Store, orgId: string, projectIds: readonly string[] |
   }
   return {
     org,
-    totals: { projects: projects.length, assets, components, counts, toReview },
+    totals: { projects: real.length, assets, components, counts, toReview, ...(real.length !== projects.length ? { demoProjects: projects.length - real.length } : {}) },
     projects,
     recentScans: recentScans(s, orgId, { projectIds, limit: 10 }),
   };

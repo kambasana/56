@@ -69,6 +69,8 @@ interface ScanCliOptions {
   failOn?: RiskLevel;
   strict?: boolean;
   top: string;
+  productName?: string;
+  productVersion?: string;
 }
 
 export interface ProgramIo {
@@ -109,6 +111,8 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
     .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
     .option('--top <n>', 'findings to list in the terminal summary', '5')
+    .option('--product-name <name>', 'product name for the SBOMs (CycloneDX metadata.component, SPDX root package); default: the repository or directory name')
+    .option('--product-version <version>', 'product version for the SBOMs')
     .option('--strict', `exit with code ${EXIT_NOT_ANALYSED} when any manifest or lockfile was found but not analysed (unsupported format, no lockfile, unresolved entries), or a security source (OSV) failed or answered only in part`, false)
     .action(async (target: string, o: ScanCliOptions) => {
       const offline = o.offline || o.fixtures !== undefined || process.env.BLASTRADIUS_OFFLINE === '1';
@@ -128,6 +132,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
       if (o.asOf) opts.now = o.asOf;
       if (o.review) opts.reviewFile = o.review;
       if (o.pack) opts.packFile = o.pack;
+      if (o.productName || o.productVersion) opts.product = { ...(o.productName ? { name: o.productName } : {}), ...(o.productVersion ? { version: o.productVersion } : {}) };
       if (o.licensePolicy) opts.licensePolicy = parseLicensePolicy(JSON.parse(await readFile(o.licensePolicy, 'utf8')));
       const { result, files } = await scan(opts);
       const top = Math.max(0, Math.min(100, Number.parseInt(o.top, 10) || 5));

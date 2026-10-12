@@ -4,7 +4,7 @@
  * Review status lives in `finding_state`, keyed by (project, versioned purl), so it carries
  * over to later scans of the same project.
  */
-import { isComponentScope, scopeStrength } from '../../core/scope.js';
+import { isComponentScope, isProductionScope, scopeStrength } from '../../core/scope.js';
 import type {
   AssetPathView,
   FindingDetail,
@@ -142,9 +142,10 @@ export function deriveFinding(f: Finding, assetOf: (id: string) => AssetMeta = f
     level: f.level,
     blastScore: f.blastRadius?.score ?? 0,
     assets: exposures.length,
-    // One scope rule (Tier 0): a production asset that reaches the package through a runtime path.
-    // Findings stored before scopes existed carry no scope and keep the environment-only count.
-    prodAssets: exposures.filter((a) => assetOf(a.assetId).environment === 'prod' && (a.scope === undefined || a.scope === 'runtime')).length,
+    // One scope rule (Tier 0): a production asset that reaches the package through a production path
+    // (runtime, peer or optional: npm installs all three, Tier 0.5). Findings stored before scopes
+    // existed carry no scope and keep the environment-only count.
+    prodAssets: exposures.filter((a) => assetOf(a.assetId).environment === 'prod' && (a.scope === undefined || isProductionScope(a.scope))).length,
     paths: exposures.reduce((n, a) => n + (a.paths?.length ?? 0), 0),
     reachText: describeReach(f, (id) => assetOf(id)),
     mainReason: top ? { factor: top.factor, detail: top.detail } : null,

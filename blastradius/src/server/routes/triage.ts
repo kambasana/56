@@ -19,6 +19,7 @@ import {
   listAssignees,
   listOrgFindings,
   listPackageFindings,
+  listProjects,
   overview,
   parseLevelList,
   parseOwnerList,
@@ -125,12 +126,27 @@ export function registerTriageRoutes(app: Hono<AppEnv>): void {
     const range = queryString(c, 'range', 10);
     if (range !== undefined && !['7d', '30d', '90d', 'all'].includes(range)) throw badRequest('Unknown range', ['range']);
     const env = envParam(c);
-    return c.json<OverviewResponse>(
-      overview(deps(c).store, orgId, {
-        projectIds: scopeProjects(projectIds, listParam(c, 'projects')),
+    const requested = listParam(c, 'projects');
+    let ids = scopeProjects(projectIds, requested);
+    // The demo project (--dev-seed) never mixes into real totals (Tier 0.5): left out when real
+    // projects exist and none was picked explicitly; alone, its numbers are marked as demo data.
+    let demo: OverviewResponse['demo'];
+    if (!requested || requested.length === 0) {
+      const visible = listProjects(deps(c).store, orgId, ids);
+      const demoCount = visible.filter((p) => p.demo).length;
+      if (demoCount > 0) {
+        const real = visible.filter((p) => !p.demo).map((p) => p.id);
+        if (real.length > 0) ids = real;
+        demo = { projects: demoCount, excluded: real.length > 0 };
+      }
+    }
+    return c.json<OverviewResponse>({
+      ...overview(deps(c).store, orgId, {
+        projectIds: ids,
         ...(env ? { env } : {}),
         ...(range ? { range: range as '7d' | '30d' | '90d' | 'all' } : {}),
       }),
-    );
+      ...(demo ? { demo } : {}),
+    });
   });
 }

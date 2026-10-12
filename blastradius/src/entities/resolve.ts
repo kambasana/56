@@ -11,7 +11,10 @@
  *  - `repo_owner` (GitHub)  → org:github/<o> (type Organization) | account:github/<o> (type User)
  *                             --owns--> pkg (0.9)
  *  - `repo` without an owner type (e.g. the GitHub API answered 403) → owner:github/<o> (type
- *    unknown) --owns--> pkg (0.9). An unknown owner is never typed as an org: it is excluded from
+ *    unknown) --owns--> pkg (0.9).
+ *    Tier 0.5: the owner and its evidence come from the CURRENT repository, the one the latest
+ *    release's `repository.url` declares (as the stability labels resolve it): agent-base's owner
+ *    evidence is TooTallNate/proxy-agents, not the archived node-agent-base its 6.x versions name. An unknown owner is never typed as an org: it is excluded from
  *    every org rule, roll-up, policy and jurisdiction check. It becomes org:github/<o> only when a
  *    deterministic source says so (a repo_owner fact with ownerType Organization, or an
  *    org_profile fact for org:github/<o>).
@@ -233,6 +236,11 @@ class Builder {
   }
 }
 
+/** "github.com/owner/name", lower case, for comparing repository URLs. */
+function repoKeyOf(u: string): string {
+  return u.trim().replace(/^[a-z+]+:\/\//i, '').replace(/\.git$/i, '').replace(/\/+$/, '').toLowerCase();
+}
+
 /** Build entities and links from facts (and incident entity refs). Pure and deterministic. */
 export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {}): EntityGraphData {
   const b = new Builder();
@@ -273,6 +281,19 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
     return githubOwnerId(l);
   };
   const ownersByPkg = new Map<string, string>();
+  // The current repository of each package: what its latest release declares (release_age facts).
+  const currentRepo = new Map<string, string>();
+  for (const f of facts.filter(isFactOf('release_age'))) {
+    const pkg = base(f.subject);
+    const url = f.value.latestRepository?.url;
+    if (pkg && url && !currentRepo.has(pkg)) currentRepo.set(pkg, repoKeyOf(url));
+  }
+  /** False when the package's latest release names another repository than `url`. */
+  const isCurrentRepo = (pkg: string, url: string | undefined): boolean => {
+    const cur = currentRepo.get(pkg);
+    return cur === undefined || (url !== undefined && repoKeyOf(url) === cur);
+  };
+  const deferredOwners: Extract<Fact, { kind: 'repo_owner' }>[] = [];
 
   for (const f of facts) {
     const pkg = base(f.subject);
@@ -304,6 +325,11 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
       }
       case 'repo_owner': {
         if (!HANDLE_RE.test(f.value.owner)) break;
+        // A repository the latest release no longer names: only when nothing current is known.
+        if (!isCurrentRepo(pkg, f.value.url)) {
+          deferredOwners.push(f);
+          break;
+        }
         const id = ownerEntity(f.value.owner);
         ownersByPkg.set(pkg, id);
         b.link({
@@ -317,16 +343,41 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
     }
   }
 
-  // `repo` facts without a matching repo_owner fact.
-  for (const f of facts.filter(isFactOf('repo'))) {
+  // `repo` facts without a matching repo_owner fact: the current repository's facts first, then the
+  // latest release's own `repository.url`, then an old repository's repo_owner fact, then any other.
+  type OwnerCandidate = { pkg: string; owner: string; host: string; evidence: (string | undefined)[] };
+  const candidates: OwnerCandidate[] = [];
+  const repoFacts = facts.filter(isFactOf('repo'));
+  const fromRepo = (f: (typeof repoFacts)[number]): OwnerCandidate | undefined => {
     const pkg = base(f.subject);
-    if (!pkg || ownersByPkg.has(pkg) || f.value.host !== 'github' || !f.value.owner) continue;
-    if (!HANDLE_RE.test(f.value.owner)) continue;
-    const id = ownerEntity(f.value.owner);
-    ownersByPkg.set(pkg, id);
+    return pkg && f.value.owner ? { pkg, owner: f.value.owner, host: f.value.host, evidence: [f.value.url, ...(f.evidence ?? [])] } : undefined;
+  };
+  for (const f of repoFacts) {
+    const pkg = base(f.subject);
+    const c = pkg && currentRepo.has(pkg) && isCurrentRepo(pkg, f.value.url) ? fromRepo(f) : undefined;
+    if (c) candidates.push(c);
+  }
+  for (const f of facts.filter(isFactOf('release_age'))) {
+    const pkg = base(f.subject);
+    const url = f.value.latestRepository?.url;
+    const m = url ? /^https:\/\/github\.com\/([^/]+)\/[^/]+$/.exec(url.replace(/\.git$/, '').replace(/\/+$/, '')) : null;
+    if (pkg && m) candidates.push({ pkg, owner: m[1]!, host: 'github', evidence: [url, ...(f.evidence ?? [])] });
+  }
+  for (const f of deferredOwners) {
+    const pkg = base(f.subject);
+    if (pkg) candidates.push({ pkg, owner: f.value.owner, host: 'github', evidence: [f.value.url, ...(f.evidence ?? [])] });
+  }
+  for (const f of repoFacts) {
+    const c = fromRepo(f);
+    if (c) candidates.push(c);
+  }
+  for (const c of candidates) {
+    if (ownersByPkg.has(c.pkg) || c.host !== 'github' || !HANDLE_RE.test(c.owner)) continue;
+    const id = ownerEntity(c.owner);
+    ownersByPkg.set(c.pkg, id);
     b.link({
-      from: id, to: pkg, relation: 'owns', confidence: DETERMINISTIC_CONFIDENCE.repository,
-      evidence: [f.value.url, ...(f.evidence ?? [])], method: 'deterministic', reviewed: false,
+      from: id, to: c.pkg, relation: 'owns', confidence: DETERMINISTIC_CONFIDENCE.repository,
+      evidence: c.evidence, method: 'deterministic', reviewed: false,
     });
   }
 

@@ -10,9 +10,16 @@
  *
  * Strength, strongest first: runtime > peer > optional > ci > dev > unreachable.
  *
- * - runtime: shipped and loaded in production (the only scope that counts as "production").
- * - peer: only reached as a peer dependency (the consumer provides it).
- * - optional: only reached through optional dependencies (e.g. fsevents on macOS).
+ * - runtime: shipped and loaded in production.
+ * - peer: only reached as a peer dependency. npm 7 and later install peer dependencies, so it is
+ *   in the production install (Tier 0.5).
+ * - optional: only reached through optional dependencies. npm installs optionalDependencies by
+ *   default (`--omit=optional` is opt-in); only the platform decides whether one is present
+ *   (fsevents on macOS), so it is in the production install, labelled "optional
+ *   (platform-dependent)" (Tier 0.5: parse-server's uuid@9.0.1 under firebase-admin, an optional
+ *   dependency of @parse/push-adapter, is installed in production).
+ *
+ * Production = runtime, peer and optional: what `npm ci --omit=dev` installs. dev and ci never are.
  * - ci: the build environment: GitHub Actions, Docker build stages.
  * - dev: tests, linters, bundlers: only reached through dev dependencies or dev/test projects.
  * - unreachable: in a lockfile, but no path from any asset reaches it.
@@ -47,9 +54,20 @@ export function weakerScope(a: ComponentScope, b: ComponentScope): ComponentScop
   return STRENGTH[a] <= STRENGTH[b] ? a : b;
 }
 
-/** Only runtime is production. Optional and peer dependencies are reported as such, never as production. */
+/** Scopes in the production install (npm installs optional and, since npm 7, peer dependencies by default). */
+export const PRODUCTION_SCOPES: ReadonlySet<ComponentScope> = new Set<ComponentScope>(['runtime', 'peer', 'optional']);
+
+/**
+ * Production: runtime, peer and optional (Tier 0.5). The scope label still says which (a finding
+ * reads "optional (platform-dependent)" or "peer"); dev, CI and unreachable never are.
+ */
 export function isProductionScope(scope: ComponentScope | undefined): boolean {
-  return scope === 'runtime';
+  return scope !== undefined && PRODUCTION_SCOPES.has(scope);
+}
+
+/** Ranking tier: 0 for every production scope, then CI, dev, unreachable. */
+export function productionTier(scope: ComponentScope | undefined): number {
+  return scope === undefined || isProductionScope(scope) ? 0 : scopeTier(scope);
 }
 
 export function isComponentScope(v: unknown): v is ComponentScope {
@@ -60,7 +78,7 @@ export function isComponentScope(v: unknown): v is ComponentScope {
 export const SCOPE_LABEL: Readonly<Record<ComponentScope, string>> = Object.freeze({
   runtime: 'runtime',
   peer: 'peer',
-  optional: 'optional',
+  optional: 'optional (platform-dependent)',
   ci: 'CI / build',
   dev: 'dev / test',
   unreachable: 'not reached',
@@ -161,7 +179,11 @@ export function componentScopes(inv: ScopeInventory): Map<PurlString, ComponentS
   return scopes;
 }
 
-/** Components whose scope is runtime: the production set (stability labels, roll-ups). */
+/**
+ * Components in the production install: runtime, peer and optional scope (stability labels,
+ * roll-ups). Tier 0.5 widened it from runtime only, because npm installs optional and peer
+ * dependencies by default; dev and CI stay out.
+ */
 export function productionSet(inv: ScopeInventory): Set<PurlString> {
   const out = new Set<PurlString>();
   for (const [purl, s] of componentScopes(inv)) if (isProductionScope(s)) out.add(purl);

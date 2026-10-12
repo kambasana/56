@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { levelForScore, type Asset, type Finding, type OutboundFinding, type RiskLevel, type ScanResult } from '../core/types.js';
 import { plainText } from './escape.js';
 import { isPostureReason } from '../scoring/index.js';
+import { isProductionScope } from '../core/scope.js';
 import { notAnalysedLine } from '../ingest/manifests.js';
 import { degradedLine, degradedSources } from './coverage.js';
 
@@ -109,7 +110,8 @@ function findingResults(f: Finding, assets: Map<string, Asset>, maxLoc: number):
         purl: f.purl,
         score: f.score,
         riskLevel: f.level,
-        ...(f.scope ? { scope: f.scope, production: f.scope === 'runtime' } : {}),
+        ...(f.scope ? { scope: f.scope, production: isProductionScope(f.scope) } : {}),
+        ...(f.installedFrom ? { installedFrom: f.installedFrom.host } : {}),
         blastRadius: f.blastRadius.score,
         assets: f.blastRadius.assets.map((a) => a.assetId),
         factors: reasons.map((r) => r.factor),

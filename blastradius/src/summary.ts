@@ -1,6 +1,6 @@
 /** Short plain-text terminal summary of a ScanResult. Values are untrusted: strip control chars. */
 import { levelForScore, type Finding, type RiskLevel, type ScanResult } from './core/types.js';
-import { SCOPE_LABEL } from './core/scope.js';
+import { isProductionScope, SCOPE_LABEL } from './core/scope.js';
 import { notAnalysedLine } from './ingest/manifests.js';
 import { coverageLine, degradedSources, degradedLine } from './report/coverage.js';
 
@@ -53,8 +53,8 @@ export function formatSummary(result: ScanResult, opts: { top?: number; files?: 
   lines.push(`  findings:  critical ${c.critical} | high ${c.high} | medium ${c.medium} | low ${c.low}`);
   const scoped = result.findings.some((f) => f.scope !== undefined);
   if (scoped) {
-    const runtime = result.findings.filter((f) => f.scope === 'runtime').length;
-    lines.push(`  in production (runtime): ${runtime} of ${result.findings.length} finding(s); the rest are optional, peer, CI or dev-only and listed after them`);
+    const prod = result.findings.filter((f) => isProductionScope(f.scope)).length;
+    lines.push(`  in production (runtime, peer, optional): ${prod} of ${result.findings.length} finding(s); the rest are CI or dev-only and listed after them`);
   }
   if (result.findings.length > 0) {
     lines.push(`  top ${Math.min(top, result.findings.length)}${scoped ? ', production first' : ''}:`);
@@ -64,6 +64,7 @@ export function formatSummary(result: ScanResult, opts: { top?: number; files?: 
         `    [${f.level.toUpperCase()}] ${f.score.toFixed(1).padStart(5)}  ${clean(f.purl, 100)}${f.scope ? `  [${SCOPE_LABEL[f.scope]}]` : ''}  (reaches ${assets} asset${assets === 1 ? '' : 's'}, blast ${f.blastRadius.score})`,
       );
       lines.push(`           ${topReason(f)}`);
+      if (f.installedFrom) lines.push(`           ${clean(f.installedFrom.note, 200)}`);
       if (f.gate && f.gate.rule !== 'runtime') lines.push(`           rank: ${clean(f.gate.detail, 240)}`);
     }
   }

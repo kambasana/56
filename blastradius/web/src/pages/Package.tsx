@@ -5,7 +5,7 @@
  * as a chain in the right rail, with the shortest fix when the advisory names a fixed version.
  * The ⌘K Verdict links here. Data: GET /api/packages/reach.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import type { PackageBehindResponse, PackageReachResponse, ReachPath } from '@server/api-types-incidents';
 import { incidentsApi } from '@/api-incidents';
@@ -138,7 +138,11 @@ export function BehindSummary({ b, version }: { b: PackageBehindResponse; versio
     <div className="grid grid-cols-1 gap-4 rounded-xl border p-4 md:grid-cols-2">
       <div className="flex flex-col gap-1.5">
         <h3 className="m-0 text-label font-semibold">Can publish now</h3>
-        {b.publishRights === null ? (
+        {b.publishRights === null && b.pending ? (
+          <p className="m-0 text-caption text-muted-foreground" role="status">
+            Indexing: the account index is still fetching registry data for it. This updates on its own.
+          </p>
+        ) : b.publishRights === null ? (
           <p className="m-0 text-caption text-muted-foreground">No registry data for it yet; the account index fetches it after the next scan.</p>
         ) : b.publishRights.length === 0 ? (
           <p className="m-0 text-caption text-muted-foreground">The registry lists no maintainers.</p>
@@ -178,7 +182,7 @@ export function BehindSummary({ b, version }: { b: PackageBehindResponse; versio
                     </span>
                   </span>
                 ) : (
-                  <span className="text-caption text-muted-foreground">publisher not known</span>
+                  <span className="text-caption text-muted-foreground">{b.pending ? 'publisher: indexing…' : 'publisher not known'}</span>
                 )}
                 {v.production && <ReachTag reach="production" />}
                 {v.knownBad.map((k) => (
@@ -352,6 +356,14 @@ export default function PackagePage() {
   const pkg = version ? `${name}@${version}` : name;
   const { data, error, loading, reload } = useApi((s) => (name ? incidentsApi.reach({ name, version }, s) : Promise.resolve(null)), [name, version]);
   const behind = useApi((s) => (name ? incidentsApi.behind(name, s) : Promise.resolve(null)), [name]);
+  // Tier 0.5: while the account index is still running, ask again until the registry data is in.
+  const behindPending = behind.data?.pending === true;
+  const reloadBehind = behind.reload;
+  useEffect(() => {
+    if (!behindPending) return;
+    const t = setTimeout(reloadBehind, 5000);
+    return () => clearTimeout(t);
+  }, [behindPending, reloadBehind, behind.data]);
 
   // A package is reached from the org-wide Exposure view (and ⌘K), not from an incident.
   const crumbs = [

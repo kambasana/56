@@ -17,6 +17,7 @@ import {
   ESTABLISHED_WEEKLY_DOWNLOADS,
 } from './weights.js';
 import { incidentsAffectingExactly } from './incidents.js';
+import { isReleaseBot } from '../history/bots.js';
 import { clamp01, cleanEvidence, cmpStr, daysSince, noisyOr, round, short, sortReasons } from './util.js';
 
 export interface IntrinsicResult {
@@ -122,6 +123,10 @@ export function scoreIntrinsic(
   const own: Candidate[] = [];
   for (const f of mine) {
     if (f.kind === 'publisher_change') {
+      // Tier 0.5, the stability stream's exemptions: an organisation release bot, or an account that
+      // already maintains or published sibling packages (same scope, repository or owner), is not a
+      // new person. Trusted publishing never produces a publisher_change (packument.ts).
+      if (isReleaseBot(f.value.newPublisher) || f.value.sibling) continue;
       const d = daysSince(f.value.changedAt, now);
       if (d === undefined) continue;
       const v = ownershipDecay(d) * (f.value.firstTimePublisher ? 1 : KNOWN_PUBLISHER_FACTOR);
@@ -134,17 +139,19 @@ export function scoreIntrinsic(
         evidence: ev(f),
       });
     } else if (f.kind === 'maintainer_change') {
-      if (f.value.added.length === 0 && f.value.removed.length === 0) continue;
-      // Tier 0: an added account that already maintains sibling packages (same scope or repository)
-      // is a team event; only removals would still count.
-      if (f.value.sibling && f.value.removed.length === 0) continue;
+      // Organisation release bots are not people (Tier 0.5): adding or removing one is not a change.
+      const added = f.value.sibling ? [] : f.value.added.filter((a) => !isReleaseBot(a));
+      const removed = f.value.removed.filter((a) => !isReleaseBot(a));
+      // Tier 0: an added account that already maintains sibling packages (same scope, repository or
+      // owner) is a team event; only removals would still count.
+      if (added.length === 0 && removed.length === 0) continue;
       const d = daysSince(f.value.changedAt, now);
       if (d === undefined) continue;
       const v = ownershipDecay(d);
       if (v <= 0) continue;
       const bits: string[] = [];
-      if (f.value.added.length) bits.push(`added ${f.value.added.slice(0, 5).map((s) => short(s, 40)).join(', ')}`);
-      if (f.value.removed.length) bits.push(`removed ${f.value.removed.slice(0, 5).map((s) => short(s, 40)).join(', ')}`);
+      if (added.length) bits.push(`added ${added.slice(0, 5).map((s) => short(s, 40)).join(', ')}`);
+      if (removed.length) bits.push(`removed ${removed.slice(0, 5).map((s) => short(s, 40)).join(', ')}`);
       own.push({
         factor: 'maintainer_change',
         value: v,
@@ -229,12 +236,18 @@ export function scoreIntrinsic(
   const prov = mine.filter((f): f is Extract<Fact, { kind: 'provenance' }> => f.kind === 'provenance');
   const dropped = prov.find((f) => !f.value.hasProvenance && f.value.droppedSince);
   if (dropped) {
-    // A signal, not upkeep: the usual signed pipeline was bypassed for this release.
+    // A signal, not upkeep: the usual signed pipeline was bypassed for this release. Tier 0.5: an
+    // early warning about a fresh release, so it decays with the release's age like an ownership
+    // change (jose 4.15.5, a 2024 backport published without provenance, is context by now; nx
+    // 21.5.0 an hour after its release counts in full).
+    const rel = mine.find((f): f is Extract<Fact, { kind: 'release_age' }> => f.kind === 'release_age');
+    const relDays = rel ? daysSince(rel.value.publishedAt, now) : undefined;
+    const pv = relDays === undefined ? 1 : ownershipDecay(relDays);
     cands.push({
       factor: 'provenance_dropped',
-      value: 1,
+      value: pv,
       weight: w.provenance_dropped,
-      detail: `Published without the build provenance that the previous release (${short(dropped.value.droppedSince!, 40)}) had`,
+      detail: `Published without the build provenance that the previous stable release (${short(dropped.value.droppedSince!, 40)}) had${relDays !== undefined ? `, ${Math.round(relDays)} days ago` : ''}`,
       evidence: cleanEvidence(prov.flatMap((f) => f.evidence ?? [])),
     });
   } else if (prov.length > 0 && !prov.some((f) => f.value.hasProvenance)) {
