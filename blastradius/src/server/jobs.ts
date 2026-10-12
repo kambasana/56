@@ -53,7 +53,7 @@ export interface ScanJobsOptions {
    * exposure answer first), so the web shows the same stability labels as `scan --history`.
    * `maxRepos` is the per-scan cap (default 300). Off by default (tests); `serve` turns it on.
    */
-  history?: false | { maxRepos?: number; cacheDir?: string; recorded?: HistoryEnricherOptions['recorded'] };
+  history?: false | { maxRepos?: number; maxMb?: number; cacheDir?: string; recorded?: HistoryEnricherOptions['recorded'] };
   /** Called after the background history job attached its result (tests, logs). */
   onHistoryDone?: (scanId: string, ok: boolean) => void;
   log?: (m: string) => void;
@@ -152,7 +152,7 @@ export class ScanJobs {
             now: job.now,
             ...(this.opts.scanOptions?.http ? { http: this.opts.scanOptions.http } : {}),
             ...(this.opts.scanOptions?.cacheDir !== undefined ? { cacheDir: this.opts.scanOptions.cacheDir } : {}),
-            history: { ...(h.maxRepos !== undefined ? { maxRepos: h.maxRepos } : {}), ...(h.cacheDir ? { cache: { dir: h.cacheDir } } : {}), ...(h.recorded ? { recorded: h.recorded } : {}) },
+            history: { ...(h.maxRepos !== undefined ? { maxRepos: h.maxRepos } : {}), ...(h.maxMb !== undefined ? { maxMb: h.maxMb } : {}), ...(h.cacheDir ? { cache: { dir: h.cacheDir } } : {}), ...(h.recorded ? { recorded: h.recorded } : {}) },
           });
           ok = attachScanHistory(this.opts.store, job.scanId, sections);
           log(`scan ${job.scanId}: git history attached (${sections.stability.coverage?.line ?? 'no coverage line'})`);

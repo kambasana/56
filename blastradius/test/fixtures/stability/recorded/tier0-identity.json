@@ -1,6 +1,6 @@
 {
- "_note": "Recorded live 2026-10-12T16:19:33.183Z by test/stability/record-tier0-identity.ts: npm packuments (trimmed, no e-mail addresses), deps.dev / Scorecard Maintained check. Histories in history/tier0-<slug>.json (salted ids and salted display-name keys only; salt discarded).",
- "recordedAt": "2026-10-12T16:19:33.183Z",
+ "_note": "Recorded live 2026-10-12T18:27:13.710Z by test/stability/record-tier0-identity.ts: npm packuments (trimmed, no e-mail addresses), deps.dev / Scorecard Maintained check. Histories in history/tier0-<slug>.json (salted ids and salted display-name keys only; salt discarded).",
+ "recordedAt": "2026-10-12T18:27:13.710Z",
  "packages": {
   "nanoid": {
    "name": "nanoid",
@@ -37983,6 +37983,3994 @@
        "reason": "30 commit(s) and 3 issue activity found in the last 90 days -- score normalized to 10"
       }
      ]
+    }
+   }
+  },
+  "process-warning": {
+   "name": "process-warning",
+   "versions": [
+    "2.3.2"
+   ],
+   "packument": {
+    "name": "process-warning",
+    "dist-tags": {
+     "latest": "5.1.1"
+    },
+    "time": {
+     "created": "2021-12-28T14:00:11.251Z",
+     "modified": "2026-10-10T10:34:23.209Z",
+     "1.0.0": "2021-12-28T14:00:11.396Z",
+     "2.0.0": "2022-05-19T09:01:22.895Z",
+     "2.1.0": "2022-12-04T23:41:57.917Z",
+     "2.2.0": "2023-04-04T17:12:05.333Z",
+     "2.3.0": "2023-10-27T16:24:24.256Z",
+     "2.3.1": "2023-11-18T18:48:07.936Z",
+     "2.3.2": "2023-12-02T15:27:55.548Z",
+     "3.0.0": "2023-12-12T20:27:35.442Z",
+     "4.0.0": "2024-07-09T12:24:48.791Z",
+     "4.0.1": "2025-01-03T17:36:00.542Z",
+     "5.0.0": "2025-03-03T17:27:10.377Z",
+     "5.1.0": "2026-07-30T10:25:43.633Z",
+     "5.1.1": "2026-10-10T10:34:22.881Z"
+    },
+    "maintainers": [
+     {
+      "name": "jsumners"
+     },
+     {
+      "name": "delvedor"
+     },
+     {
+      "name": "matteo.collina"
+     },
+     {
+      "name": "eomm"
+     },
+     {
+      "name": "climba03003"
+     }
+    ],
+    "repository": {
+     "type": "git",
+     "url": "https://github.com/fastify/process-warning"
+    },
+    "versions": {
+     "1.0.0": {
+      "_npmUser": {
+       "name": "matteo.collina"
+      }
+     },
+     "2.0.0": {
+      "_npmUser": {
+       "name": "matteo.collina"
+      }
+     },
+     "2.1.0": {
+      "_npmUser": {
+       "name": "matteo.collina"
+      }
+     },
+     "2.2.0": {
+      "_npmUser": {
+       "name": "matteo.collina"
+      }
+     },
+     "2.3.0": {
+      "_npmUser": {
+       "name": "matteo.collina"
+      }
+     },
+     "2.3.1": {
+      "_npmUser": {
+       "name": "eomm"
+      }
+     },
+     "2.3.2": {
+      "_npmUser": {
+       "name": "eomm"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/fastify/process-warning"
+      }
+     },
+     "3.0.0": {
+      "_npmUser": {
+       "name": "eomm"
+      }
+     },
+     "4.0.0": {
+      "_npmUser": {
+       "name": "matteo.collina"
+      }
+     },
+     "4.0.1": {
+      "_npmUser": {
+       "name": "fdawgs"
+      }
+     },
+     "5.0.0": {
+      "_npmUser": {
+       "name": "eomm"
+      }
+     },
+     "5.1.0": {
+      "_npmUser": {
+       "name": "climba03003"
+      }
+     },
+     "5.1.1": {
+      "_npmUser": {
+       "name": "GitHub Actions",
+       "trustedPublisher": {
+        "id": "github",
+        "oidcConfigId": "742414e2-7bfd-484d-8026-0573468698f7"
+       }
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/fastify/process-warning"
+      }
+     }
+    }
+   },
+   "repo": {
+    "url": "https://github.com/fastify/process-warning"
+   },
+   "project": {
+    "source": "depsdev",
+    "projectKey": {
+     "id": "github.com/fastify/process-warning"
+    }
+   },
+   "siblings": {
+    "owner": "fastify",
+    "byAccount": {
+     "GitHub Actions": null,
+     "climba03003": {
+      "name": "fast-json-stringify",
+      "firstAt": "2026-02-06T02:43:16.418Z"
+     },
+     "eomm": {
+      "name": "@fastify/ajv-compiler",
+      "firstAt": "2021-08-17T13:43:53.605Z"
+     },
+     "fdawgs": null,
+     "matteo.collina": {
+      "name": "@fastify/ajv-compiler",
+      "firstAt": "2021-04-23T08:10:35.510Z"
+     }
+    }
+   }
+  },
+  "react-native-sound": {
+   "name": "react-native-sound",
+   "versions": [
+    "0.11.2"
+   ],
+   "packument": {
+    "name": "react-native-sound",
+    "dist-tags": {
+     "latest": "0.13.0"
+    },
+    "time": {
+     "created": "2015-10-19T06:24:27.256Z",
+     "modified": "2025-10-15T12:51:49.827Z",
+     "0.1.0": "2015-10-19T06:24:27.256Z",
+     "0.1.1": "2015-10-19T07:20:21.817Z",
+     "0.1.2": "2015-10-23T09:28:59.941Z",
+     "0.1.3": "2015-12-03T00:47:31.933Z",
+     "0.2.0": "2015-12-03T04:33:45.334Z",
+     "0.4.0": "2015-12-03T08:13:08.002Z",
+     "0.4.1": "2015-12-03T09:24:28.326Z",
+     "0.5.0": "2015-12-03T21:42:15.008Z",
+     "0.5.1": "2015-12-05T02:54:50.912Z",
+     "0.6.0": "2015-12-24T00:40:31.563Z",
+     "0.7.0": "2015-12-24T06:18:57.744Z",
+     "0.7.1": "2015-12-24T07:30:27.335Z",
+     "0.7.2": "2015-12-25T07:12:05.066Z",
+     "0.7.3": "2015-12-30T05:06:07.954Z",
+     "0.8.0": "2016-04-06T05:42:40.961Z",
+     "0.8.1": "2016-04-06T07:36:11.733Z",
+     "0.8.3": "2016-05-19T20:21:49.613Z",
+     "0.9.0": "2017-02-14T15:55:55.750Z",
+     "0.9.1": "2017-03-03T10:41:07.530Z",
+     "0.10.0": "2017-04-25T16:50:35.150Z",
+     "0.10.1": "2017-05-08T14:48:26.670Z",
+     "0.10.2": "2017-06-16T10:14:04.598Z",
+     "0.10.3": "2017-06-20T08:10:55.377Z",
+     "0.10.4": "2017-08-22T14:40:55.250Z",
+     "0.10.5": "2018-01-27T23:40:59.437Z",
+     "0.10.6": "2018-02-19T21:35:41.020Z",
+     "0.10.7": "2018-02-22T16:10:06.392Z",
+     "0.10.8": "2018-02-26T17:37:10.855Z",
+     "0.10.9": "2018-03-06T22:17:37.157Z",
+     "0.10.11": "2019-02-03T03:03:49.683Z",
+     "0.10.12": "2019-02-03T06:11:37.925Z",
+     "0.11.0": "2019-07-16T16:39:43.586Z",
+     "0.11.1": "2021-08-28T14:54:25.344Z",
+     "0.11.2": "2022-01-06T17:30:24.802Z",
+     "0.12.0": "2025-07-14T16:40:11.602Z",
+     "0.13.0": "2025-10-15T12:51:49.628Z"
+    },
+    "maintainers": [
+     {
+      "name": "paulmelnikow"
+     },
+     {
+      "name": "zmxv"
+     },
+     {
+      "name": "benvium"
+     },
+     {
+      "name": "trepidity"
+     },
+     {
+      "name": "romual2"
+     }
+    ],
+    "repository": {
+     "type": "git",
+     "url": "https://github.com/zmxv/react-native-sound"
+    },
+    "versions": {
+     "0.1.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.1.1": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.1.2": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.1.3": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.2.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.4.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.4.1": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.5.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.5.1": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.6.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.7.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.7.1": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.7.2": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.7.3": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.8.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.8.1": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.8.3": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.9.0": {
+      "_npmUser": {
+       "name": "benvium"
+      }
+     },
+     "0.9.1": {
+      "_npmUser": {
+       "name": "benvium"
+      }
+     },
+     "0.10.0": {
+      "_npmUser": {
+       "name": "benvium"
+      }
+     },
+     "0.10.1": {
+      "_npmUser": {
+       "name": "benvium"
+      }
+     },
+     "0.10.2": {
+      "_npmUser": {
+       "name": "benvium"
+      }
+     },
+     "0.10.3": {
+      "_npmUser": {
+       "name": "benvium"
+      }
+     },
+     "0.10.4": {
+      "_npmUser": {
+       "name": "trepidity"
+      }
+     },
+     "0.10.5": {
+      "_npmUser": {
+       "name": "trepidity"
+      }
+     },
+     "0.10.6": {
+      "_npmUser": {
+       "name": "trepidity"
+      }
+     },
+     "0.10.7": {
+      "_npmUser": {
+       "name": "trepidity"
+      }
+     },
+     "0.10.8": {
+      "_npmUser": {
+       "name": "trepidity"
+      }
+     },
+     "0.10.9": {
+      "_npmUser": {
+       "name": "trepidity"
+      }
+     },
+     "0.10.11": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.10.12": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.11.0": {
+      "_npmUser": {
+       "name": "paulmelnikow"
+      }
+     },
+     "0.11.1": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.11.2": {
+      "_npmUser": {
+       "name": "zmxv"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/zmxv/react-native-sound"
+      }
+     },
+     "0.12.0": {
+      "_npmUser": {
+       "name": "zmxv"
+      }
+     },
+     "0.13.0": {
+      "_npmUser": {
+       "name": "romual2"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/zmxv/react-native-sound"
+      }
+     }
+    }
+   },
+   "repo": {
+    "url": "https://github.com/zmxv/react-native-sound"
+   },
+   "project": {
+    "source": "depsdev",
+    "projectKey": {
+     "id": "github.com/zmxv/react-native-sound"
+    },
+    "scorecard": {
+     "date": "2026-08-24T00:00:00Z",
+     "repository": {
+      "name": "github.com/zmxv/react-native-sound"
+     },
+     "overallScore": 2.1,
+     "checks": [
+      {
+       "name": "Maintained",
+       "score": 0,
+       "reason": "0 commit(s) and 0 issue activity found in the last 90 days -- score normalized to 0"
+      }
+     ]
+    }
+   },
+   "siblings": {
+    "owner": "zmxv",
+    "byAccount": {
+     "benvium": null,
+     "paulmelnikow": null,
+     "romual2": null,
+     "trepidity": null,
+     "zmxv": {
+      "name": "markend",
+      "firstAt": "2015-11-30T08:37:35.057Z"
+     }
+    }
+   }
+  },
+  "react-native-video": {
+   "name": "react-native-video",
+   "versions": [
+    "6.19.1"
+   ],
+   "packument": {
+    "name": "react-native-video",
+    "dist-tags": {
+     "alpha": "6.0.0-alpha.11",
+     "rc": "6.8.0-rc.0",
+     "v5-stable": "5.2.2",
+     "next": "7.0.0-alpha.12",
+     "beta": "7.0.0-beta.12",
+     "latest": "6.19.3"
+    },
+    "time": {
+     "created": "2015-03-31T05:09:13.105Z",
+     "modified": "2026-10-06T17:40:35.775Z",
+     "0.1.0": "2015-03-31T05:09:13.105Z",
+     "0.1.2": "2015-03-31T05:53:40.532Z",
+     "0.1.3": "2015-03-31T06:01:35.476Z",
+     "0.1.4": "2015-03-31T06:30:09.213Z",
+     "0.1.5": "2015-04-04T19:07:16.631Z",
+     "0.1.6": "2015-04-05T00:58:16.848Z",
+     "0.1.8": "2015-04-06T19:18:06.318Z",
+     "0.1.9": "2015-04-06T20:06:57.432Z",
+     "0.2.0": "2015-04-06T20:26:45.059Z",
+     "0.2.1": "2015-04-07T15:32:55.356Z",
+     "0.2.2": "2015-04-07T17:42:03.326Z",
+     "0.2.3": "2015-04-07T20:29:37.378Z",
+     "0.2.4": "2015-04-08T03:39:14.835Z",
+     "0.2.5": "2015-04-08T19:06:54.110Z",
+     "0.2.6": "2015-04-09T19:35:58.768Z",
+     "0.2.7": "2015-04-10T16:19:05.693Z",
+     "0.2.8": "2015-04-11T23:42:37.637Z",
+     "0.2.9": "2015-04-14T05:17:11.891Z",
+     "0.3.1": "2015-04-21T20:21:11.119Z",
+     "0.3.2": "2015-04-29T04:54:50.038Z",
+     "0.3.3": "2015-05-10T23:01:56.077Z",
+     "0.3.5": "2015-05-11T15:25:36.744Z",
+     "0.3.6": "2015-05-13T03:28:33.809Z",
+     "0.4.0": "2015-05-15T01:11:01.365Z",
+     "0.4.1": "2015-05-30T19:48:03.810Z",
+     "0.4.2": "2015-06-05T17:19:07.136Z",
+     "0.4.3": "2015-06-10T17:29:34.597Z",
+     "0.4.4": "2015-06-17T04:14:38.758Z",
+     "0.4.5": "2015-06-18T05:25:22.010Z",
+     "0.4.7": "2015-06-25T19:53:44.941Z",
+     "0.4.8": "2015-06-25T22:41:07.854Z",
+     "0.4.9": "2015-06-26T20:49:50.020Z",
+     "0.4.10": "2015-07-11T01:21:59.338Z",
+     "0.4.11": "2015-07-15T15:13:56.637Z",
+     "0.4.12": "2015-07-23T07:42:49.451Z",
+     "0.5.0": "2015-07-28T22:46:37.299Z",
+     "0.5.1": "2015-08-08T07:00:06.895Z",
+     "0.6.0": "2015-08-24T03:24:30.828Z",
+     "0.6.1": "2015-09-16T22:38:39.180Z",
+     "0.7.0": "2016-02-01T04:22:03.954Z",
+     "0.7.1": "2016-02-03T16:45:46.422Z",
+     "0.8.0-beta": "2016-04-12T18:34:43.524Z",
+     "0.8.0-rc": "2016-05-10T21:15:18.842Z",
+     "0.8.0": "2016-05-30T15:04:11.734Z",
+     "0.9.0": "2016-08-16T01:15:07.698Z",
+     "1.0.0": "2017-01-31T13:15:59.271Z",
+     "1.2.0": "2017-07-31T20:01:28.422Z",
+     "2.0.0": "2017-08-16T19:21:14.595Z",
+     "2.1.0": "2018-05-29T04:56:58.748Z",
+     "2.1.1": "2018-05-29T06:28:51.620Z",
+     "2.2.0": "2018-06-08T17:12:55.847Z",
+     "2.3.0": "2018-06-21T05:34:27.162Z",
+     "2.3.1": "2018-06-21T16:23:41.479Z",
+     "3.0.0": "2018-06-29T21:00:05.657Z",
+     "3.1.0": "2018-07-16T22:47:03.374Z",
+     "3.2.0": "2018-08-06T01:31:58.497Z",
+     "3.2.1": "2018-09-13T02:50:37.417Z",
+     "4.0.0": "2018-11-21T08:09:52.565Z",
+     "4.0.1": "2018-11-21T17:26:17.046Z",
+     "4.1.0": "2018-12-06T04:13:13.709Z",
+     "4.2.0": "2018-12-13T20:56:47.756Z",
+     "4.3.0": "2019-01-01T06:14:22.053Z",
+     "4.3.1": "2019-01-04T06:13:03.054Z",
+     "4.4.0": "2019-02-19T07:24:08.470Z",
+     "4.4.1": "2019-04-04T06:30:32.501Z",
+     "4.4.2": "2019-06-22T08:36:12.918Z",
+     "4.4.3": "2019-07-09T08:14:19.731Z",
+     "4.4.4": "2019-07-12T08:17:21.954Z",
+     "5.0.0": "2019-07-25T15:56:19.506Z",
+     "5.0.1": "2019-09-08T06:12:26.921Z",
+     "5.0.2": "2019-09-08T06:32:26.297Z",
+     "5.1.0-alpha1": "2019-09-24T07:29:53.817Z",
+     "5.1.0-alpha2": "2020-01-28T23:44:45.072Z",
+     "5.1.0-alpha3": "2020-02-17T17:44:24.007Z",
+     "5.1.0-alpha4": "2020-02-20T14:25:34.707Z",
+     "5.1.0-alpha5": "2020-02-26T00:10:23.648Z",
+     "5.1.0-alpha6": "2020-02-27T01:44:31.551Z",
+     "4.4.5": "2020-03-12T01:37:25.124Z",
+     "5.1.0-alpha7": "2020-08-13T02:02:20.000Z",
+     "5.1.0-alpha8": "2020-08-20T03:21:00.249Z",
+     "5.1.1": "2021-01-14T02:13:02.605Z",
+     "5.2.0-alpha1": "2021-10-11T08:24:44.796Z",
+     "5.2.0": "2021-10-20T13:39:29.012Z",
+     "6.0.0-alpha.0": "2022-06-15T19:32:17.314Z",
+     "6.0.0-alpha.1": "2022-06-22T06:36:23.072Z",
+     "5.2.1": "2022-09-13T07:01:19.334Z",
+     "6.0.0-alpha.2": "2022-09-13T17:37:42.155Z",
+     "6.0.0-alpha.3": "2022-09-14T16:37:11.887Z",
+     "6.0.0-alpha.4": "2022-12-09T20:50:05.852Z",
+     "6.0.0-alpha.5": "2023-02-12T20:21:49.378Z",
+     "6.0.0-alpha.6": "2023-04-05T21:23:54.754Z",
+     "6.0.0-alpha.7": "2023-08-03T19:31:09.396Z",
+     "6.0.0-alpha.8": "2023-09-14T19:59:23.280Z",
+     "6.0.0-alpha.9": "2023-11-04T16:00:30.823Z",
+     "6.0.0-alpha.10": "2023-11-13T21:29:24.121Z",
+     "6.0.0-alpha.11": "2023-11-15T20:42:27.925Z",
+     "6.0.0-beta.0": "2023-11-18T14:43:18.832Z",
+     "6.0.0-beta.1": "2023-12-02T12:59:52.307Z",
+     "6.0.0-beta.2": "2023-12-08T21:15:56.490Z",
+     "6.0.0-beta.3": "2023-12-24T13:41:43.117Z",
+     "6.0.0-beta.4": "2024-01-15T07:24:46.737Z",
+     "6.0.0-beta.5": "2024-02-02T11:56:26.149Z",
+     "6.0.0-beta.6": "2024-03-18T10:05:12.544Z",
+     "6.0.0-beta.7": "2024-03-30T11:28:45.014Z",
+     "6.0.0-beta.8": "2024-04-03T19:48:14.072Z",
+     "6.0.0-rc.0": "2024-04-22T17:32:16.816Z",
+     "6.0.0-rc.1": "2024-05-08T16:13:38.878Z",
+     "6.0.0-rc.2": "2024-05-13T19:41:18.938Z",
+     "6.0.0": "2024-05-14T15:44:38.353Z",
+     "6.1.0": "2024-05-22T12:06:44.685Z",
+     "6.1.1": "2024-05-22T21:19:58.917Z",
+     "6.1.2": "2024-05-23T15:37:23.282Z",
+     "6.2.0": "2024-06-07T15:41:51.699Z",
+     "6.3.0": "2024-06-22T09:17:21.538Z",
+     "6.4.0": "2024-07-11T11:08:39.261Z",
+     "6.4.1": "2024-07-12T08:53:37.045Z",
+     "6.4.2": "2024-07-15T10:52:09.159Z",
+     "6.4.3": "2024-07-24T08:12:51.564Z",
+     "6.4.4": "2024-08-15T14:12:57.523Z",
+     "6.4.5": "2024-08-17T13:37:42.844Z",
+     "6.5.0": "2024-09-04T09:47:46.514Z",
+     "6.6.0": "2024-09-18T19:17:10.195Z",
+     "6.6.1": "2024-09-18T20:51:26.779Z",
+     "6.6.2": "2024-09-20T16:54:04.897Z",
+     "6.6.3": "2024-09-29T19:24:36.094Z",
+     "6.6.4": "2024-10-03T06:31:36.333Z",
+     "6.7.0-rc.0": "2024-10-11T10:11:42.279Z",
+     "6.7.0": "2024-10-17T19:58:50.582Z",
+     "6.8.0-rc.0": "2024-10-26T15:06:11.136Z",
+     "6.8.0": "2024-11-17T14:42:46.930Z",
+     "6.8.1": "2024-11-24T20:25:43.703Z",
+     "6.8.2": "2024-11-25T20:36:26.005Z",
+     "6.9.0": "2025-01-04T11:51:23.832Z",
+     "6.9.1": "2025-01-10T11:09:03.929Z",
+     "6.10.0": "2025-01-22T21:59:41.668Z",
+     "6.10.1": "2025-02-15T16:26:22.590Z",
+     "6.10.2": "2025-02-22T14:05:14.916Z",
+     "6.11.0": "2025-03-16T13:15:52.363Z",
+     "6.12.0": "2025-04-06T14:42:38.154Z",
+     "5.2.2": "2025-04-14T13:42:24.991Z",
+     "6.13.0": "2025-04-18T16:07:33.976Z",
+     "6.14.0": "2025-05-10T15:06:10.905Z",
+     "6.14.1": "2025-05-28T14:28:28.102Z",
+     "6.15.0": "2025-06-12T11:44:33.853Z",
+     "7.0.0-alpha.0": "2025-06-30T18:12:55.896Z",
+     "6.16.0": "2025-07-02T09:18:14.032Z",
+     "7.0.0-alpha.1": "2025-07-07T12:27:24.482Z",
+     "6.16.1": "2025-07-08T14:11:59.214Z",
+     "7.0.0-alpha.2": "2025-07-25T11:36:16.301Z",
+     "7.0.0-alpha.3": "2025-08-04T11:48:29.423Z",
+     "7.0.0-alpha.4": "2025-08-26T16:04:39.544Z",
+     "7.0.0-alpha.5": "2025-10-02T11:32:29.515Z",
+     "6.17.0": "2025-10-06T11:32:36.776Z",
+     "7.0.0-alpha.6": "2025-10-10T13:43:10.008Z",
+     "7.0.0-alpha.7": "2025-10-16T16:17:26.929Z",
+     "7.0.0-alpha.8": "2025-11-06T08:08:52.109Z",
+     "7.0.0-alpha.9": "2025-11-16T17:29:47.724Z",
+     "6.18.0": "2025-11-18T14:21:30.958Z",
+     "7.0.0-alpha.10": "2025-11-23T14:19:16.442Z",
+     "7.0.0-alpha.11": "2025-11-30T14:46:35.304Z",
+     "7.0.0-alpha.12": "2025-12-08T20:36:39.535Z",
+     "7.0.0-beta.0": "2025-12-09T17:32:48.376Z",
+     "7.0.0-beta.1": "2025-12-11T20:41:02.078Z",
+     "7.0.0-beta.2": "2025-12-19T13:56:20.208Z",
+     "6.19.0": "2026-01-19T14:52:43.353Z",
+     "7.0.0-beta.3": "2026-01-22T11:09:00.905Z",
+     "7.0.0-beta.4": "2026-01-30T22:50:23.111Z",
+     "7.0.0-beta.5": "2026-02-02T23:16:17.743Z",
+     "7.0.0-beta.6": "2026-02-06T11:09:23.418Z",
+     "7.0.0-beta.7": "2026-03-10T19:34:12.243Z",
+     "6.19.1": "2026-03-15T12:30:36.635Z",
+     "7.0.0-beta.8": "2026-03-18T18:36:34.225Z",
+     "7.0.0-beta.9": "2026-04-09T17:17:06.943Z",
+     "6.19.2": "2026-04-28T12:41:27.011Z",
+     "7.0.0-beta.10": "2026-06-18T20:18:21.697Z",
+     "7.0.0-beta.11": "2026-08-12T11:31:28.725Z",
+     "6.19.3": "2026-09-18T11:33:50.735Z",
+     "7.0.0-beta.12": "2026-10-06T17:40:35.595Z"
+    },
+    "maintainers": [
+     {
+      "name": "olivier.bouillet"
+     },
+     {
+      "name": "moskalakamil"
+     },
+     {
+      "name": "filip_wnek"
+     },
+     {
+      "name": "jbiesiadatwg"
+     },
+     {
+      "name": "mziolkowskii"
+     }
+    ],
+    "repository": {
+     "type": "git",
+     "url": "https://github.com/TheWidlarzGroup/react-native-video"
+    },
+    "versions": {
+     "0.1.0": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.2": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.3": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.4": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.5": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.6": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.8": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.1.9": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.0": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.1": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.2": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.3": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.4": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.5": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.6": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.7": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.8": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.2.9": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.3.1": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.3.2": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.3.3": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.3.5": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.3.6": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.0": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.1": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.2": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.3": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.4": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.5": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.7": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.8": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.9": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.10": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.11": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.4.12": {
+      "_npmUser": {
+       "name": "isair"
+      }
+     },
+     "0.5.0": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.5.1": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.6.0": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.6.1": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.7.0": {
+      "_npmUser": {
+       "name": "isair"
+      }
+     },
+     "0.7.1": {
+      "_npmUser": {
+       "name": "isair"
+      }
+     },
+     "0.8.0-beta": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "0.8.0-rc": {
+      "_npmUser": {
+       "name": "sjchmiela"
+      }
+     },
+     "0.8.0": {
+      "_npmUser": {
+       "name": "sjchmiela"
+      }
+     },
+     "0.9.0": {
+      "_npmUser": {
+       "name": "brentvatne"
+      }
+     },
+     "1.0.0": {
+      "_npmUser": {
+       "name": "apperson-labs"
+      }
+     },
+     "1.2.0": {
+      "_npmUser": {
+       "name": "apperson-labs"
+      }
+     },
+     "2.0.0": {
+      "_npmUser": {
+       "name": "apperson-labs"
+      }
+     },
+     "2.1.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "2.1.1": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "2.2.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "2.3.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "2.3.1": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "3.0.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "3.1.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "3.2.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "3.2.1": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.0.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.0.1": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.1.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.2.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.3.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.3.1": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.4.0": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.4.1": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "4.4.2": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "4.4.3": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "4.4.4": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "5.0.0": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "5.0.1": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "5.0.2": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "5.1.0-alpha1": {
+      "_npmUser": {
+       "name": "danielmarino24i"
+      }
+     },
+     "5.1.0-alpha2": {
+      "_npmUser": {
+       "name": "benoitdion"
+      }
+     },
+     "5.1.0-alpha3": {
+      "_npmUser": {
+       "name": "benoitdion"
+      }
+     },
+     "5.1.0-alpha4": {
+      "_npmUser": {
+       "name": "benoitdion"
+      }
+     },
+     "5.1.0-alpha5": {
+      "_npmUser": {
+       "name": "benoitdion"
+      }
+     },
+     "5.1.0-alpha6": {
+      "_npmUser": {
+       "name": "benoitdion"
+      }
+     },
+     "4.4.5": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "5.1.0-alpha7": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "5.1.0-alpha8": {
+      "_npmUser": {
+       "name": "cobarx"
+      }
+     },
+     "5.1.1": {
+      "_npmUser": {
+       "name": "nickfujita"
+      }
+     },
+     "5.2.0-alpha1": {
+      "_npmUser": {
+       "name": "zchwyng"
+      }
+     },
+     "5.2.0": {
+      "_npmUser": {
+       "name": "zchwyng"
+      }
+     },
+     "6.0.0-alpha.0": {
+      "_npmUser": {
+       "name": "hueniverse"
+      }
+     },
+     "6.0.0-alpha.1": {
+      "_npmUser": {
+       "name": "hueniverse"
+      }
+     },
+     "5.2.1": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.2": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.3": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.4": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.5": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.6": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.7": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.8": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.9": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.10": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-alpha.11": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-beta.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-beta.1": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-beta.2": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-beta.3": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-beta.4": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0-beta.5": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0-beta.6": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0-beta.7": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.0.0-beta.8": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0-rc.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0-rc.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0-rc.2": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.0.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.1.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.1.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.1.2": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.2.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.3.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.4.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.4.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.4.2": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.4.3": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.4.4": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.4.5": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.5.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.6.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.6.1": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.6.2": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.6.3": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.6.4": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.7.0-rc.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.7.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.8.0-rc.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.8.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.8.1": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.8.2": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.9.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.9.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.10.0": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.10.1": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.10.2": {
+      "_npmUser": {
+       "name": "olivier.bouillet"
+      }
+     },
+     "6.11.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.12.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "5.2.2": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.13.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.14.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.14.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.15.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.16.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.16.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.2": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.3": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.4": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.5": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.17.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.6": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.7": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.8": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.9": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.18.0": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-alpha.10": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.11": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-alpha.12": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.0": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-beta.1": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "7.0.0-beta.2": {
+      "_npmUser": {
+       "name": "krzysztof_moch"
+      }
+     },
+     "6.19.0": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.3": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.4": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.5": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.6": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.7": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "6.19.1": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/TheWidlarzGroup/react-native-video"
+      }
+     },
+     "7.0.0-beta.8": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.9": {
+      "_npmUser": {
+       "name": "filip_wnek"
+      }
+     },
+     "6.19.2": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.10": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "7.0.0-beta.11": {
+      "_npmUser": {
+       "name": "moskalakamil"
+      }
+     },
+     "6.19.3": {
+      "_npmUser": {
+       "name": "filip_wnek"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/TheWidlarzGroup/react-native-video"
+      }
+     },
+     "7.0.0-beta.12": {
+      "_npmUser": {
+       "name": "filip_wnek"
+      }
+     }
+    }
+   },
+   "repo": {
+    "url": "https://github.com/TheWidlarzGroup/react-native-video"
+   },
+   "project": {
+    "source": "depsdev",
+    "projectKey": {
+     "id": "github.com/thewidlarzgroup/react-native-video"
+    }
+   },
+   "siblings": {
+    "owner": "thewidlarzgroup",
+    "byAccount": {
+     "apperson-labs": null,
+     "benoitdion": null,
+     "brentvatne": null,
+     "cobarx": null,
+     "danielmarino24i": null,
+     "filip_wnek": null,
+     "hueniverse": null,
+     "isair": null,
+     "krzysztof_moch": null,
+     "moskalakamil": {
+      "name": "react-native-video-player",
+      "firstAt": "2024-11-25T14:29:40.623Z"
+     },
+     "nickfujita": null,
+     "olivier.bouillet": null,
+     "sjchmiela": null,
+     "zchwyng": null
+    }
+   }
+  },
+  "react-native-paper": {
+   "name": "react-native-paper",
+   "versions": [
+    "5.14.5"
+   ],
+   "packument": {
+    "name": "react-native-paper",
+    "dist-tags": {
+     "version3.11.0": "3.11.0",
+     "version3.12.0": "3.12.0",
+     "alpha": "6.0.0-alpha.0",
+     "rc": "5.0.0-rc.10",
+     "latest": "5.15.3"
+    },
+    "time": {
+     "created": "2016-11-18T10:49:32.454Z",
+     "modified": "2026-06-15T21:41:11.524Z",
+     "0.0.1": "2016-11-18T10:49:32.454Z",
+     "0.0.2": "2016-11-21T14:33:26.078Z",
+     "0.0.3": "2016-11-28T15:14:04.463Z",
+     "0.0.4": "2016-11-30T09:02:39.105Z",
+     "0.0.5": "2017-08-09T10:54:47.288Z",
+     "0.0.6": "2017-08-09T14:33:26.322Z",
+     "0.0.7": "2017-10-02T13:15:47.660Z",
+     "0.0.8": "2017-12-05T10:38:07.348Z",
+     "0.0.9": "2018-02-06T09:01:23.512Z",
+     "1.0.0": "2018-02-22T15:46:33.228Z",
+     "1.0.1": "2018-02-24T16:59:22.019Z",
+     "1.0.2": "2018-03-03T13:39:41.301Z",
+     "1.1.0": "2018-03-05T13:46:43.945Z",
+     "1.1.1": "2018-03-06T15:22:05.300Z",
+     "1.2.1": "2018-03-13T19:37:41.603Z",
+     "1.2.2": "2018-03-14T13:56:03.466Z",
+     "1.2.3": "2018-03-15T16:08:23.964Z",
+     "1.2.4": "2018-03-19T10:40:05.430Z",
+     "1.2.5": "2018-03-29T13:38:39.607Z",
+     "1.2.6": "2018-04-05T11:41:14.203Z",
+     "1.2.7": "2018-04-15T19:03:12.859Z",
+     "1.2.8": "2018-04-17T12:47:19.087Z",
+     "1.3.0": "2018-04-18T08:54:08.656Z",
+     "1.3.1": "2018-04-18T15:42:08.429Z",
+     "1.4.0": "2018-04-19T13:57:59.951Z",
+     "1.4.1": "2018-04-23T14:46:51.210Z",
+     "1.5.0": "2018-05-01T09:39:24.810Z",
+     "1.6.0": "2018-05-05T16:08:17.235Z",
+     "1.7.0": "2018-05-07T09:58:09.235Z",
+     "1.8.0": "2018-05-16T12:45:45.025Z",
+     "2.0.0-alpha.0": "2018-05-24T17:38:27.505Z",
+     "1.9.0": "2018-05-26T00:00:37.860Z",
+     "1.9.1": "2018-05-26T00:04:56.646Z",
+     "1.9.2": "2018-06-03T14:38:59.644Z",
+     "2.0.0-alpha.1": "2018-06-03T21:48:24.112Z",
+     "1.10.2": "2018-06-03T23:52:44.118Z",
+     "1.10.3": "2018-06-04T09:53:42.292Z",
+     "2.0.0-alpha.2": "2018-06-04T13:48:18.943Z",
+     "2.0.0-alpha.3": "2018-06-04T14:37:02.714Z",
+     "2.0.0-alpha.4": "2018-06-05T12:24:17.945Z",
+     "1.10.4": "2018-06-06T11:19:14.838Z",
+     "2.0.0-alpha.5": "2018-06-06T11:39:47.894Z",
+     "1.11.0": "2018-06-12T09:13:25.768Z",
+     "2.0.0-alpha.6": "2018-06-12T09:18:10.457Z",
+     "1.11.1": "2018-07-25T12:31:35.445Z",
+     "2.0.0-alpha.7": "2018-07-25T13:04:53.306Z",
+     "2.0.0-alpha.8": "2018-09-01T12:01:56.981Z",
+     "1.12.0": "2018-09-02T18:55:09.054Z",
+     "2.0.0-alpha.9": "2018-09-02T19:14:42.819Z",
+     "2.0.1": "2018-09-05T09:54:08.119Z",
+     "2.1.0": "2018-10-04T15:25:35.487Z",
+     "2.1.1": "2018-10-05T15:00:36.118Z",
+     "2.1.2": "2018-10-08T01:30:24.656Z",
+     "2.1.3": "2018-10-11T12:29:50.318Z",
+     "2.2.0": "2018-11-05T22:26:54.500Z",
+     "2.2.1": "2018-11-06T11:14:51.045Z",
+     "2.2.2": "2018-11-06T14:41:23.257Z",
+     "2.2.3": "2018-11-07T11:39:55.195Z",
+     "2.2.4": "2018-11-08T16:27:15.202Z",
+     "2.2.5": "2018-11-18T07:34:24.257Z",
+     "2.2.6": "2018-11-21T10:50:17.691Z",
+     "2.2.7": "2018-11-22T15:57:10.682Z",
+     "2.2.8": "2018-11-23T15:21:26.028Z",
+     "2.3.0": "2018-12-10T11:56:34.205Z",
+     "2.4.0": "2018-12-19T12:39:13.735Z",
+     "2.5.0": "2019-01-18T09:54:08.246Z",
+     "2.6.0": "2019-01-23T09:58:51.272Z",
+     "2.6.1": "2019-01-23T17:29:25.826Z",
+     "2.6.2": "2019-01-27T09:57:36.248Z",
+     "2.6.3": "2019-01-27T13:00:32.713Z",
+     "2.7.0": "2019-01-29T19:57:30.717Z",
+     "2.8.0": "2019-02-01T11:15:13.505Z",
+     "2.9.0": "2019-02-01T22:14:43.925Z",
+     "2.9.1": "2019-02-02T20:22:14.064Z",
+     "2.10.0": "2019-02-04T20:53:14.641Z",
+     "2.10.1": "2019-02-04T20:57:20.572Z",
+     "2.11.0": "2019-02-06T19:33:37.438Z",
+     "2.11.1": "2019-02-14T18:54:42.993Z",
+     "2.12.0": "2019-02-27T00:10:42.980Z",
+     "2.13.0": "2019-03-11T13:53:10.740Z",
+     "2.14.0": "2019-03-19T15:22:04.529Z",
+     "2.15.0": "2019-03-26T10:06:24.373Z",
+     "2.15.1": "2019-04-04T07:27:50.114Z",
+     "2.15.2": "2019-04-09T14:09:20.668Z",
+     "3.0.0-alpha.0": "2019-04-15T12:13:01.804Z",
+     "3.0.0-alpha.1": "2019-05-23T10:40:46.297Z",
+     "2.16.0": "2019-06-03T07:13:45.907Z",
+     "3.0.0-alpha.2": "2019-06-27T09:56:24.227Z",
+     "3.0.0-alpha.3": "2019-08-01T10:20:26.480Z",
+     "3.0.0-alpha.4": "2019-09-09T07:42:25.666Z",
+     "3.0.0-alpha.5": "2019-09-11T14:46:53.531Z",
+     "3.0.0-alpha.6": "2019-10-17T14:54:09.304Z",
+     "3.0.0-alpha.7": "2019-10-17T20:49:06.754Z",
+     "3.0.0-alpha.8": "2019-10-21T12:51:39.850Z",
+     "3.0.0": "2019-10-22T07:19:31.867Z",
+     "3.1.0": "2019-10-28T22:23:40.661Z",
+     "3.1.1": "2019-10-29T01:14:18.045Z",
+     "3.2.0": "2019-11-05T16:01:32.196Z",
+     "3.2.1": "2019-11-06T05:32:27.722Z",
+     "3.3.0": "2019-12-02T09:47:41.091Z",
+     "3.4.0": "2019-12-17T13:08:49.002Z",
+     "3.4.1": "2020-01-20T15:36:16.728Z",
+     "3.5.0": "2020-01-22T20:45:43.545Z",
+     "3.5.1": "2020-01-24T13:30:58.731Z",
+     "3.6.0": "2020-02-04T09:23:12.199Z",
+     "3.7.0": "2020-04-03T08:50:04.002Z",
+     "3.8.0": "2020-04-08T10:27:18.850Z",
+     "3.9.0": "2020-04-30T09:22:27.383Z",
+     "4.0.0-alpha.0": "2020-05-04T08:29:00.583Z",
+     "3.10.0": "2020-05-08T12:58:02.493Z",
+     "3.10.1": "2020-05-08T13:26:07.939Z",
+     "4.0.0-alpha.1": "2020-06-21T11:28:58.875Z",
+     "4.0.0-alpha.2": "2020-06-30T21:03:50.620Z",
+     "4.0.0": "2020-07-16T11:05:16.880Z",
+     "3.11.0": "2020-07-16T12:43:18.922Z",
+     "4.0.1": "2020-07-17T10:34:33.769Z",
+     "4.1.0": "2020-08-31T13:28:47.826Z",
+     "4.2.0": "2020-09-21T09:00:19.869Z",
+     "4.3.0": "2020-10-30T14:21:50.965Z",
+     "4.3.1": "2020-11-06T08:40:06.906Z",
+     "3.12.0": "2020-11-10T14:10:14.662Z",
+     "4.4.0": "2020-11-13T13:55:58.361Z",
+     "4.4.1": "2020-11-23T09:15:25.913Z",
+     "4.5.0": "2020-12-14T11:50:22.690Z",
+     "4.6.0": "2021-01-08T13:02:58.204Z",
+     "4.7.0": "2021-01-15T11:11:56.781Z",
+     "4.7.1": "2021-01-22T12:57:25.581Z",
+     "4.7.2": "2021-02-21T22:35:36.098Z",
+     "4.8.0": "2021-04-22T11:57:43.265Z",
+     "4.8.1": "2021-04-23T13:02:56.923Z",
+     "4.9.0": "2021-05-27T15:58:24.604Z",
+     "4.9.1": "2021-05-28T11:08:06.587Z",
+     "4.9.2": "2021-06-21T13:22:11.112Z",
+     "4.10.0": "2021-11-03T09:10:13.993Z",
+     "4.10.1": "2021-11-16T16:20:17.299Z",
+     "4.11.0": "2021-12-10T14:40:58.588Z",
+     "4.11.1": "2021-12-12T15:59:22.700Z",
+     "4.11.2": "2022-01-14T09:31:44.658Z",
+     "4.12.0-alpha.0": "2022-01-27T08:43:18.835Z",
+     "4.12.0": "2022-03-30T10:15:03.086Z",
+     "4.12.1": "2022-04-26T08:12:53.542Z",
+     "5.0.0-rc.0": "2022-06-14T08:40:44.487Z",
+     "5.0.0-rc.1": "2022-06-14T21:43:55.398Z",
+     "5.0.0-rc.2": "2022-06-15T08:55:30.618Z",
+     "4.12.2": "2022-06-25T17:54:05.393Z",
+     "5.0.0-rc.3": "2022-07-07T15:03:28.564Z",
+     "4.12.3": "2022-07-17T18:14:18.237Z",
+     "4.12.4": "2022-07-26T08:59:14.593Z",
+     "5.0.0-rc.4": "2022-08-08T16:15:12.485Z",
+     "5.0.0-rc.5": "2022-09-05T09:51:43.858Z",
+     "5.0.0-rc.6": "2022-09-22T11:15:55.549Z",
+     "4.12.5": "2022-10-03T08:02:57.361Z",
+     "5.0.0-rc.7": "2022-10-19T08:29:10.659Z",
+     "5.0.0-rc.8": "2022-10-20T13:59:01.094Z",
+     "5.0.0-rc.9": "2022-10-31T13:53:54.970Z",
+     "5.0.0-rc.10": "2022-11-14T13:28:38.666Z",
+     "5.0.0": "2022-12-06T10:13:59.953Z",
+     "5.0.1": "2022-12-07T09:45:47.712Z",
+     "5.0.2": "2022-12-15T10:09:09.521Z",
+     "5.1.0": "2022-12-19T09:17:33.696Z",
+     "5.1.1": "2022-12-28T18:23:25.996Z",
+     "5.1.2": "2022-12-29T13:48:43.456Z",
+     "5.1.3": "2023-01-09T20:04:07.861Z",
+     "5.1.4": "2023-01-23T14:44:32.582Z",
+     "5.2.0": "2023-02-06T20:40:52.529Z",
+     "5.3.0": "2023-03-06T20:43:07.421Z",
+     "5.3.1": "2023-03-06T22:40:31.026Z",
+     "5.4.0": "2023-03-11T15:17:33.978Z",
+     "5.4.1": "2023-03-13T19:14:21.238Z",
+     "5.5.0": "2023-03-20T20:25:24.213Z",
+     "5.5.1": "2023-03-23T22:04:58.603Z",
+     "5.5.2": "2023-03-27T20:12:59.782Z",
+     "5.6.0": "2023-04-03T14:34:12.037Z",
+     "5.7.0": "2023-04-17T13:45:37.998Z",
+     "5.7.1": "2023-05-02T14:35:11.686Z",
+     "5.7.2": "2023-05-03T09:27:33.329Z",
+     "5.8.0": "2023-05-15T14:56:46.198Z",
+     "5.9.0": "2023-06-28T18:31:36.126Z",
+     "5.9.1": "2023-07-04T12:42:02.744Z",
+     "5.10.0": "2023-08-02T11:56:20.813Z",
+     "5.10.1": "2023-08-09T18:48:03.858Z",
+     "5.10.2": "2023-08-21T13:48:43.807Z",
+     "5.10.3": "2023-08-21T19:25:25.776Z",
+     "5.10.4": "2023-09-04T14:38:12.787Z",
+     "5.10.5": "2023-09-18T20:42:03.073Z",
+     "5.10.6": "2023-09-20T21:37:01.594Z",
+     "5.11.0": "2023-10-16T15:48:11.418Z",
+     "5.11.1": "2023-10-24T08:52:34.713Z",
+     "5.11.2": "2023-11-23T10:30:34.143Z",
+     "5.11.3": "2023-11-27T10:07:12.525Z",
+     "5.11.4": "2023-12-11T11:04:39.834Z",
+     "5.11.5": "2023-12-27T11:40:40.689Z",
+     "4.12.6": "2023-12-27T11:53:49.757Z",
+     "4.12.7": "2024-01-02T18:54:54.776Z",
+     "5.11.6": "2024-01-02T19:07:13.220Z",
+     "4.12.8": "2024-01-08T12:33:37.786Z",
+     "5.11.7": "2024-01-08T12:42:46.089Z",
+     "5.12.0": "2024-01-10T22:43:51.940Z",
+     "5.12.1": "2024-01-12T21:32:58.627Z",
+     "5.12.2": "2024-01-22T16:59:42.299Z",
+     "5.12.3": "2024-01-24T19:37:20.036Z",
+     "5.12.4": "2024-07-27T12:55:18.950Z",
+     "5.12.5": "2024-07-28T18:35:49.634Z",
+     "5.13.0": "2025-01-09T14:32:26.125Z",
+     "5.13.1": "2025-01-10T16:00:40.756Z",
+     "5.13.2": "2025-04-16T12:31:14.684Z",
+     "5.13.3": "2025-04-17T13:56:53.034Z",
+     "5.13.4": "2025-04-23T12:20:46.000Z",
+     "5.13.5": "2025-04-25T14:17:43.495Z",
+     "5.14.0": "2025-04-30T11:23:16.307Z",
+     "5.14.1": "2025-05-08T11:12:04.227Z",
+     "5.14.2": "2025-05-13T11:19:18.002Z",
+     "5.14.3": "2025-05-13T13:08:07.312Z",
+     "5.14.4": "2025-05-15T12:20:33.289Z",
+     "5.14.5": "2025-05-20T11:10:03.881Z",
+     "5.15.0": "2026-02-04T09:14:58.514Z",
+     "5.15.1": "2026-04-14T13:17:41.960Z",
+     "5.15.2": "2026-05-08T11:31:19.052Z",
+     "5.15.3": "2026-05-26T15:47:10.847Z",
+     "6.0.0-alpha.0": "2026-06-15T21:41:11.395Z"
+    },
+    "maintainers": [
+     {
+      "name": "satya164"
+     },
+     {
+      "name": "ferrannp"
+     },
+     {
+      "name": "jbinda"
+     },
+     {
+      "name": "lukewalczak"
+     },
+     {
+      "name": "callstack-oss"
+     },
+     {
+      "name": "trensik"
+     },
+     {
+      "name": "tjaniczek-callstack"
+     },
+     {
+      "name": "ruben-rebelo"
+     }
+    ],
+    "repository": {
+     "type": "git",
+     "url": "https://github.com/callstack/react-native-paper"
+    },
+    "versions": {
+     "0.0.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.4": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.5": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.6": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.7": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "0.0.8": {
+      "_npmUser": {
+       "name": "ferrannp"
+      }
+     },
+     "0.0.9": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.0.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.0.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.0.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.1.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.1.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.4": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.5": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.6": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.7": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.2.8": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.3.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.3.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.4.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.4.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.5.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.6.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.7.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.8.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.9.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.9.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.9.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.10.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.10.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.4": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.10.4": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.5": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.11.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.6": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.11.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.7": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.8": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "1.12.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.0-alpha.9": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.0.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.1.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.1.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.1.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.1.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.4": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.5": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.6": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.2.7": {
+      "_npmUser": {
+       "name": "ferrannp"
+      }
+     },
+     "2.2.8": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.3.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.4.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.5.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.6.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.6.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.6.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.6.3": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.7.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.8.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.9.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.9.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.10.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.10.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.11.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.11.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "2.12.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "2.13.0": {
+      "_npmUser": {
+       "name": "ferrannp"
+      }
+     },
+     "2.14.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "2.15.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "2.15.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "2.15.2": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "2.16.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.2": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.3": {
+      "_npmUser": {
+       "name": "ferrannp"
+      }
+     },
+     "3.0.0-alpha.4": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.5": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.6": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0-alpha.7": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "3.0.0-alpha.8": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.0.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.1.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "3.1.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "3.2.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "3.2.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "3.3.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.4.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.4.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.5.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "3.5.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.6.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.7.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.8.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.9.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.0.0-alpha.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.10.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.10.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.0.0-alpha.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.0.0-alpha.2": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.0.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.11.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.0.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.1.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.2.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.3.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.3.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "3.12.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.4.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.4.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.5.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.6.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.7.0": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.7.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.7.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "4.8.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.8.1": {
+      "_npmUser": {
+       "name": "trensik"
+      }
+     },
+     "4.9.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.9.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.9.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.10.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.10.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.11.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.11.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.11.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.0-alpha.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.6": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.7": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.8": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.9": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0-rc.10": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.0.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.1.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.1.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.1.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.1.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.1.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.2.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.3.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.3.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.4.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.4.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.5.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.5.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.5.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.6.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.7.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.7.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.7.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.8.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.9.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.9.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.10.6": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.6": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.7": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.6": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "4.12.8": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.11.7": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.12.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.12.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.12.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.12.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.12.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.12.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.13.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.13.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.13.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.13.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.13.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.13.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.14.0": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.14.1": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.14.2": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.14.3": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.14.4": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      }
+     },
+     "5.14.5": {
+      "_npmUser": {
+       "name": "lukewalczak"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/callstack/react-native-paper"
+      }
+     },
+     "5.15.0": {
+      "_npmUser": {
+       "name": "ruben-rebelo"
+      }
+     },
+     "5.15.1": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "5.15.2": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     },
+     "5.15.3": {
+      "_npmUser": {
+       "name": "satya164"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/callstack/react-native-paper"
+      }
+     },
+     "6.0.0-alpha.0": {
+      "_npmUser": {
+       "name": "satya164"
+      }
+     }
+    }
+   },
+   "repo": {
+    "url": "https://github.com/callstack/react-native-paper"
+   },
+   "project": {
+    "source": "depsdev",
+    "projectKey": {
+     "id": "github.com/callstack/react-native-paper"
+    },
+    "scorecard": {
+     "date": "2026-08-24T00:00:00Z",
+     "repository": {
+      "name": "github.com/callstack/react-native-paper"
+     },
+     "overallScore": 5.6,
+     "checks": [
+      {
+       "name": "Maintained",
+       "score": 10,
+       "reason": "24 commit(s) and 11 issue activity found in the last 90 days -- score normalized to 10"
+      }
+     ]
+    }
+   },
+   "siblings": {
+    "owner": "callstack",
+    "byAccount": {
+     "ferrannp": null,
+     "lukewalczak": null,
+     "ruben-rebelo": null,
+     "satya164": null,
+     "trensik": {
+      "name": "react-native-fbads",
+      "firstAt": "2018-09-17T08:58:27.848Z"
+     }
+    }
+   }
+  },
+  "react-native-safe-area-context": {
+   "name": "react-native-safe-area-context",
+   "versions": [
+    "5.9.1"
+   ],
+   "packument": {
+    "name": "react-native-safe-area-context",
+    "dist-tags": {
+     "next": "4.8.0-rc.0",
+     "rc": "4.10.0-rc.2",
+     "beta": "5.2.0-beta.0",
+     "latest": "5.10.1"
+    },
+    "time": {
+     "created": "2019-08-16T20:01:25.247Z",
+     "modified": "2026-09-29T12:47:09.822Z",
+     "0.1.0": "2019-08-16T20:01:25.408Z",
+     "0.2.0": "2019-08-19T02:01:35.930Z",
+     "0.3.0": "2019-08-20T00:40:41.424Z",
+     "0.3.1": "2019-08-25T04:03:24.369Z",
+     "0.3.2": "2019-08-27T17:01:50.108Z",
+     "0.3.3": "2019-08-29T15:48:17.390Z",
+     "0.3.4": "2019-08-30T00:08:56.767Z",
+     "0.3.5": "2019-08-30T22:34:49.577Z",
+     "0.3.6": "2019-09-13T02:14:15.119Z",
+     "0.4.0": "2019-10-08T17:37:38.014Z",
+     "0.4.1": "2019-10-08T18:22:56.990Z",
+     "0.5.0": "2019-10-11T17:41:06.129Z",
+     "0.6.0": "2019-11-04T20:34:50.162Z",
+     "0.6.1": "2019-11-23T22:56:23.927Z",
+     "0.6.2": "2019-12-31T17:46:34.932Z",
+     "0.6.3": "2020-01-30T18:17:05.486Z",
+     "0.6.4": "2020-01-30T18:33:49.624Z",
+     "0.7.0": "2020-02-05T22:56:37.208Z",
+     "0.7.1": "2020-02-06T20:31:57.181Z",
+     "0.7.2": "2020-02-06T20:35:31.611Z",
+     "0.7.3": "2020-02-13T00:56:34.235Z",
+     "1.0.0-beta.0": "2020-05-02T22:18:06.641Z",
+     "1.0.0-beta.1": "2020-05-03T19:27:17.813Z",
+     "1.0.0-beta.2": "2020-05-04T21:11:04.800Z",
+     "1.0.0": "2020-05-09T17:53:19.169Z",
+     "1.0.1": "2020-05-18T19:46:59.835Z",
+     "1.0.2": "2020-05-18T20:04:23.401Z",
+     "2.0.0-beta.0": "2020-05-21T21:02:29.293Z",
+     "2.0.0-beta.1": "2020-05-22T22:20:10.348Z",
+     "2.0.0": "2020-05-22T23:17:48.015Z",
+     "2.0.1": "2020-05-25T18:22:37.224Z",
+     "2.0.2": "2020-05-26T02:10:32.790Z",
+     "2.0.3": "2020-05-26T20:29:18.401Z",
+     "3.0.0-beta.1": "2020-05-28T05:59:00.810Z",
+     "3.0.0-beta.2": "2020-05-28T09:29:43.109Z",
+     "3.0.0-beta.3": "2020-05-28T09:31:50.900Z",
+     "3.0.0": "2020-05-28T16:05:12.889Z",
+     "3.0.1": "2020-05-28T17:25:46.590Z",
+     "3.0.2": "2020-05-28T19:53:11.154Z",
+     "3.0.3": "2020-06-09T18:24:29.528Z",
+     "3.0.4": "2020-06-13T20:23:43.347Z",
+     "3.0.5": "2020-06-14T20:14:15.795Z",
+     "3.0.6": "2020-06-22T17:01:48.440Z",
+     "3.0.7": "2020-06-26T19:14:34.854Z",
+     "3.1.0-beta.0": "2020-07-10T19:02:35.413Z",
+     "3.1.0-beta.1": "2020-07-10T19:13:57.304Z",
+     "3.1.0": "2020-07-10T19:44:07.551Z",
+     "3.1.1": "2020-07-10T19:52:12.592Z",
+     "3.1.2": "2020-08-06T17:58:24.106Z",
+     "3.1.3": "2020-08-06T18:07:50.865Z",
+     "3.1.4": "2020-08-07T18:09:35.574Z",
+     "3.1.5": "2020-08-19T17:50:19.378Z",
+     "3.1.6": "2020-08-19T19:29:46.757Z",
+     "3.1.7": "2020-08-24T16:39:59.681Z",
+     "3.1.8": "2020-09-17T15:46:20.996Z",
+     "3.1.9": "2020-11-11T19:01:42.553Z",
+     "3.2.0": "2021-03-07T20:21:13.862Z",
+     "3.3.0": "2021-08-06T02:15:09.022Z",
+     "3.3.1": "2021-08-31T16:04:38.706Z",
+     "3.3.2": "2021-09-01T17:36:04.456Z",
+     "3.4.0": "2022-02-16T06:09:55.320Z",
+     "4.0.0": "2022-02-18T09:16:05.996Z",
+     "4.0.1-rc.0": "2022-02-18T17:41:21.816Z",
+     "4.0.1-rc.1": "2022-02-18T19:39:56.680Z",
+     "4.0.1-rc.2": "2022-02-18T19:48:58.462Z",
+     "4.0.1-rc.3": "2022-02-18T20:03:42.315Z",
+     "4.0.1-rc.4": "2022-02-18T20:18:57.443Z",
+     "4.0.1-rc.5": "2022-02-18T23:37:24.584Z",
+     "3.4.1": "2022-02-18T23:46:54.703Z",
+     "4.0.1": "2022-02-23T17:32:43.616Z",
+     "4.0.2": "2022-02-28T18:20:43.470Z",
+     "4.1.0": "2022-03-01T02:51:29.700Z",
+     "4.1.1": "2022-03-01T18:58:26.397Z",
+     "4.1.2": "2022-03-01T20:58:34.266Z",
+     "4.1.3": "2022-03-13T17:19:11.373Z",
+     "4.1.4": "2022-03-14T20:02:22.978Z",
+     "4.2.0": "2022-03-15T17:56:18.148Z",
+     "4.2.1": "2022-03-15T20:24:03.861Z",
+     "4.2.2": "2022-03-21T17:11:20.903Z",
+     "4.2.3": "2022-03-27T21:05:56.528Z",
+     "4.2.4": "2022-03-28T03:52:34.796Z",
+     "4.2.5": "2022-04-26T17:07:51.473Z",
+     "4.3.0": "2022-06-05T20:01:17.565Z",
+     "4.3.1": "2022-06-06T03:18:46.240Z",
+     "4.3.2": "2022-08-19T16:50:40.006Z",
+     "4.3.3": "2022-08-19T17:15:24.191Z",
+     "4.3.4": "2022-09-19T23:26:59.337Z",
+     "4.4.0": "2022-09-28T04:39:17.083Z",
+     "4.4.1": "2022-09-28T12:31:52.719Z",
+     "4.5.0": "2023-01-19T03:03:55.856Z",
+     "4.5.1": "2023-04-08T16:18:03.508Z",
+     "4.5.2": "2023-04-29T15:33:31.100Z",
+     "4.5.3": "2023-05-16T15:26:13.745Z",
+     "4.5.4": "2023-06-20T23:57:09.144Z",
+     "4.6.0": "2023-06-20T23:57:51.945Z",
+     "4.5.5": "2023-06-21T00:02:28.743Z",
+     "4.6.1": "2023-06-21T13:56:22.939Z",
+     "4.6.2": "2023-06-21T13:58:41.909Z",
+     "4.6.3": "2023-06-21T22:04:09.542Z",
+     "4.6.4": "2023-07-04T15:18:59.126Z",
+     "4.7.0": "2023-07-10T23:24:41.464Z",
+     "4.7.1": "2023-07-11T18:53:51.844Z",
+     "4.7.2": "2023-09-01T01:17:54.541Z",
+     "4.7.3": "2023-10-18T15:40:57.937Z",
+     "4.7.4": "2023-10-25T17:04:57.989Z",
+     "4.8.0-rc.0": "2023-12-01T06:53:04.829Z",
+     "4.8.0": "2023-12-08T21:02:21.818Z",
+     "4.8.1": "2023-12-13T15:45:00.482Z",
+     "4.8.2": "2023-12-20T19:28:20.374Z",
+     "4.9.0": "2024-02-01T19:04:00.368Z",
+     "4.10.0-rc.0": "2024-02-28T15:57:25.654Z",
+     "4.10.0-rc.1": "2024-03-08T21:11:17.273Z",
+     "4.10.0-rc.2": "2024-04-12T03:14:42.743Z",
+     "4.10.0": "2024-04-23T17:55:33.503Z",
+     "4.10.1": "2024-04-23T17:58:20.120Z",
+     "4.10.2": "2024-05-30T16:37:36.891Z",
+     "4.10.3": "2024-05-30T16:41:15.149Z",
+     "4.10.4": "2024-06-04T15:28:10.923Z",
+     "4.10.5": "2024-06-17T05:53:28.607Z",
+     "4.10.6": "2024-06-28T17:49:25.121Z",
+     "4.10.7": "2024-06-28T21:00:41.408Z",
+     "4.10.8": "2024-07-09T05:44:12.170Z",
+     "4.10.9": "2024-08-15T16:41:47.254Z",
+     "4.11.0": "2024-09-10T18:23:19.930Z",
+     "4.11.1": "2024-10-16T16:48:01.481Z",
+     "4.12.0": "2024-10-25T22:21:39.213Z",
+     "4.13.0": "2024-10-31T04:46:31.228Z",
+     "4.13.1": "2024-10-31T05:00:10.793Z",
+     "4.14.0": "2024-10-31T20:33:09.553Z",
+     "5.0.0": "2024-12-06T16:41:53.012Z",
+     "4.14.1": "2024-12-06T16:50:28.624Z",
+     "5.1.0": "2025-01-08T20:40:41.636Z",
+     "5.2.0-beta.0": "2025-01-24T07:19:11.797Z",
+     "5.2.0": "2025-02-03T17:16:30.796Z",
+     "5.3.0": "2025-03-03T23:08:08.668Z",
+     "5.4.0": "2025-04-14T09:43:47.868Z",
+     "5.4.1": "2025-05-22T15:40:44.676Z",
+     "5.5.0": "2025-06-21T17:19:58.219Z",
+     "5.5.1": "2025-07-01T14:50:41.954Z",
+     "5.5.2": "2025-07-10T14:40:58.819Z",
+     "5.6.0": "2025-08-07T16:22:43.065Z",
+     "5.6.1": "2025-08-19T15:57:18.282Z",
+     "5.6.2": "2025-10-28T19:12:36.246Z",
+     "5.7.0": "2026-02-24T20:53:59.356Z",
+     "5.8.0": "2026-05-18T21:46:39.680Z",
+     "5.8.1": "2026-08-03T19:21:14.267Z",
+     "5.9.0": "2026-08-12T15:51:45.018Z",
+     "5.9.1": "2026-08-18T10:34:33.639Z",
+     "5.10.0": "2026-09-16T18:27:31.845Z",
+     "5.10.1": "2026-09-29T12:47:09.140Z"
+    },
+    "maintainers": [
+     {
+      "name": "janicduplessis"
+     },
+     {
+      "name": "melvalesca"
+     }
+    ],
+    "repository": {
+     "type": "git",
+     "url": "https://github.com/appandflow/react-native-safe-area-context"
+    },
+    "versions": {
+     "0.1.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.2.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.3.6": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.4.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.4.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.5.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.6.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.6.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.6.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.6.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.6.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.7.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.7.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.7.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "0.7.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "1.0.0-beta.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "1.0.0-beta.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "1.0.0-beta.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "1.0.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "1.0.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "1.0.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "2.0.0-beta.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "2.0.0-beta.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "2.0.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "2.0.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "2.0.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "2.0.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.0-beta.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.0-beta.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.0-beta.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.6": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.0.7": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.0-beta.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.0-beta.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.6": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.7": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.8": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.1.9": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.2.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.3.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.3.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.3.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.4.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1-rc.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1-rc.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1-rc.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1-rc.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1-rc.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1-rc.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "3.4.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.0.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.1.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.1.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.1.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.1.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.1.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.2.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.2.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.2.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.2.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.2.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.2.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.3.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.3.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.3.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.3.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.3.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.4.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.4.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.5.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.5.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.5.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.5.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.5.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.6.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.5.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.6.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.6.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.6.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.6.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.7.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.7.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.7.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.7.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.7.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.8.0-rc.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.8.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.8.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.8.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.9.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.0-rc.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.0-rc.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.0-rc.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.3": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.4": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.5": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.6": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.7": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.8": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.10.9": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.11.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.11.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.12.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.13.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.13.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.14.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.0.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "4.14.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.1.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.2.0-beta.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.2.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.3.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.4.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.4.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.5.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.5.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.5.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.6.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.6.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.6.2": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.7.0": {
+      "_npmUser": {
+       "name": "melvalesca"
+      }
+     },
+     "5.8.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.8.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.9.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.9.1": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/AppAndFlow/react-native-safe-area-context"
+      }
+     },
+     "5.10.0": {
+      "_npmUser": {
+       "name": "janicduplessis"
+      }
+     },
+     "5.10.1": {
+      "_npmUser": {
+       "name": "GitHub Actions",
+       "trustedPublisher": {
+        "id": "github",
+        "oidcConfigId": "42d8eb0e-7da0-4c62-9d97-ffbce339303e"
+       }
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/appandflow/react-native-safe-area-context"
+      }
+     }
+    }
+   },
+   "repo": {
+    "url": "https://github.com/AppAndFlow/react-native-safe-area-context"
+   },
+   "project": {
+    "source": "depsdev",
+    "projectKey": {
+     "id": "github.com/appandflow/react-native-safe-area-context"
+    }
+   },
+   "siblings": {
+    "owner": "appandflow",
+    "byAccount": {
+     "GitHub Actions": null,
+     "janicduplessis": {
+      "name": "@appandflow/masonry-list",
+      "firstAt": "2017-05-28T02:29:50.002Z"
+     },
+     "melvalesca": null
     }
    }
   }

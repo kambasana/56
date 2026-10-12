@@ -10,6 +10,9 @@
  * For each: the trimmed packument and deps.dev project (record-lib.ts), and the history through the
  * real collector (src/history/git.ts), which now also keeps salted display-name keys and every id
  * the npm accounts' registry addresses hash to. Random salt, discarded; clones deleted once read.
+ * Tier 0.5 added process-warning, react-native-sound, react-native-video (false S5a items in the
+ * re-scans) and react-native-paper / -safe-area-context (real, benign), with each publishing
+ * account's cross-registry sibling answer (`siblings`).
  * Output: test/fixtures/stability/recorded/tier0-identity.json and history/tier0-<slug>.json.
  */
 import { randomBytes } from 'node:crypto';
@@ -30,10 +33,30 @@ export const TIER0_IDENTITY_SUBJECTS = [
   { slug: 'xmldom', name: '@xmldom/xmldom', version: '0.8.12', repo: 'https://github.com/xmldom/xmldom', scan: 'jitsi-meet' },
   // jitsi-meet's re-scan: facebook/react's v19.0.1 tag read as a scheduler release; history shared with react.
   { slug: 'scheduler', name: 'scheduler', version: '0.26.0', repo: 'https://github.com/facebook/react', scan: 'jitsi-meet', historyFrom: 'react' },
+  // Tier 0.5 (independent verification of the Tier 0 re-scans): false S5a items.
+  // process-warning: v5.1.0 tagged by "KaKa" (a short one-word name) from a new address; the same
+  // person committed as the no-reply login climba03003, the npm account that published 5.1.0 and
+  // that already published fastify and fast-json-stringify (same repository owner).
+  { slug: 'process-warning', name: 'process-warning', version: '2.3.2', repo: 'https://github.com/fastify/process-warning', scan: 'parse-server' },
+  // react-native-sound: "RomualdPercereau" and "Romuald Percereau" are one person.
+  { slug: 'react-native-sound', name: 'react-native-sound', version: '0.11.2', repo: 'https://github.com/zmxv/react-native-sound', scan: 'jitsi-meet' },
+  // react-native-video: a 7.0.0-beta.9 pre-release while 6.19.1 is in use.
+  { slug: 'react-native-video', name: 'react-native-video', version: '6.19.1', repo: 'https://github.com/TheWidlarzGroup/react-native-video', scan: 'jitsi-meet' },
+  // The remaining jitsi-meet S5a items (real, benign: kept as observations).
+  { slug: 'react-native-paper', name: 'react-native-paper', version: '5.14.5', repo: 'https://github.com/callstack/react-native-paper', scan: 'jitsi-meet' },
+  { slug: 'react-native-safe-area-context', name: 'react-native-safe-area-context', version: '5.9.1', repo: 'https://github.com/AppAndFlow/react-native-safe-area-context', scan: 'jitsi-meet' },
 ] as const;
+
+/** Repository owner of a recorded subject (the enricher's sibling key). */
+function ownerOf(repo: string): string {
+  return repo.replace(/^https:\/\/[^/]+\//, '').split('/')[0]!.toLowerCase();
+}
 
 if (process.argv[1]?.endsWith('record-tier0-identity.ts')) {
   await installEnvProxy();
+  const { HttpClient } = await import('../../src/core/http.js');
+  const { npmSiblingRelease } = await import('../../src/enrich/history/index.js');
+  const http = new HttpClient({ cacheDir: false });
   const recordedAt = new Date();
   const salt = randomBytes(32);
   const cacheDir = mkdtempSync(join(process.env.BR_RECORD_TMP ?? tmpdir(), 'br-tier0-'));
@@ -63,6 +86,22 @@ if (process.argv[1]?.endsWith('record-tier0-identity.ts')) {
         out.packages[s.slug] = entry;
         continue;
       }
+      // Tier 0.5: the cross-registry sibling answer for every account that published the package
+      // (the default lookup of the enricher, live), keyed by account.
+      const siblings: Record<string, { name: string; firstAt: string } | null> = {};
+      for (const account of Object.keys(Object.fromEntries(Object.values(r.pkg.packument.versions as Record<string, any>).map((m) => [m?._npmUser?.name, 1]))).filter((a) => a && a !== 'undefined').sort()) {
+        // The npm search API rate-limits (429): wait and retry.
+        for (let attempt = 0; ; attempt++) {
+          try {
+            siblings[account] = (await npmSiblingRelease({ http }, account, ownerOf(s.repo), s.name)) ?? null;
+            break;
+          } catch (err) {
+            if (attempt >= 6) throw err;
+            await new Promise((r) => setTimeout(r, 15_000 * (attempt + 1)));
+          }
+        }
+      }
+      (entry as any).siblings = { owner: ownerOf(s.repo), byAccount: siblings };
       const rec = await recordHistory(s.repo, r.emails, salt, cacheDir);
       if ('error' in rec) entry.historyError = rec.error;
       else writeFileSync(join(STABILITY_DIR, 'history', `tier0-${s.slug}.json`), `${JSON.stringify(encodeFixture(rec, `Recorded live ${recordedAt.toISOString()} by test/stability/record-tier0-identity.ts from ${s.repo}. Emails and display names hashed with a random salt that was discarded; npmPublishers / npmPublisherIds map npm accounts whose registry e-mail hashes to ids here.`, recordedAt))}\n`);

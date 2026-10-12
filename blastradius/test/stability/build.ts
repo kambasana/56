@@ -7,7 +7,7 @@
 import { HttpClient } from '../../src/core/http.js';
 import { makeFact, npmPurl, type Fact, type Inventory, type StabilityReport } from '../../src/core/types.js';
 import { scorecardFromApi, scorecardFromDepsDev } from '../../src/enrich/depsdev/index.js';
-import { createHistoryEnricher } from '../../src/enrich/history/index.js';
+import { createHistoryEnricher, type HistoryEnricherOptions } from '../../src/enrich/history/index.js';
 import { needsTarballSize, packageSize, packumentFacts } from '../../src/enrich/npm/packument.js';
 import { npmPackagePage } from '../../src/enrich/npm/registry.js';
 import { osvRecordsToFacts } from '../../src/enrich/osv/index.js';
@@ -50,9 +50,9 @@ export function registryFacts(pkg: RecordedPackage, asOf: Date, project: Record<
 }
 
 /** History facts through the real enricher, replaying `histories` (repository key → record). */
-export async function historyFacts(inventory: Inventory, facts: Fact[], histories: (url: string) => HistoryRecord | undefined, asOf: Date): Promise<Fact[]> {
+export async function historyFacts(inventory: Inventory, facts: Fact[], histories: (url: string) => HistoryRecord | undefined, asOf: Date, extra: Partial<HistoryEnricherOptions> = {}): Promise<Fact[]> {
   const warnings: string[] = [];
-  const enricher = createHistoryEnricher({ repoFacts: () => facts, recorded: histories, salt: 'unused-recorded-histories-are-hashed' });
+  const enricher = createHistoryEnricher({ ...extra, repoFacts: () => facts, recorded: histories, salt: 'unused-recorded-histories-are-hashed' });
   return enricher.enrich(inventory, { http: offlineHttp(), now: asOf, offline: true, warn: (m) => warnings.push(m) });
 }
 
@@ -71,9 +71,9 @@ export function advisoriesRecorded(pkgs: readonly RecordedPackage[]): boolean {
   return pkgs.every((p) => p.versions.every((v) => p.osv?.[v] !== undefined));
 }
 
-export async function stabilityOf(inventory: Inventory, registry: Fact[], histories: (url: string) => HistoryRecord | undefined, asOf: Date, advisoriesChecked = false): Promise<{ report: StabilityReport; facts: Fact[] }> {
+export async function stabilityOf(inventory: Inventory, registry: Fact[], histories: (url: string) => HistoryRecord | undefined, asOf: Date, advisoriesChecked = false, extra: Partial<HistoryEnricherOptions> = {}): Promise<{ report: StabilityReport; facts: Fact[] }> {
   const facts = [...registry];
-  facts.push(...(await historyFacts(inventory, facts, histories, asOf)));
+  facts.push(...(await historyFacts(inventory, facts, histories, asOf, extra)));
   return { report: buildStabilityReport(inventory, facts, asOf, { advisoriesChecked }), facts };
 }
 

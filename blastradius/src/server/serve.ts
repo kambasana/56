@@ -61,7 +61,7 @@ export function packageVersion(): string {
 
 export interface CreateServerOptions {
   /** Background git history after online scans (Tier 0); `serve` turns it on unless --no-history. */
-  history?: false | { maxRepos?: number; cacheDir?: string; recorded?: HistoryEnricherOptions['recorded'] };
+  history?: false | { maxRepos?: number; maxMb?: number; cacheDir?: string; recorded?: HistoryEnricherOptions['recorded'] };
   /** SQLite path; ':memory:' by default. */
   dbPath?: string;
   store?: Store;

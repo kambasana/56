@@ -16,9 +16,11 @@ import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, npmNameFromPurl, parsePurl, unversionedPurl } from '../../core/types.js';
 import type { Fact, Inventory, PurlString, ReleasePublishersValue } from '../../core/types.js';
 import { aggregateHistory, mappingLookups } from '../../history/aggregate.js';
-import { ensureClone, pruneCache, readHistory, runGit, type GitRun, type HistoryCacheOptions } from '../../history/git.js';
+import { cacheKey, CloneBudget, ensureClone, pruneCache, readHistory, runGit, type GitRun, type HistoryCacheOptions } from '../../history/git.js';
+import { addMonths } from '../../history/aggregate.js';
 import { GraphqlBudget, mapLogins, DEFAULT_BUDGET_POINTS } from '../../history/graphql.js';
-import { npmContinuity } from '../../history/continuity.js';
+import { isPrereleaseVersion, npmContinuity } from '../../history/continuity.js';
+import { isHistoryRepoUrl } from '../../history/repo-url.js';
 import { loadSalt, localIdentity } from '../../history/identity.js';
 import { renameIds, type HistoryRecord } from '../../history/record.js';
 import { mergeIdentities } from '../../history/merge.js';
@@ -41,6 +43,18 @@ export interface HistoryEnricherOptions {
   budgetPoints?: number;
   /** Repositories per scan (default 300; CLI --history-max). Picked by priority: direct runtime, then production fan-in. */
   maxRepos?: number;
+  /**
+   * Disk budget of the clone cache in MB (default 600; CLI --history-max-mb). Least recently used
+   * clones are deleted to stay under it; one clone may take at most budget / (concurrency + 1) (and
+   * 300 MB), and a larger repository is skipped.
+   */
+  maxMb?: number;
+  /**
+   * Shallow clones (git --shallow-since) covering this many months (default 60: the 24-month CAF,
+   * the 12-month windows and a 24-month look-back for first-seen dates); 0 = whole history. A
+   * repository whose last commit is older is deepened to its whole history (git.ts).
+   */
+  shallowMonths?: number;
   /** Receives which repositories were read, left out by the cap, or failed (coverage line). */
   onSelection?: (s: HistorySelection) => void;
   /** Parallel clones (default 2). */
@@ -49,6 +63,13 @@ export interface HistoryEnricherOptions {
   recorded?: (repoUrl: string) => HistoryRecord | undefined;
   /** Injected git runner (tests). */
   git?: GitRun;
+  /**
+   * Tier 0.5 cross-registry sibling check: the earliest release an npm account published of another
+   * package whose repository has the same owner (fastify/process-warning's 5.1.0 publisher already
+   * published fastify). Default: the npm search API (`maintainer:<account>`) and those packuments;
+   * tests inject recorded answers. Asked only for observations that would otherwise count.
+   */
+  siblingLookup?: (account: string, owner: string, exclude: string) => Promise<SiblingRelease | undefined>;
   /** Receives the GraphQL budget after the run (tests, logs). */
   onBudget?: (b: GraphqlBudget) => void;
 }
@@ -63,9 +84,31 @@ export interface HistorySelection {
   /** Could not be cloned or read, or skipped offline. */
   failed: string[];
   maxRepos: number;
+  /** Tier 0.5: stopped because the clone grew past the per-repository cap of the disk budget. */
+  tooLarge?: string[];
+  /** Disk budget (MB), per-clone cap (MB), the largest the cache got (MB), clones evicted, shallow window (months; 0 = full). */
+  budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number };
 }
 
 export const DEFAULT_HISTORY_MAX = 300;
+/** Default disk budget of the history clone cache, MB (Tier 0.5). */
+export const DEFAULT_HISTORY_MAX_MB = 600;
+/** Default shallow window, months (Tier 0.5). */
+export const DEFAULT_SHALLOW_MONTHS = 60;
+
+/**
+ * Ecosystems whose history results are never used (Tier 0.5): CI actions and container images get no
+ * upkeep label, so their repositories are not cloned. npm and PyPI packages are labelled; other
+ * package subjects (e.g. pkg:generic/xz-utils) keep their history report.
+ */
+export const HISTORY_SKIPPED_ECOSYSTEMS: ReadonlySet<string> = new Set(['githubactions', 'docker', 'oci']);
+
+export interface SiblingRelease {
+  /** The sibling package. */
+  name: string;
+  /** When the account first published it (ISO). */
+  firstAt: string;
+}
 
 /** The version in a release tag name: "v19.0.1" → "19.0.1", "xz-5.2" → "5.2", "pkg@1.2.3" → "1.2.3". */
 export function releaseVersion(tag: string): string {
@@ -122,6 +165,47 @@ function siblingPublishers(publishersOf: ReadonlyMap<PurlString, ReleasePublishe
   };
 }
 
+/** Release-continuity (S5a) observation kinds. */
+const S5A_KINDS: ReadonlySet<string> = new Set(['release_by_new_person', 'release_takeover', 'npm_release_by_new_account']);
+
+/** Owner of a repository URL ("https://github.com/fastify/fastify" → "fastify"), lower case. */
+function repoOwner(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  const m = /^(?:git\+)?(?:https?|ssh|git):\/\/(?:[^@/]+@)?(?:www\.)?(github\.com|gitlab\.com|bitbucket\.org)[/:]([^/]+)\//i.exec(url) ?? /^(?:git@)?(github\.com|gitlab\.com|bitbucket\.org):([^/]+)\//i.exec(url);
+  return m ? m[2]!.toLowerCase() : undefined;
+}
+
+/** How many same-owner packages of an account are checked (packument fetches) at most. */
+const SIBLING_CANDIDATES = 5;
+
+/**
+ * Default cross-registry sibling lookup (Tier 0.5): the packages an npm account maintains (npm
+ * search API, `maintainer:<account>`), those whose repository has `owner`, and the earliest release
+ * the account published of any of them (packument `_npmUser`). Network; undefined on any failure.
+ */
+export async function npmSiblingRelease(ctx: Pick<EnrichContext, 'http'>, account: string, owner: string, exclude: string): Promise<SiblingRelease | undefined> {
+  const res = await ctx.http.fetchJsonOrNull<{ objects?: { package?: { name?: unknown; links?: { repository?: unknown } } }[] }>(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(`maintainer:${account}`)}&size=250`);
+  const names = (res?.objects ?? [])
+    .map((o) => o.package)
+    .filter((p): p is { name: string; links?: { repository?: unknown } } => typeof p?.name === 'string' && p.name !== exclude)
+    .filter((p) => repoOwner(typeof p.links?.repository === 'string' ? p.links.repository : undefined) === owner.toLowerCase())
+    .map((p) => p.name)
+    .sort()
+    .slice(0, SIBLING_CANDIDATES);
+  let best: SiblingRelease | undefined;
+  for (const name of names) {
+    const pk = await fetchPackument(ctx.http, name).catch(() => null);
+    if (!pk || !isObject(pk.versions) || !isObject(pk.time)) continue;
+    for (const [v, m] of Object.entries(pk.versions)) {
+      const by = isObject(m) && isObject(m._npmUser) ? m._npmUser.name : undefined;
+      const t = (pk.time as Record<string, unknown>)[v];
+      if (by !== account || typeof t !== 'string') continue;
+      if (!best || t < best.firstAt) best = { name, firstAt: t };
+    }
+  }
+  return best;
+}
+
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/;
 
 export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
@@ -138,11 +222,14 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         // A package in a monorepo subdirectory gets the facts of the whole repository (repo-level by
         // design; the stability label says so). One clone per repository either way.
         if (f.kind !== 'repo') continue;
+        // Tier 0.5: no clone whose result would be thrown away (CI actions, container images).
+        if (HISTORY_SKIPPED_ECOSYSTEMS.has(parsePurl(f.subject).type)) continue;
         const latest = latestRepo.get(unversionedPurl(f.subject));
         let url = (latest && !sameRepo(latest, f.value.url) ? latest : f.value.url).replace(/\.git$/, '').replace(/\/+$/, '');
         // GitHub owner and repository names are case-insensitive: one clone per repository.
         if (url.startsWith('https://github.com/')) url = url.toLowerCase();
-        if (!/^https:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/[^/]+\/[^/]+$/.test(url)) continue;
+        // Never a funding or profile page (github.com/sponsors/encode was declared as a repository).
+        if (!isHistoryRepoUrl(url)) continue;
         let s = byRepo.get(url);
         if (!s) byRepo.set(url, (s = new Set()));
         s.add(unversionedPurl(f.subject));
@@ -161,6 +248,24 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         if (f.value.directory && !dirOf.has(k)) dirOf.set(k, f.value.directory);
       }
       const established = siblingPublishers(publishersOf, ownerOf);
+      // Versions in use per package (Tier 0.5: a pre-release says nothing about a stable line in use).
+      const inUse = new Map<PurlString, string[]>();
+      for (const c of inv.components) {
+        const k = unversionedPurl(c.purl);
+        const l = inUse.get(k) ?? [];
+        l.push(c.version);
+        inUse.set(k, l);
+      }
+      const lookupCache = new Map<string, Promise<SiblingRelease | undefined>>();
+      const siblingLookup = opts.siblingLookup ?? ((account: string, owner: string, exclude: string) => (ctx.offline ? Promise.resolve(undefined) : npmSiblingRelease(ctx, account, owner, exclude)));
+      const externalSibling = async (account: string, owner: string | undefined, exclude: string, atMs: number): Promise<boolean> => {
+        if (!owner) return false;
+        const key = `${account}\u0000${owner}\u0000${exclude}`;
+        let p = lookupCache.get(key);
+        if (!p) lookupCache.set(key, (p = siblingLookup(account, owner, exclude).catch(() => undefined)));
+        const r = await p;
+        return r !== undefined && Date.parse(r.firstAt) < atMs;
+      };
       const maxRepos = opts.maxRepos ?? DEFAULT_HISTORY_MAX;
       const ordered = orderRepos(byRepo, inv);
       const repos = ordered.slice(0, maxRepos);
@@ -171,7 +276,16 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         return [];
       }
       const cacheDir = opts.cache?.dir ?? path.join(defaultCacheDir(), 'git-history');
-      const cache: HistoryCacheOptions = { ...opts.cache, dir: cacheDir };
+      const concurrency = opts.concurrency ?? 2;
+      const maxMb = opts.maxMb ?? DEFAULT_HISTORY_MAX_MB;
+      const shallowMonths = opts.shallowMonths ?? DEFAULT_SHALLOW_MONTHS;
+      // One clone may take a share of the budget that leaves room for the clones in flight and some
+      // cache: with the default 600 MB and 2 clones at a time, 200 MB each (and at most 300 MB).
+      const perCloneBytes = Math.min(opts.cache?.maxBytes ?? 300e6, Math.floor((maxMb * 1e6) / (concurrency + 1)));
+      const disk = opts.recorded ? undefined : new CloneBudget(cacheDir, maxMb * 1e6, perCloneBytes);
+      const shallowSince = shallowMonths > 0 ? addMonths(ctx.now, -shallowMonths) : undefined;
+      const cache: HistoryCacheOptions = { ...(shallowSince ? { shallowSince } : {}), ...opts.cache, dir: cacheDir, ...(disk ? { budget: disk } : {}) };
+      selection.tooLarge = [];
       // The salt is loaded only when a repository is actually read (recorded histories are already hashed).
       let salt = opts.salt;
       const getSalt = () => (salt ??= loadSalt(path.join(cacheDir, '..', 'history-salt')));
@@ -182,7 +296,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       let mappingFailed = 0;
       if (!ctx.offline && !opts.recorded) await pruneCache(cache).catch(() => 0);
 
-      await mapLimit(repos, opts.concurrency ?? 2, async (url) => {
+      await mapLimit(repos, concurrency, async (url) => {
         let rec: HistoryRecord | undefined = opts.recorded?.(url);
         if (!rec) {
           if (ctx.offline) {
@@ -190,13 +304,21 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             selection.failed.push(url);
             return;
           }
+          const dest = path.join(cacheDir, `${cacheKey(url)}.git`);
+          await disk?.acquire(dest);
           try {
             const dir = await ensureClone(url, cache, opts.git ?? runGit);
             rec = await readHistory(dir, { repo: url, salt: getSalt(), ...(cache.timeoutMs ? { timeoutMs: cache.timeoutMs } : {}) }, opts.git ?? runGit);
           } catch (err) {
-            ctx.warn?.(`git history: ${url}: ${(err as Error).message}`);
-            selection.failed.push(url);
+            const msg = (err as Error).message;
+            if (/larger than the cap/.test(msg)) selection.tooLarge!.push(url);
+            else {
+              ctx.warn?.(`git history: ${url}: ${msg}`);
+              selection.failed.push(url);
+            }
             return;
+          } finally {
+            await disk?.release(dest);
           }
         }
         let verified: { checked: number; verified: number } | undefined;
@@ -218,7 +340,8 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         }
         // Tier 0 identity merge: display name plus overlapping activity, then the npm publisher
         // (.mailmap was applied by git while reading).
-        const merged = mergeIdentities(rec);
+        const npmAccounts = [...new Set([...(byRepo.get(url) ?? [])].flatMap((s) => publishersOf.get(s)?.accounts.map((a) => a.name) ?? []))];
+        const merged = mergeIdentities(rec, { npmAccounts });
         rec = merged.rec;
         if (merged.namesAvailable) via.splice(1, 0, 'display-name');
         if (rec.npmPublisherIds) via.splice(via.indexOf('salted-hash'), 0, 'npm-publisher');
@@ -255,14 +378,19 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
           facts.push(makeFact('contributors', subject, agg.contributors, meta));
           // S5a npm side (P3): per package, from the npm publishers matched to this history.
           const pubs = publishersOf.get(subject);
+          const versionsInUse = inUse.get(subject) ?? [];
+          const stableOnly = versionsInUse.length > 0 && versionsInUse.every((v) => !isPrereleaseVersion(v));
           if (!pubs) {
-            facts.push(makeFact('commit_history', subject, agg.history, meta));
+            // No npm publisher record (PyPI, or no registry data): pre-release tags are still not
+            // releases of a stable line in use.
+            const pre = (c: { kind: string; release?: string }) => stableOnly && c.release !== undefined && S5A_KINDS.has(c.kind) && isPrereleaseVersion(releaseVersion(c.release));
+            facts.push(makeFact('commit_history', subject, { ...agg.history, changes: agg.history.changes.filter((c) => !pre(c)) }, meta));
             continue;
           }
           const known = (account: string, atMs: number) => established(subject, account, atMs);
           // publisherByVersion covers the 36 months before the scan (src/stability/cadence.ts).
           const window36 = new Date(ctx.now.getTime() - 3 * 365 * 86_400_000).toISOString().slice(0, 10);
-          const npm = npmContinuity(rec, pubs, ctx.now, known);
+          const npm = npmContinuity(rec, pubs, ctx.now, { establishedElsewhere: known, stableOnly });
           // Tier 0: a git-side release observation is not a new person's release when the release
           // went to npm through trusted publishing (the project's CI) or a release bot, or was
           // published by an account that already published a sibling package (same owner or scope).
@@ -271,6 +399,8 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             if (!(c.kind === 'release_by_new_person' || c.kind === 'release_takeover' || c.kind === 'release_handover') || c.release === undefined) return false;
             const v = releaseVersion(c.release);
             if (trusted.has(v)) return true;
+            // Tier 0.5: a pre-release (react-native-video 7.0.0-beta.9) while a stable line is in use (6.19.1).
+            if (stableOnly && isPrereleaseVersion(v)) return true;
             const at = Date.parse(`${c.date}T00:00:00Z`);
             // A tag whose version this package never published on npm is not this package's release
             // (react's v19.0.1 tag is no scheduler release); only inside the window the map covers.
@@ -288,9 +418,27 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
           };
           const name = subjectName(subject);
           const ownTag = (c: { release?: string }) => c.release === undefined || tagBelongsTo(c.release, name, dirOf.get(subject));
+          let changes = [...agg.history.changes.filter((c) => ownTag(c) && !notNew(c)), ...npm.changes];
+          // Tier 0.5: the npm account that published the release already published a package of the
+          // same repository owner that is not in this scan (fastify's climba03003 on process-warning).
+          // Only for recent S5a observations (the labels' window), so the lookups stay few.
+          const recentCut = new Date(ctx.now.getTime() - 400 * 86_400_000).toISOString().slice(0, 10);
+          const publisherOf = (c: { kind: string; release?: string }): string | undefined => {
+            if (c.release === undefined) return undefined;
+            if (c.kind === 'npm_release_by_new_account') return pubs.accounts.find((a) => (stableOnly ? a.firstStableVersion : a.firstVersion) === c.release)?.name;
+            return pubs.publisherByVersion?.[releaseVersion(c.release)];
+          };
+          const drop = new Set<(typeof changes)[number]>();
+          for (const c of changes) {
+            if (!S5A_KINDS.has(c.kind) || c.date < recentCut) continue;
+            const by = publisherOf(c);
+            if (!by || isReleaseBot(by)) continue;
+            if (await externalSibling(by, ownerOf.get(subject), name, Date.parse(`${c.date}T00:00:00Z`))) drop.add(c);
+          }
+          if (drop.size) changes = changes.filter((c) => !drop.has(c));
           const history = {
             ...agg.history,
-            changes: [...agg.history.changes.filter((c) => ownTag(c) && !notNew(c)), ...npm.changes].sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
+            changes: changes.sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
             npmPublishers: { total: npm.accounts, matched: npm.matched },
           };
           facts.push(makeFact('commit_history', subject, history, meta));
@@ -302,6 +450,9 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       opts.onBudget?.(budget);
       selection.read.sort();
       selection.failed.sort();
+      selection.tooLarge!.sort();
+      if (disk) selection.budget = { maxMb, perCloneMb: Math.round(perCloneBytes / 1e6), peakMb: Math.round(disk.peakBytes / 1e6), evicted: disk.evicted, shallowMonths };
+      if (selection.tooLarge!.length) ctx.warn?.(`git history: ${selection.tooLarge!.length} repositor${selection.tooLarge!.length === 1 ? 'y' : 'ies'} larger than the per-repository cap of ${Math.round(perCloneBytes / 1e6)} MB (disk budget ${maxMb} MB, --history-max-mb) left to the Scorecard / registry fallback`);
       opts.onSelection?.(selection);
       return facts.sort((a, b) => a.subject.localeCompare(b.subject) || a.kind.localeCompare(b.kind));
     },

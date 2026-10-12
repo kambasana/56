@@ -76,6 +76,17 @@ export interface HistoryRecord {
    * Absent in histories read before Tier 0.
    */
   names?: Record<string, string>;
+  /**
+   * Per GitHub login in this history (no-reply addresses), the salted key the login would have as a
+   * display name (identity.ts nameKey): a commit made under the display name "fnwk" from another
+   * address is tied to the login fnwk (Tier 0.5). Logins are public; only the key is kept.
+   */
+  loginNames?: Record<string, string>;
+  /**
+   * Tier 0.5: the clone was shallow (git --shallow-since); epoch seconds of the earliest commit read.
+   * Activity before it is unknown, so first-seen dates near it mean "on or before" (aggregate.ts).
+   */
+  shallowSince?: number;
 }
 
 /** Replace ids (e.g. hashed ids GitHub mapped to a login). Ids mapping to the same login merge. */
@@ -90,6 +101,8 @@ export function renameIds(rec: HistoryRecord, map: ReadonlyMap<string, string>):
     ...(rec.npmPublishers ? { npmPublishers: Object.fromEntries(Object.entries(rec.npmPublishers).map(([k, v]) => [k, r(v)])) } : {}),
     ...(rec.npmPublisherIds ? { npmPublisherIds: Object.fromEntries(Object.entries(rec.npmPublisherIds).map(([k, v]) => [k, [...new Set(v.map(r))]])) } : {}),
     ...(rec.names ? { names: renameNames(rec.names, r) } : {}),
+    ...(rec.loginNames ? { loginNames: rec.loginNames } : {}),
+    ...(rec.shallowSince !== undefined ? { shallowSince: rec.shallowSince } : {}),
   };
 }
 

@@ -56,8 +56,85 @@ export interface HistoryCacheOptions {
   retentionMs?: number;
   /** A clone fetched less than this long ago is read as is (default 12 h). */
   refreshMs?: number;
-  /** Only read history newer than this (git --shallow-since); default: whole history. */
+  /**
+   * Only read history newer than this (git --shallow-since); default: whole history. A shallow
+   * clone whose last commit is older than this date plus UNSHALLOW_MONTHS is deepened to the whole
+   * history (an inactive repository needs the 24 months up to its last commit).
+   */
   shallowSince?: Date;
+  /** Disk budget for the whole cache (Tier 0.5, --history-max-mb); clones are evicted to stay under it. */
+  budget?: CloneBudget;
+}
+
+/** A shallow clone is deepened when its last commit is older than shallowSince plus this many months. */
+export const UNSHALLOW_MONTHS = 36;
+
+/**
+ * Disk budget for the clone cache (Tier 0.5): before a clone starts, least recently used clones that
+ * are not being read are deleted until the cache, plus the per-clone cap of every clone in flight,
+ * fits the budget. A clone larger than the per-clone cap is stopped (and reported as too large).
+ */
+export class CloneBudget {
+  /** Largest size the cache reached (measured after each clone and fetch), bytes. */
+  peakBytes = 0;
+  /** Clones deleted to stay under the budget. */
+  evicted = 0;
+  private readonly busy = new Map<string, number>();
+  private lock: Promise<void> = Promise.resolve();
+
+  constructor(
+    readonly dir: string,
+    readonly budgetBytes: number,
+    /** Per-clone cap: the most one clone may take. */
+    readonly perCloneBytes: number,
+  ) {}
+
+  /** Wait until `dest` (a cache entry about to be cloned or fetched) fits; evicts LRU entries not in use. */
+  async acquire(dest: string): Promise<void> {
+    const run = this.lock.then(async () => {
+      this.busy.set(dest, (this.busy.get(dest) ?? 0) + 1);
+      await this.fit();
+    });
+    this.lock = run.catch(() => undefined);
+    await run;
+  }
+
+  /** `dest` is no longer cloned or read: it may be evicted from now on. */
+  async release(dest: string): Promise<void> {
+    const n = (this.busy.get(dest) ?? 1) - 1;
+    if (n <= 0) this.busy.delete(dest);
+    else this.busy.set(dest, n);
+    const total = await this.cacheBytes();
+    if (total.size > this.peakBytes) this.peakBytes = total.size;
+  }
+
+  private async cacheBytes(): Promise<{ size: number; entries: { path: string; size: number; mtimeMs: number }[] }> {
+    const entries: { path: string; size: number; mtimeMs: number }[] = [];
+    let size = 0;
+    for (const e of await readdir(this.dir, { withFileTypes: true }).catch(() => [])) {
+      if (!e.isDirectory() || !e.name.endsWith('.git')) continue;
+      const p = path.join(this.dir, e.name);
+      const st = await stat(p).catch(() => undefined);
+      const n = await dirSize(p);
+      size += n;
+      entries.push({ path: p, size: n, mtimeMs: st?.mtimeMs ?? 0 });
+    }
+    return { size, entries };
+  }
+
+  private async fit(): Promise<void> {
+    const { size, entries } = await this.cacheBytes();
+    if (size > this.peakBytes) this.peakBytes = size;
+    // Clones in flight may still grow up to the per-clone cap.
+    const inFlight = [...this.busy.keys()].reduce((a, d) => a + Math.max(0, this.perCloneBytes - (entries.find((e) => e.path === d)?.size ?? 0)), 0);
+    let total = size + inFlight;
+    for (const e of entries.filter((x) => !this.busy.has(x.path)).sort((a, b) => a.mtimeMs - b.mtimeMs)) {
+      if (total <= this.budgetBytes) break;
+      await rm(e.path, { recursive: true, force: true });
+      total -= e.size;
+      this.evicted++;
+    }
+  }
 }
 
 export interface GitRun {
@@ -145,7 +222,7 @@ export function cacheKey(url: string): string {
 export async function ensureClone(url: string, opts: HistoryCacheOptions, git: GitRun = runGit): Promise<string> {
   const problem = checkGitUrl(url);
   if (problem) throw new Error(`refusing to clone: ${problem}`);
-  const maxBytes = opts.maxBytes ?? 300e6;
+  const maxBytes = Math.min(opts.maxBytes ?? 300e6, opts.budget?.perCloneBytes ?? Infinity);
   const timeoutMs = opts.timeoutMs ?? 180_000;
   await mkdir(opts.dir, { recursive: true, mode: 0o700 });
   const dest = path.join(opts.dir, `${cacheKey(url)}.git`);
@@ -162,10 +239,32 @@ export async function ensureClone(url: string, opts: HistoryCacheOptions, git: G
     }
   }
   try {
-    await git(historyCloneArgs(url, dest, opts.shallowSince), { timeoutMs, watchDir: dest, maxBytes });
+    try {
+      await git(historyCloneArgs(url, dest, opts.shallowSince), { timeoutMs, watchDir: dest, maxBytes });
+    } catch (err) {
+      // No commit since the shallow date (an inactive repository: "error processing shallow info"):
+      // the whole history, which the 24 months up to its last commit need anyway.
+      if (!opts.shallowSince || /larger than the cap|timed out/.test((err as Error).message)) throw err;
+      await rm(dest, { recursive: true, force: true });
+      await git(historyCloneArgs(url, dest), { timeoutMs, watchDir: dest, maxBytes });
+    }
+    // An inactive repository needs the 24 months up to its last commit: deepen to the whole history.
+    let shallow = opts.shallowSince !== undefined && (await stat(path.join(dest, 'shallow')).catch(() => undefined)) !== undefined;
+    if (shallow) {
+      let lastCt = 0;
+      // rev-list, not log: git log would read the (not yet fetched) .mailmap blob of a bare repository.
+      await git([...SAFE_CONFIG, ...READ_CONFIG, 'rev-list', '--max-count=1', '--timestamp', 'HEAD', '--'], { cwd: dest, timeoutMs, onLine: (l) => (lastCt ||= Number(l.trim().split(' ')[0]) || 0) });
+      const keepFrom = new Date(opts.shallowSince!.getTime());
+      keepFrom.setUTCMonth(keepFrom.getUTCMonth() + UNSHALLOW_MONTHS);
+      if (lastCt * 1000 < keepFrom.getTime()) {
+        await git([...SAFE_CONFIG, 'fetch', '--quiet', '--filter=blob:none', '--unshallow', '--tags', 'origin'], { cwd: dest, timeoutMs, watchDir: dest, maxBytes });
+        shallow = false;
+      }
+    }
     // --single-branch brings only tags inside the default branch; release tags on maintenance
-    // branches (e.g. v5.4.x) are fetched with their commits, still without blobs.
-    await git([...SAFE_CONFIG, 'fetch', '--quiet', '--filter=blob:none', '--tags', 'origin'], { cwd: dest, timeoutMs, watchDir: dest, maxBytes });
+    // branches (e.g. v5.4.x) are fetched with their commits, still without blobs (in a shallow
+    // clone only as far back as the shallow boundary).
+    await git([...SAFE_CONFIG, 'fetch', '--quiet', '--filter=blob:none', ...(shallow ? [`--shallow-since=${opts.shallowSince!.toISOString().slice(0, 10)}`] : []), '--tags', 'origin'], { cwd: dest, timeoutMs, watchDir: dest, maxBytes });
   } catch (err) {
     await rm(dest, { recursive: true, force: true });
     throw err;
@@ -336,8 +435,11 @@ export async function readHistory(
     },
   );
   tags.sort((a, b) => a.at - b.at || a.name.localeCompare(b.name));
+  // Tier 0.5: a shallow clone (git writes `shallow` in the repository); its earliest commit read.
+  const shallow = (await stat(path.join(dir, 'shallow')).catch(() => undefined)) !== undefined && commits.length > 0;
 
   return {
+    ...(shallow ? { shallowSince: Math.min(...commits.map((c) => c.at)) } : {}),
     repo: meta.repo,
     head,
     mailmap: mailmapBlob !== '',
@@ -346,6 +448,13 @@ export async function readHistory(
     tags,
     tzMonths,
     lookup: [...latestOidById].filter(([id]) => id.startsWith('hash:')).map(([id, oid]) => ({ id, oid })),
+    loginNames: Object.fromEntries(
+      [...new Set(commits.flatMap((c) => [c.author, c.committer]).concat(tags.map((t) => t.by)))]
+        .filter((id) => !id.startsWith('hash:'))
+        .map((id) => [id, nameKey(id, meta.salt)] as const)
+        .filter((e): e is readonly [string, string] => e[1] !== undefined)
+        .sort((a, b) => a[0].localeCompare(b[0])),
+    ),
     names: Object.fromEntries([...nameCounts].map(([id, m]) => [id, [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]![0]]).sort((a, b) => a[0]!.localeCompare(b[0]!))),
   };
 }

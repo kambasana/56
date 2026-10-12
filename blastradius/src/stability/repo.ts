@@ -8,6 +8,7 @@
  * fires, the repository is resolved from the LATEST release's `repository.url` and `directory`
  * (npm), and facts about any other repository are set aside (shown as context, never as "ended").
  */
+import { isFundingUrl } from '../history/repo-url.js';
 import { addMonths } from '../history/aggregate.js';
 import { STABILITY_RULES } from './rules.js';
 import type { StabilityInputs } from './signals.js';
@@ -64,12 +65,14 @@ export function latestReleaseDate(x: StabilityInputs): string | undefined {
 
 export function resolveRepo(x: StabilityInputs, asOf: Date): RepoResolution {
   const npm = x.npm?.value;
-  const latest = npm?.latestRepo;
-  const current = latest?.url ?? x.repo?.value.url;
+  // Tier 0.5: a funding page (github.com/sponsors/encode, declared by some PyPI projects) is not a repository.
+  const latest = npm?.latestRepo && !isFundingUrl(npm.latestRepo.url) ? npm.latestRepo : undefined;
+  const declared = x.repo && !isFundingUrl(x.repo.value.url) ? x.repo : undefined;
+  const current = latest?.url ?? declared?.value.url;
   const out: RepoResolution = { previous: [], previousVersions: [] };
   if (!current) return out;
   out.current = current;
-  const dir = latest ? latest.directory : x.repo?.value.directory;
+  const dir = latest ? latest.directory : declared?.value.directory;
   if (dir) out.directory = dir;
   for (const u of npm?.inUse ?? []) {
     if (!u.repo || sameRepo(u.repo.url, current)) continue;

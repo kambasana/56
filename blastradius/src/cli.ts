@@ -50,6 +50,12 @@ export function parseHistoryMax(value: string): number {
   return n;
 }
 
+export function parseHistoryMaxMb(value: string): number {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < 50 || n > 1_000_000) throw new InvalidArgumentError('expected a whole number of megabytes from 50 to 1000000');
+  return n;
+}
+
 interface ScanCliOptions {
   format: OutputFormat[];
   out: string;
@@ -63,6 +69,7 @@ interface ScanCliOptions {
   syft: boolean;
   history: boolean;
   historyMax?: number;
+  historyMaxMb?: number;
   agentic: boolean;
   agenticPeople: boolean;
   licensePolicy?: string;
@@ -103,7 +110,8 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--review <file>', 'entity-link review decisions (JSON)')
     .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
     .option('--history', 'read the git history of source repositories (blobless clones): contributor absence factor, continuity, signed share', false)
-    .option('--history-max <n>', 'with --history: most repositories read per scan, picked by priority (direct runtime dependencies, then production fan-in); the rest use the Scorecard / npm fallback (default 300)', parseHistoryMax)
+    .option('--history-max <n>', 'with --history: most repositories read per scan, picked by priority (direct runtime dependencies, then production fan-in); the rest use the Scorecard / registry fallback (default 300)', parseHistoryMax)
+    .option('--history-max-mb <mb>', 'with --history: disk budget of the clone cache in MB; least recently used clones are deleted to stay under it, and a repository larger than its share (budget / 3, at most 300 MB) is skipped (default 600)', parseHistoryMaxMb)
     .option('--agentic', 'fill facts the collectors could not find with a Claude agent (needs ANTHROPIC_API_KEY in the environment; every value is verified against its source before it is kept)', false)
     .option('--agentic-people', 'with --agentic and --history: also collect what contributors published on their own public profiles (person-level data, removable on request, shown only to project managers; never nationality or country)', false)
     .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
@@ -119,7 +127,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         offline,
         kbDir: o.kb,
         syft: o.syft,
-        history: o.history ? (o.historyMax !== undefined ? { maxRepos: o.historyMax } : true) : false,
+        history: o.history ? (o.historyMax !== undefined || o.historyMaxMb !== undefined ? { ...(o.historyMax !== undefined ? { maxRepos: o.historyMax } : {}), ...(o.historyMaxMb !== undefined ? { maxMb: o.historyMaxMb } : {}) } : true) : false,
         agentic: o.agentic ? (o.agenticPeople ? { personTasks: true } : true) : false,
         log: (m) => err(`… ${m}\n`),
       };
@@ -175,6 +183,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--agentic', 'scans also run the agentic gap-filler (needs ANTHROPIC_API_KEY in the environment); proposals appear under Proposed facts', false)
     .option('--no-history', 'do not read git history in the background after online scans (stability then uses the Scorecard / npm fallback only)')
     .option('--history-max <n>', 'background git history: most repositories read per scan, by priority (default 300)', parseHistoryMax)
+    .option('--history-max-mb <mb>', 'background git history: disk budget of the clone cache in MB (default 600)', parseHistoryMaxMb)
     .option(
       '--trust-proxy <ips>',
       'comma-separated reverse proxy addresses whose X-Forwarded-For / X-Forwarded-Proto are honoured (default: $BLASTRADIUS_TRUST_PROXY, else none)',
@@ -196,7 +205,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         ...(o.allowLocalRoot.length > 0 ? { localRoots: o.allowLocalRoot.map((d) => resolvePath(d)) } : {}),
         ...(o.web !== undefined ? { webDir: resolvePath(o.web) } : {}),
         concurrency: o.concurrency,
-        history: o.history ? (o.historyMax !== undefined ? { maxRepos: o.historyMax } : {}) : false,
+        history: o.history ? { ...(o.historyMax !== undefined ? { maxRepos: o.historyMax } : {}), ...(o.historyMaxMb !== undefined ? { maxMb: o.historyMaxMb } : {}) } : false,
         ...(o.agentic ? { scanOptions: { agentic: true } } : {}),
         ...(trustProxy.length > 0 ? { trustProxy } : {}),
         log: (m) => err(`${m}\n`),
@@ -209,6 +218,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
 interface ServeCliOptions {
   history: boolean;
   historyMax?: number;
+  historyMaxMb?: number;
   port: number;
   host: string;
   db?: string;

@@ -27,6 +27,7 @@ import { addMonths } from '../history/aggregate.js';
 import { LABEL_RULES, STABILITY_RULES, type LabelRuleId } from './rules.js';
 import { currentView, latestReleaseDate, majorLine, resolveRepo, type RepoResolution } from './repo.js';
 import type { RepoEvent, StabilityInputs } from './signals.js';
+import { pypiProjectPage } from '../enrich/pypi/index.js';
 
 const R = STABILITY_RULES;
 const day = (iso: string) => iso.slice(0, 10);
@@ -57,6 +58,18 @@ export function lastReleaseText(x: StabilityInputs, asOf: Date): string | undefi
 
 const npmPage = (name: string, version?: string) => `https://www.npmjs.com/package/${name}${version ? `/v/${encodeURIComponent(version)}` : ''}`;
 
+/** The package registry of a label's inputs (Tier 0.5: npm and PyPI packages are labelled alike). */
+export type RegistryId = 'npm' | 'pypi';
+export function registryOf(x: { package: string }): RegistryId {
+  return x.package.startsWith('pkg:pypi/') ? 'pypi' : 'npm';
+}
+const REGISTRY_LABEL: Record<RegistryId, string> = { npm: 'npm', pypi: 'PyPI' };
+const regLabel = (x: { package: string }) => REGISTRY_LABEL[registryOf(x)];
+/** The registry page of a package (or one version of it). */
+export function pageOf(x: { package: string }, name: string, version?: string): string {
+  return registryOf(x) === 'pypi' ? pypiProjectPage(name, version) : npmPage(name, version);
+}
+
 export interface S3Result {
   state: MaintenanceState;
   confidence: StabilityConfidence;
@@ -72,6 +85,8 @@ export interface S3Result {
   facts: StabilityReason[];
   /** Facts shown for context (e.g. a declared status without a second fact). */
   context: StabilityReason[];
+  /** PyPI: the declared repository is archived but releases continue (Tier 0.5): moved, not ended. */
+  archivedButReleased?: { repo: string; lastRelease: string };
 }
 
 function before(asOf: Date, months: number): string {
@@ -96,15 +111,33 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
   // GitHub's archived flag has no date: a repository pushed to after the scan time (a replay of an
   // earlier date) may have been archived later, so it is not read back into the past.
   const archivedAsOf = x.archived?.value.archived === true && (x.archived.value.lastPushAt === undefined || Date.parse(x.archived.value.lastPushAt) <= asOf.getTime());
-  if (archivedAsOf && x.archived) {
+  // Tier 0.5 (PyPI): PyPI does not say which repository the latest release comes from, so an
+  // archived repository with releases in the last 12 months is a repository the project left
+  // (google-auth: google-auth-library-python archived, releases from the google-cloud-python monorepo).
+  const lastRel = x.cadence?.value.lastRelease?.date ?? (x.npm?.value.latestPublishedAt ? day(x.npm.value.latestPublishedAt) : undefined);
+  const stillReleased = registryOf(x) === 'pypi' && lastRel !== undefined && lastRel > before(asOf, R.movedReleaseMonths);
+  const scArchived = x.maintained && scorecardAsOf(x, asOf) && x.maintained.value.reason === 'project is archived';
+  let archivedButReleased: S3Result['archivedButReleased'];
+  if (stillReleased && ((archivedAsOf && x.archived) || scArchived)) {
+    const repo = x.archived?.value.repo ?? x.maintained?.value.repo ?? x.repo?.value.url ?? 'the declared repository';
+    archivedButReleased = { repo, lastRelease: lastRel! };
+    context.push({ signal: 'S3', text: `The declared repository ${repo.replace(/^https?:\/\//, '')} is archived, but PyPI releases continue (last release ${lastRel}): the project has moved to another repository, so the archived one does not describe its upkeep.`, source: archivedAsOf && x.archived ? x.archived.source : 'scorecard', confidence: 'high', ...(x.archived?.evidence ?? x.maintained?.evidence ? { evidence: x.archived?.evidence ?? x.maintained!.evidence! } : {}) });
+  } else if (archivedAsOf && x.archived) {
     endedHigh = true;
     facts.push({ signal: 'S3', text: 'The repository is archived on GitHub.', source: x.archived.source, confidence: 'high', ...(x.archived.evidence ? { evidence: x.archived.evidence } : {}) });
-  } else if (x.maintained && scorecardAsOf(x, asOf) && x.maintained.value.reason === 'project is archived') {
+  } else if (scArchived && x.maintained) {
     endedHigh = true;
     const m = x.maintained.value;
     facts.push({ signal: 'S3', text: `OpenSSF Scorecard's Maintained check reports "project is archived" for ${m.repo}${m.date ? ` (run of ${day(m.date)})` : ''}.`, source: 'scorecard', confidence: 'high', ...(x.maintained.evidence ? { evidence: x.maintained.evidence } : {}), ...(m.date ? { date: day(m.date) } : {}) });
   }
   const npm = x.npm?.value;
+  // PyPI project status (PEP 792), set by the maintainers or the index: archived and deprecated end
+  // the project; quarantined is an index hold, shown as context.
+  const ps = npm?.projectStatus;
+  if (ps && (ps.status === 'archived' || ps.status === 'deprecated')) {
+    endedHigh = true;
+    facts.push({ signal: 'S3', text: `PyPI marks the project ${ps.status}${ps.reason ? `: "${clean(ps.reason)}"` : ''} (project status).`, source: 'pypi', confidence: 'high', evidence: [pageOf(x, name)] });
+  } else if (ps?.status === 'quarantined') context.push({ signal: 'S3', text: `PyPI has the project quarantined${ps.reason ? `: "${clean(ps.reason)}"` : ''} (an index hold; new files cannot be installed while it lasts).`, source: 'pypi', confidence: 'high', evidence: [pageOf(x, name)] });
   if (npm?.latestDeprecated) {
     endedHigh = true;
     facts.push({
@@ -112,12 +145,13 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
       text: `npm marks the latest release${npm.latestVersion ? ` (${npm.latestVersion})` : ''} deprecated: "${clean(npm.latestDeprecated)}".`,
       source: 'npm',
       confidence: 'high',
-      evidence: [npmPage(name, npm.latestVersion)],
+      evidence: [pageOf(x, name, npm.latestVersion)],
       ...(npm.latestPublishedAt ? { date: day(npm.latestPublishedAt) } : {}),
     });
   }
   for (const u of npm?.inUse ?? []) {
-    if (u.deprecated && u.version !== npm?.latestVersion) context.push({ signal: 'S3', text: `The version in use (${u.version}) is deprecated on npm: "${clean(u.deprecated)}". Later releases are not.`, source: 'npm', confidence: 'high', evidence: [npmPage(name, u.version)] });
+    if (u.deprecated && u.version !== npm?.latestVersion) context.push({ signal: 'S3', text: `The version in use (${u.version}) is deprecated on npm: "${clean(u.deprecated)}". Later releases are not.`, source: 'npm', confidence: 'high', evidence: [pageOf(x, name, u.version)] });
+    if (u.yanked !== undefined) context.push({ signal: 'S3', text: `The version in use (${u.version}) is yanked on PyPI${u.yanked ? `: "${clean(u.yanked)}"` : ''}.`, source: 'pypi', confidence: 'high', evidence: [pageOf(x, name, u.version)] });
   }
 
   const lastRelease = x.cadence?.value.lastRelease?.date ?? (npm?.latestPublishedAt ? day(npm.latestPublishedAt) : undefined);
@@ -133,7 +167,7 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
     inactive = noCommit18 && noRelease18 === true;
     quiet = !inactive && noCommit6;
     const lastBits = `last commit ${h.lastCommit}${lastRelease ? `, last release ${lastRelease}` : ''}`;
-    if (inactive) facts.push({ signal: 'S3', text: `No commit and no release in ${R.inactiveMonths} months (${lastBits}).`, source: 'git+npm', confidence: 'medium', evidence: [h.repo, npmPage(name)], date: h.lastCommit > (lastRelease ?? '') ? h.lastCommit : lastRelease! });
+    if (inactive) facts.push({ signal: 'S3', text: `No commit and no release in ${R.inactiveMonths} months (${lastBits}).`, source: `git+${registryOf(x)}`, confidence: 'medium', evidence: [h.repo, pageOf(x, name)], date: h.lastCommit > (lastRelease ?? '') ? h.lastCommit : lastRelease! });
     else if (quiet) facts.push({ signal: 'S3', text: `No commit in ${R.quietCommitMonths} months (${lastBits}).`, source: 'git', confidence: 'medium', evidence: [h.repo], date: h.lastCommit });
     else context.push({ signal: 'S3', text: `Commits within ${R.quietCommitMonths} months (${lastBits}).`, source: 'git', confidence: 'medium', evidence: [h.repo], date: h.lastCommit });
   }
@@ -148,7 +182,8 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
     if (h && h.lastCommit < cutQuiet) second.push(`no commit in ${R.quietCommitMonths} months`);
     if (cadenceIrregular && x.cadence) second.push(`irregular releases (gap between the two most recent releases ${Math.round(x.cadence.value.latestGapDays)} days, median ${Math.round(x.cadence.value.medianDays)})`);
     const what = d.status === 'maintenance_mode' ? 'maintenance mode' : d.status === 'unmaintained' ? 'that it is no longer maintained' : 'deprecation';
-    const reason: StabilityReason = { signal: 'S3', text: `The README declares ${what}: "${clean(d.phrase, 200)}"${second.length ? `; and ${second.join(', ')}` : ''}.`, source: 'npm.readme', confidence: 'low', evidence: [npmPage(name)] };
+    const by = d.via === 'pypi.classifier' ? 'The PyPI classifiers declare' : 'The README declares';
+    const reason: StabilityReason = { signal: 'S3', text: `${by} ${what}: "${clean(d.phrase, 200)}"${second.length ? `; and ${second.join(', ')}` : ''}.`, source: d.via ?? 'npm.readme', confidence: 'low', evidence: [pageOf(x, name)] };
     if (second.length && !endedHigh) {
       if (d.status === 'maintenance_mode') quietDeclared = true;
       else endedDeclared = true;
@@ -165,7 +200,7 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
   else if (quietDeclared) [state, confidence] = ['quiet', 'low'];
   else if (h) [state, confidence] = ['active', 'medium'];
   else [state, confidence] = ['unknown', 'low'];
-  const out: S3Result = { state, confidence, endedHigh, endedDeclared, quietDeclared, inactive, quiet, facts, context };
+  const out: S3Result = { state, confidence, endedHigh, endedDeclared, quietDeclared, inactive, quiet, facts, context, ...(archivedButReleased ? { archivedButReleased } : {}) };
   if (h) out.lastCommit = h.lastCommit;
   if (lastRelease) out.lastRelease = lastRelease;
   return out;
@@ -212,7 +247,7 @@ export function continuityEvents(x: StabilityInputs, name: string): ContinuityEv
         text: e.text,
         source: e.kind === 'npm_release_by_new_account' ? 'npm+git' : 'git',
         confidence: 'medium',
-        evidence: e.kind === 'npm_release_by_new_account' && e.release ? [npmPage(name, e.release), h.value.repo] : [h.value.repo],
+        evidence: e.kind === 'npm_release_by_new_account' && e.release ? [pageOf(x, name, e.release), h.value.repo] : [h.value.repo],
       };
       if (e.release !== undefined) ev.release = e.release;
       if (e.daysSinceFirstSeen !== undefined) ev.daysSinceFirstSeen = e.daysSinceFirstSeen;
@@ -263,6 +298,7 @@ function shortText(h: StabilityRuleHit, s3: S3Result, caf?: { value: number }): 
 
 function endedWords(s3: S3Result): string {
   const t = s3.facts.map((f) => f.text).join(' ');
+  if (/PyPI marks the project (archived|deprecated)/.test(t)) return `PyPI project ${/PyPI marks the project archived/.test(t) ? 'archived' : 'deprecated'}${/repository is archived|project is archived" for/.test(t) ? ' and repository archived' : ''}`;
   if (/deprecated/.test(t) && /archived/.test(t)) return 'Deprecated on npm and repository archived';
   if (/deprecated/.test(t)) return 'Deprecated on npm';
   return 'Repository archived';
@@ -305,9 +341,9 @@ export function finishedTest(x: StabilityInputs, name: string, versions: readonl
     facts.push({
       signal: 'S3',
       text: `Small package: ${all.length > 1 ? 'largest version in use ' : ''}${largest.version} is ${kb(largest.unpackedSize)} unpacked in ${plural(largest.fileCount, 'file')}, with ${plural(largest.dependencies, 'dependency', 'dependencies')} of its own (${via}).`,
-      source: 'npm',
+      source: registryOf(x),
       confidence: 'high',
-      evidence: [...new Set(sizes.flatMap((s) => s!.evidence ?? [npmPage(name, s!.value.version)]))],
+      evidence: [...new Set(sizes.flatMap((s) => s!.evidence ?? [pageOf(x, name, s!.value.version)]))],
     });
   }
   // Long stable history.
@@ -317,13 +353,13 @@ export function finishedTest(x: StabilityInputs, name: string, versions: readonl
   else {
     if (first > before(asOf, R.finishedMinAgeMonths)) no.push(`first release ${first}, less than ${R.finishedMinAgeMonths} months before the scan`);
     if (finalYear > R.finishedMaxReleasesInFinalYear) no.push(`${plural(finalYear, 'release')} in the final 12 months of its history (more than ${R.finishedMaxReleasesInFinalYear})`);
-    facts.push({ signal: 'S4', text: `Long, settled history: first release ${first}; ${plural(finalYear, 'stable release')} in the final 12 months before the last release${s3.lastRelease ? ` (${s3.lastRelease})` : ''}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+    facts.push({ signal: 'S4', text: `Long, settled history: first release ${first}; ${plural(finalYear, 'stable release')} in the final 12 months before the last release${s3.lastRelease ? ` (${s3.lastRelease})` : ''}.`, source: registryOf(x), confidence: 'high', evidence: [pageOf(x, name)] });
   }
   // Open advisories (OSV) for the versions in use.
   const adv = (x.advisories ?? []).filter((a) => versions.includes(a.value.version));
   if (adv.length) no.push(`open OSV advisory for the version in use (${[...new Set(adv.map((a) => a.value.advisory))].join(', ')})`);
   else if (!advisoriesChecked) unknown.push('advisories not checked in this scan (OSV lookup off or incomplete)');
-  else facts.push({ signal: 'S3', text: `Not deprecated or archived, and no OSV advisory affects ${versions.length > 1 ? 'the versions' : 'the version'} in use (${versions.join(', ')}).`, source: 'osv', confidence: 'high', evidence: [`https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(name)}`] });
+  else facts.push({ signal: 'S3', text: `Not deprecated or archived, and no OSV advisory affects ${versions.length > 1 ? 'the versions' : 'the version'} in use (${versions.join(', ')}).`, source: 'osv', confidence: 'high', evidence: [`https://osv.dev/list?ecosystem=${registryOf(x) === 'pypi' ? 'PyPI' : 'npm'}&q=${encodeURIComponent(name)}`] });
   const state = no.length ? 'no' : unknown.length ? 'unknown' : 'yes';
   const out: FinishedResult = { state, notMet: [...no, ...unknown], facts: state === 'yes' ? facts : [] };
   if (size) out.size = size;
@@ -350,7 +386,7 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
   // S1 (context only): registry maintainers, the count.
   if (x.maintainerCount) {
     const bots = x.releaseBotCount ?? 0;
-    context.push({ signal: 'S1', text: `npm lists ${plural(x.maintainerCount.value, 'maintainer')} with publish rights${bots ? ` (${bots === x.maintainerCount.value ? (bots === 1 ? 'an organisation release bot' : 'all organisation release bots') : `${plural(bots, 'organisation release bot')} among them`}, not a person)` : ''}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+    context.push({ signal: 'S1', text: `npm lists ${plural(x.maintainerCount.value, 'maintainer')} with publish rights${bots ? ` (${bots === x.maintainerCount.value ? (bots === 1 ? 'an organisation release bot' : 'all organisation release bots') : `${plural(bots, 'organisation release bot')} among them`}, not a person)` : ''}.`, source: 'npm', confidence: 'high', evidence: [pageOf(x, name)] });
   }
 
   // S2.
@@ -378,9 +414,9 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
     context.push({
       signal: 'S4',
       text: `${lastRel ? `${lastRel}. ` : ''}${cadence.irregular ? 'Irregular releases' : 'Releases'} up to then: median ${Math.round(cadence.medianDays)} days between the last ${cadence.releases} releases, CV ${cadence.cv}, gap between the two most recent ${Math.round(cadence.latestGapDays)} days.`,
-      source: 'npm',
+      source: registryOf(x),
       confidence: 'high',
-      evidence: [npmPage(name)],
+      evidence: [pageOf(x, name)],
     });
   }
 
@@ -430,7 +466,7 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
     const advFacts: StabilityReason[] = unfixed.map((a) => ({ signal: 'S3', text: `OSV advisory ${a.value.advisory} affects version ${a.value.version}; OSV lists no fixed release.`, source: 'osv', confidence: 'high' as const, evidence: [a.value.page], ...(a.value.published ? { date: day(a.value.published) } : {}) }));
     rules.push(hit('fragile_unfixed_advisory_inactive', [...advFacts, ...(s3.endedHigh ? s3.facts.filter((f) => f.confidence === 'high') : inactiveFacts())]));
   }
-  if (cafIs1 && s3.inactive && fin.state === 'no') context.push({ signal: 'S3', text: `Not a small, finished package: ${fin.notMet.join('; ')}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+  if (cafIs1 && s3.inactive && fin.state === 'no') context.push({ signal: 'S3', text: `Not a small, finished package: ${fin.notMet.join('; ')}.`, source: registryOf(x), confidence: 'high', evidence: [pageOf(x, name)] });
   if (cafIs1 && s3.inactive && fin.state === 'unknown') missing.push(`Finished / low-surface test not complete (${fin.notMet.join('; ')}): single contributor and inactive stays Fragile.`);
   const fragile = rules.length > 0;
   // Tier 0: moved to another repository and still released: Watch with an action, never Fragile
@@ -447,11 +483,16 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
             text: `The latest release ${res.moved.latestVersion} (${res.moved.latestDate}) declares the repository ${to}${res.directory ? ` (directory ${res.directory})` : ''}; the version${res.previousVersions.length > 1 ? 's' : ''} in use (${res.previousVersions.join(', ')}) declare${res.previousVersions.length > 1 ? '' : 's'} ${res.previous.map((u) => u.replace(/^https?:\/\//, '')).join(', ')}.`,
             source: 'npm',
             confidence: 'high',
-            evidence: [npmPage(name, res.moved.latestVersion), ...res.previousVersions.map((v) => npmPage(name, v))],
+            evidence: [pageOf(x, name, res.moved.latestVersion), ...res.previousVersions.map((v) => pageOf(x, name, v))],
             date: res.moved.latestDate,
           },
         ]),
       );
+  }
+  if (!res.moved && s3.archivedButReleased) {
+    const ab = s3.archivedButReleased;
+    action = `Moved: the declared repository ${ab.repo.replace(/^https?:\/\//, '')} is archived while PyPI releases continue; find the current repository`;
+    if (!fragile) rules.push(hit('watch_moved', [s3.context.find((c) => c.text.startsWith('The declared repository'))!]));
   }
   // Tier 0 fallback without git history (no clone): the npm release record and, when deps.dev has
   // it, OpenSSF Scorecard's Maintained check for the current repository.
@@ -490,16 +531,16 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
   else label = 'unknown';
   // The fallback's facts are already in the context (S4 last release, Scorecard Maintained) unless
   // the package has no cadence: then the last release is new information.
-  if (!h && fallback && !cadence) context.push(...fallback.facts.filter((f) => f.source === 'npm' && !rules.some((r) => r.facts.includes(f))));
+  if (!h && fallback && !cadence) context.push(...fallback.facts.filter((f) => f.source === registryOf(x) && !rules.some((r) => r.facts.includes(f))));
   const basis: StabilityEntry['basis'] = h ? 'git' : fallback?.basis ?? 'none';
 
   // What is missing.
   if (!h) {
-    if (!res.current) missing.push('No source repository is declared on npm.');
-    else missing.push(`The git history of ${res.current} was not read in this scan (history collection off, outside the history cap, offline, or the repository could not be cloned)${fallback && fallback.basis !== 'none' ? `; upkeep from ${fallback.basis === 'scorecard+npm' ? 'OpenSSF Scorecard (via deps.dev) and the npm release record' : 'the npm release record'} instead` : ''}.`);
+    if (!res.current) missing.push(registryOf(x) === 'pypi' ? 'No source repository is declared on PyPI (deps.dev found none).' : 'No source repository is declared on npm.');
+    else missing.push(`The git history of ${res.current} was not read in this scan (history collection off, outside the history cap or disk budget, offline, or the repository could not be cloned)${fallback && fallback.basis !== 'none' ? `; upkeep from ${fallback.basis.startsWith('scorecard+') ? `OpenSSF Scorecard (via deps.dev) and the ${regLabel(x)} release record` : `the ${regLabel(x)} release record`} instead` : ''}.`);
   }
   else if (x.repo?.value.directory) context.push({ signal: 'S2', text: `Git facts cover the whole repository ${h.repo}; this package is in its subdirectory ${x.repo.value.directory}.`, source: 'git', confidence: 'medium', evidence: [h.repo] });
-  if (!x.npm && !x.cadence) missing.push('No npm registry data.');
+  if (!x.npm && !x.cadence) missing.push(`No ${regLabel(x)} registry data.`);
 
   const summary =
     label === 'steady'
@@ -537,7 +578,7 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
 }
 
 interface Fallback {
-  basis: 'scorecard+npm' | 'npm' | 'none';
+  basis: 'scorecard+npm' | 'npm' | 'scorecard+pypi' | 'pypi' | 'none';
   steady: boolean;
   steadyText: string;
   noRecentRelease: boolean;
@@ -554,12 +595,13 @@ function fallbackUpkeep(x: StabilityInputs, name: string, asOf: Date, finished: 
   const facts: StabilityReason[] = [];
   const last = latestReleaseDate(x);
   const m = x.maintained && scorecardAsOf(x, asOf) ? x.maintained.value : undefined;
-  const basis: Fallback['basis'] = m ? 'scorecard+npm' : last ? 'npm' : 'none';
+  const reg = registryOf(x);
+  const basis: Fallback['basis'] = m ? `scorecard+${reg}` : last ? reg : 'none';
   const recent12 = last !== undefined && last > before(asOf, 12);
   const old18 = last !== undefined && last < before(asOf, R.inactiveMonths);
   const scActive = m !== undefined && m.score >= R.scorecardActiveScore;
   const lastText = last ? lastReleaseText(x, asOf)! : undefined;
-  if (lastText) facts.push({ signal: 'S3', text: `${lastText} (npm).`, source: 'npm', confidence: 'high', evidence: [npmPage(name)], date: last! });
+  if (lastText) facts.push({ signal: 'S3', text: `${lastText} (${regLabel(x)}).`, source: reg, confidence: 'high', evidence: [pageOf(x, name)], date: last! });
   if (m) facts.push({ signal: 'S3', text: `OpenSSF Scorecard Maintained ${m.score}/10 for ${m.repo}${m.reason ? `: ${m.reason}` : ''}${m.date ? ` (run of ${day(m.date)})` : ''} (no clone needed).`, source: 'scorecard', confidence: 'medium', ...(x.maintained?.evidence ? { evidence: x.maintained.evidence } : {}) });
   const noRecentRelease = old18 && !scActive && !finished;
   const steady = !noRecentRelease && (recent12 || scActive || (old18 && finished));

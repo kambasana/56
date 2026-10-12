@@ -197,8 +197,23 @@ export function stabilitySection(result: ScanResult): string {
     )
     .join('');
   const c = st.counts;
+  // Tier 0.5: never an all-clear while production packages are unassessed (Python read as clean).
+  const prod = st.packages.filter((p) => p.production);
+  const unassessed = prod.filter((p) => p.label === 'unknown');
+  const none = unassessed.length
+    ? `<p class="muted">No assessed production package is labelled Fragile, but upkeep is not assessed for ${h(unassessed.length)} of ${h(prod.length)} production packages (Unknown): ${h(
+        unassessed
+          .slice(0, 8)
+          .map((p) => p.name)
+          .join(', '),
+      )}${unassessed.length > 8 ? ', …' : ''}.</p>`
+    : prod.length
+      ? '<p class="muted">No production package is labelled Fragile.</p>'
+      : '<p class="muted">No production package was labelled: upkeep was not assessed for this scan.</p>';
+  const coverage = st.coverage?.line ? `<p class="muted">${h(st.coverage.line)}</p>` : '';
   return `<h2 id="stability">Stability</h2>
 <p class="muted">Upkeep labels from public records (as of ${h(st.asOf)}): fragile ${h(c.fragile)}, watch ${h(c.watch)}, steady ${h(c.steady)}, unknown ${h(c.unknown)}. ${h(st.disclaimer)}</p>
+${coverage}
 <h3>Fragile in production (${h(fragile.length)})</h3>
-${fragile.length ? `<div class="scroll"><table><thead><tr><th>Package</th><th>Why</th><th>Action</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div>${fragile.length > 100 ? `<p class="muted">… ${h(fragile.length - 100)} more in the JSON report.</p>` : ''}` : '<p class="muted">No production package is labelled Fragile.</p>'}`;
+${fragile.length ? `<div class="scroll"><table><thead><tr><th>Package</th><th>Why</th><th>Action</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div>${fragile.length > 100 ? `<p class="muted">… ${h(fragile.length - 100)} more in the JSON report.</p>` : ''}${unassessed.length ? `<p class="muted">Upkeep is not assessed for ${h(unassessed.length)} of ${h(prod.length)} production packages (Unknown).</p>` : ''}` : none}`;
 }

@@ -1,5 +1,7 @@
 /**
- * ScanResult.stability: one label per npm package in the inventory (docs/WHO-BEHIND-PLAN.md §4).
+ * ScanResult.stability: one label per npm and PyPI package in the inventory (docs/WHO-BEHIND-PLAN.md
+ * §4; PyPI since Tier 0.5), and an Unknown entry, with the reason, for every production package of an
+ * ecosystem without an upkeep source (Docker images, …), so no production package goes uncounted.
  * Stability is not risk: nothing here feeds findings or scores.
  *
  * Tier 0 additions: decision rows (a family such as ldapjs + 9 @ldapjs/* packages becomes one row
@@ -19,6 +21,31 @@ export function emptyLabelCounts(): Record<StabilityLabel, number> {
   return Object.fromEntries(STABILITY_LABELS.map((l) => [l, 0])) as Record<StabilityLabel, number>;
 }
 
+/** Ecosystems with an upkeep source (registry release record, Scorecard, git history). */
+export const LABELLED: ReadonlySet<string> = new Set(['npm', 'pypi']);
+
+const ECOSYSTEM_NAME: Record<string, string> = { npm: 'npm', pypi: 'PyPI', docker: 'Docker', githubactions: 'GitHub Actions', maven: 'Maven', golang: 'Go', cargo: 'Cargo', nuget: 'NuGet', gem: 'RubyGems', composer: 'Composer' };
+export const ecosystemName = (e: string) => ECOSYSTEM_NAME[e] ?? e;
+
+/** Unknown entry for a production package of an ecosystem without an upkeep source (Tier 0.5). */
+function unassessedEntry(purl: PurlString, name: string, ecosystem: string, versions: string[], production: boolean): StabilityEntry {
+  return {
+    package: purl,
+    name,
+    versions,
+    production,
+    label: 'unknown',
+    summary: `Not enough data: upkeep is not assessed for ${ecosystemName(ecosystem)} packages (no registry release record or repository source).`,
+    rules: [],
+    context: [],
+    missing: [`Upkeep is not assessed for ${ecosystemName(ecosystem)} packages in this version: no release record or source repository is read for them.`],
+    s3: { state: 'unknown', confidence: 'low' },
+    s5a: [],
+    funding: 'not_assessed',
+    basis: 'none',
+  };
+}
+
 export interface StabilityReportOptions {
   /**
    * The scan's OSV lookup ran to completion, so a package without a vuln fact has no known advisory.
@@ -26,30 +53,45 @@ export interface StabilityReportOptions {
    */
   advisoriesChecked?: boolean;
   /** Git history selection of the scan (history enricher), for the coverage line. */
-  historySelection?: { declared: number; read: string[]; capped: string[]; failed: string[]; maxRepos: number };
+  historySelection?: { declared: number; read: string[]; capped: string[]; failed: string[]; maxRepos: number; tooLarge?: string[]; budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number } };
   historyStatus?: StabilityReport['historyStatus'];
 }
 
 export function buildStabilityReport(inventory: Inventory, facts: readonly Fact[], asOf: Date, opts: StabilityReportOptions = {}): StabilityReport {
   const inputs = collectInputs(facts);
   const prod = productionComponents(inventory);
-  const byPkg = new Map<PurlString, { name: string; versions: Set<string>; production: boolean }>();
+  const byPkg = new Map<PurlString, { name: string; ecosystem: string; versions: Set<string>; production: boolean }>();
   for (const c of inventory.components) {
-    if (c.ecosystem !== 'npm') continue;
     const key = unversionedPurl(c.purl);
-    const p = byPkg.get(key) ?? { name: c.name, versions: new Set<string>(), production: false };
+    const p = byPkg.get(key) ?? { name: c.name, ecosystem: c.ecosystem, versions: new Set<string>(), production: false };
     p.versions.add(c.version);
     p.production ||= prod.has(c.purl);
     byPkg.set(key, p);
   }
   const counts = emptyLabelCounts();
   const packages = [...byPkg]
-    .map(([purl, p]) => labelPackage(inputs.get(purl) ?? { package: purl, licenseChanges: [] }, { name: p.name, versions: [...p.versions].sort(), production: p.production, advisoriesChecked: opts.advisoriesChecked === true }, asOf))
+    // Labelled ecosystems: every package. Others: production packages only, as Unknown with the reason.
+    .filter(([, p]) => LABELLED.has(p.ecosystem) || p.production)
+    .map(([purl, p]) =>
+      LABELLED.has(p.ecosystem)
+        ? labelPackage(inputs.get(purl) ?? { package: purl, licenseChanges: [] }, { name: p.name, versions: [...p.versions].sort(), production: p.production, advisoriesChecked: opts.advisoriesChecked === true }, asOf)
+        : unassessedEntry(purl, p.name, p.ecosystem, [...p.versions].sort(), p.production),
+    )
     .sort((a, b) => LABEL_ORDER[a.label] - LABEL_ORDER[b.label] || Number(b.production) - Number(a.production) || a.name.localeCompare(b.name));
   for (const e of packages) counts[e.label]++;
   const report: StabilityReport = { asOf: asOf.toISOString(), rulesVersion: 3, packages, counts, disclaimer: STABILITY_DISCLAIMER };
   report.decisions = stabilityDecisions(inventory, packages);
   report.coverage = stabilityCoverage(inventory, packages, opts.historySelection);
+  // Packages of ecosystems without an upkeep source outside production (CI actions, dev images).
+  const notAssessed: Record<string, number> = {};
+  for (const p of byPkg.values()) if (!LABELLED.has(p.ecosystem) && !p.production) notAssessed[p.ecosystem] = (notAssessed[p.ecosystem] ?? 0) + 1;
+  if (Object.keys(notAssessed).length) {
+    report.coverage.notAssessed = notAssessed;
+    report.coverage.line += ` Not assessed (no upkeep source, outside production): ${Object.entries(notAssessed)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([e, n]) => `${fmt(n)} ${ecosystemName(e)}`)
+      .join(', ')}.`;
+  }
   if (opts.historyStatus) report.historyStatus = opts.historyStatus;
   return report;
 }
@@ -139,11 +181,19 @@ export function stabilityDecisions(inv: Inventory, entries: readonly StabilityEn
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
+function ecosystemOf(e: StabilityEntry): string {
+  return /^pkg:([^/]+)\//.exec(e.package)?.[1] ?? 'npm';
+}
+
 function skipReason(e: StabilityEntry): string {
-  if (!e.repo) return 'no source repository declared';
-  if (e.basis === 'git') return 'fewer than 5 commits in the last active 24 months';
-  if (e.basis === 'none') return 'no npm release record';
-  return 'git history not read, last release 12–18 months ago and no Scorecard result';
+  const eco = ecosystemOf(e);
+  if (!LABELLED.has(eco)) return `${ecosystemName(eco)}: upkeep not assessed for this ecosystem`;
+  const pre = eco === 'npm' ? '' : `${ecosystemName(eco)}: `;
+  if (e.basis === 'git') return `${pre}fewer than 5 commits in the last active 24 months`;
+  if (!e.repo && e.basis === 'none') return `${pre}no ${ecosystemName(eco)} release record and no source repository declared`;
+  if (!e.repo) return `${pre}no source repository declared`;
+  if (e.basis === 'none') return `${pre}no ${ecosystemName(eco)} release record`;
+  return `${pre}git history not read, last release 12–18 months ago and no Scorecard result`;
 }
 
 export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEntry[], sel?: StabilityReportOptions['historySelection']): StabilityCoverage {
@@ -152,8 +202,18 @@ export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEnt
   const direct = entries.filter((e) => prio.get(e.package)?.direct);
   const transitive = entries.filter((e) => e.production && !prio.get(e.package)?.direct);
   const prod = entries.filter((e) => e.production);
-  const byBasis = { git: 0, 'scorecard+npm': 0, npm: 0 };
-  for (const e of entries) if (known(e) && e.basis && e.basis !== 'none') byBasis[e.basis]++;
+  const byBasis: StabilityCoverage['byBasis'] = { git: 0, 'scorecard+npm': 0, npm: 0 };
+  for (const e of entries) if (known(e) && e.basis && e.basis !== 'none') byBasis[e.basis] = (byBasis[e.basis] ?? 0) + 1;
+  const byEcosystem: NonNullable<StabilityCoverage['byEcosystem']> = {};
+  for (const e of entries) {
+    const b = (byEcosystem[ecosystemOf(e)] ??= { packages: 0, assessed: 0, production: 0, productionUnknown: 0 });
+    b.packages++;
+    if (known(e)) b.assessed++;
+    if (e.production) {
+      b.production++;
+      if (!known(e)) b.productionUnknown++;
+    }
+  }
   const reasons = new Map<string, number>();
   for (const e of entries) if (!known(e)) reasons.set(skipReason(e), (reasons.get(skipReason(e)) ?? 0) + 1);
   const skipped = [...reasons].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason));
@@ -161,19 +221,34 @@ export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEnt
   const d = { total: direct.length, assessed: direct.filter(known).length };
   const r = { total: transitive.length, assessed: transitive.filter(known).length };
   const part = (x: { total: number; assessed: number }, what: string) => (x.assessed === x.total ? `all ${fmt(x.total)} ${what}` : `${fmt(x.assessed)} of ${fmt(x.total)} ${what}`);
-  const sources = [byBasis.git ? `git history ${fmt(byBasis.git)}` : '', byBasis['scorecard+npm'] + byBasis.npm ? `Scorecard / npm fallback ${fmt(byBasis['scorecard+npm'] + byBasis.npm)}` : ''].filter(Boolean).join(', ');
-  let line = `Upkeep assessed for ${fmt(assessed)} of ${fmt(entries.length)}${sources ? ` (${sources})` : ''}: ${part(d, 'direct')}, ${part(r, 'runtime transitive')}; skipped: ${skipped.length ? skipped.map((s) => `${fmt(s.count)} ${s.reason}`).join('; ') : 'none'}.`;
-  if (sel) line += ` Git history read for ${fmt(sel.read.length)} of ${fmt(sel.declared)} repositories${sel.capped.length ? ` (${fmt(sel.capped.length)} over the cap of ${fmt(sel.maxRepos)}, picked by priority)` : ''}${sel.failed.length ? `; ${fmt(sel.failed.length)} could not be read` : ''}.`;
+  const fallbackN = byBasis['scorecard+npm'] + byBasis.npm + (byBasis['scorecard+pypi'] ?? 0) + (byBasis.pypi ?? 0);
+  const sources = [byBasis.git ? `git history ${fmt(byBasis.git)}` : '', fallbackN ? `Scorecard / registry fallback ${fmt(fallbackN)}` : ''].filter(Boolean).join(', ');
+  // Per ecosystem (Tier 0.5): "npm 1,100 of 1,150, PyPI 60 of 146"; ecosystems without an upkeep source say so.
+  const ecoOrder = Object.keys(byEcosystem).sort((a, b) => Number(LABELLED.has(b)) - Number(LABELLED.has(a)) || (a === 'npm' ? -1 : b === 'npm' ? 1 : a.localeCompare(b)));
+  const perEco = ecoOrder.map((k) => `${ecosystemName(k)} ${fmt(byEcosystem[k]!.assessed)} of ${fmt(byEcosystem[k]!.packages)}${LABELLED.has(k) ? '' : ' (production, no upkeep source)'}`).join(', ');
+  const prodTotal = prod.length;
+  const prodUnknown = prod.filter((e) => !known(e)).length;
+  let line = `Upkeep assessed for ${fmt(assessed)} of ${fmt(entries.length)} (${perEco}${sources ? `; ${sources}` : ''}): ${part(d, 'direct')}, ${part(r, 'runtime transitive')}; production Unknown ${fmt(prodUnknown)} of ${fmt(prodTotal)}; skipped: ${skipped.length ? skipped.map((s) => `${fmt(s.count)} ${s.reason}`).join('; ') : 'none'}.`;
+  if (sel) {
+    const skippedRepos = [
+      sel.capped.length ? `${fmt(sel.capped.length)} over the cap of ${fmt(sel.maxRepos)} repositories (--history-max), picked by priority` : '',
+      sel.tooLarge?.length ? `${fmt(sel.tooLarge.length)} larger than the per-repository cap of ${fmt(sel.budget?.perCloneMb ?? 0)} MB of the ${fmt(sel.budget?.maxMb ?? 0)} MB disk budget (--history-max-mb)` : '',
+      sel.failed.length ? `${fmt(sel.failed.length)} could not be read` : '',
+    ].filter(Boolean);
+    line += ` Git history read for ${fmt(sel.read.length)} of ${fmt(sel.declared)} repositories${skippedRepos.length ? `; skipped: ${skippedRepos.join('; ')}` : ''}.`;
+    if (sel.budget) line += ` Clone cache: ${sel.budget.shallowMonths ? `shallow clones of the last ${sel.budget.shallowMonths} months` : 'whole histories'}, peak ${fmt(sel.budget.peakMb)} MB of the ${fmt(sel.budget.maxMb)} MB budget${sel.budget.evicted ? `, ${fmt(sel.budget.evicted)} older clones deleted to stay under it` : ''}.`;
+  }
   const out: StabilityCoverage = {
     packages: entries.length,
     assessed,
     byBasis,
     direct: d,
     runtimeTransitive: r,
-    production: { total: prod.length, unknown: prod.filter((e) => !known(e)).length },
+    production: { total: prodTotal, unknown: prodUnknown },
+    byEcosystem,
     skipped,
     line,
   };
-  if (sel) out.history = { declared: sel.declared, read: sel.read.length, capped: sel.capped.length, failed: sel.failed.length, maxRepos: sel.maxRepos };
+  if (sel) out.history = { declared: sel.declared, read: sel.read.length, capped: sel.capped.length, failed: sel.failed.length, maxRepos: sel.maxRepos, ...(sel.tooLarge ? { tooLarge: sel.tooLarge.length } : {}), ...(sel.budget ? { budget: sel.budget } : {}) };
   return out;
 }

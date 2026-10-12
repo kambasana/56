@@ -53,7 +53,9 @@ export interface StabilityInputs {
     releasesInFinalYear?: number;
     /** Repository the latest release declares (Tier 0 moved-repo check). */
     latestRepo?: { url: string; directory?: string };
-    inUse: { version: string; deprecated?: string; repo?: { url: string; directory?: string } }[];
+    /** PyPI project status other than active (PEP 792; Tier 0.5). */
+    projectStatus?: { status: 'archived' | 'deprecated' | 'quarantined'; reason?: string };
+    inUse: { version: string; deprecated?: string; yanked?: string; repo?: { url: string; directory?: string } }[];
   }>;
   /** Finished / low-surface input: size and dependency count of each version in use (npm dist or tarball). */
   sizes?: Sourced<{ version: string; unpackedSize: number; fileCount: number; dependencies: number; via: 'npm.dist' | 'npm.tarball' }>[];
@@ -63,7 +65,7 @@ export interface StabilityInputs {
    */
   advisories?: Sourced<{ version: string; advisory: string; page: string; fixed: boolean; published?: string }>[];
   cadence?: Sourced<ReleaseCadenceValue>;
-  declared?: Sourced<Omit<DeclaredStatusValue, 'via'>>;
+  declared?: Sourced<Omit<DeclaredStatusValue, 'via'> & { via?: DeclaredStatusValue['via'] }>;
   /** Scorecard Maintained check (repo-level). */
   maintained?: Sourced<{ score: number; reason?: string; date?: string; repo: string }>;
   /** Every Scorecard Maintained result for the package (one per repository looked up). */
@@ -125,11 +127,13 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
           else if (v.deprecated !== undefined && v.latestVersion === v.version) x.npm.value.latestDeprecated = v.deprecated;
           if (v.firstPublishedAt !== undefined) x.npm.value.firstPublishedAt = v.firstPublishedAt;
           if (v.releasesInFinalYear !== undefined) x.npm.value.releasesInFinalYear = v.releasesInFinalYear;
+          if (v.projectStatus) x.npm.value.projectStatus = { status: v.projectStatus.status, ...(v.projectStatus.reason !== undefined ? { reason: v.projectStatus.reason } : {}) };
         }
         if (v.latestRepository && !x.npm.value.latestRepo) x.npm.value.latestRepo = { url: v.latestRepository.url, ...(v.latestRepository.directory !== undefined ? { directory: v.latestRepository.directory } : {}) };
         x.npm.value.inUse.push({
           version,
           ...(v.deprecated !== undefined ? { deprecated: v.deprecated } : {}),
+          ...(v.yanked !== undefined ? { yanked: v.yanked } : {}),
           ...(v.repository ? { repo: { url: v.repository.url, ...(v.repository.directory !== undefined ? { directory: v.repository.directory } : {}) } } : {}),
         });
         break;
@@ -145,7 +149,7 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
         break;
       }
       case 'declared_status':
-        x.declared ??= { value: { status: f.value.status, phrase: f.value.phrase }, ...meta(f) };
+        x.declared ??= { value: { status: f.value.status, phrase: f.value.phrase, via: f.value.via }, ...meta(f) };
         break;
       case 'scorecard': {
         const checks = f.value.checks;

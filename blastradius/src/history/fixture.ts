@@ -32,6 +32,10 @@ export interface HistoryFixture {
   npmPublisherIds?: Record<string, string[]>;
   /** id → salted display-name key (Tier 0 recordings, see HistoryRecord.names). */
   names?: Record<string, string>;
+  /** GitHub login → salted key of the login read as a display name (Tier 0.5, see HistoryRecord.loginNames). */
+  loginNames?: Record<string, string>;
+  /** Shallow clone: earliest commit read, in days since 1970-01-01 (see HistoryRecord.shallowSince). */
+  shallowSinceDay?: number;
 }
 
 export function encodeFixture(rec: HistoryRecord, note: string, recordedAt: Date): HistoryFixture {
@@ -65,6 +69,8 @@ export function encodeFixture(rec: HistoryRecord, note: string, recordedAt: Date
     ...(rec.npmPublishers ? { npmPublishers: rec.npmPublishers } : {}),
     ...(rec.npmPublisherIds ? { npmPublisherIds: rec.npmPublisherIds } : {}),
     ...(rec.names ? { names: rec.names } : {}),
+    ...(rec.loginNames ? { loginNames: rec.loginNames } : {}),
+    ...(rec.shallowSince !== undefined ? { shallowSinceDay: rec.shallowSince / 86400 } : {}),
   };
 }
 
@@ -81,6 +87,8 @@ export function decodeFixture(f: HistoryFixture): HistoryRecord {
     ...(f.npmPublishers ? { npmPublishers: f.npmPublishers } : {}),
     ...(f.npmPublisherIds ? { npmPublisherIds: f.npmPublisherIds } : {}),
     ...(f.names ? { names: f.names } : {}),
+    ...(f.loginNames ? { loginNames: f.loginNames } : {}),
+    ...(f.shallowSinceDay !== undefined ? { shallowSince: f.shallowSinceDay * 86400 } : {}),
   };
 }
 

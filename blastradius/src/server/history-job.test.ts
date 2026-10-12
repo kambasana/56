@@ -43,7 +43,7 @@ describe('background git history (web)', () => {
     expect(after.history!.repos.map((r) => r.repo)).toContain('https://github.com/dominictarr/event-stream');
     const es = after.stability!.packages.find((p) => p.name === 'event-stream')!;
     expect(es.basis).toBe('git');
-    expect(after.stability!.coverage!.line).toMatch(/^Upkeep assessed for \d+ of \d+ \(git history \d+/);
+    expect(after.stability!.coverage!.line).toMatch(/^Upkeep assessed for \d+ of \d+ \(npm \d+ of \d+; git history \d+/);
     // Findings are the scan's own: history never changes them.
     expect(after.findings).toEqual(first.findings);
   });

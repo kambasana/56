@@ -573,6 +573,13 @@ export interface ReleaseAgeValue {
    */
   repository?: { url: string; directory?: string };
   latestRepository?: { url: string; directory?: string };
+  /**
+   * Tier 0.5 (PyPI): the project status the index declares (PEP 792: archived, deprecated,
+   * quarantined; "active" is not recorded), and whether this version is yanked (PEP 592), with the
+   * reason when one was given (empty string: yanked without a reason).
+   */
+  projectStatus?: { status: 'archived' | 'deprecated' | 'quarantined'; reason?: string };
+  yanked?: string;
 }
 
 /**
@@ -726,6 +733,11 @@ export interface CommitHistoryValue {
   /** Days since the last commit at asOf, and the longest gap between commits in the last 24 months. */
   daysSinceLastCommit: number;
   longestGapDays24m: number;
+  /**
+   * Tier 0.5: the history was read from a shallow clone starting at this date (YYYY-MM-DD);
+   * first-seen dates in its first two years mean "on or before".
+   */
+  readFrom?: string;
   /** GitHub's signature verification for the latest commits (GraphQL), when it was queried. */
   verified?: { checked: number; verified: number };
   /** How identities were resolved. */
@@ -875,6 +887,14 @@ export interface ReleasePublishersValue {
     releases: number;
     /** Published through npm trusted publishing (an OIDC CI identity, not a person's account). */
     trusted: boolean;
+    /**
+     * The account's first stable (non-prerelease) release, its date and position (Tier 0.5): a
+     * pre-release-only account says nothing about the stable line in use. Absent when the account
+     * published only pre-releases.
+     */
+    firstStableVersion?: string;
+    firstStableAt?: string;
+    firstStableIndex?: number;
   }[];
   /**
    * Stable versions published through npm trusted publishing (an OIDC CI identity), newest last, at
@@ -895,7 +915,8 @@ export interface DeclaredStatusValue {
   status: 'deprecated' | 'unmaintained' | 'maintenance_mode';
   /** The matched sentence, verbatim (≤ 200 characters). */
   phrase: string;
-  via: 'npm.readme';
+  /** npm README, or the PyPI "Development Status :: 7 - Inactive" classifier (Tier 0.5). */
+  via: 'npm.readme' | 'pypi.classifier';
 }
 
 /** Money received through a funding platform with public books (plan F2/F3; produced in P4). */
@@ -1497,9 +1518,11 @@ export interface StabilityEntry {
   /**
    * Where the upkeep facts came from (Tier 0 coverage): `git` when the git history of the current
    * repository was read; `scorecard+npm` or `npm` when it was not and the label falls back to the
-   * OpenSSF Scorecard Maintained check (via deps.dev, no clone) and the npm release record.
+   * OpenSSF Scorecard Maintained check (via deps.dev, no clone) and the npm release record;
+   * `scorecard+pypi` or `pypi` the same with the PyPI release record (Tier 0.5); `none` when no
+   * source was available (also for ecosystems without an upkeep source, which stay Unknown).
    */
-  basis?: 'git' | 'scorecard+npm' | 'npm' | 'none';
+  basis?: 'git' | 'scorecard+npm' | 'npm' | 'scorecard+pypi' | 'pypi' | 'none';
 }
 
 /**
@@ -1525,14 +1548,21 @@ export interface StabilityCoverage {
   packages: number;
   /** Not Unknown. */
   assessed: number;
-  byBasis: { git: number; 'scorecard+npm': number; npm: number };
+  byBasis: { git: number; 'scorecard+npm': number; npm: number; 'scorecard+pypi'?: number; pypi?: number };
+  /**
+   * Per ecosystem (Tier 0.5): packages labelled and assessed (not Unknown). Production packages of
+   * ecosystems without an upkeep source (Docker images, …) are counted as Unknown here.
+   */
+  byEcosystem?: Record<string, { packages: number; assessed: number; production: number; productionUnknown: number }>;
+  /** Packages of ecosystems that get no upkeep label outside production (e.g. GitHub Actions in CI), by ecosystem. */
+  notAssessed?: Record<string, number>;
   direct: { total: number; assessed: number };
   runtimeTransitive: { total: number; assessed: number };
   production: { total: number; unknown: number };
   /** Unknown packages by reason. */
   skipped: { reason: string; count: number }[];
   /** Git history selection (absent when history collection was off). */
-  history?: { declared: number; read: number; capped: number; failed: number; maxRepos: number };
+  history?: { declared: number; read: number; capped: number; failed: number; maxRepos: number; tooLarge?: number; budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number } };
   /** "Upkeep assessed for N of M: all D direct, R runtime transitive; skipped: …". */
   line: string;
 }

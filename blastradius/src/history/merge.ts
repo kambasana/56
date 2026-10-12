@@ -3,15 +3,20 @@
  *   1. .mailmap: applied by git itself while the history is read (git.ts), so declared aliases
  *      already arrive as one id;
  *   2. display name plus overlapping activity: ids that committed under the same display name
- *      (compared as salted hashes, identity.ts nameKey) whose active periods overlap or follow each
- *      other within NAME_GAP_DAYS are one person changing address (nanoid's author moving from one
- *      domain to another, react's maintainer from a personal to an employer address);
+ *      (compared as salted hashes, identity.ts nameKey; spacing and case ignored, so "Romuald
+ *      Percereau" = "RomualdPercereau") whose active periods overlap or follow each other within
+ *      NAME_GAP_DAYS are one person changing address (nanoid's author moving from one domain to
+ *      another, react's maintainer from a personal to an employer address). A short one-word name
+ *      ("KaKa") is too common on its own: it merges an address into a GitHub login only when that
+ *      login is also an npm account that published this repository's packages (Tier 0.5: KaKa's
+ *      commit address and the no-reply login climba03003, who publishes process-warning on npm);
  *   3. the npm publisher: every id that the registry addresses of one npm account hash to is that
  *      account (npm handles are public; the addresses are never kept).
  * The merged history keeps one id per person: a GitHub login when one of the ids is a login, else the
  * id seen first. Without display names (histories read before Tier 0) and without GitHub login
  * mapping, identities are not resolved and the labels treat git-only continuity signals as context.
  */
+import { isWeakNameKey } from './identity.js';
 import { renameIds, type HistoryRecord } from './record.js';
 
 /** Two addresses under one name count as one person when their activity is at most this far apart. */
@@ -43,7 +48,12 @@ function spans(rec: HistoryRecord): Map<string, { first: number; last: number }>
   return out;
 }
 
-export function mergeIdentities(rec: HistoryRecord): MergeResult {
+export interface MergeOptions {
+  /** npm accounts (public handles) that published packages of this repository. */
+  npmAccounts?: readonly string[];
+}
+
+export function mergeIdentities(rec: HistoryRecord, opts: MergeOptions = {}): MergeResult {
   const span = spans(rec);
   const parent = new Map<string, string>();
   const find = (id: string): string => {
@@ -79,7 +89,32 @@ export function mergeIdentities(rec: HistoryRecord): MergeResult {
       l.push(id);
       byName.set(key, l);
     }
-    for (const ids of byName.values()) {
+    const accounts = new Set((opts.npmAccounts ?? []).map((a) => a.toLowerCase()));
+    // A display name that is exactly a GitHub login of this history ("fnwk" committing from a
+    // personal address, the no-reply login fnwk) ties that address to the login (Tier 0.5).
+    const loginByKey = new Map<string, string[]>();
+    for (const [login, key] of Object.entries(rec.loginNames ?? {})) if (span.has(login)) loginByKey.set(key, [...(loginByKey.get(key) ?? []), login]);
+    for (const [key, logins] of loginByKey) {
+      const ids = byName.get(key);
+      if (!ids || isWeakNameKey(key)) continue;
+      for (const l of logins) if (!ids.includes(l)) ids.push(l);
+    }
+    for (const [key, ids] of byName) {
+      if (isWeakNameKey(key)) {
+        // Weak (short one-word) name: only hashed addresses join a GitHub login that is the name
+        // itself or an npm account of this repository, and only with overlapping or adjacent activity.
+        const logins = [...new Set([...ids.filter((id) => !id.startsWith('hash:') && accounts.has(id.toLowerCase())), ...(loginByKey.get(key) ?? [])])];
+        if (logins.length !== 1) continue;
+        const login = logins[0]!;
+        for (const id of ids) {
+          if (id === login || !id.startsWith('hash:')) continue;
+          const a = span.get(find(login))!;
+          const b = span.get(find(id))!;
+          const apart = Math.max(0, Math.max(a.first, b.first) - Math.min(a.last, b.last));
+          if (apart <= NAME_GAP_DAYS * DAY && union(login, id)) displayName++;
+        }
+        continue;
+      }
       if (ids.length < 2) continue;
       ids.sort((a, b) => span.get(a)!.first - span.get(b)!.first || a.localeCompare(b));
       for (let i = 1; i < ids.length; i++) {

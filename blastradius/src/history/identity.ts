@@ -85,13 +85,23 @@ export function normaliseName(name: string): string {
 }
 
 /**
- * `name:` + HMAC-SHA256 of the normalised display name (first 16 hex chars), or undefined for a
- * generic name or a single word shorter than 6 characters ("Alex" is shared by too many people).
+ * `name:` + HMAC-SHA256 of the normalised display name with spacing removed (first 16 hex chars),
+ * so "Romuald Percereau" and "RomualdPercereau" are one key (Tier 0.5); undefined for a generic
+ * name. A single word shorter than 6 characters ("Alex", "KaKa") is shared by too many people: it
+ * gets a weak `wname:` key, which merges addresses only when they are also tied to a GitHub login
+ * that is an npm account publishing this repository's packages (merge.ts).
  * Used only to merge one person's addresses; never stored with the name.
  */
 export function nameKey(name: string, salt: Buffer | string): string | undefined {
   const n = normaliseName(name);
-  if (!n || GENERIC_NAMES.has(n)) return undefined;
-  if (!n.includes(' ') && n.length < 6) return undefined;
-  return `name:${createHmac('sha256', salt).update(`name\0${n}`).digest('hex').slice(0, 16)}`;
+  if (!n || GENERIC_NAMES.has(n) || GENERIC_NAMES.has(n.replace(/ /g, ''))) return undefined;
+  const compact = n.replace(/ /g, '');
+  const digest = createHmac('sha256', salt).update(`name\0${compact}`).digest('hex').slice(0, 16);
+  if (!n.includes(' ') && n.length < 6) return `wname:${digest}`;
+  return `name:${digest}`;
+}
+
+/** A weak display-name key (a short single word): merges only with a login / npm account tie. */
+export function isWeakNameKey(key: string): boolean {
+  return key.startsWith('wname:');
 }

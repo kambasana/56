@@ -43,10 +43,10 @@ export function coefficientOfVariation(xs: readonly number[]): number {
  * S4 over a publish history sorted oldest first (versions after `asOf` already removed).
  * Undefined below STABILITY_RULES.cadenceMinReleases stable releases.
  */
-export function releaseCadence(history: readonly ReleaseRecord[], asOf: Date): ReleaseCadenceValue | undefined {
+export function releaseCadence(history: readonly ReleaseRecord[], asOf: Date, isPre: (version: string) => boolean = isPrerelease): ReleaseCadenceValue | undefined {
   const R = STABILITY_RULES;
   const upTo = history.filter((h) => h.publishedMs <= asOf.getTime());
-  const stable = upTo.filter((h) => !isPrerelease(h.version));
+  const stable = upTo.filter((h) => !isPre(h.version));
   if (stable.length < R.cadenceMinReleases) return undefined;
   const last = stable.slice(-R.cadenceReleases);
   const gaps: number[] = [];
@@ -77,11 +77,13 @@ export function releasePublishers(history: readonly ReleaseRecord[], asOf: Date)
   upTo.forEach((h, index) => {
     if (!h.publisher) return;
     const a = byName.get(h.publisher);
+    const stable = !isPrerelease(h.version);
     if (a) {
       a.releases++;
+      if (stable && a.firstStableVersion === undefined) Object.assign(a, { firstStableVersion: h.version, firstStableAt: h.publishedAt, firstStableIndex: index });
       return;
     }
-    byName.set(h.publisher, { name: h.publisher, firstVersion: h.version, firstAt: h.publishedAt, index, releases: 1, trusted: h.trustedPublisher });
+    byName.set(h.publisher, { name: h.publisher, firstVersion: h.version, firstAt: h.publishedAt, index, releases: 1, trusted: h.trustedPublisher, ...(stable ? { firstStableVersion: h.version, firstStableAt: h.publishedAt, firstStableIndex: index } : {}) });
   });
   const out: ReleasePublishersValue = { releases: upTo.length, accounts: [...byName.values()].sort((a, b) => a.index - b.index) };
   const trusted = upTo.filter((h) => h.trustedPublisher).map((h) => h.version);

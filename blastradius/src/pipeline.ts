@@ -20,6 +20,7 @@ import { ingestDetailed, type IngestOptions, type WorkflowInfo } from './ingest/
 import { createOsvEnricher } from './enrich/osv/index.js';
 import { createDepsDevEnricher } from './enrich/depsdev/index.js';
 import { createNpmEnricher } from './enrich/npm/index.js';
+import { createPypiEnricher } from './enrich/pypi/index.js';
 import { createGithubEnricher } from './enrich/github/index.js';
 import { createLicenseEnricher } from './enrich/licenses/index.js';
 import { buildLicenseReport } from './licenses/report.js';
@@ -120,7 +121,7 @@ function cachedPack(path: string): Promise<LoadedPack> {
 
 /** Default enricher set; github reads repo facts collected by the earlier enrichers. */
 export function defaultEnrichers(getFacts: () => readonly Fact[]): Enricher[] {
-  return [createOsvEnricher(), createDepsDevEnricher(), createNpmEnricher(), createLicenseEnricher(), createGithubEnricher({ repoFacts: getFacts })];
+  return [createOsvEnricher(), createDepsDevEnricher(), createNpmEnricher(), createPypiEnricher(), createLicenseEnricher(), createGithubEnricher({ repoFacts: getFacts })];
 }
 
 /**

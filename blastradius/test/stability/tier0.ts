@@ -67,7 +67,7 @@ export async function tier0FamilyReport(fx: Tier0EndedFixture, repo: string): Pr
 export interface Tier0IdentityFixture {
   _note: string;
   recordedAt: string;
-  packages: Record<string, RecordedPackage & { project?: Record<string, any>; historyError?: string }>;
+  packages: Record<string, RecordedPackage & { project?: Record<string, any>; historyError?: string; siblings?: { owner: string; byAccount: Record<string, { name: string; firstAt: string } | null> } }>;
 }
 
 export function loadTier0Identity(): Tier0IdentityFixture {
@@ -84,7 +84,7 @@ export async function tier0IdentityHistory(slug: string): Promise<import('../../
  * real history enricher. `strip` removes the display-name keys and npm-account ids (the history as
  * an earlier version read it) to compare.
  */
-export async function tier0IdentityLabel(slug: string, version: string, opts: { strip?: boolean; asOf?: string } = {}): Promise<{ entry: import('../../src/core/types.js').StabilityEntry; facts: import('../../src/core/types.js').Fact[] }> {
+export async function tier0IdentityLabel(slug: string, version: string, opts: { strip?: boolean; asOf?: string; noSiblings?: boolean } = {}): Promise<{ entry: import('../../src/core/types.js').StabilityEntry; facts: import('../../src/core/types.js').Fact[] }> {
   const fx = loadTier0Identity();
   const pkg = fx.packages[slug]!;
   const asOf = new Date(opts.asOf ?? '2026-10-11T12:00:00Z');
@@ -93,6 +93,9 @@ export async function tier0IdentityLabel(slug: string, version: string, opts: { 
     const { names: _n, npmPublisherIds: _i, ...rest } = hist;
     hist = rest;
   }
-  const { report, facts } = await stabilityOf(productionInventory([{ name: pkg.name, version }]), registryFacts({ ...pkg, versions: [version] }, asOf, pkg.project, fx.recordedAt), () => hist, asOf);
+  // Tier 0.5: the recorded cross-registry sibling answers (the enricher's default lookup, live at recording).
+  const sib = pkg.siblings;
+  const siblingLookup = async (account: string, owner: string) => (sib && !opts.noSiblings && sib.owner === owner ? (sib.byAccount[account] ?? undefined) : undefined);
+  const { report, facts } = await stabilityOf(productionInventory([{ name: pkg.name, version }]), registryFacts({ ...pkg, versions: [version] }, asOf, pkg.project, fx.recordedAt), () => hist, asOf, false, { siblingLookup });
   return { entry: report.packages[0]!, facts };
 }

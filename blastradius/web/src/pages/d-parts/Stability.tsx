@@ -171,7 +171,9 @@ const BASIS_TEXT: Record<NonNullable<StabilityEntry['basis']>, string> = {
   git: 'Git history of the current repository',
   'scorecard+npm': 'OpenSSF Scorecard (via deps.dev) and the npm release record; git history not read',
   npm: 'The npm release record; git history not read',
-  none: 'Nothing: no repository history, Scorecard result or npm release record',
+  'scorecard+pypi': 'OpenSSF Scorecard (via deps.dev) and the PyPI release record; git history not read',
+  pypi: 'The PyPI release record; git history not read',
+  none: 'Nothing: no repository history, Scorecard result or registry release record',
 };
 
 /** Family decision rows (Tier 0): one row per direct dependency to change. */

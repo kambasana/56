@@ -124,6 +124,15 @@ export function releasesOf(commits: readonly HistoryCommit[], tags: readonly His
   return out.sort((a, b) => a.at - b.at || a.name.localeCompare(b.name));
 }
 
+/** Shallow histories: first-seen dates within this many months of the earliest commit read are censored. */
+export const SHALLOW_CENSOR_MONTHS = 24;
+
+/** Epoch seconds before which a first-seen date in a shallow history means "on or before"; undefined for a full history. */
+export function shallowCensorUntil(rec: Pick<HistoryRecord, 'shallowSince'>): number | undefined {
+  if (rec.shallowSince === undefined) return undefined;
+  return secs(addMonths(new Date(rec.shallowSince * 1000), SHALLOW_CENSOR_MONTHS));
+}
+
 export interface AggregateResult {
   contributors: ContributorsValue;
   history: CommitHistoryValue;
@@ -154,6 +163,11 @@ export function aggregateHistory(
     seen(c.committer, c.at);
   }
   for (const r of releases) seen(r.by, r.at);
+  // Tier 0.5: in a shallow clone, someone first seen in the first SHALLOW_CENSOR_MONTHS of the history
+  // read may have been active long before it: their first-seen date is "on or before", read as
+  // before the history (never new, never a takeover).
+  const censorUntil = shallowCensorUntil(rec);
+  if (censorUntil !== undefined) for (const [id, at] of first) if (at < censorUntil) first.set(id, rec.shallowSince! - DAY);
 
   const inRange = (from: number, to: number) => commits.filter((c) => c.at >= from && c.at < to);
 
@@ -248,7 +262,9 @@ export function aggregateHistory(
           text:
             `The top committer in the 12 months to ${cur.to} was first seen in this repository on ${iso(first.get(curTop)!)}` +
             (own > 0 ? ` and made ${own} of the ${cur.releases} releases in that period (${ownBefore} before it).` : '.'),
-          daysSinceFirstSeen: Math.round((wTo - first.get(curTop)!) / DAY),
+          // Days from first seen to the date the observation carries (Tier 0.5: a takeover dated
+          // to its release said "first seen 2025-05-06" with 524 days, counted to the window end).
+          daysSinceFirstSeen: Math.round(((takeover && firstOwn ? firstOwn.at : wTo) - first.get(curTop)!) / DAY),
           before: ownBefore,
           after: own,
         });
@@ -319,6 +335,7 @@ export function aggregateHistory(
     people,
     daysSinceLastCommit: Math.max(0, Math.floor((end - lastAt) / DAY)),
     longestGapDays24m: Math.round(gap),
+    ...(rec.shallowSince !== undefined ? { readFrom: iso(rec.shallowSince) } : {}),
     identity: {
       mapped: [...allIds].filter((id) => !isHashedId(id)).length,
       hashed: [...allIds].filter(isHashedId).length,
