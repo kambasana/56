@@ -20,10 +20,15 @@ export function mulberry32(seed: number): () => number {
 export const REVIEW_SEED = 20261011;
 export const REVIEW_SIZE = 30;
 
-/** Unique production packages labelled Fragile or Watch, by name. */
+/**
+ * Unique production packages labelled Fragile or Watch, by name. Labels that only the Tier 0
+ * no-clone fallback gives (watch_no_recent_release: these were Unknown in P3) are left out, so the
+ * P3 sample and its hand review stay reproducible.
+ */
 export function reviewPopulation(reports: readonly { report: StabilityReport }[]): StabilityEntry[] {
   const byName = new Map<string, StabilityEntry>();
-  for (const r of reports) for (const p of r.report.packages) if (p.production && (p.label === 'fragile' || p.label === 'watch') && !byName.has(p.name)) byName.set(p.name, p);
+  const p3 = (p: StabilityEntry) => p.rules.some((r) => r.rule !== 'watch_no_recent_release');
+  for (const r of reports) for (const p of r.report.packages) if (p.production && (p.label === 'fragile' || p.label === 'watch') && p3(p) && !byName.has(p.name)) byName.set(p.name, p);
   return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 

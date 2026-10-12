@@ -25,6 +25,7 @@
 import type { ContinuityEvent, MaintenanceState, StabilityConfidence, StabilityEntry, StabilityLabel, StabilityReason, StabilityRuleHit } from '../core/types.js';
 import { addMonths } from '../history/aggregate.js';
 import { LABEL_RULES, STABILITY_RULES, type LabelRuleId } from './rules.js';
+import { currentView, latestReleaseDate, majorLine, resolveRepo, type RepoResolution } from './repo.js';
 import type { RepoEvent, StabilityInputs } from './signals.js';
 
 const R = STABILITY_RULES;
@@ -36,6 +37,24 @@ const clean = (s: string, max = 160) => {
   const t = s.replace(EMAIL_RE, '<e-mail address removed>');
   return t.length > max ? `${t.slice(0, max - 1)}…` : t;
 };
+/** "3 years ago", "5 months ago", "12 days ago" between a YYYY-MM-DD date and the scan time. */
+export function ago(date: string, asOf: Date): string {
+  const days = Math.max(0, Math.floor((asOf.getTime() - Date.parse(`${date.slice(0, 10)}T00:00:00Z`)) / 86_400_000));
+  if (days >= 730) return `${Math.floor(days / 365.25)} years ago`;
+  if (days >= 365) return '1 year ago';
+  if (days >= 60) return `${Math.floor(days / 30.44)} months ago`;
+  return days === 1 ? '1 day ago' : `${days} days ago`;
+}
+
+/** "Last release 1.1.2 on 2022-11-21 (3 years ago)": shown before any cadence statistic (Tier 0). */
+export function lastReleaseText(x: StabilityInputs, asOf: Date): string | undefined {
+  const date = latestReleaseDate(x);
+  if (!date) return undefined;
+  const c = x.cadence?.value.lastRelease;
+  const version = c && c.date === date ? c.version : x.npm?.value.latestPublishedAt && x.npm.value.latestPublishedAt.slice(0, 10) === date ? x.npm.value.latestVersion : undefined;
+  return `Last release${version ? ` ${version}` : ''} on ${date} (${ago(date, asOf)})`;
+}
+
 const npmPage = (name: string, version?: string) => `https://www.npmjs.com/package/${name}${version ? `/v/${encodeURIComponent(version)}` : ''}`;
 
 export interface S3Result {
@@ -127,7 +146,7 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
     const second: string[] = [];
     if (noRelease18) second.push(`no release in ${R.inactiveMonths} months`);
     if (h && h.lastCommit < cutQuiet) second.push(`no commit in ${R.quietCommitMonths} months`);
-    if (cadenceIrregular && x.cadence) second.push(`irregular releases (latest gap ${Math.round(x.cadence.value.latestGapDays)} days, median ${Math.round(x.cadence.value.medianDays)})`);
+    if (cadenceIrregular && x.cadence) second.push(`irregular releases (gap between the two most recent releases ${Math.round(x.cadence.value.latestGapDays)} days, median ${Math.round(x.cadence.value.medianDays)})`);
     const what = d.status === 'maintenance_mode' ? 'maintenance mode' : d.status === 'unmaintained' ? 'that it is no longer maintained' : 'deprecation';
     const reason: StabilityReason = { signal: 'S3', text: `The README declares ${what}: "${clean(d.phrase, 200)}"${second.length ? `; and ${second.join(', ')}` : ''}.`, source: 'npm.readme', confidence: 'low', evidence: [npmPage(name)] };
     if (second.length && !endedHigh) {
@@ -215,6 +234,10 @@ function shortText(h: StabilityRuleHit, s3: S3Result, caf?: { value: number }): 
       return s3.quiet ? `No commit in ${R.quietCommitMonths} months` : 'README declares maintenance mode, with a second fact';
     case 'watch_inactive':
       return `No commit and no release in ${R.inactiveMonths} months`;
+    case 'watch_moved':
+      return 'Moved to another repository and still released';
+    case 'watch_no_recent_release':
+      return `No release in ${R.inactiveMonths} months (git history not read)`;
     case 'watch_release_continuity':
       return 'Recent release by an account new to the repository';
     case 'watch_license_category_change':
@@ -297,11 +320,17 @@ export function finishedTest(x: StabilityInputs, name: string, versions: readonl
   return out;
 }
 
-export function labelPackage(x: StabilityInputs, info: { name: string; versions: string[]; production: boolean; advisoriesChecked?: boolean }, asOf: Date): StabilityEntry {
+export function labelPackage(input: StabilityInputs, info: { name: string; versions: string[]; production: boolean; advisoriesChecked?: boolean }, asOf: Date): StabilityEntry {
   const name = info.name;
   const context: StabilityReason[] = [];
   const missing: string[] = [];
+  // Tier 0: resolve the current repository (latest release's) before any S3 rule; facts about an
+  // earlier repository are context only.
+  const res = resolveRepo(input, asOf);
+  const { view: x, setAside } = currentView(input, res);
+  for (const a of setAside) context.push({ signal: 'S3', text: a.text, source: a.source, confidence: 'high', ...(a.evidence ? { evidence: a.evidence } : {}) });
   const cadence = x.cadence?.value;
+  const lastRel = lastReleaseText(x, asOf);
   const s3 = maintenanceState(x, name, asOf, cadence?.irregular === true);
   context.push(...s3.context);
   const caf = cafFor(x);
@@ -330,11 +359,12 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
     };
   } else if (h) missing.push(`Fewer than ${R.cafMinCommits} commits in the last active 24 months: no CAF.`);
 
-  // S4 (context; a second fact for a declared status).
+  // S4 (context; a second fact for a declared status). The last release and its age come first
+  // (Tier 0: a cadence statistic alone read as "active" for a package last released years ago).
   if (cadence) {
     context.push({
       signal: 'S4',
-      text: `${cadence.irregular ? 'Irregular releases' : 'Releases'}: median ${Math.round(cadence.medianDays)} days between the last ${cadence.releases} releases, CV ${cadence.cv}, latest gap ${Math.round(cadence.latestGapDays)} days.`,
+      text: `${lastRel ? `${lastRel}. ` : ''}${cadence.irregular ? 'Irregular releases' : 'Releases'} up to then: median ${Math.round(cadence.medianDays)} days between the last ${cadence.releases} releases, CV ${cadence.cv}, gap between the two most recent ${Math.round(cadence.latestGapDays)} days.`,
       source: 'npm',
       confidence: 'high',
       evidence: [npmPage(name)],
@@ -386,7 +416,31 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
   if (cafIs1 && s3.inactive && fin.state === 'no') context.push({ signal: 'S3', text: `Not a small, finished package: ${fin.notMet.join('; ')}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
   if (cafIs1 && s3.inactive && fin.state === 'unknown') missing.push(`Finished / low-surface test not complete (${fin.notMet.join('; ')}): single contributor and inactive stays Fragile.`);
   const fragile = rules.length > 0;
+  // Tier 0: moved to another repository and still released: Watch with an action, never Fragile
+  // from the old repository's facts (those were set aside above).
+  let action: string | undefined;
+  if (res.moved && res.current) {
+    const to = res.current.replace(/^https?:\/\//, '');
+    action = `Moved: upgrade to ${majorLine(res.moved.latestVersion)} (repo ${to}${res.directory ? `, ${res.directory}` : ''})`;
+    if (!fragile)
+      rules.push(
+        hit('watch_moved', [
+          {
+            signal: 'S3',
+            text: `The latest release ${res.moved.latestVersion} (${res.moved.latestDate}) declares the repository ${to}${res.directory ? ` (directory ${res.directory})` : ''}; the version${res.previousVersions.length > 1 ? 's' : ''} in use (${res.previousVersions.join(', ')}) declare${res.previousVersions.length > 1 ? '' : 's'} ${res.previous.map((u) => u.replace(/^https?:\/\//, '')).join(', ')}.`,
+            source: 'npm',
+            confidence: 'high',
+            evidence: [npmPage(name, res.moved.latestVersion), ...res.previousVersions.map((v) => npmPage(name, v))],
+            date: res.moved.latestDate,
+          },
+        ]),
+      );
+  }
+  // Tier 0 fallback without git history (no clone): the npm release record and, when deps.dev has
+  // it, OpenSSF Scorecard's Maintained check for the current repository.
+  const fallback = !h ? fallbackUpkeep(x, name, asOf, fin.state === 'yes') : undefined;
   if (!fragile) {
+    if (fallback?.noRecentRelease) rules.push(hit('watch_no_recent_release', fallback.facts));
     if (finishedInactive) rules.push(hit('watch_finished_single_contributor_inactive', [cafFact!, ...inactiveFacts(), ...fin.facts]));
     else if (cafIs1) rules.push(hit('watch_single_contributor', [cafFact!]));
     if (s3.quiet || s3.quietDeclared) rules.push(hit('watch_quiet', s3.facts.filter((f) => /No commit in|maintenance mode/.test(f.text))));
@@ -401,7 +455,7 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
     const others: StabilityReason[] = [];
     if (cafIs1 && cafFact) others.push(cafFact);
     if (s3.quiet || s3.quietDeclared || s3.inactive) others.push(...s3.facts.filter((f) => /No commit/.test(f.text)));
-    if (cadence?.irregular) others.push({ signal: 'S4', text: `Irregular releases: latest gap ${Math.round(cadence.latestGapDays)} days, median ${Math.round(cadence.medianDays)} days, CV ${cadence.cv}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+    if (cadence?.irregular) others.push({ signal: 'S4', text: `${lastRel ? `${lastRel}. ` : ''}Irregular releases: gap between the two most recent ${Math.round(cadence.latestGapDays)} days, median ${Math.round(cadence.medianDays)} days, CV ${cadence.cv}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
     for (const e of [...topNew, ...s5a, ...signedFell]) others.push(evFact(e, e.kind === 'top_committer_new' ? 'C1' : e.kind === 'signed_share_changed' ? 'C2' : 'S5a'));
     if (others.length && !fragile) rules.push(hit('watch_contributor_base_changed_with_other', [...c1.map((e) => evFact(e, 'C1')), ...others]));
     else context.push(...c1.map((e) => evFact(e, 'C1')));
@@ -423,21 +477,28 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
   if (fragile) label = 'fragile';
   else if (rules.length) label = 'watch';
   else if (caf && s3.state !== 'unknown' && s3.confidence !== 'low') label = 'steady';
+  else if (fallback?.steady) label = 'steady';
   else label = 'unknown';
+  // The fallback's facts are already in the context (S4 last release, Scorecard Maintained) unless
+  // the package has no cadence: then the last release is new information.
+  if (!h && fallback && !cadence) context.push(...fallback.facts.filter((f) => f.source === 'npm' && !rules.some((r) => r.facts.includes(f))));
+  const basis: StabilityEntry['basis'] = h ? 'git' : fallback?.basis ?? 'none';
 
   // What is missing.
   if (!h) {
-    if (!x.repo) missing.push('No source repository is declared on npm.');
-    else missing.push(`The git history of ${x.repo.value.url} was not read in this scan (history collection off, offline, or the repository could not be cloned).`);
+    if (!res.current) missing.push('No source repository is declared on npm.');
+    else missing.push(`The git history of ${res.current} was not read in this scan (history collection off, outside the history cap, offline, or the repository could not be cloned)${fallback && fallback.basis !== 'none' ? `; upkeep from ${fallback.basis === 'scorecard+npm' ? 'OpenSSF Scorecard (via deps.dev) and the npm release record' : 'the npm release record'} instead` : ''}.`);
   }
   else if (x.repo?.value.directory) context.push({ signal: 'S2', text: `Git facts cover the whole repository ${h.repo}; this package is in its subdirectory ${x.repo.value.directory}.`, source: 'git', confidence: 'medium', evidence: [h.repo] });
   if (!x.npm && !x.cadence) missing.push('No npm registry data.');
 
   const summary =
     label === 'steady'
-      ? `No stability rule fired: ${s3.state === 'active' ? 'commits within 6 months' : s3.state}${caf ? `, CAF ${caf.value}` : ''}.`
+      ? h
+        ? `No stability rule fired: ${s3.state === 'active' ? 'commits within 6 months' : s3.state}${caf ? `, CAF ${caf.value}` : ''}.`
+        : `No stability rule fired: ${fallback!.steadyText} (git history not read).`
       : label === 'unknown'
-        ? `Not enough data: ${!h ? (!x.repo ? 'no source repository declared' : 'git history not read') : `fewer than ${R.cafMinCommits} commits in the last active 24 months`}.`
+        ? `Not enough data: ${!h ? (!res.current ? 'no source repository declared' : 'git history not read, and no recent release or Scorecard result to fall back on') : `fewer than ${R.cafMinCommits} commits in the last active 24 months`}.`
         : `${rules
             .slice(0, 2)
             .map((r) => shortText(r, s3, caf))
@@ -460,6 +521,43 @@ export function labelPackage(x: StabilityInputs, info: { name: string; versions:
   if (caf) entry.caf = { value: caf.value, commits: caf.commits, from: caf.from, to: caf.to };
   entry.finished = { state: fin.state, notMet: fin.notMet, ...(fin.size ? { size: fin.size } : {}) };
   if (cadence) entry.s4 = cadence;
+  if (action) entry.action = action;
+  if (res.current) entry.repo = { current: res.current, ...(res.directory ? { directory: res.directory } : {}), ...(res.previous.length ? { previous: res.previous } : {}) };
+  entry.basis = basis;
   return entry;
+}
+
+interface Fallback {
+  basis: 'scorecard+npm' | 'npm' | 'none';
+  steady: boolean;
+  steadyText: string;
+  noRecentRelease: boolean;
+  facts: StabilityReason[];
+}
+
+/**
+ * Upkeep without git history (Tier 0, teardown problem 5): repositories outside the history cap or
+ * not cloned get a label from facts that need no clone instead of Unknown. Steady needs a release
+ * within 12 months or Scorecard Maintained ≥ 5; no release in 18 months is Watch (never Fragile:
+ * without commits there is no CAF and no "inactive"), unless the package is small and finished.
+ */
+function fallbackUpkeep(x: StabilityInputs, name: string, asOf: Date, finished: boolean): Fallback {
+  const facts: StabilityReason[] = [];
+  const last = latestReleaseDate(x);
+  const m = x.maintained && scorecardAsOf(x, asOf) ? x.maintained.value : undefined;
+  const basis: Fallback['basis'] = m ? 'scorecard+npm' : last ? 'npm' : 'none';
+  const recent12 = last !== undefined && last > before(asOf, 12);
+  const old18 = last !== undefined && last < before(asOf, R.inactiveMonths);
+  const scActive = m !== undefined && m.score >= R.scorecardActiveScore;
+  const lastText = last ? lastReleaseText(x, asOf)! : undefined;
+  if (lastText) facts.push({ signal: 'S3', text: `${lastText} (npm).`, source: 'npm', confidence: 'high', evidence: [npmPage(name)], date: last! });
+  if (m) facts.push({ signal: 'S3', text: `OpenSSF Scorecard Maintained ${m.score}/10 for ${m.repo}${m.reason ? `: ${m.reason}` : ''}${m.date ? ` (run of ${day(m.date)})` : ''} (no clone needed).`, source: 'scorecard', confidence: 'medium', ...(x.maintained?.evidence ? { evidence: x.maintained.evidence } : {}) });
+  const noRecentRelease = old18 && !scActive && !finished;
+  const steady = !noRecentRelease && (recent12 || scActive || (old18 && finished));
+  const bits: string[] = [];
+  if (last) bits.push(`last release ${last}`);
+  if (m) bits.push(`Scorecard Maintained ${m.score}/10`);
+  if (old18 && finished) bits.push('small, finished package');
+  return { basis, steady, steadyText: bits.join(', '), noRecentRelease, facts };
 }
 

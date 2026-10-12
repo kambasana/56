@@ -16,6 +16,7 @@
  *
  * Wording is factual; facts describe accounts and repos, never intent.
  */
+import { orderRepos } from '../../stability/priority.js';
 import { HostUnavailableError, HttpError, OfflineMissError, SkippedHosts } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, parsePurl, unversionedPurl } from '../../core/types.js';
@@ -104,10 +105,11 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
         const key = `${t.owner}/${t.repo}`.toLowerCase();
         byRepo.set(key, [...(byRepo.get(key) ?? []), t]);
       }
-      let repoKeys = [...byRepo.keys()].sort();
+      // Tier 0: by priority (direct runtime dependencies, then production fan-in), not alphabetically.
+      let repoKeys = orderRepos(new Map([...byRepo].map(([k, ts]) => [k, ts.map((t) => t.subject)])), inv);
       const maxRepos = opts.maxRepos ?? 300;
       if (repoKeys.length > maxRepos) {
-        ctx.warn?.(`github: ${repoKeys.length} repos declared; only the first ${maxRepos} were looked up`);
+        ctx.warn?.(`github: ${repoKeys.length} repos declared; only the first ${maxRepos} by priority (direct runtime dependencies, then production fan-in) were looked up`);
         repoKeys = repoKeys.slice(0, maxRepos);
       }
 
@@ -132,7 +134,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           canonicalOwner = info.owner;
           canonicalRepo = info.name;
           const ownerValue: RepoOwnerValue = { repo: `github.com/${info.owner}/${info.name}`, owner: info.owner, ownerType: info.ownerType, url: info.htmlUrl };
-          const archivedValue: ArchivedValue = { archived: info.archived };
+          const archivedValue: ArchivedValue = { archived: info.archived, repo: `github.com/${owner}/${repo}` };
           if (info.pushedAt) archivedValue.lastPushAt = info.pushedAt;
           for (const s of subjects) {
             facts.push(makeFact('repo_owner', s, ownerValue, meta([info.htmlUrl])));

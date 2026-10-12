@@ -41,6 +41,10 @@ export const STABILITY_RULES = {
   cadenceMinReleases: 4,
   irregularCv: 1.5,
   irregularGapFactor: 3,
+  /** Moved repository (Tier 0): the latest release, in another repository, is at most this many months old. */
+  movedReleaseMonths: 12,
+  /** Fallback without git history (Tier 0): Scorecard Maintained at or above this counts as active. */
+  scorecardActiveScore: 5,
   /** S5a / C1 / C2 / L2: observations count for a label when dated within this many months. */
   recentMonths: 12,
   /** S5a: release by an account first seen in the repository fewer than this many days earlier. */
@@ -69,6 +73,8 @@ export const LABEL_RULES = {
   watch_quiet: 'Watch: S3 quiet',
   watch_inactive: 'Watch: S3 inactive (CAF not 1, or unknown)',
   watch_ended: 'Watch: S3 ended, not in production or declared only',
+  watch_moved: 'Watch: moved to another repository and still released (upgrade)',
+  watch_no_recent_release: 'Watch: no release in 18 months (git history not read)',
   watch_funding_concentrated_declining: 'Watch: F2 concentrated and F3 declining',
   watch_release_continuity: 'Watch: S5a release continuity',
   watch_license_category_change: 'Watch: L2 licence category change',

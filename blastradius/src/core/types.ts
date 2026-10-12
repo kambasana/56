@@ -507,6 +507,8 @@ export interface FundingValue {
 
 export interface ArchivedValue {
   archived: boolean;
+  /** Repository the flag is about, "github.com/owner/name" as declared (Tier 0: archived counts only for the current repository). */
+  repo?: string;
   /** ISO timestamp of the last push / commit, if known. */
   lastPushAt?: string;
 }
@@ -549,6 +551,13 @@ export interface ReleaseAgeValue {
   firstPublishedAt?: string;
   /** Stable releases in the 365 days up to and including the latest release (release churn, P3). */
   releasesInFinalYear?: number;
+  /**
+   * Source repository declared by this version's package.json (`repository`, normalised), and by the
+   * latest release's (Tier 0 moved-repo check): when they differ, the package moved and facts about
+   * the old repository (archived, Scorecard, git history) no longer describe its upkeep.
+   */
+  repository?: { url: string; directory?: string };
+  latestRepository?: { url: string; directory?: string };
 }
 
 /**
@@ -1339,15 +1348,74 @@ export interface StabilityEntry {
    * fails, `unknown` when an input is missing. `notMet` says which conditions failed or are unknown.
    */
   finished?: { state: 'yes' | 'no' | 'unknown'; notMet: string[]; size?: { unpackedSize: number; fileCount: number; dependencies: number } };
+  /**
+   * What to do, when a rule has a clear action (Tier 0), e.g. "Moved: upgrade to 9.x (repo
+   * github.com/TooTallNate/proxy-agents)".
+   */
+  action?: string;
+  /**
+   * The repository the labels used (Tier 0 moved-repo check): the one the latest release declares,
+   * and the earlier repositories versions in use declare when the package moved.
+   */
+  repo?: { current: string; directory?: string; previous?: string[] };
+  /**
+   * Where the upkeep facts came from (Tier 0 coverage): `git` when the git history of the current
+   * repository was read; `scorecard+npm` or `npm` when it was not and the label falls back to the
+   * OpenSSF Scorecard Maintained check (via deps.dev, no clone) and the npm release record.
+   */
+  basis?: 'git' | 'scorecard+npm' | 'npm' | 'none';
+}
+
+/**
+ * One decision for a family of labelled packages (Tier 0): the direct dependency to change, and the
+ * packages it brings in that share a Fragile / moved label (9 @ldapjs/* rows become one "ldapjs" row).
+ */
+export interface StabilityDecision {
+  /** The direct dependency (name) whose change removes or fixes the family. */
+  direct: string;
+  /** Label of the worst member. */
+  label: StabilityLabel;
+  /** Packages in the family (names), the direct dependency first when it is a member. */
+  packages: string[];
+  /** Rules that fired across the family. */
+  rules: string[];
+  /** One sentence: what to do. */
+  action: string;
+}
+
+/** Tier 0 coverage: how many packages have an upkeep label, from which source, and what was skipped. */
+export interface StabilityCoverage {
+  /** npm packages labelled (all scopes). */
+  packages: number;
+  /** Not Unknown. */
+  assessed: number;
+  byBasis: { git: number; 'scorecard+npm': number; npm: number };
+  direct: { total: number; assessed: number };
+  runtimeTransitive: { total: number; assessed: number };
+  production: { total: number; unknown: number };
+  /** Unknown packages by reason. */
+  skipped: { reason: string; count: number }[];
+  /** Git history selection (absent when history collection was off). */
+  history?: { declared: number; read: number; capped: number; failed: number; maxRepos: number };
+  /** "Upkeep assessed for N of M: all D direct, R runtime transitive; skipped: …". */
+  line: string;
 }
 
 export interface StabilityReport {
   /** Scan time the labels are computed at. */
   asOf: string;
   /** Rule set version (bumped when STABILITY_RULES change meaning; 2 adds the finished / low-surface tier and the open-advisory rule). */
-  rulesVersion: 1 | 2;
+  rulesVersion: 1 | 2 | 3;
   packages: StabilityEntry[];
   counts: Record<StabilityLabel, number>;
   /** Wording shown with every label. */
   disclaimer: string;
+  /** Families grouped into one decision row each (Tier 0). */
+  decisions?: StabilityDecision[];
+  coverage?: StabilityCoverage;
+  /**
+   * Git history state (web): `pending` while the background history job runs after the exposure
+   * answer was stored, `done` when it ran, `off` when history collection was not asked for.
+   */
+  historyStatus?: 'pending' | 'done' | 'off';
 }

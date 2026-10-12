@@ -134,7 +134,7 @@ describe('createGithubEnricher (offline fixtures)', () => {
       ownerType: 'User',
       url: 'https://github.com/dominictarr/event-stream',
     });
-    expect(factsFor(facts, es, 'archived')[0]!.value).toEqual({ archived: true, lastPushAt: '2018-11-27T03:02:39.000Z' });
+    expect(factsFor(facts, es, 'archived')[0]!.value).toEqual({ archived: true, repo: 'github.com/dominictarr/event-stream', lastPushAt: '2018-11-27T03:02:39.000Z' });
     expect(factsFor(facts, es, 'repo_transfer')).toEqual([]);
     expect(factsFor(facts, es, 'funding')).toEqual([]);
 

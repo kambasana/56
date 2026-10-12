@@ -52,6 +52,12 @@ export function formatSummary(result: ScanResult, opts: { top?: number; files?: 
     const worst = result.outbound[0]!;
     lines.push(`  outbound: ${result.outbound.length} workflow(s); highest ${clean(worst.assetId, 100)} score ${worst.score}`);
   }
+  const st = result.stability;
+  if (st?.coverage) lines.push(`  upkeep:    ${clean(st.coverage.line, 600)}`);
+  if (st?.decisions?.length) {
+    lines.push(`  upkeep decisions (production): ${st.decisions.length}`);
+    for (const d of st.decisions.slice(0, top)) lines.push(`    [${d.label.toUpperCase()}] ${clean(d.action, 300)}`);
+  }
   const w = result.warnings?.length ?? 0;
   if (w > 0) lines.push(`  warnings: ${w} (see report)`);
   for (const f of opts.files ?? []) lines.push(`  wrote ${f}`);

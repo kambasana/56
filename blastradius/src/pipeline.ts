@@ -15,7 +15,7 @@ import { HttpClient } from './core/http.js';
 import { defaultCacheDir, isPathInside } from './core/paths.js';
 import { looksLikeGitUrl } from './ingest/git.js';
 import { enricherStages, type EnrichContext, type Enricher } from './core/plugin.js';
-import type { Fact, Incident, Inventory, ScanResult } from './core/types.js';
+import type { Fact, HistoryReport, Incident, Inventory, ScanResult, StabilityReport } from './core/types.js';
 import { ingestDetailed, type IngestOptions, type WorkflowInfo } from './ingest/index.js';
 import { createOsvEnricher } from './enrich/osv/index.js';
 import { createDepsDevEnricher } from './enrich/depsdev/index.js';
@@ -23,7 +23,7 @@ import { createNpmEnricher } from './enrich/npm/index.js';
 import { createGithubEnricher } from './enrich/github/index.js';
 import { createLicenseEnricher } from './enrich/licenses/index.js';
 import { buildLicenseReport } from './licenses/report.js';
-import { createHistoryEnricher, type HistoryEnricherOptions } from './enrich/history/index.js';
+import { createHistoryEnricher, type HistoryEnricherOptions, type HistorySelection } from './enrich/history/index.js';
 import { buildHistoryReport } from './history/report.js';
 import { createAgenticEnricher, type AgenticEnricherOptions } from './enrich/agentic/index.js';
 import type { AgenticReport } from './core/agentic-types.js';
@@ -73,6 +73,8 @@ export interface ScanOptions {
    * Off by default. An object passes options to the history enricher (tests: recorded histories).
    */
   history?: boolean | Omit<HistoryEnricherOptions, 'repoFacts'>;
+  /** History will be added later by a background job (web, Tier 0): the stability report says `pending`. */
+  historyPending?: boolean;
   /**
    * Agentic gap-filler (src/agentic): after every deterministic collector, ask a model with tools
    * for the facts that are still missing; only facts the app verifies are kept. Off by default;
@@ -100,6 +102,8 @@ export interface ScanOutput {
   entities: EntityGraphData;
   /** Paths of report files written (empty when outDir is unset). */
   files: string[];
+  /** OSV answered for every component (the stability labels' finished test; addHistory reuses it). */
+  osvComplete?: boolean;
 }
 
 const packCache = new Map<string, Promise<LoadedPack>>();
@@ -183,10 +187,21 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   const ctx: EnrichContext = { http, now, offline: opts.offline || http.offline, warn, historical };
   const facts: Fact[] = [];
   const enrichers = (opts.enrichers ?? defaultEnrichers)(() => facts);
+  let historySelection: HistorySelection | undefined;
   if (opts.history) {
     const h = typeof opts.history === 'object' ? opts.history : {};
     const cache = h.cache ?? (typeof opts.cacheDir === 'string' ? { dir: join(opts.cacheDir, 'git-history') } : undefined);
-    enrichers.push(createHistoryEnricher({ ...h, ...(cache ? { cache } : {}), repoFacts: () => facts }));
+    enrichers.push(
+      createHistoryEnricher({
+        ...h,
+        ...(cache ? { cache } : {}),
+        repoFacts: () => facts,
+        onSelection: (sel) => {
+          historySelection = sel;
+          h.onSelection?.(sel);
+        },
+      }),
+    );
   }
   const packFile = opts.packFile ?? process.env.BLASTRADIUS_PACK;
   if (packFile) {
@@ -267,7 +282,11 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   if (history) result.history = history;
   if (agenticReport) result.agentic = agenticReport;
   // Stability labels (plan §4, P3): repo-level facts only; not risk, no effect on findings.
-  result.stability = buildStabilityReport(inventory, facts, now, { advisoriesChecked: osvComplete });
+  result.stability = buildStabilityReport(inventory, facts, now, {
+    advisoriesChecked: osvComplete,
+    ...(historySelection ? { historySelection } : {}),
+    historyStatus: opts.history ? 'done' : opts.historyPending ? 'pending' : 'off',
+  });
 
   // 6. Reports.
   const files: string[] = [];
@@ -288,7 +307,26 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
       );
     }
   }
-  return { result, inventory, facts, incidents, workflows: ingested.workflows, entities, files };
+  return { result, inventory, facts, incidents, workflows: ingested.workflows, entities, files, osvComplete };
+}
+
+/**
+ * Add git history to a finished scan (web background job, Tier 0): run the history enricher on the
+ * scan's own facts and rebuild the history and stability sections. Everything else in the result
+ * (findings, exposure) stays as it was, so the exposure answer can be shown before history is read.
+ */
+export async function addHistory(out: Pick<ScanOutput, 'result' | 'inventory' | 'facts' | 'osvComplete'>, opts: { now: Date; http?: HttpClient; offline?: boolean; cacheDir?: string | false; history?: Omit<HistoryEnricherOptions, 'repoFacts'> }): Promise<{ history?: HistoryReport; stability: StabilityReport }> {
+  const facts = [...out.facts];
+  let historySelection: HistorySelection | undefined;
+  const h = opts.history ?? {};
+  const cache = h.cache ?? (typeof opts.cacheDir === 'string' ? { dir: join(opts.cacheDir, 'git-history') } : undefined);
+  const enricher = createHistoryEnricher({ ...h, ...(cache ? { cache } : {}), repoFacts: () => facts, onSelection: (sel) => (historySelection = sel) });
+  const http = opts.http ?? new HttpClient({ offline: opts.offline === true, cacheDir: opts.cacheDir === undefined ? join(defaultCacheDir(), 'http') : opts.cacheDir });
+  const warnings: string[] = [];
+  facts.push(...(await enricher.enrich(out.inventory, { http, now: opts.now, offline: opts.offline === true || http.offline, warn: (m) => warnings.push(m) })));
+  const history = buildHistoryReport(facts);
+  const stability = buildStabilityReport(out.inventory, facts, opts.now, { advisoriesChecked: out.osvComplete === true, ...(historySelection ? { historySelection } : {}), historyStatus: 'done' });
+  return { ...(history ? { history } : {}), stability };
 }
 
 /** Back-compat wrapper returning only the ScanResult. */

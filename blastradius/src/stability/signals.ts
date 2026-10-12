@@ -42,7 +42,17 @@ export interface StabilityInputs {
   /** S1: number of npm maintainers (the count only). */
   maintainerCount?: Sourced<number>;
   /** npm: latest release, its deprecation, the version in use's deprecation. */
-  npm?: Sourced<{ latestVersion?: string; latestPublishedAt?: string; daysSinceLatestRelease?: number; latestDeprecated?: string; firstPublishedAt?: string; releasesInFinalYear?: number; inUse: { version: string; deprecated?: string }[] }>;
+  npm?: Sourced<{
+    latestVersion?: string;
+    latestPublishedAt?: string;
+    daysSinceLatestRelease?: number;
+    latestDeprecated?: string;
+    firstPublishedAt?: string;
+    releasesInFinalYear?: number;
+    /** Repository the latest release declares (Tier 0 moved-repo check). */
+    latestRepo?: { url: string; directory?: string };
+    inUse: { version: string; deprecated?: string; repo?: { url: string; directory?: string } }[];
+  }>;
   /** Finished / low-surface input: size and dependency count of each version in use (npm dist or tarball). */
   sizes?: Sourced<{ version: string; unpackedSize: number; fileCount: number; dependencies: number; via: 'npm.dist' | 'npm.tarball' }>[];
   /**
@@ -54,7 +64,11 @@ export interface StabilityInputs {
   declared?: Sourced<Omit<DeclaredStatusValue, 'via'>>;
   /** Scorecard Maintained check (repo-level). */
   maintained?: Sourced<{ score: number; reason?: string; date?: string; repo: string }>;
-  archived?: Sourced<{ archived: boolean; lastPushAt?: string }>;
+  /** Every Scorecard Maintained result for the package (one per repository looked up). */
+  maintainedAll?: Sourced<{ score: number; reason?: string; date?: string; repo: string }>[];
+  archived?: Sourced<{ archived: boolean; lastPushAt?: string; repo?: string }>;
+  /** Every archived flag for the package (one per repository looked up). */
+  archivedAll?: Sourced<{ archived: boolean; lastPushAt?: string; repo?: string }>[];
   repo?: Sourced<Pick<RepoValue, 'url' | 'directory' | 'host'>>;
   /** S2: CAF over the 24 months to the scan, and over the 24 months to the last commit. */
   caf24?: Sourced<{ value: number; commits: number; from: string; to: string }>;
@@ -107,7 +121,12 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
           if (v.firstPublishedAt !== undefined) x.npm.value.firstPublishedAt = v.firstPublishedAt;
           if (v.releasesInFinalYear !== undefined) x.npm.value.releasesInFinalYear = v.releasesInFinalYear;
         }
-        x.npm.value.inUse.push(v.deprecated !== undefined ? { version, deprecated: v.deprecated } : { version });
+        if (v.latestRepository && !x.npm.value.latestRepo) x.npm.value.latestRepo = { url: v.latestRepository.url, ...(v.latestRepository.directory !== undefined ? { directory: v.latestRepository.directory } : {}) };
+        x.npm.value.inUse.push({
+          version,
+          ...(v.deprecated !== undefined ? { deprecated: v.deprecated } : {}),
+          ...(v.repository ? { repo: { url: v.repository.url, ...(v.repository.directory !== undefined ? { directory: v.repository.directory } : {}) } } : {}),
+        });
         break;
       }
       case 'release_cadence': {
@@ -126,17 +145,21 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
       case 'scorecard': {
         const checks = f.value.checks;
         const m = checks.find((c) => c.name === 'Maintained');
-        if (m && !x.maintained) {
+        if (m && !(x.maintainedAll ?? []).some((o) => o.value.repo.toLowerCase() === f.value.repo.toLowerCase())) {
           const value: { score: number; reason?: string; date?: string; repo: string } = { score: m.score, repo: f.value.repo };
           if (m.reason !== undefined) value.reason = m.reason;
           if (f.value.date !== undefined) value.date = f.value.date;
-          x.maintained = { value, ...meta(f) };
+          x.maintained ??= { value, ...meta(f) };
+          (x.maintainedAll ??= []).push({ value, ...meta(f) });
         }
         break;
       }
-      case 'archived':
-        x.archived ??= { value: f.value.lastPushAt !== undefined ? { archived: f.value.archived, lastPushAt: f.value.lastPushAt } : { archived: f.value.archived }, ...meta(f) };
+      case 'archived': {
+        const value = { archived: f.value.archived, ...(f.value.lastPushAt !== undefined ? { lastPushAt: f.value.lastPushAt } : {}), ...(f.value.repo !== undefined ? { repo: f.value.repo } : {}) };
+        x.archived ??= { value, ...meta(f) };
+        (x.archivedAll ??= []).push({ value, ...meta(f) });
         break;
+      }
       case 'repo':
         x.repo ??= { value: f.value.directory !== undefined ? { url: f.value.url, host: f.value.host, directory: f.value.directory } : { url: f.value.url, host: f.value.host }, ...meta(f) };
         break;

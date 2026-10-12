@@ -22,6 +22,8 @@ import { npmContinuity } from '../../history/continuity.js';
 import { loadSalt, localIdentity } from '../../history/identity.js';
 import { renameIds, type HistoryRecord } from '../../history/record.js';
 import { mapLimit } from '../depsdev/util.js';
+import { orderRepos } from '../../stability/priority.js';
+import { sameRepo } from '../../stability/repo.js';
 import { fetchPackument, isObject } from '../npm/registry.js';
 
 export interface HistoryEnricherOptions {
@@ -35,8 +37,10 @@ export interface HistoryEnricherOptions {
   token?: string;
   /** GraphQL points per scan (default 2,000). */
   budgetPoints?: number;
-  /** Repositories per scan (default 300). */
+  /** Repositories per scan (default 300; CLI --history-max). Picked by priority: direct runtime, then production fan-in. */
   maxRepos?: number;
+  /** Receives which repositories were read, left out by the cap, or failed (coverage line). */
+  onSelection?: (s: HistorySelection) => void;
   /** Parallel clones (default 2). */
   concurrency?: number;
   /** Recorded histories by repo URL (tests, offline replays). */
@@ -47,19 +51,38 @@ export interface HistoryEnricherOptions {
   onBudget?: (b: GraphqlBudget) => void;
 }
 
+export interface HistorySelection {
+  /** Repositories declared by packages in the scan. */
+  declared: number;
+  /** Repositories read (git history facts produced). */
+  read: string[];
+  /** Left out by the per-scan cap. */
+  capped: string[];
+  /** Could not be cloned or read, or skipped offline. */
+  failed: string[];
+  maxRepos: number;
+}
+
+export const DEFAULT_HISTORY_MAX = 300;
+
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/;
 
 export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
   return {
     name: 'git',
     usesEarlierFacts: true,
-    async enrich(_inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
+    async enrich(inv: Inventory, ctx: EnrichContext): Promise<Fact[]> {
       const byRepo = new Map<string, Set<PurlString>>();
+      // Tier 0: a package that moved is read at the repository its latest release declares
+      // (agent-base: TooTallNate/proxy-agents, not the archived node-agent-base).
+      const latestRepo = new Map<PurlString, string>();
+      for (const f of opts.repoFacts()) if (f.kind === 'release_age' && f.value.latestRepository) latestRepo.set(unversionedPurl(f.subject), f.value.latestRepository.url);
       for (const f of opts.repoFacts()) {
         // A package in a monorepo subdirectory gets the facts of the whole repository (repo-level by
         // design; the stability label says so). One clone per repository either way.
         if (f.kind !== 'repo') continue;
-        let url = f.value.url.replace(/\.git$/, '').replace(/\/+$/, '');
+        const latest = latestRepo.get(unversionedPurl(f.subject));
+        let url = (latest && !sameRepo(latest, f.value.url) ? latest : f.value.url).replace(/\.git$/, '').replace(/\/+$/, '');
         // GitHub owner and repository names are case-insensitive: one clone per repository.
         if (url.startsWith('https://github.com/')) url = url.toLowerCase();
         if (!/^https:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/[^/]+\/[^/]+$/.test(url)) continue;
@@ -69,8 +92,15 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       }
       const publishersOf = new Map<PurlString, ReleasePublishersValue>();
       for (const f of opts.repoFacts()) if (f.kind === 'release_publishers') publishersOf.set(unversionedPurl(f.subject), f.value);
-      const repos = [...byRepo.keys()].sort().slice(0, opts.maxRepos ?? 300);
-      if (repos.length === 0) return [];
+      const maxRepos = opts.maxRepos ?? DEFAULT_HISTORY_MAX;
+      const ordered = orderRepos(byRepo, inv);
+      const repos = ordered.slice(0, maxRepos);
+      const selection: HistorySelection = { declared: ordered.length, read: [], capped: ordered.slice(maxRepos), failed: [], maxRepos };
+      if (selection.capped.length > 0) ctx.warn?.(`git history: ${ordered.length} repositories declared; read the first ${maxRepos} by priority (direct runtime dependencies, then production fan-in); ${selection.capped.length} left to the Scorecard / npm fallback (raise with --history-max)`);
+      if (repos.length === 0) {
+        opts.onSelection?.(selection);
+        return [];
+      }
       const cacheDir = opts.cache?.dir ?? path.join(defaultCacheDir(), 'git-history');
       const cache: HistoryCacheOptions = { ...opts.cache, dir: cacheDir };
       // The salt is loaded only when a repository is actually read (recorded histories are already hashed).
@@ -88,6 +118,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         if (!rec) {
           if (ctx.offline) {
             skippedOffline++;
+            selection.failed.push(url);
             return;
           }
           try {
@@ -95,6 +126,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             rec = await readHistory(dir, { repo: url, salt: getSalt(), ...(cache.timeoutMs ? { timeoutMs: cache.timeoutMs } : {}) }, opts.git ?? runGit);
           } catch (err) {
             ctx.warn?.(`git history: ${url}: ${(err as Error).message}`);
+            selection.failed.push(url);
             return;
           }
         }
@@ -119,7 +151,11 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
           }
         }
         const agg = aggregateHistory(rec, ctx.now, { ...(verified ? { verified } : {}), identityVia: via });
-        if (!agg) return;
+        if (!agg) {
+          selection.failed.push(url);
+          return;
+        }
+        selection.read.push(url);
         const meta = { source: 'git', fetchedAt: ctx.now, evidence: [url] };
         for (const subject of byRepo.get(url) ?? []) {
           facts.push(makeFact('contributors', subject, agg.contributors, meta));
@@ -144,6 +180,9 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       if (mappingFailed > 0) ctx.warn?.(`git history: GitHub login mapping failed for ${mappingFailed} repositor${mappingFailed === 1 ? 'y' : 'ies'}; their contributors stay hashed`);
       if (budget.skipped > 0) ctx.warn?.(`git history: GraphQL budget of ${budget.limit} points reached; ${budget.skipped} request(s) not sent`);
       opts.onBudget?.(budget);
+      selection.read.sort();
+      selection.failed.sort();
+      opts.onSelection?.(selection);
       return facts.sort((a, b) => a.subject.localeCompare(b.subject) || a.kind.localeCompare(b.kind));
     },
   };

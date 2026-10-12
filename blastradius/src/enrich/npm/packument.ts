@@ -348,6 +348,11 @@ export function deriveReleaseAge(p: Packument, version: string, now: Date): Rele
   if (deprecated) value.deprecated = deprecated;
   const latestDeprecated = latestRec ? str(manifest(p, latestRec.version)?.deprecated, 500) : undefined;
   if (latestDeprecated) value.latestDeprecated = latestDeprecated;
+  // Moved-repo check (Tier 0): the repository this version declares, and the one the latest release declares.
+  const inUseRepo = repoFromManifestField(manifest(p, version)?.repository);
+  if (inUseRepo) value.repository = { url: inUseRepo.url, ...(inUseRepo.directory ? { directory: inUseRepo.directory } : {}) };
+  const latestRepo = latestRec ? repoFromManifestField(manifest(p, latestRec.version)?.repository) : undefined;
+  if (latestRepo) value.latestRepository = { url: latestRepo.url, ...(latestRepo.directory ? { directory: latestRepo.directory } : {}) };
   return value;
 }
 

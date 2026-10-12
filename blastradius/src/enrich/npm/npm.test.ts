@@ -259,6 +259,9 @@ describe('event-stream (publisher handover, 2018)', () => {
       // Finished / low-surface inputs: first release, and 3.3.5 + 3.3.6 in the final year (4.0.0 is after `now`).
       firstPublishedAt: '2014-12-27T06:59:21.624Z',
       releasesInFinalYear: 2,
+      // Tier 0 moved-repo check: the repository this version and the latest release declare.
+      repository: { url: 'https://github.com/dominictarr/event-stream' },
+      latestRepository: { url: 'https://github.com/dominictarr/event-stream' },
     });
     expect(versionHistory(p, now).map((h) => h.version)).not.toContain('4.0.0');
   });

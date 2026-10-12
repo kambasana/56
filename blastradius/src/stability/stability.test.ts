@@ -255,8 +255,11 @@ describe('labels', () => {
   it('Steady needs git history; Unknown says what is missing', () => {
     expect(entryOf(facts()).label).toBe('steady');
     const u = entryOf(facts({ noHistory: true }));
-    expect(u.label).toBe('unknown');
-    expect(u.missing[0]).toMatch(/git history of https:\/\/github.com\/example\/demo was not read/);
+    // Tier 0: without git history the label falls back to the npm release record and says so.
+    expect(u.label).toBe('steady');
+    expect(u.basis).toBe('npm');
+    expect(u.summary).toMatch(/\(git history not read\)\.$/);
+    expect(u.missing[0]).toMatch(/git history of https:\/\/github.com\/example\/demo was not read.*upkeep from the npm release record instead/);
     expect(entryOf(facts({ commits: 3 })).label).toBe('unknown');
   });
   it('funding is never guessed: its rules are listed, never fired, and every entry says not assessed', () => {

@@ -79,13 +79,17 @@ describe('§8 subjects on recorded data (P3 gate)', () => {
     expect(now.s3).toMatchObject({ state: 'inactive', lastCommit: '2022-01-08' });
   });
 
-  it('row 3 faker: Unknown — the repository is gone and no faker release is deprecated on npm (miss)', async () => {
+  it('row 3 faker: the repository is gone and no faker release is deprecated on npm (miss); Tier 0 fallback: Watch for no release in 18 months', async () => {
     expect(subjects.packages.faker!.historyError).toMatch(/could not read Username/);
     for (const at of [undefined, '2021-12-31']) {
       const e = await label('faker', at);
-      expect(e.label).toBe('unknown');
       expect(e.s3.state).toBe('unknown');
       expect(e.missing[0]).toMatch(/Marak\/Faker\.js was not read/);
+      // Without git history the label falls back to the npm release record (5.5.3, 2021-03-23): a
+      // release within 12 months at the end of 2021, none in 18 months now.
+      expect(e.basis).toBe('npm');
+      expect(e.label).toBe(at ? 'steady' : 'watch');
+      if (!at) expect(rules(e)).toEqual(['watch_no_recent_release']);
     }
     const versions = subjects.packages.faker!.packument.versions as Record<string, { deprecated?: string }>;
     expect(Object.values(versions).filter((v) => v.deprecated)).toEqual([]);
@@ -146,7 +150,9 @@ describe('control repositories and the hand-review sample', () => {
     const by = { fragile: 0, watch: 0, steady: 0, unknown: 0 };
     for (const p of all.values()) by[p.label]++;
     // P3 refinement: 26 small, finished packages move from Fragile to Watch (was 72 / 131 / 8 / 16).
-    expect(by).toEqual({ fragile: 46, watch: 157, steady: 8, unknown: 16 });
+    // Tier 0: the no-clone fallback labels 6 of the 16 Unknown (3 Steady from a recent release or
+    // Scorecard, 3 Watch for no release in 18 months); vue and vue-router are Watch "Moved".
+    expect(by).toEqual({ fragile: 46, watch: 160, steady: 11, unknown: 10 });
     expect(pop).toHaveLength(203);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
     expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);

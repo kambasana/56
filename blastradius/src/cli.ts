@@ -40,6 +40,12 @@ export function parseAsOf(value: string): Date {
   return d;
 }
 
+export function parseHistoryMax(value: string): number {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < 1 || n > 5000) throw new InvalidArgumentError('expected a whole number of repositories from 1 to 5000');
+  return n;
+}
+
 interface ScanCliOptions {
   format: OutputFormat[];
   out: string;
@@ -52,6 +58,7 @@ interface ScanCliOptions {
   pack?: string;
   syft: boolean;
   history: boolean;
+  historyMax?: number;
   agentic: boolean;
   agenticPeople: boolean;
   licensePolicy?: string;
@@ -91,6 +98,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--review <file>', 'entity-link review decisions (JSON)')
     .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
     .option('--history', 'read the git history of source repositories (blobless clones): contributor absence factor, continuity, signed share', false)
+    .option('--history-max <n>', 'with --history: most repositories read per scan, picked by priority (direct runtime dependencies, then production fan-in); the rest use the Scorecard / npm fallback (default 300)', parseHistoryMax)
     .option('--agentic', 'fill facts the collectors could not find with a Claude agent (needs ANTHROPIC_API_KEY in the environment; every value is verified against its source before it is kept)', false)
     .option('--agentic-people', 'with --agentic and --history: also collect what contributors published on their own public profiles (person-level data, removable on request, shown only to project managers; never nationality or country)', false)
     .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
@@ -105,7 +113,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         offline,
         kbDir: o.kb,
         syft: o.syft,
-        history: o.history,
+        history: o.history ? (o.historyMax !== undefined ? { maxRepos: o.historyMax } : true) : false,
         agentic: o.agentic ? (o.agenticPeople ? { personTasks: true } : true) : false,
         log: (m) => err(`… ${m}\n`),
       };

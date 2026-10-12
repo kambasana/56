@@ -59,8 +59,8 @@ describe('stability in the stored scan', () => {
     const es = s.packages.find((p) => p.name === 'event-stream')!;
     expect(es).toMatchObject({ label: 'watch', production: true, funding: 'not_assessed' });
     expect(es.rules.map((r) => r.rule)).toEqual(expect.arrayContaining(['watch_single_contributor', 'watch_release_continuity']));
-    // Packages without a recorded history say what is missing.
-    expect(s.packages.find((p) => p.name === 'ms')).toMatchObject({ label: 'unknown' });
+    // Packages without a recorded history say what is missing, and fall back to the npm release record (Tier 0).
+    expect(s.packages.find((p) => p.name === 'ms')).toMatchObject({ basis: 'npm' });
     expect(s.packages.find((p) => p.name === 'ms')!.missing[0]).toMatch(/git history of .* was not read/);
     // Stability is not risk: no finding reason comes from it.
     for (const f of result.findings) for (const r of f.reasons) expect(r.factor).not.toMatch(/stability|fragile|watch/i);
