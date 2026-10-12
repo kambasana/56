@@ -136,7 +136,7 @@ function addChain(g: GraphBuilder, f: Finding, prio: number): void {
 
 function entityTypeOf(id: string): Pick<GraphNode, 'entityType'> {
   const prefix = id.split(':')[0];
-  if (prefix === 'person' || prefix === 'org' || prefix === 'funder' || prefix === 'account') return { entityType: prefix };
+  if (prefix === 'person' || prefix === 'org' || prefix === 'funder' || prefix === 'account' || prefix === 'owner' || prefix === 'funding') return { entityType: prefix };
   return {};
 }
 

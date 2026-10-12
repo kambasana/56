@@ -7,10 +7,10 @@
  */
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import type { PackageReachResponse, ReachPath } from '@server/api-types-incidents';
+import type { PackageBehindResponse, PackageReachResponse, ReachPath } from '@server/api-types-incidents';
 import { incidentsApi } from '@/api-incidents';
 import { useAuth } from '@/auth';
-import { behindPath, incidentPath, packagePath, projectPath } from '@/nav';
+import { accountPath, accountPathForEntity, behindPath, exposurePath, incidentPath, packagePath, projectPath } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { ReachTag, SeverityBadge, StateBlock, useUpdateParams, VerdictContent, verdictSurface } from '@/components/br';
 import { useCommandPalette } from '@/components/CommandPalette';
@@ -18,6 +18,8 @@ import { BlastSankey } from '@/components/viz/BlastSankey';
 import { PathChain, PathTree, pathKey } from '@/components/viz/PathTree';
 import { LifecycleStrip, type LifecyclePhase } from '@/components/viz/Timeline';
 import { useViewParam, ViewToggle } from '@/components/viz/ViewToggle';
+import { entityKind, entityLabel, KIND_LABEL, relationText, reviewText, type BehindLink } from '@/components/viz/entity';
+import { safeHref } from '@/lib/safe-href';
 import { useApi } from '@/lib/useApi';
 import { fmtTime } from '@/lib/cn';
 import { cn } from '@/lib/utils';
@@ -86,7 +88,128 @@ function ReachTable({ r }: { r: PackageReachResponse }) {
   );
 }
 
-function Reach({ r, pkg }: { r: PackageReachResponse; pkg: string }) {
+function SourceLink({ url }: { url: string | undefined }) {
+  const href = url ? safeHref(url) : null;
+  if (!url) return null;
+  return href ? (
+    <a href={href} target="_blank" rel="noreferrer noopener" className="break-all text-caption">
+      {url.replace(/^https:\/\//, '')}
+    </a>
+  ) : (
+    <span className="font-mono text-caption">{url}</span>
+  );
+}
+
+function LinkRows({ links, empty }: { links: readonly BehindLink[]; empty: string }) {
+  if (links.length === 0) return <p className="m-0 text-caption text-muted-foreground">{empty}</p>;
+  return (
+    <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+      {links.map((l) => {
+        const to = accountPathForEntity(l.entityId);
+        return (
+          <li key={`${l.relation} ${l.entityId}`} className="flex flex-col">
+            <span>
+              {relationText(l.relation)}{' '}
+              {to ? (
+                <Link to={to} className="underline">
+                  {entityLabel(l.entityId)}
+                </Link>
+              ) : (
+                <span className="font-medium">{entityLabel(l.entityId)}</span>
+              )}
+              {entityKind(l.entityId) !== 'owner' && <span className="text-caption text-muted-foreground"> ({KIND_LABEL[entityKind(l.entityId)].toLowerCase()})</span>}
+            </span>
+            <span className="text-caption text-text-secondary">{reviewText(l)}</span>
+            <SourceLink url={l.evidence[0]} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Who is behind the package: publish rights, publisher of each locked version, owner and funding pages, with sources and review state. */
+export function BehindSummary({ b, version }: { b: PackageBehindResponse; version: string | null }) {
+  const versions = version ? b.lockedVersions.filter((v) => v.version === version) : b.lockedVersions;
+  const owners = b.links.filter((l) => l.relation === 'owns');
+  const funding = b.links.filter((l) => l.relation === 'receives_funding_at');
+  const machine = b.review.machineDerived;
+  return (
+    <div className="grid grid-cols-1 gap-4 rounded-xl border p-4 md:grid-cols-2">
+      <div className="flex flex-col gap-1.5">
+        <h3 className="m-0 text-label font-semibold">Can publish now</h3>
+        {b.publishRights === null ? (
+          <p className="m-0 text-caption text-muted-foreground">No registry data for it yet; the account index fetches it after the next scan.</p>
+        ) : b.publishRights.length === 0 ? (
+          <p className="m-0 text-caption text-muted-foreground">The registry lists no maintainers.</p>
+        ) : (
+          <ul aria-label="Publish rights" className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
+            {b.publishRights.map((a) => (
+              <li key={a.account}>
+                <Link to={accountPath('npm', a.account)}>npm · {a.account}</Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {b.publishRights && b.publishRights.length > 0 && (
+          <span className="text-caption text-text-secondary">
+            {b.publishRights[0]!.source} · <SourceLink url={b.publishRights[0]!.evidence} />
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <h3 className="m-0 text-label font-semibold">Who published {version ? 'this version' : 'the versions you lock'}</h3>
+        {versions.length === 0 ? (
+          <p className="m-0 text-caption text-muted-foreground">No project you can see locks {version ? 'this version' : 'it'}.</p>
+        ) : (
+          <ul aria-label="Locked versions" className="m-0 flex list-none flex-col gap-1 p-0">
+            {versions.slice(0, 8).map((v) => (
+              <li key={v.version} className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-mono text-[12px]">{v.version}</span>
+                {v.publisher ? (
+                  <span>
+                    by{' '}
+                    <Link to={accountPath('npm', v.publisher.account)} className="underline">
+                      {v.publisher.account}
+                    </Link>
+                    <span className="text-caption text-text-secondary">
+                      {v.publisher.attribution === 'sole-maintainer' ? ' (deleted version; sole maintainer before it)' : ' (npm _npmUser)'}
+                      {v.publisher.at ? ` · ${fmtTime(v.publisher.at)}` : ''}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-caption text-muted-foreground">publisher not known</span>
+                )}
+                {v.production && <ReachTag reach="production" />}
+                {v.knownBad.map((k) => (
+                  <span key={k.id} className="rounded-[6px] bg-destructive px-1.5 text-label font-medium text-destructive-foreground">
+                    Known bad: {k.id}
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <h3 className="m-0 text-label font-semibold">Repository owner</h3>
+        <LinkRows links={owners} empty="No repository owner recorded." />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <h3 className="m-0 text-label font-semibold">Funding pages it names</h3>
+        <LinkRows links={funding} empty="None named in its funding field or FUNDING.yml." />
+      </div>
+      <p className="m-0 text-caption text-muted-foreground md:col-span-2">
+        {machine} {machine === 1 ? 'link is' : 'links are'} machine-derived from public registry and repository records; {b.review.reviewed} reviewed by a person. Not a finding of wrongdoing.{' '}
+        <Link to={behindPath(b.name)} className="underline">
+          Every link, with sources
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function Reach({ r, pkg, behind }: { r: PackageReachResponse; pkg: string; behind: { data: PackageBehindResponse | null; error: Error | null } }) {
   const [sp] = useSearchParams();
   const update = useUpdateParams();
   const [view, setView] = useViewParam(['graph', 'table'] as const, 'graph');
@@ -142,6 +265,19 @@ function Reach({ r, pkg }: { r: PackageReachResponse; pkg: string }) {
               </div>
             ) : (
               <ReachTable r={r} />
+            )}
+          </section>
+
+          <section aria-labelledby="h-behind" className="flex flex-col gap-2.5">
+            <h2 id="h-behind" className="m-0 text-heading font-semibold">
+              Who is behind it
+            </h2>
+            {behind.data ? (
+              <BehindSummary b={behind.data} version={r.query.version} />
+            ) : behind.error ? (
+              <p className="m-0 text-caption text-muted-foreground">Could not load who is behind it: {behind.error.message}</p>
+            ) : (
+              <StateBlock kind="loading" label={`Loading who is behind ${r.query.name}`} rows={2} columns={2} />
             )}
           </section>
 
@@ -215,10 +351,13 @@ export default function PackagePage() {
   const version = sp.get('version')?.trim() || null;
   const pkg = version ? `${name}@${version}` : name;
   const { data, error, loading, reload } = useApi((s) => (name ? incidentsApi.reach({ name, version }, s) : Promise.resolve(null)), [name, version]);
+  const behind = useApi((s) => (name ? incidentsApi.behind(name, s) : Promise.resolve(null)), [name]);
 
+  // A package is reached from the org-wide Exposure view (and ⌘K), not from an incident.
   const crumbs = [
     { label: me?.org?.name ?? 'Organization', to: '/' },
-    { label: 'Incidents', to: '/incidents' },
+    { label: 'Exposure', to: exposurePath() },
+    ...(version ? [{ label: name, to: packagePath(name) }] : []),
     { label: pkg || 'Package', to: packagePath(name || '', version) },
   ];
 
@@ -254,7 +393,7 @@ export default function PackagePage() {
         )}
       </div>
     );
-  else if (data) body = <Reach r={data} pkg={pkg} />;
+  else if (data) body = <Reach r={data} pkg={pkg} behind={{ data: behind.data, error: behind.error }} />;
 
   return (
     <>

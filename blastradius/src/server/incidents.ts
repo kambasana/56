@@ -43,9 +43,18 @@ import {
   parseJson,
   packageStability,
   placeholders,
+  linkReviewKey,
+  linkReviews,
+  registryAdvisories,
+  registryPackages,
   type AlertRow,
   type Store,
 } from './store/index.js';
+import { npmPackagePage } from '../enrich/npm/registry.js';
+import { buildDependencyGraph } from '../scoring/blast.js';
+import { AccountIndex } from '../watch/account.js';
+import { productionPurls } from './accounts.js';
+import { badVersion, knownBadFor } from './known-bad.js';
 
 function inventoryHas(inv: StoredInventory | undefined, purl: string): boolean {
   return !!inv?.inventory.components.some((c) => c.purl === purl);
@@ -399,20 +408,31 @@ export function packageReach(ctx: IncidentContext, query: { name: string; versio
 
 type Link = PackageBehindResponse['links'][number];
 
-/** Links from the newest findings of every visible project, merged per (from, to, relation). */
+/** Methods ranked by strength when the same link comes from several sources. */
+const METHOD_RANK = (m: string | undefined): number => (m === 'deterministic' ? 3 : m?.startsWith('agent:') ? 2 : 1);
+
+/**
+ * The health graph of the newest scan of every visible project (the same `behind` lists as the CLI
+ * JSON: findings and health entries), plus registry facts from the account index (who can publish
+ * it now, who published each locked version) and the org's review decisions.
+ */
 export function packageBehind(ctx: IncidentContext, name: string): PackageBehindResponse {
   const inventories = latestInventories(ctx.store, ctx.orgId, ctx.projectIds);
   const usedIn = inventories.filter((i) => i.inventory.components.some((c) => npmNameVersion(c.purl)?.name === name)).length;
   const scanIds = inventories.map((i) => i.scanId).filter((x): x is string => !!x);
-  const rows = scanIds.length
-    ? all<{ name: string; finding_json: string }>(ctx.store, `SELECT name, finding_json FROM finding WHERE scan_id IN (${placeholders(scanIds.length)})`, ...scanIds)
-    : [];
   const links = new Map<string, Link>();
   const incidents = new Set<string>();
   const entityPackages = new Map<string, Set<string>>();
+  const reviews = linkReviews(ctx.store, ctx.orgId);
+  const rejected = new Set<string>();
   const add = (e: EntityChainEntry, pkg: string, mine: boolean) => {
     if (e.relation === 'incident') {
       if (mine) incidents.add(e.entityId);
+      return;
+    }
+    const decision = e.from ? reviews.get(linkReviewKey({ from: e.from, relation: e.relation, to: e.entityId })) : undefined;
+    if (decision?.decision === 'reject') {
+      if (mine) rejected.add(linkReviewKey({ from: e.from!, relation: e.relation, to: e.entityId }));
       return;
     }
     (entityPackages.get(e.entityId) ?? entityPackages.set(e.entityId, new Set()).get(e.entityId)!).add(pkg);
@@ -420,21 +440,34 @@ export function packageBehind(ctx: IncidentContext, name: string): PackageBehind
     const key = `${e.from}\u0000${e.entityId}\u0000${e.relation}`;
     const prev = links.get(key);
     const evidence = [...new Set([...(prev?.evidence ?? []), ...(e.evidence ?? [])])].slice(0, 20);
-    links.set(key, {
+    const method = prev && METHOD_RANK(prev.method) >= METHOD_RANK(e.method) ? prev.method : (e.method ?? 'probabilistic');
+    const link: Link = {
       from: e.from,
       entityId: e.entityId,
       relation: e.relation,
       confidence: Math.max(prev?.confidence ?? 0, e.confidence),
       evidence,
-      method: prev?.method === 'deterministic' || e.method === 'deterministic' ? 'deterministic' : (e.method ?? 'probabilistic'),
-      reviewed: !!(prev?.reviewed || e.reviewed),
-    });
+      method,
+      // Only a person's decision makes a link reviewed: the org's decision here, or a --review file
+      // the scan applied (stored scans from before migration 13 were rewritten to reviewed: false).
+      reviewed: decision?.decision === 'accept' || !!(prev?.reviewed || e.reviewed),
+    };
+    if (decision?.decision === 'accept') link.review = { by: decision.reviewer, at: decision.decidedAt, note: decision.note };
+    links.set(key, link);
   };
-  for (const r of rows) {
-    const f = parseJson<Finding | null>(r.finding_json, null);
-    if (!f) continue;
-    const mine = r.name === name;
-    for (const e of [...(f.behind ?? []), ...(f.entityChain ?? [])]) add(e, r.name, mine);
+  if (scanIds.length) {
+    for (const r of all<{ name: string; finding_json: string }>(ctx.store, `SELECT name, finding_json FROM finding WHERE scan_id IN (${placeholders(scanIds.length)})`, ...scanIds)) {
+      const f = parseJson<Finding | null>(r.finding_json, null);
+      if (!f) continue;
+      const mine = r.name === name;
+      for (const e of [...(f.behind ?? []), ...(f.entityChain ?? [])]) add(e, r.name, mine);
+    }
+    for (const r of all<{ name: string; behind_json: string }>(ctx.store, `SELECT name, behind_json FROM scan_package_behind WHERE scan_id IN (${placeholders(scanIds.length)})`, ...scanIds)) {
+      const list = parseJson<EntityChainEntry[] | null>(r.behind_json, null);
+      if (!list) continue;
+      const mine = r.name === name;
+      for (const e of list) add(e, r.name, mine);
+    }
   }
   // Only links reachable from this package (behind lists are per package, but the chain may
   // pass through entities shared with others).
@@ -446,5 +479,58 @@ export function packageBehind(ctx: IncidentContext, name: string): PackageBehind
   const ordered = [...links.values()].sort(
     (a, b) => Number(purlName(b.from) === name) - Number(purlName(a.from) === name) || b.confidence - a.confidence || a.entityId.localeCompare(b.entityId),
   );
-  return { name, usedIn, links: ordered, incidents: [...incidents].sort(), alsoLinked };
+
+  // Registry facts (account index): who can publish it now, who published each locked version.
+  const reg = registryPackages(ctx.store, [name]).get(name);
+  const publishRights =
+    reg?.status === 'ok'
+      ? currentMaintainers(reg).map((account) => ({ account, entityId: `account:npm/${account.toLowerCase()}`, source: 'npm packument maintainers', evidence: npmPackagePage(name) }))
+      : null;
+  const index = reg?.status === 'ok' ? new AccountIndex([{ name, versions: reg.versions }]) : null;
+  const advisories = registryAdvisories(ctx.store, [name]).get(name);
+  const bad = knownBadFor(name, advisories);
+  const versions = new Map<string, { projects: Set<string>; production: boolean }>();
+  for (const inv of inventories) {
+    const graph = buildDependencyGraph(inv.inventory);
+    const prod = productionPurls(graph);
+    for (const c of inv.inventory.components) {
+      const nv = npmNameVersion(c.purl);
+      if (nv?.name !== name) continue;
+      const v = versions.get(nv.version) ?? { projects: new Set<string>(), production: false };
+      v.projects.add(inv.projectId);
+      v.production ||= prod.has(c.purl);
+      versions.set(nv.version, v);
+    }
+  }
+  const lockedVersions = [...versions.entries()]
+    .map(([version, v]) => {
+      const by = index?.publisherOf(name, version);
+      const at = reg?.versions.find((x) => x.v === version)?.t ?? null;
+      return {
+        version,
+        projects: v.projects.size,
+        production: v.production,
+        publisher: by ? { account: by.account, attribution: by.attribution, at } : null,
+        knownBad: badVersion(bad, version).map((e) => ({ id: e.id, source: e.source, url: e.evidence[0] ?? '' })),
+      };
+    })
+    .sort((a, b) => (b.publisher?.at ?? '').localeCompare(a.publisher?.at ?? '') || b.version.localeCompare(a.version));
+
+  return {
+    name,
+    usedIn,
+    links: ordered,
+    incidents: [...incidents].sort(),
+    alsoLinked,
+    publishRights,
+    lockedVersions,
+    review: { machineDerived: ordered.filter((l) => !l.reviewed).length, reviewed: ordered.filter((l) => l.reviewed).length, rejected: rejected.size },
+  };
+}
+
+/** Who can publish a package now: the packument's maintainers, else the newest version's. */
+function currentMaintainers(p: { maintainers: string[]; versions: { m?: string[] }[] }): string[] {
+  if (p.maintainers.length) return [...p.maintainers].sort();
+  for (let i = p.versions.length - 1; i >= 0; i--) if (p.versions[i]!.m?.length) return [...p.versions[i]!.m!].sort();
+  return [];
 }

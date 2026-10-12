@@ -33,3 +33,4 @@ export * from './accounts.js';
 export * from './licenses.js';
 export * from './agentic.js';
 export * from './stability.js';
+export * from './trust.js';

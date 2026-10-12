@@ -184,7 +184,7 @@ describe('Tier 0 · jitsi-meet placeholders (react-native-sdk/package.json at 36
 
   it('every report says so: summary, HTML, SARIF run properties, SBOM metadata', () => {
     expect(formatSummary(result)).toMatch(/!! NOT ANALYSED: .*Gemfile\.lock.*~\d+ packages/);
-    expect(renderHtml(result)).toMatch(/<section class="na" role="alert"><p><strong>NOT ANALYSED: /);
+    expect(renderHtml(result)).toMatch(/id="not-analysed"><strong>NOT ANALYSED: \d+ manifest\(s\), about \d+ package\(s\)/);
     const run = (toSarif(result) as { runs: { properties: { notAnalysedSummary?: string } }[] }).runs[0]!;
     expect(run.properties.notAnalysedSummary).toMatch(/^NOT ANALYSED: /);
     const bom = JSON.parse(renderCycloneDx(result, inventory)) as { metadata: { properties?: { name: string; value: string }[] } };

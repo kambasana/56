@@ -1119,3 +1119,130 @@ proposals API); feeding verified `funding` / `governance` facts into the F1/F4 v
 `lifecycle_events` / `incident_writeups` into KB event proposals (P5); the sanctions matcher itself
 (P7, which reads `confirmedJurisdictions()`); following HTTP redirects is not re-checked against
 the domain list (the stated URL is).
+
+---
+
+## 11. Tier 0 trust pass
+
+Trust fixes to P1–P3 before any new phase (teardown, 2026-10-12: real CLI scans of parse-server,
+jitsi-meet, superset and flask, and the web app on the same data). Measured on parse-server at
+the pinned commit `23d7bbca` (re-scan without `--history`; the GitHub API answered 403 in the
+recording session, as it did in the teardown).
+
+### Entities, who is behind, account pivot (teardown problems 7 and 6)
+
+| Item | Before (teardown) | After (re-scan / web on the migrated DB) |
+|---|---|---|
+| `reviewed` | All 6,683 health links `method: deterministic, reviewed: true` | 0 of 5,927 machine links reviewed. `reviewed` is set only by a `--review` file or `POST /api/packages/behind/review` (org table `entity_link_review`, audited, needs Triage). `method` says how a machine found the link (`deterministic`, `probabilistic`, `agent:<task>`). KB incident hops stay reviewed (hand-curated); OSV-imported incident hops are not. UI and HTML say "Machine-derived (method)" or "Reviewed by X", never both |
+| Owner types | Every owner of unknown type typed `org:github/<login>`: kevva, alexei, kornelski, feross recorded as orgs | Unknown type is `owner:github/<login>` (type `owner`, "type unknown"), never an org: 0 `org:` and 332 `owner:` entities. Orgs only from deterministic sources (`repo_owner` ownerType Organization, an `org_profile` fact). `isKnownOrg()` is the check for org rules, roll-ups, policy and jurisdiction (the agentic `org_jurisdiction` planner already requires ownerType Organization). npm scopes and deps.dev projects carry no deterministic owner type (checked: `/-/org/<scope>/user` answers `{}` for real orgs and `{self: owner}` for users; deps.dev project has no owner type), so they are not used |
+| Funding | 19 `funds` edges from `org:github/chalk` to the backers of `opencollective.com/sindresorhus` (casinoacademia, storis, …); `opencollective/babel` typed as a funder of babel | No `funds` edges, no `funder` entities, "casino" in no output. Only `pkg --receives_funding_at--> funding:<platform>/<handle>` when the package's own `funding` field or its repo's FUNDING.yml names it (chalk: its FUNDING.yml's GitHub Sponsors and `opencollective/sindresorhus`; babel packages: `funding:opencollective/babel`). Backer lists (`via: opencollective`) make no links until P4 models direction |
+| `GET /api/packages/behind?name=debug` | `{"usedIn":3,"links":[]}` (read only the finding table); chalk, express, agent-base the same | qix and tootallnate (maintains), `owner:github/debug-js` (owns), each with evidence, `deterministic`, unreviewed; plus `publishRights` (qix, tootallnate), `lockedVersions` (4.4.3 by qix, `_npmUser`, production; 2.6.9 and 3.1.0 by tootallnate) and `review` counts. chalk: sindresorhus, owner chalk, 4 funding pages; express: 5 maintainers, `owner:github/expressjs`, `funding:opencollective/express`. Reads the health graph through `scan_package_behind` (migration 13, filled at scan completion and backfilled) |
+| Package page | No who-is-behind section; breadcrumbs "Incidents > react-redux" | "Who is behind it": can publish now, who published each locked version (with known-bad badge), repository owner, funding pages, machine-derived/reviewed counts, link to every link with sources. Breadcrumbs (package, who's behind, account) go through Exposure; the sidebar marks Overview |
+| Account pivot `/api/accounts/npm/qix` | `incident: null`; color-convert 3.1.1 not flagged; counts 18 vs 7 | `knownBad`: INC-2025-0002 (KB) with its OSV MAL ids (MAL-2025-46971 … fetched per package by the account index into `registry_advisory`) and 8 of qix's packages; color-convert@3.1.1, color@5.0.1, color-string@2.1.1, is-arrayish@0.3.3, simple-swizzle@0.2.3, backslash@0.2.1 flagged in place (also on package and exposure rows). Counts in one unit (package names): can publish 79 (after its listing), in your projects 7, in production 7 = concentration 7 of 1,917 (the 18 was name@version). Definitions in `ACCOUNT_COUNT_DEFINITIONS`, shown on the page |
+| HTML report | 0 matches for stabil, fragile, funding, behind | "Who is behind" (top npm accounts by production reach, repository owners with type, funding pages, machine-derived vs reviewed), "Stability" (34 production Fragile with action and evidence), NOT ANALYSED banner hook (reads `notAnalysed` or `coverage.notAnalysed`) |
+
+**Stored data (migration 13).** Every stored scan result, finding row and hash is rewritten:
+machine links `reviewed: false`, `org:github/` → `owner:github/` (stored data cannot tell known
+orgs from unknown ones; a rescan restores known orgs), `funds` edges and `funder:` nodes removed,
+GitHub Sponsors `account:github/<h> linked_to` → `funding:github/<h> receives_funding_at`. On the
+teardown web DB (3 scans, 81 MB) it runs in about 2 s.
+
+**Tests on recorded real data** (parse-server @ `23d7bbca`): `test/fixtures/entities/`
+(`parse-server-facts.json.gz`: the real entity facts, e-mails removed; `parse-server-server.json.gz`:
+the real scan result and inventory plus live npm packuments and OSV answers;
+`teardown-parse-server-before.json.gz`: the pre-Tier 0 engine output), recorders
+`test/entities/record*.ts`, tests `test/entities/tier0.test.ts` and `server-tier0.test.ts`; web
+`src/pages/tier0-real.test.tsx` on recorded API answers (`src/test/real/tier0-api.json`) and e2e
+`e2e/screens-f-tier0.spec.ts` (with axe, light and dark).
+
+**Deferred.** Owner types stay unknown while the GitHub API is unreachable (no token in the
+recording session); a "GitHub Sponsors" handle is shown as a funding page, not typed as a person or
+org. Funding direction, amounts and backers are P4. `funds` stays in the relation type so old review
+files parse. Stored scans keep the old owner typing of known orgs only until rescanned.
+
+### Scope, exposure-gated scoring, coverage (teardown problems 1, 2 and 8)
+
+Real re-scans without `--history` at the pinned commits (`scans/target-commits.txt`): parse-server
+`23d7bbca`, jitsi-meet `36d4c1c7`, flask `d086db85`, superset `42bbfa49` (requirements/ only, sparse
+checkout). "Before" is the teardown scan of the same commit.
+
+**One scope per (project, package)** (`src/core/scope.ts`): `runtime`, `peer`, `optional`, `ci`
+(workflows, Docker build stages), `dev`, `unreachable`. A path is as weak as its weakest link (a
+project in `test/`/`examples/` is dev, a workflow is CI); a package takes its strongest path; only
+runtime is production. Findings (`scope`, `gate`), SARIF (`properties.scope`), the CycloneDX
+`scope` (required / optional / excluded) and `blastradius:scope`, SPDX package comments,
+`/api/search/exposure`, `/api/packages/reach` (through `pathsTo`), the web finding rows
+(`prodAssets`, production filter and sort) and `InventorySummary.byComponentScope` read it. Paths
+list the strongest path first, so the runtime introducer is named before a dev tool.
+`productionSet()` is the helper for the stability production flag (stream B owns
+`src/stability/production.ts`, which still counts optional and peer as production until it switches).
+
+**Exposure gate** (`src/scoring/index.ts`): the level comes from signals only; a runtime advisory
+with CVSS >= 9 and a fix is raised to critical and ranks above every non-runtime finding; peer and
+optional stay below critical, dev / CI / unreachable below high; posture and provenance
+(Scorecard, no provenance, single maintainer, abandoned) add at most 0.9 points, never change the
+level and produce no SARIF result. Lists are production first (CLI, JSON order, HTML, web `-score`
+sort). Exception, stated in the gate detail: a malicious or compromised release runs at install time
+and ranks with runtime findings in any scope.
+
+| Item | Before (teardown) | After (re-scan) |
+|---|---|---|
+| parse-server top 10 | 1 of 10 runtime; all 6 HIGH dev-only (decompress, sprintf-js on weak_posture, http-cache-semantics ×2, braces, source-map-js) | 10 of 10 runtime (exactly the 10 runtime findings); 0 HIGH |
+| proxy-addr@2.0.7 (GHSA-jqcg-44mw-7w3h, CVSS 9.1, fixed 2.0.8) | MEDIUM 54.3, rank 13 | CRITICAL 80.2, rank 1: "Runtime dependency (brought in by express) with GHSA-jqcg-44mw-7w3h (CVSS 9.1) and a fix available (2.0.8): raised to critical and ranked above every non-runtime finding." |
+| parse-server levels / SARIF | high 6, medium 45, low 4; 173 SARIF results, 111 posture (BR005–BR008) | critical 1, medium 33, low 21; 62 SARIF results, 0 posture |
+| agent-base 7.1.4 | production true / false / true in search, reach, stability | runtime in every view (search production true via @parse/push-adapter, reach production true, `productionSet` true) |
+| debug "brought in by" | @babel/core (dev) | the runtime introducer first (express / @parse/push-adapter), dev tools after |
+| fsevents | "3 prod" | scope dev (optional under @babel/cli → chokidar); never production |
+| parse-server scopes | none | runtime 350, peer 2, optional 81, dev 1,120, ci 16 |
+| jitsi-meet levels / SARIF | high 7, medium 81, low 2; 288 SARIF results, 190 posture; top 10: 7 runtime | medium 56, low 27; 91 SARIF, 0 posture; top 10 all runtime (31 runtime findings); sources osv ok, depsdev ok, npm partial (@jitsi/excalidraw 404), github partial (300-repo cap, 403) |
+
+**Placeholders.** Only lockfile-resolved versions become components. A `package.json` without a
+lockfile, `0.0.0` placeholders and ranges are one "unresolved manifest entries" warning per manifest
+and a not-analysed entry; a lockfile `0.0.0` installed from a GitHub release tarball takes the
+release tag (lib-jitsi-meet → `v2223.0.0+a8e7d0b1`, `download_url` qualifier).
+
+| jitsi-meet | Before | After |
+|---|---|---|
+| Findings at 0.0.0 | 7, incl. @xmldom/xmldom "CVSS 9.8" | 0; no @xmldom/xmldom finding (the locked 0.8.15 has no advisory) |
+| Components / CDX components / licence rows at 0.0.0 | 75 / 75 / 75 (71 of 81 review rows) | 0 / 0 / 0 |
+| Warnings | none for react-native-sdk | "react-native-sdk/package.json: 75 unresolved manifest entries (75 placeholder 0.0.0) …" |
+
+**No false all-clear.** Every manifest found but not analysed is listed with an approximate package
+count in the CLI summary (`!! NOT ANALYSED: …`), the JSON (`notAnalysed`), the HTML banner, SARIF
+run properties and an error notification, CycloneDX metadata properties, the SPDX creation comment
+and the web project header (`GET /api/projects/:id/coverage`). Per-source coverage
+(`coverage.sources`: osv, depsdev, npm, licenses, github, … with ok / partial / failed, facts,
+problems, reason) is shown next to it ("!! SECURITY SOURCE INCOMPLETE: osv failed …"). `--strict`
+exits 3 when anything was not analysed or a security source (OSV, the knowledge pack) failed or
+answered in part. The HTTP client's default transport now installs the HTTPS_PROXY dispatcher
+itself (`ensureEnvProxy`), so library and server callers no longer skip every host silently.
+
+| Repo | Before | After |
+|---|---|---|
+| flask (uv.lock) | 9 components (all GitHub Actions), "critical 0 \| high 0 \| medium 0 \| low 0", uv.lock and pyproject.toml ignored, no warning | 108 components (99 PyPI); runtime blinker, click, colorama, itsdangerous, jinja2, markupsafe, werkzeug; werkzeug 3.1.8 GHSA-g6x2-hccm-hh4m; NOT ANALYSED examples/javascript and examples/tutorial pyproject.toml (no lockfile, ~4 packages); `--strict` exits 3 |
+| superset requirements/base.txt | byEcosystem docker 11, githubactions 36, npm 3,096; 146 pins dropped | 312 PyPI components (base 146 runtime with the pip-compile `# via` graph, development.txt dev); paramiko 3.5.1 `LGPL-2.1-or-later` and pyxlsb 1.0.10 `LGPL-3.0-or-later` (deps.dev "LGPLv3+"), weak copyleft; certifi MPL-2.0 |
+| jitsi-meet | silent on Ruby, Gradle, CocoaPods and the SDK manifest | NOT ANALYSED: Gemfile.lock ~133, ios/Podfile.lock ~215, react-native-sdk/package.json 75, 6 Gradle files ~28 (~451 packages) |
+
+Python ingestion (`src/ingest/python.ts`, `toml.ts`): requirements*.txt (exact `==` pins, `-r`
+includes, `--hash` → SRI integrity, `# via` graph, unpinned / URL entries unresolved), uv.lock
+(projects as importers; runtime, optional-dependencies, dev groups; requested extras), poetry.lock
+(groups / category, pyproject roots), Pipfile.lock, pyproject.toml. OSV queries the PyPI ecosystem;
+deps.dev gives repo, Scorecard and dependents for PyPI (no provenance fact: deps.dev does not report
+PyPI attestations, so absence would be a false "no provenance"); licences already covered PyPI.
+Exposure search and advisory matching work for npm, PyPI (PEP 503 names), GitHub Actions, Docker and
+any purl (`?q=pkg:pypi/paramiko@3.5.1`, `requests==2.32.3`, `actions/checkout`).
+
+**Tests on recorded real data.** `test/fixtures/tier0/<case>/repo` holds trimmed manifests from the
+pinned commits (parse-server lockfile closure of express, @parse/push-adapter, @babel/core,
+@babel/cli, @semantic-release/github, mongodb-runner: 798 packages; jitsi root lock subset, the SDK
+manifest as committed, Gemfile(.lock), a Gradle file; flask pyproject + uv.lock subset; superset
+base.txt lines); `http/` the OSV, deps.dev and ClearlyDefined answers (`test/tier0/record.ts`; OSV
+credits and ClearlyDefined attribution removed, e-mails masked). Gates in `test/tier0/tier0.test.ts`
+(24), unit tests in `src/core/scope.test.ts`, `src/ingest/python.test.ts`, `src/watch/match.test.ts`,
+reach, SARIF, server and web banner tests. Counts after merging stream C: blastradius 951 tests (879 before Tier 0), web 317 unit (+3 from this
+work) and 66 e2e.
+
+**Deferred.** Stability's production flag switches to `productionSet()` in stream B. SBOM
+supplier/hashes/DEV_DEPENDENCY_OF and a build-environment SBOM are Tier 1 (problem 9). yarn, pnpm,
+Go, Cargo, Maven, Gradle, Ruby, CocoaPods stay NOT ANALYSED (listed, counted, `--strict`). Syft
+default-on is not done. PEP 440 ordering for PyPI ranges uses the loose semver comparison.

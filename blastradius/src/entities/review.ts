@@ -11,7 +11,8 @@
  * ```
  *
  * `accept` marks a link reviewed (so scoring may use it); `reject` removes it. Decisions about
- * links that are not present are ignored (reported as `unmatched`).
+ * links that are not present are ignored (reported as `unmatched`). This is the only place a link
+ * becomes `reviewed: true`: resolution leaves every machine-derived link unreviewed.
  */
 import { readFile, stat } from 'node:fs/promises';
 import { z } from 'zod';
@@ -23,7 +24,7 @@ const decisionSchema = z
   .object({
     from: z.string().min(1).max(512),
     to: z.string().min(1).max(512),
-    relation: z.enum(['maintains', 'publishes', 'owns', 'funds', 'member_of', 'linked_to']),
+    relation: z.enum(['maintains', 'publishes', 'owns', 'funds', 'receives_funding_at', 'member_of', 'linked_to']),
     decision: z.enum(['accept', 'reject']),
     reviewer: z.string().min(1).max(100).optional(),
     at: z.string().max(40).optional(),

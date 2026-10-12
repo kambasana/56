@@ -191,24 +191,30 @@ Notes:
 ## 4. Entities
 
 ```ts
-type EntityType = 'person' | 'org' | 'funder' | 'account';
+type EntityType = 'person' | 'org' | 'funder' | 'account' | 'owner' | 'funding';
 interface Entity { id: string; type: EntityType; name: string }
-// id conventions: 'account:npm/<handle>', 'account:github/<login>', 'org:github/<login>',
-//                 'person:<slug>', 'funder:opencollective/<slug>'
+// id conventions: 'account:npm/<handle>', 'account:github/<login>' (GitHub type User),
+//                 'org:github/<login>' (GitHub type Organization, or an org_profile fact),
+//                 'owner:github/<login>' (repository owner, type unknown: never an org),
+//                 'funding:<platform>/<handle>' (a funding page the package names),
+//                 'person:<slug>', 'funder:opencollective/<slug>' (legacy; no longer produced)
 
-type EntityRelation = 'maintains' | 'publishes' | 'owns' | 'funds' | 'member_of' | 'linked_to';
+type EntityRelation = 'maintains' | 'publishes' | 'owns' | 'funds' | 'receives_funding_at' | 'member_of' | 'linked_to';
+type LinkMethod = 'deterministic' | 'probabilistic' | `agent:${string}`;
 interface EntityLink {
   from: string; to: string;        // Entity ids or unversioned component purls
   relation: EntityRelation;
   confidence: number;              // 0–1
   evidence: string[];              // ≥1 public URL
-  method: 'deterministic' | 'probabilistic';
-  reviewed: boolean;               // probabilistic links < 0.8 must be reviewed before scoring uses them
+  method: LinkMethod;              // how a machine found it
+  reviewed: boolean;               // true only after a human decision (--review file, API review); machine links are false
 }
 ```
 
-Direction: `account:npm/x --maintains--> pkg:npm/foo`, `org:github/o --owns--> pkg:npm/foo`,
-`account:github/x --member_of--> org:github/o`, `funder:… --funds--> org:github/o`.
+Direction: `account:npm/x --maintains--> pkg:npm/foo`, `owner:github/o --owns--> pkg:npm/foo`,
+`account:github/x --member_of--> org:github/o`, `pkg:npm/foo --receives_funding_at--> funding:opencollective/foo`.
+`funds` (who pays whom) is not produced until funding direction is modelled (P4); Open Collective
+backer lists make no links. Scoring uses probabilistic links < 0.8 only once reviewed.
 
 ## 5. Incidents
 
@@ -264,7 +270,7 @@ interface Finding {
   reasons: Reason[];
   blastRadius: { assets: AssetExposure[]; score: number };
   // from → entityId per link; first `from` is the unversioned purl, last entityId is the incident id.
-  entityChain: { from?: string; entityId: string; relation: EntityRelation | 'incident'; confidence: number; evidence?: string[]; method?: 'deterministic' | 'probabilistic'; reviewed?: boolean }[];
+  entityChain: { from?: string; entityId: string; relation: EntityRelation | 'incident'; confidence: number; evidence?: string[]; method?: LinkMethod; reviewed?: boolean }[];
 }
 
 interface OutboundFinding { assetId: string; score: number; dependents?: number; reasons: Reason[] }

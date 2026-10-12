@@ -49,7 +49,7 @@ export function formatSummary(result: ScanResult, opts: { top?: number; files?: 
   }
   const degraded = degradedSources(result);
   if (degraded.length > 0) lines.push(`  !! ${clean(degradedLine(degraded), 600)}`);
-  if (result.coverage?.sources.length) lines.push(`  sources:   ${clean(coverageLine(result.coverage.sources), 300)}`);
+  if (result.coverage?.sources?.length) lines.push(`  sources:   ${clean(coverageLine(result.coverage.sources ?? []), 300)}`);
   lines.push(`  findings:  critical ${c.critical} | high ${c.high} | medium ${c.medium} | low ${c.low}`);
   const scoped = result.findings.some((f) => f.scope !== undefined);
   if (scoped) {

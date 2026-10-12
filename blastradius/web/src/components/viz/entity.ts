@@ -1,13 +1,13 @@
 /**
  * Entity chain model (design system: EntityChain): who is behind a package as a short top-down
- * tree, package → accounts → organisations → funders. Pure functions: naming, confidence words,
+ * tree, package → accounts, repository owners and the funding pages it names. Pure functions: naming, confidence words,
  * and a layout that opens one hop deep, hides unreviewed low-confidence links by default, and
  * never draws more than 50 nodes.
  */
 import type { PackageBehindResponse } from '@server/api-types-incidents';
 
 export type BehindLink = PackageBehindResponse['links'][number];
-export type EntityKind = 'package' | 'account' | 'org' | 'funder' | 'person' | 'repo' | 'other';
+export type EntityKind = 'package' | 'account' | 'org' | 'owner' | 'funding' | 'funder' | 'person' | 'repo' | 'other';
 export type Confidence = 'High' | 'Medium' | 'Low';
 
 export const MAX_NODES = 50;
@@ -17,13 +17,28 @@ export const MAX_SIBLINGS = 6;
 export function entityKind(id: string): EntityKind {
   if (id.startsWith('pkg:')) return 'package';
   const prefix = id.slice(0, id.indexOf(':'));
-  if (prefix === 'account' || prefix === 'org' || prefix === 'funder' || prefix === 'person' || prefix === 'repo') return prefix;
+  if (prefix === 'account' || prefix === 'org' || prefix === 'owner' || prefix === 'funding' || prefix === 'funder' || prefix === 'person' || prefix === 'repo') return prefix;
   return 'other';
 }
 
-export const KIND_LABEL: Record<EntityKind, string> = { package: 'Package', account: 'Account', org: 'Organisation', funder: 'Funder', person: 'Person', repo: 'Repository', other: 'Entity' };
+/**
+ * `owner`: a repository owner whose type (user or organisation) is not known; never shown or
+ * treated as an organisation. `funding`: a funding page the package names (where money can be
+ * sent), never "who pays".
+ */
+export const KIND_LABEL: Record<EntityKind, string> = {
+  package: 'Package',
+  account: 'Account',
+  org: 'Organisation',
+  owner: 'Owner (type unknown)',
+  funding: 'Funding page',
+  funder: 'Funder',
+  person: 'Person',
+  repo: 'Repository',
+  other: 'Entity',
+};
 
-const HOSTS: Record<string, string> = { npm: 'npm', github: 'GitHub', gitlab: 'GitLab', opencollective: 'Open Collective', github_sponsors: 'GitHub Sponsors', tidelift: 'Tidelift', patreon: 'Patreon' };
+const HOSTS: Record<string, string> = { npm: 'npm', github: 'GitHub', gitlab: 'GitLab', opencollective: 'Open Collective', github_sponsors: 'GitHub Sponsors', tidelift: 'Tidelift', patreon: 'Patreon', ko_fi: 'Ko-fi', liberapay: 'Liberapay', polar: 'Polar' };
 
 /** "account:npm/right9ctrl" → "npm · right9ctrl"; "org:github/chalk" → "GitHub · chalk (org)". */
 export function entityLabel(id: string): string {
@@ -37,7 +52,22 @@ export function entityLabel(id: string): string {
   if (slash < 0) return rest;
   const host = HOSTS[rest.slice(0, slash)] ?? rest.slice(0, slash);
   const name = rest.slice(slash + 1);
-  return `${host} · ${name}${kind === 'org' ? ' (org)' : kind === 'repo' ? ' (repo)' : ''}`;
+  if (kind === 'funding') return `${rest.slice(0, slash) === 'github' ? 'GitHub Sponsors' : host} · ${name}`;
+  return `${host} · ${name}${kind === 'org' ? ' (org)' : kind === 'owner' ? ' (type unknown)' : kind === 'repo' ? ' (repo)' : ''}`;
+}
+
+/** How a machine found a link, in words. */
+export function methodText(method: string): string {
+  if (method === 'deterministic') return 'deterministic';
+  if (method === 'probabilistic') return 'probable match';
+  if (method.startsWith('agent:')) return `agent (${method.slice(6).replace(/_/g, ' ')})`;
+  return method;
+}
+
+/** "Reviewed by alice" or "Machine-derived (deterministic)": the two states are never merged. */
+export function reviewText(l: Pick<BehindLink, 'method' | 'reviewed'> & { review?: BehindLink['review'] }): string {
+  if (l.reviewed) return l.review ? `Reviewed by ${l.review.by}` : 'Reviewed';
+  return `Machine-derived (${methodText(l.method)})`;
 }
 
 export function confidenceWord(c: number): Confidence {
@@ -49,7 +79,15 @@ export function isUnreviewed(l: Pick<BehindLink, 'confidence' | 'reviewed'>): bo
   return !l.reviewed && l.confidence < 0.8;
 }
 
-const RELATION: Record<string, string> = { maintains: 'maintains', publishes: 'publishes', owns: 'owns the repository', funds: 'funding link', member_of: 'member of', linked_to: 'linked to' };
+const RELATION: Record<string, string> = {
+  maintains: 'maintains',
+  publishes: 'publishes',
+  owns: 'owns the repository',
+  funds: 'funding link',
+  receives_funding_at: 'receives funding at',
+  member_of: 'member of',
+  linked_to: 'linked to',
+};
 
 /** The link in words, read from the parent: "maintained by", "member of", … */
 export function relationText(relation: string): string {

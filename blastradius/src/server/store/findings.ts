@@ -105,7 +105,7 @@ export interface DerivedFinding {
 }
 
 
-const OWNER_RANK: Record<string, number> = { owns: 0, funds: 1, member_of: 2, publishes: 3, maintains: 4, linked_to: 5 };
+const OWNER_RANK: Record<string, number> = { owns: 0, member_of: 2, publishes: 3, maintains: 4, receives_funding_at: 5, linked_to: 6, funds: 7 };
 
 /** The single most telling "who's behind it" entry for the table column. */
 function pickOwner(behind: readonly EntityChainEntry[]): EntityChainEntry | null {

@@ -13,6 +13,7 @@ import type {
   PackageReachResponse,
   PreviewAlertRuleRequest,
   PreviewAlertRuleResponse,
+  ReviewBehindLinkRequest,
   UpdateAlertRuleRequest,
   UpdateIncidentRequest,
 } from '@server/api-types-incidents';
@@ -34,6 +35,8 @@ export const incidentsApi = {
 
   reach: (q: { name: string; version?: string | null }, signal?: AbortSignal) => get<PackageReachResponse>('/api/packages/reach', q, signal),
   behind: (name: string, signal?: AbortSignal) => get<PackageBehindResponse>('/api/packages/behind', { name }, signal),
+  /** A person's decision on one link (needs Triage); answers with the refreshed page data. */
+  reviewBehindLink: (body: ReviewBehindLinkRequest) => request<PackageBehindResponse>('POST', '/api/packages/behind/review', body),
 
   alertRules: (signal?: AbortSignal) => get<ListAlertRulesResponse>('/api/alert-rules', undefined, signal),
   createAlertRule: (body: CreateAlertRuleRequest) => request<AlertRule>('POST', '/api/alert-rules', body),
