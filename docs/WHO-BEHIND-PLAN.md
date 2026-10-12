@@ -1113,6 +1113,27 @@ users API responses. **Live runs: untested** (`ANTHROPIC_API_KEY` is not set in 
 environment) [u]. GitHub's users API is not reachable from here (403), so `github_user` is tested
 on the documented response shape only; live use is [u].
 
+**Live run (2026-10-12)** (`blastradius/test/agentic/live-run.ts`, replayed offline by
+`live-replay.test.ts` from `test/fixtures/agentic-live/`). Model turns were produced by a Claude Code
+agent acting as the model on the live web (no API key; it followed each task's prompt and evidence
+domains and wrote the `submit_facts` calls); everything else was the real pipeline, with the gate
+re-fetching every source live. 18 requests (funding ×5, governance ×3, lifecycle ×4, incidents ×4,
+org jurisdiction ×2; contributor identity and self-declared location skipped): **29 proposals, 29
+kept** (26 verified, 3 `pending_confirmation`), each checked by hand against its page. Gate latency
+0.05–1.7 s per request (one 31–92 s outlier when oscollective.org was slow; once it timed out and
+the fact stayed unverified). Before two fixes the gate made **2 false rejects** (an SEC 10-K stating
+"The Netherlands … (State or other jurisdiction of incorporation)" was refused because `sec_edgar`
+implied US; a ProPublica IRS record "Covina, CA" was refused because `foundation_filing` implied no
+country) and **2 false accepts** (core-js's Open Collective backer accepted as a funder of express;
+npm's left-pad post accepted as an express incident). Fixes in `tasks.ts`: the implied country is per
+registry host (sec.gov, ProPublica and IRS → US; Companies House and Charity Commission → GB) and
+another country is accepted only when the quote names it; funding, lifecycle and incident sources
+must name the subject (package name, npm scope, repository owner or name) on the page or in the URL
+path. Adversarial attempts rejected: wrong amount (rules), wrong-subject quotes ×3 (rules), Wikipedia
+source (domain). **Open:** a wrong `date` with a real quote is still kept (dates are not checked
+against the page; pinned by the replay test); pages that render with JavaScript (NVD detail pages,
+SEC EDGAR company pages) cannot verify, so the NVD and EDGAR JSON or filing documents must be cited.
+
 Deferred: a live smoke run on 2–3 §8 subjects (needs a key; `RecordingModel` saves a live run as a
 replay fixture); the Maintainers screen that shows contributor identity (P6; the data is in the
 proposals API); feeding verified `funding` / `governance` facts into the F1/F4 views (P4) and

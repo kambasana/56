@@ -125,6 +125,45 @@ function neutral(text: string, what: string): string | null {
   return w ? `${what} uses the judgement word "${w}"` : null;
 }
 
+/**
+ * Names a source may use for a package subject (folded): the display and package name, the npm
+ * scope, and the repository owner and name. Names shorter than three characters are skipped.
+ */
+export function subjectNames(req: FactRequest): string[] {
+  const c = req.context ?? {};
+  const out = new Set<string>();
+  const add = (s: string | undefined): void => {
+    const f = s ? foldText(s) : '';
+    if (f.length >= 3) out.add(f);
+  };
+  add(c.name);
+  add(c.packageName);
+  add(/^@([^/]+)\//.exec(c.packageName ?? c.name ?? '')?.[1]);
+  const repo = /(?:github\.com|gitlab\.com)[/:]([^/]+)\/([^/#?]+?)(?:\.git)?(?:[/#?]|$)/i.exec(c.repoUrl ?? '');
+  if (repo) {
+    add(repo[1]);
+    add(repo[2]);
+  }
+  return [...out];
+}
+
+/**
+ * The source must be about the subject: a real line from another project's page (another collective
+ * on Open Collective, another package's README or incident post) otherwise passes every other check.
+ * Returns a problem, or null when the page or the URL path names the subject (or no name is known).
+ */
+function sourceNamesSubject(request: FactRequest, page: string, sourceUrl: URL): string | null {
+  const names = subjectNames(request);
+  if (names.length === 0) return null;
+  let path = sourceUrl.pathname;
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    // keep the raw path
+  }
+  return names.some((n) => page.includes(n) || foldText(path).includes(n)) ? null : `the source does not name the project (${names.join(', ')})`;
+}
+
 const isoDate = z.string().regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'YYYY, YYYY-MM or YYYY-MM-DD');
 const shortText = z.string().min(1).max(300);
 
@@ -161,8 +200,10 @@ const FUNDING: TaskSpec<FundingValue> = {
   contextDomains: true,
   schema: fundingSchema,
   maxFacts: 12,
-  rules: ({ value, quote }) => {
+  rules: ({ value, quote, sourceUrl, request, page }) => {
     const problems: string[] = [];
+    const off = sourceNamesSubject(request, page, sourceUrl);
+    if (off) problems.push(off);
     if (value.organization) {
       const p = quoteHas(quote, value.organization, 'organisation');
       if (p) problems.push(p);
@@ -237,8 +278,23 @@ const REGISTRY_HOSTS: Readonly<Record<string, readonly string[]>> = {
   sec_edgar: ['sec.gov'],
   foundation_filing: ['projects.propublica.org', 'apps.irs.gov', 'register-of-charities.charitycommission.gov.uk'],
 };
-/** Registries whose records are about one country only. */
-const REGISTRY_COUNTRY: Readonly<Record<string, string>> = { companies_house: 'GB', sec_edgar: 'US' };
+/**
+ * Registry hosts whose records are about one country only. A record may still name another country
+ * (a foreign registrant filing with the SEC states "The Netherlands … (State or other jurisdiction of
+ * incorporation)"); that country is accepted only when the quote names it.
+ */
+const REGISTRY_HOST_COUNTRY: Readonly<Record<string, string>> = {
+  'company-information.service.gov.uk': 'GB',
+  'sec.gov': 'US',
+  'projects.propublica.org': 'US',
+  'apps.irs.gov': 'US',
+  'register-of-charities.charitycommission.gov.uk': 'GB',
+};
+
+function registryCountry(host: string): string | undefined {
+  for (const [d, c] of Object.entries(REGISTRY_HOST_COUNTRY)) if (hostMatches(host, d)) return c;
+  return undefined;
+}
 /** Names and abbreviations a source may use for a country (ISO 3166-1 alpha-2 → spellings). */
 const COUNTRY_NAMES: Readonly<Record<string, readonly string[]>> = {
   US: ['united states', 'usa', 'u.s.a', 'u.s.', 'united states of america'],
@@ -299,9 +355,9 @@ const ORG_JURISDICTION: TaskSpec<JurisdictionValue> = {
       problems.push(`registry "${value.registry}" does not match the source host ${host}`);
     }
     const q = ` ${foldText(quote).replace(/[^a-z0-9.' ]/g, ' ')} `;
-    const implied = REGISTRY_COUNTRY[value.registry];
+    const implied = value.registry === 'org_legal_page' ? undefined : registryCountry(host);
     const named = (COUNTRY_NAMES[value.country] ?? []).some((n) => q.includes(` ${n} `) || q.includes(` ${n}.`) || q.includes(` ${n},`));
-    if (implied !== undefined && implied !== value.country) problems.push(`${value.registry} records are for ${implied}, not ${value.country}`);
+    if (implied !== undefined && implied !== value.country && !named) problems.push(`${host} records are for ${implied}; the quote does not name ${value.country}`);
     if (implied === undefined && !named) problems.push(`the quote does not name the country ${value.country}`);
     if (value.region && !foldText(quote).includes(foldText(value.region))) problems.push(`region "${value.region}" is not in the quote`);
     if (value.identifier && !foldText(quote).includes(foldText(value.identifier))) problems.push(`identifier "${value.identifier}" is not in the quote`);
@@ -348,8 +404,10 @@ const LIFECYCLE: TaskSpec<LifecycleValue> = {
   contextDomains: true,
   schema: lifecycleSchema,
   maxFacts: 4,
-  rules: ({ value, quote }) => {
+  rules: ({ value, quote, sourceUrl, request, page }) => {
     const problems: string[] = [];
+    const off = sourceNamesSubject(request, page, sourceUrl);
+    if (off) problems.push(off);
     if (!EVENT_WORDS[value.event]!.test(foldText(quote))) problems.push(`the quote does not describe a ${value.event.replace(/_/g, ' ')}`);
     // Licence names in announcements are rarely SPDX ids ("Apache 2.0-licensed", "SSPLv1"): the
     // licence family (leading letters of the id) must be in the quote.
@@ -393,8 +451,10 @@ const INCIDENTS: TaskSpec<IncidentValue> = {
   contextDomains: true,
   schema: incidentSchema,
   maxFacts: 4,
-  rules: ({ value, page }) => {
+  rules: ({ value, sourceUrl, request, page }) => {
     const problems: string[] = [];
+    const off = sourceNamesSubject(request, page, sourceUrl);
+    if (off) problems.push(off);
     for (const id of value.advisoryIds ?? []) if (!page.includes(id.toLowerCase())) problems.push(`advisory id ${id} is not on the source page`);
     const p = neutral(value.summary, 'summary');
     if (p) problems.push(p);
