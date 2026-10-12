@@ -163,7 +163,8 @@ describe('control repositories and the hand-review sample', () => {
     expect(by).toEqual({ fragile: 46, watch: 150, steady: 17, unknown: 9 });
     expect(pop).toHaveLength(193);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
-    expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);
+    // Tier 0 scope: ecc-jsbn (an optional dependency of sshpk) is no longer production.
+    expect(finished.map((p) => p.name).sort()).toEqual(FINISHED.filter((n) => n !== 'ecc-jsbn'));
     for (const p of finished) {
       expect(p.label).toBe('watch');
       expect(p.summary).toBe('Small, finished package: single maintainer, no recent activity.');
