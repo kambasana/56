@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { StabilityEntry } from '../../src/core/types.js';
-import { loadTier0Ended, tier0FamilyReport, tier0IdentityHistory, tier0IdentityLabel, tier0Labels } from './tier0.js';
+import { loadTier0Ended, loadTier0Identity, tier0FamilyReport, tier0IdentityHistory, tier0IdentityLabel, tier0Labels } from './tier0.js';
 
 const fx = loadTier0Ended();
 const rules = (e: StabilityEntry) => e.rules.map((r) => r.rule);
@@ -122,10 +122,10 @@ describe('Tier 0: identity resolution and takeover signals (teardown problem 4),
   const s5aKinds = (e: StabilityEntry) => e.s5a.map((x) => `${x.kind}:${x.release ?? ''}`);
 
   it('nanoid: the author moving to a new e-mail address is not a takeover once display names are compared', async () => {
-    const before = await tier0IdentityLabel('nanoid', '3.3.19', { strip: true });
-    const hist = (before.facts.find((f) => f.kind === 'commit_history') as any).value;
-    // Without the merge the history reads the new address as a new top committer making 21 of 22 releases.
-    expect(hist.changes.some((c: any) => c.kind === 'release_takeover' && /made 21 of the 22 releases/.test(c.text))).toBe(true);
+    // Without the merge the aggregate reads the new address as a new top committer making 21 of 22 releases.
+    const { aggregateHistory } = await import('../../src/history/aggregate.js');
+    const raw = aggregateHistory(await tier0IdentityHistory('nanoid'), new Date('2026-10-11T12:00:00Z'))!;
+    expect(raw.history.changes.some((c) => c.kind === 'release_takeover' && /made 21 of the 22 releases/.test(c.text))).toBe(true);
     const after = await tier0IdentityLabel('nanoid', '3.3.19');
     const h2 = (after.facts.find((f) => f.kind === 'commit_history') as any).value;
     expect(h2.identity).toMatchObject({ resolved: true, merged: { displayName: 2 } });
@@ -150,11 +150,33 @@ describe('Tier 0: identity resolution and takeover signals (teardown problem 4),
     expect(raw.history.changes.filter((c) => c.release === '2.31.0' && c.kind !== 'release_handover').map((c) => c.kind).sort()).toEqual(['release_by_new_person', 'release_takeover']);
   });
 
-  it('react: a takeover is dated to its causing release, not the scan day (identity of that address needs GitHub login mapping)', async () => {
+  it('react: the address change is not a takeover; v19.0.1 went to npm through the org release bot (react-bot)', async () => {
+    const { aggregateHistory } = await import('../../src/history/aggregate.js');
+    const { mergeIdentities } = await import('../../src/history/merge.js');
+    // The aggregate alone dates the observation to its causing release, not to the scan day.
+    const raw = aggregateHistory(mergeIdentities(await tier0IdentityHistory('react')).rec, new Date('2026-10-11T12:00:00Z'))!;
+    expect(raw.history.changes.find((c) => c.kind === 'release_takeover')).toMatchObject({ date: '2025-12-03', release: 'v19.0.1' });
+    const pk = loadTier0Identity().packages.react!.packument;
+    expect(pk.versions['19.0.1']._npmUser.name).toBe('react-bot');
+    // With the npm publisher of that release (an org release bot) it is not a person's takeover.
     const { entry } = await tier0IdentityLabel('react', '18.3.1');
-    const t = entry.s5a.find((x) => x.kind === 'release_takeover')!;
-    expect(t).toMatchObject({ date: '2025-12-03', release: 'v19.0.1' });
-    expect(s5aKinds(entry)).not.toContain('release_takeover:');
+    expect(s5aKinds(entry).filter((k) => k.startsWith('release_takeover'))).toEqual([]);
+    expect(entry.rules.map((r) => r.rule)).not.toContain('watch_release_continuity');
+  });
+
+  it('jitsi-meet re-scan cases: the npm publisher is the actor (xmldom 0.8.12), and a tag the package never published is not its release (react v19.0.1 on scheduler)', async () => {
+    const { aggregateHistory } = await import('../../src/history/aggregate.js');
+    const { mergeIdentities } = await import('../../src/history/merge.js');
+    const at = new Date('2026-10-11T12:00:00Z');
+    const rawX = aggregateHistory(mergeIdentities(await tier0IdentityHistory('xmldom')).rec, at)!;
+    expect(rawX.history.changes.filter((c) => c.release === '0.8.12').map((c) => c.kind)).toEqual(expect.arrayContaining(['release_by_new_person', 'release_takeover']));
+    const fx = loadTier0Identity();
+    expect(fx.packages.xmldom!.packument.versions['0.8.12']._npmUser.name).toBe(fx.packages.xmldom!.packument.versions['0.8.11']._npmUser.name);
+    const x = await tier0IdentityLabel('xmldom', '0.8.12');
+    expect(x.entry.s5a.filter((e) => e.release === '0.8.12')).toEqual([]);
+    expect(fx.packages.scheduler!.packument.versions['19.0.1']).toBeUndefined();
+    const sch = await tier0IdentityLabel('scheduler', '0.26.0');
+    expect(sch.entry.s5a.filter((e) => e.release === 'v19.0.1')).toEqual([]);
   });
 
   it('without resolved identities the git-only S5a is context only (the histories as read before Tier 0)', async () => {
@@ -248,5 +270,19 @@ describe('Tier 0: upkeep events are threshold crossings between two stored scans
     const r = stabilityEvents(before, dev);
     expect(r.events).toEqual([]);
     expect(r.omitted.notProduction).toBeGreaterThan(0);
+  });
+});
+
+describe('Tier 0: monorepo release tags belong to their own package', () => {
+  it('googleapis/google-cloud-node tags from parse-server\'s real scan: projectify / logging-winston releases are not gaxios releases', async () => {
+    const { tagBelongsTo } = await import('../../src/enrich/history/index.js');
+    expect(tagBelongsTo('projectify-v5.0.0', 'gaxios', 'core/packages/gaxios')).toBe(false);
+    expect(tagBelongsTo('logging-winston-v6.0.1', '@google-cloud/firestore', 'handwritten/firestore')).toBe(false);
+    expect(tagBelongsTo('projectify-v5.0.0', '@google-cloud/projectify', 'core/projectify')).toBe(true);
+    expect(tagBelongsTo('gaxios-v8.2.0', 'gaxios', 'core/packages/gaxios')).toBe(true);
+    // Unprefixed tags belong to every package of the repository (protobufjs v6.11.5, xz v5.2.11).
+    expect(tagBelongsTo('v6.11.5', '@protobufjs/utf8')).toBe(true);
+    expect(tagBelongsTo('v5.2.11', 'xz')).toBe(true);
+    expect(tagBelongsTo('xz-5.2', 'xz')).toBe(true);
   });
 });

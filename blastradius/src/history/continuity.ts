@@ -40,7 +40,7 @@ function firstSeen(rec: HistoryRecord, asOf: Date): Map<string, number> {
   return first;
 }
 
-export function npmContinuity(rec: HistoryRecord, publishers: ReleasePublishersValue, asOf: Date): NpmContinuity {
+export function npmContinuity(rec: HistoryRecord, publishers: ReleasePublishersValue, asOf: Date, establishedElsewhere?: (account: string, atMs: number) => boolean): NpmContinuity {
   const links = rec.npmPublishers ?? {};
   const first = firstSeen(rec, asOf);
   const end = Math.floor(asOf.getTime() / 1000);
@@ -57,6 +57,8 @@ export function npmContinuity(rec: HistoryRecord, publishers: ReleasePublishersV
     if (a.index === 0) continue;
     const at = Math.floor(Date.parse(a.firstAt) / 1000);
     if (!Number.isFinite(at) || at >= end || (at - repoStart) / DAY < HISTORY_RULES.newReleaserDays) continue;
+    // Tier 0: an account that already published a sibling package (same owner or npm scope) is a team member.
+    if (establishedElsewhere?.(a.name, at * 1000)) continue;
     const seen = first.get(id);
     if (seen !== undefined && seen <= at) {
       const days = Math.floor((at - seen) / DAY);

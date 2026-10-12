@@ -873,6 +873,13 @@ export interface ReleasePublishersValue {
    * most 500 (Tier 0): a git-side release observation for one of them is not a person's release.
    */
   trustedVersions?: string[];
+  /**
+   * The npm account that published each version of the last 36 months (at most 500), so a
+   * git-side release observation can be checked against who actually published it (Tier 0).
+   */
+  publisherByVersion?: Record<string, string>;
+  /** Earliest publish date (YYYY-MM-DD) covered by `publisherByVersion`: before it, a missing version proves nothing. */
+  publisherSince?: string;
 }
 
 /** A maintenance status the package itself declares (README; plan S3). Low confidence by definition. */

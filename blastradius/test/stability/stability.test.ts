@@ -155,9 +155,11 @@ describe('control repositories and the hand-review sample', () => {
     // Tier 0: the no-clone fallback labels 6 of the 16 Unknown (3 Steady from a recent release or
     // Scorecard, 3 Watch for no release in 18 months); vue and vue-router are Watch "Moved"; ajv,
     // proxy-addr, semver and serve-static were Watch only from git-only S5a or C1, which are context
-    // without resolved identities (these histories were recorded before display-name keys).
-    expect(by).toEqual({ fragile: 46, watch: 156, steady: 15, unknown: 10 });
-    expect(pop).toHaveLength(199);
+    // without resolved identities (these histories were recorded before display-name keys);
+    // content-disposition and range-parser lose their S5a Watch because the npm account that
+    // published those releases had already published sibling jshttp packages (a team member).
+    expect(by).toEqual({ fragile: 46, watch: 154, steady: 17, unknown: 10 });
+    expect(pop).toHaveLength(197);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
     expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);
     for (const p of finished) {

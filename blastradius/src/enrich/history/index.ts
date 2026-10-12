@@ -22,6 +22,7 @@ import { npmContinuity } from '../../history/continuity.js';
 import { loadSalt, localIdentity } from '../../history/identity.js';
 import { renameIds, type HistoryRecord } from '../../history/record.js';
 import { mergeIdentities } from '../../history/merge.js';
+import { isReleaseBot } from '../../history/bots.js';
 import { mapLimit } from '../depsdev/util.js';
 import { orderRepos } from '../../stability/priority.js';
 import { sameRepo } from '../../stability/repo.js';
@@ -72,6 +73,55 @@ export function releaseVersion(tag: string): string {
   return m ? m[1]! : tag;
 }
 
+/** npm name of an npm purl ("@scope/name"), else the purl. */
+function subjectName(subject: PurlString): string {
+  const p = parsePurl(subject);
+  return p.type === 'npm' ? npmNameFromPurl(p) : subject;
+}
+
+/**
+ * Whether a release tag belongs to a package (Tier 0): an unprefixed tag ("v1.2.3") belongs to every
+ * package of the repository; a prefixed one ("projectify-v5.0.0", "@scope/name@1.2.3") only to the
+ * package whose name, short name or monorepo directory it names. googleapis/google-cloud-node tags
+ * every package's releases in one repository.
+ */
+export function tagBelongsTo(tag: string, name: string, directory?: string): boolean {
+  const m = /^(.*?)[-@_/]?v?\d+(?:[._]\d+)+(?:[-+.][0-9A-Za-z.-]+)?$/.exec(tag);
+  const prefix = (m?.[1] ?? '').replace(/[-@_/]+$/, '').toLowerCase();
+  if (!prefix || /^(release|rel|version|ver|tag)$/.test(prefix)) return true;
+  const short = name.replace(/^@[^/]+\//, '').toLowerCase();
+  const dirBase = directory?.split('/').filter(Boolean).pop()?.toLowerCase();
+  const variants = new Set([name.toLowerCase(), short, short.replace(/^node-|-nodejs$|^nodejs-/g, ''), ...(dirBase ? [dirBase] : [])]);
+  return variants.has(prefix) || variants.has(prefix.replace(/^node-|-nodejs$|^nodejs-/g, ''));
+}
+
+/**
+ * When each npm account first published a package of the same repository owner or npm scope as
+ * `subject` (other than `subject` itself): "already a team member" for the S5a checks (Tier 0).
+ */
+function siblingPublishers(publishersOf: ReadonlyMap<PurlString, ReleasePublishersValue>, ownerOf: ReadonlyMap<PurlString, string>): (subject: PurlString, account: string, atMs: number) => boolean {
+  const scopeOf = (s: PurlString) => /^pkg:npm\/(%40[^/]+)\//.exec(s)?.[1];
+  const groups = new Map<string, Map<string, { first: number; subject: PurlString }[]>>();
+  for (const [subject, pubs] of publishersOf) {
+    const keys = [ownerOf.get(subject) ? `owner:${ownerOf.get(subject)}` : undefined, scopeOf(subject) ? `scope:${scopeOf(subject)}` : undefined].filter((k): k is string => !!k);
+    for (const k of keys) {
+      let g = groups.get(k);
+      if (!g) groups.set(k, (g = new Map()));
+      for (const a of pubs.accounts) {
+        const t = Date.parse(a.firstAt);
+        if (!Number.isFinite(t)) continue;
+        const l = g.get(a.name) ?? [];
+        l.push({ first: t, subject });
+        g.set(a.name, l);
+      }
+    }
+  }
+  return (subject, account, atMs) => {
+    const keys = [ownerOf.get(subject) ? `owner:${ownerOf.get(subject)}` : undefined, scopeOf(subject) ? `scope:${scopeOf(subject)}` : undefined].filter((k): k is string => !!k);
+    return keys.some((k) => (groups.get(k)?.get(account) ?? []).some((e) => e.subject !== subject && e.first < atMs));
+  };
+}
+
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/;
 
 export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
@@ -99,6 +149,18 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       }
       const publishersOf = new Map<PurlString, ReleasePublishersValue>();
       for (const f of opts.repoFacts()) if (f.kind === 'release_publishers') publishersOf.set(unversionedPurl(f.subject), f.value);
+      // Tier 0: the repository owner, npm scope and monorepo directory of each package, for the
+      // sibling-publisher check and to keep a monorepo's per-package release tags with their package.
+      const ownerOf = new Map<PurlString, string>();
+      const dirOf = new Map<PurlString, string>();
+      for (const f of opts.repoFacts()) {
+        if (f.kind !== 'repo') continue;
+        const k = unversionedPurl(f.subject);
+        const owner = /^https:\/\/[^/]+\/([^/]+)\//.exec((latestRepo.get(k) ?? f.value.url).toLowerCase())?.[1];
+        if (owner && !ownerOf.has(k)) ownerOf.set(k, owner);
+        if (f.value.directory && !dirOf.has(k)) dirOf.set(k, f.value.directory);
+      }
+      const established = siblingPublishers(publishersOf, ownerOf);
       const maxRepos = opts.maxRepos ?? DEFAULT_HISTORY_MAX;
       const ordered = orderRepos(byRepo, inv);
       const repos = ordered.slice(0, maxRepos);
@@ -197,14 +259,38 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             facts.push(makeFact('commit_history', subject, agg.history, meta));
             continue;
           }
-          const npm = npmContinuity(rec, pubs, ctx.now);
-          // Tier 0: a git-side release observation whose release was published to npm through
-          // trusted publishing (the project's CI, an OIDC identity) is not a person's release.
+          const known = (account: string, atMs: number) => established(subject, account, atMs);
+          // publisherByVersion covers the 36 months before the scan (src/stability/cadence.ts).
+          const window36 = new Date(ctx.now.getTime() - 3 * 365 * 86_400_000).toISOString().slice(0, 10);
+          const npm = npmContinuity(rec, pubs, ctx.now, known);
+          // Tier 0: a git-side release observation is not a new person's release when the release
+          // went to npm through trusted publishing (the project's CI) or a release bot, or was
+          // published by an account that already published a sibling package (same owner or scope).
           const trusted = new Set(pubs.trustedVersions ?? []);
-          const viaCi = (c: { kind: string; release?: string }) => (c.kind === 'release_by_new_person' || c.kind === 'release_takeover' || c.kind === 'release_handover') && c.release !== undefined && trusted.has(releaseVersion(c.release));
+          const notNew = (c: { kind: string; release?: string; date: string }) => {
+            if (!(c.kind === 'release_by_new_person' || c.kind === 'release_takeover' || c.kind === 'release_handover') || c.release === undefined) return false;
+            const v = releaseVersion(c.release);
+            if (trusted.has(v)) return true;
+            const at = Date.parse(`${c.date}T00:00:00Z`);
+            // A tag whose version this package never published on npm is not this package's release
+            // (react's v19.0.1 tag is no scheduler release); only inside the window the map covers.
+            // No version at all in the window (the map is empty): nothing this package published then.
+            // The map holds every version of the window unless it hit its 500-version cap.
+            const capped = Object.keys(pubs.publisherByVersion ?? {}).length >= 500;
+            const since = capped && pubs.publisherSince ? pubs.publisherSince : window36;
+            if (c.date > since && c.date > window36 && !Object.hasOwn(pubs.publisherByVersion ?? {}, v)) return true;
+            const by = pubs.publisherByVersion?.[v];
+            if (by === undefined) return false;
+            // The npm publisher is the actor id: an account that had already published this package
+            // (or a sibling of the same owner or scope), or an org release bot, is not a new person.
+            const own = pubs.accounts.find((a) => a.name === by);
+            return isReleaseBot(by) || (own !== undefined && Date.parse(own.firstAt) < at) || known(by, at);
+          };
+          const name = subjectName(subject);
+          const ownTag = (c: { release?: string }) => c.release === undefined || tagBelongsTo(c.release, name, dirOf.get(subject));
           const history = {
             ...agg.history,
-            changes: [...agg.history.changes.filter((c) => !viaCi(c)), ...npm.changes].sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
+            changes: [...agg.history.changes.filter((c) => ownTag(c) && !notNew(c)), ...npm.changes].sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
             npmPublishers: { total: npm.accounts, matched: npm.matched },
           };
           facts.push(makeFact('commit_history', subject, history, meta));

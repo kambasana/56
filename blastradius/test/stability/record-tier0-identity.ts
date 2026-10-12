@@ -26,6 +26,10 @@ export const TIER0_IDENTITY_SUBJECTS = [
   { slug: 'react', name: 'react', version: '18.3.1', repo: 'https://github.com/facebook/react', scan: 'superset' },
   { slug: 'picocolors', name: 'picocolors', version: '1.1.1', repo: 'https://github.com/alexeyraspopov/picocolors', scan: 'parse-server' },
   { slug: 'moment', name: 'moment', version: '2.31.0', repo: 'https://github.com/moment/moment', scan: 'superset' },
+  // jitsi-meet's re-scan (Tier 0): a git-side takeover for 0.8.12, published on npm by the account that published 0.8.11.
+  { slug: 'xmldom', name: '@xmldom/xmldom', version: '0.8.12', repo: 'https://github.com/xmldom/xmldom', scan: 'jitsi-meet' },
+  // jitsi-meet's re-scan: facebook/react's v19.0.1 tag read as a scheduler release; history shared with react.
+  { slug: 'scheduler', name: 'scheduler', version: '0.26.0', repo: 'https://github.com/facebook/react', scan: 'jitsi-meet', historyFrom: 'react' },
 ] as const;
 
 if (process.argv[1]?.endsWith('record-tier0-identity.ts')) {
@@ -38,14 +42,26 @@ if (process.argv[1]?.endsWith('record-tier0-identity.ts')) {
     recordedAt: recordedAt.toISOString(),
     packages: {},
   };
+  // `npx tsx record-tier0-identity.ts xmldom scheduler` records only those and keeps the rest.
+  const only = process.argv.slice(2);
+  const existingFile = join(STABILITY_DIR, 'tier0-identity.json');
+  if (only.length) {
+    const { existsSync, readFileSync } = await import('node:fs');
+    if (existsSync(existingFile)) out.packages = (JSON.parse(readFileSync(existingFile, 'utf8')) as typeof out).packages;
+  }
   try {
     for (const s of TIER0_IDENTITY_SUBJECTS) {
+      if (only.length && !only.includes(s.slug)) continue;
       const r = await recordPackage(s.name, [s.version]);
       if (!r) continue;
       const entry: RecordedPackage & { project?: Json; historyError?: string } = r.pkg;
       if (r.pkg.repo) {
         const p = await recordProject(r.pkg.repo.url);
         if (p) entry.project = p;
+      }
+      if ('historyFrom' in s) {
+        out.packages[s.slug] = entry;
+        continue;
       }
       const rec = await recordHistory(s.repo, r.emails, salt, cacheDir);
       if ('error' in rec) entry.historyError = rec.error;

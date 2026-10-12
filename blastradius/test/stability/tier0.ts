@@ -88,7 +88,7 @@ export async function tier0IdentityLabel(slug: string, version: string, opts: { 
   const fx = loadTier0Identity();
   const pkg = fx.packages[slug]!;
   const asOf = new Date(opts.asOf ?? '2026-10-11T12:00:00Z');
-  let hist = await tier0IdentityHistory(slug);
+  let hist = await tier0IdentityHistory(slug === 'scheduler' ? 'react' : slug);
   if (opts.strip) {
     const { names: _n, npmPublisherIds: _i, ...rest } = hist;
     hist = rest;

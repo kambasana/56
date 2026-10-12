@@ -86,5 +86,11 @@ export function releasePublishers(history: readonly ReleaseRecord[], asOf: Date)
   const out: ReleasePublishersValue = { releases: upTo.length, accounts: [...byName.values()].sort((a, b) => a.index - b.index) };
   const trusted = upTo.filter((h) => h.trustedPublisher).map((h) => h.version);
   if (trusted.length) out.trustedVersions = trusted.slice(-500);
+  const since = asOf.getTime() - 3 * 365 * DAY_MS;
+  const recent = upTo.filter((h) => h.publisher && h.publishedMs >= since).slice(-500);
+  if (recent.length) {
+    out.publisherByVersion = Object.fromEntries(recent.map((h) => [h.version, h.publisher!]));
+    out.publisherSince = recent[0]!.publishedAt.slice(0, 10);
+  }
   return out;
 }
