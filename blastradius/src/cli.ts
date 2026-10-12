@@ -1,11 +1,13 @@
 #!/usr/bin/env node
+import { notAnalysedLine } from './ingest/manifests.js';
+import { degradedLine, securitySourcesDegraded } from './report/coverage.js';
 import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError, Option } from 'commander';
 import { defaultCacheDir } from './core/paths.js';
-import { installEnvProxy } from './core/proxy.js';
+import { ensureEnvProxy } from './core/proxy.js';
 import type { RiskLevel } from './core/types.js';
 import { ALL_OUTPUT_FORMATS, DEFAULT_KB_DIR, OUTPUT_FORMATS, scan, validateKb, type OutputFormat, type ScanOptions } from './pipeline.js';
 import { failsThreshold, formatSummary } from './summary.js';
@@ -13,6 +15,8 @@ import { parseLicensePolicy } from './licenses/policy.js';
 
 /** Exit code when --fail-on matches (distinct from 1 = error). */
 export const EXIT_POLICY = 2;
+/** Exit code under --strict when some manifest was not analysed (Tier 0: no silent all-clear). */
+export const EXIT_NOT_ANALYSED = 3;
 
 export function parseFormats(value: string): OutputFormat[] {
   const parts = value
@@ -56,6 +60,7 @@ interface ScanCliOptions {
   agenticPeople: boolean;
   licensePolicy?: string;
   failOn?: RiskLevel;
+  strict?: boolean;
   top: string;
 }
 
@@ -96,6 +101,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
     .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
     .option('--top <n>', 'findings to list in the terminal summary', '5')
+    .option('--strict', `exit with code ${EXIT_NOT_ANALYSED} when any manifest or lockfile was found but not analysed (unsupported format, no lockfile, unresolved entries), or a security source (OSV) failed or answered only in part`, false)
     .action(async (target: string, o: ScanCliOptions) => {
       const offline = o.offline || o.fixtures !== undefined || process.env.BLASTRADIUS_OFFLINE === '1';
       const opts: ScanOptions = {
@@ -121,6 +127,15 @@ export function buildProgram(io: ProgramIo = {}): Command {
       if (o.failOn && failsThreshold(result, o.failOn)) {
         err(`blastradius: findings at or above "${o.failOn}" (--fail-on)\n`);
         process.exitCode = EXIT_POLICY;
+      }
+      if (o.strict && (result.notAnalysed?.length ?? 0) > 0) {
+        err(`blastradius: ${notAnalysedLine(result.notAnalysed!)} (--strict)\n`);
+        if (!process.exitCode) process.exitCode = EXIT_NOT_ANALYSED;
+      }
+      const security = securitySourcesDegraded(result);
+      if (o.strict && security.length > 0) {
+        err(`blastradius: ${degradedLine(security)} (--strict)\n`);
+        if (!process.exitCode) process.exitCode = EXIT_NOT_ANALYSED;
       }
     });
 
@@ -232,7 +247,7 @@ function isMain(): boolean {
 
 if (isMain()) {
   // Node's fetch ignores HTTPS_PROXY/HTTP_PROXY on its own; route it through them (NO_PROXY respected).
-  installEnvProxy()
+  ensureEnvProxy()
     .catch((e: unknown) => {
       process.stderr.write(`blastradius: could not set up the HTTPS_PROXY/HTTP_PROXY dispatcher: ${(e as Error).message}\n`);
       return false;

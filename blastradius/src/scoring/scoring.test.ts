@@ -336,11 +336,13 @@ describe('entity risk', () => {
     const facts: Fact[] = [makeFact('maintainers', 'pkg:npm/popular', { maintainers: [{ name: 'alice' }], count: 1 }, meta('npm'))];
     const out = scoreInventory(inv, facts, { now: NOW, incidents: [incident({ status: 'alleged' })], links: [link()] });
     const f = out.findings[0]!;
-    expect(f.score).toBeCloseTo(100 * (1 - (1 - 0.15) * (1 - 0.4)), 1);
+    // Tier 0: the entity incident decides the level; single maintainer (posture) only breaks ties.
+    expect(f.gate?.signalScore).toBeCloseTo(40, 1);
+    expect(f.score).toBeCloseTo(40 + 0.15 * 0.9, 1);
     expect(f.level).toBe('medium');
     expect(f.entityChain.length).toBe(2);
     const ent = f.reasons.find((r) => r.factor === 'entity_incident')!;
-    expect(ent.contribution).toBeCloseTo(0.85 * 0.4, 3);
+    expect(ent.contribution).toBeCloseTo(0.4, 3);
   });
 });
 

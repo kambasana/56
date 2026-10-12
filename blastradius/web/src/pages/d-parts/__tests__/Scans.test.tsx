@@ -174,7 +174,7 @@ describe('<Scans>', () => {
     await user.click(await screen.findByRole('button', { name: 'Load older scans' }));
     expect(await screen.findByText('Old failure')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Load older scans' })).toBeNull();
-    expect(api.calls.filter((c) => c.method === 'GET').map((c) => c.url.searchParams.get('cursor'))).toEqual([null, 'c1']);
+    expect(api.calls.filter((c) => c.method === 'GET' && c.url.pathname.endsWith('/scans')).map((c) => c.url.searchParams.get('cursor'))).toEqual([null, 'c1']);
   });
 
   it('shows an error state', async () => {

@@ -22,6 +22,7 @@ import type {
   ListAlertsResponse,
   SearchExposureResponse,
   ProjectHealthResponse,
+  ProjectCoverageResponse,
   ProjectStabilityResponse,
   ApiError,
   ApiErrorCode,
@@ -196,6 +197,7 @@ export const api = {
   searchExposure: (q: string, signal?: AbortSignal) => get<SearchExposureResponse>('/api/search/exposure', { q }, signal),
   alerts: (signal?: AbortSignal) => get<ListAlertsResponse>('/api/alerts', { limit: 100 }, signal),
   projectHealth: (id: Id, signal?: AbortSignal) => get<ProjectHealthResponse>(`/api/projects/${enc(id)}/health`, undefined, signal),
+  projectCoverage: (id: Id, signal?: AbortSignal) => get<ProjectCoverageResponse>(`/api/projects/${enc(id)}/coverage`, undefined, signal),
   /** Stability labels of the newest scan (docs/WHO-BEHIND-PLAN.md §4): upkeep, not risk. */
   projectStability: (id: Id, signal?: AbortSignal) => get<ProjectStabilityResponse>(`/api/projects/${enc(id)}/stability`, undefined, signal),
   findings: (q: ListFindingsQuery, signal?: AbortSignal) => get<ListFindingsResponse>('/api/findings', q, signal),

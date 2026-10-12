@@ -27,3 +27,26 @@ describe('describeReach', () => {
     expect(describeReach(finding([]))).toMatch(/no dependency path/);
   });
 });
+
+describe('describeReach with scopes (Tier 0)', () => {
+  it('names the runtime introducer first even when a dev path is shorter', () => {
+    // debug@4.4.3 in parse-server: express (runtime) and @babel/core (dev) both bring it in.
+    const f = finding([
+      {
+        assetId: 'repo:parse-server',
+        exposure: 1,
+        scope: 'runtime',
+        paths: [
+          ['repo:parse-server', 'pkg:npm/%40babel/core@7.28.0', 'pkg:npm/debug@4.4.3'],
+          ['repo:parse-server', 'pkg:npm/express@5.2.1', 'pkg:npm/body-parser@2.2.2', 'pkg:npm/debug@4.4.3'],
+        ],
+        pathScopes: ['dev', 'runtime'],
+      } as never,
+    ]);
+    expect(describeReach(f, () => ({ name: 'parse-server', environment: 'prod' }))).toBe('Brought in by express, @babel/core · used by parse-server (production)');
+  });
+  it('says optional only for an optional path, never production or dev', () => {
+    const f = finding([{ assetId: 'repo:app', exposure: 0.2, scope: 'optional', paths: [['repo:app', 'pkg:npm/chokidar@3.6.0', 'pkg:npm/fsevents@2.3.3']], pathScopes: ['optional'] } as never]);
+    expect(describeReach(f, () => ({ name: 'app', environment: 'prod' }))).toBe('Brought in by chokidar · used by app (optional dependency only)');
+  });
+});

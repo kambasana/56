@@ -15,7 +15,7 @@ import { HttpClient } from './core/http.js';
 import { defaultCacheDir, isPathInside } from './core/paths.js';
 import { looksLikeGitUrl } from './ingest/git.js';
 import { enricherStages, type EnrichContext, type Enricher } from './core/plugin.js';
-import type { Fact, Incident, Inventory, ScanResult } from './core/types.js';
+import type { Fact, Incident, Inventory, ScanResult, SourceCoverage } from './core/types.js';
 import { ingestDetailed, type IngestOptions, type WorkflowInfo } from './ingest/index.js';
 import { createOsvEnricher } from './enrich/osv/index.js';
 import { createDepsDevEnricher } from './enrich/depsdev/index.js';
@@ -207,6 +207,7 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   // Whether OSV answered for every component (no warning, no failure): the stability labels' finished /
   // low-surface test needs "no advisory" to be a checked fact, not a missing one.
   let osvComplete = false;
+  const coverage: SourceCoverage[] = [];
   for (const stage of enricherStages(enrichers)) {
     const results = await Promise.all(
       stage.map(async (e) => {
@@ -216,20 +217,22 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
         try {
           const out = await e.enrich(inventory, ectx);
           if (e.name === 'osv' && notes.length === 0) osvComplete = true;
-          return { facts: out, notes };
+          return { name: e.name, facts: out, notes, threw: false };
         } catch (err) {
           notes.push(`enricher ${e.name} failed: ${(err as Error).message}`);
-          return { facts: [] as Fact[], notes };
+          return { name: e.name, facts: [] as Fact[], notes, threw: true };
         }
       }),
     );
     for (const r of results) {
       facts.push(...r.facts);
       for (const n of r.notes) warn(n);
+      coverage.push(sourceCoverage(r.name, r.facts.length, r.notes, r.threw, inventory.components.length));
     }
   }
   const down = http.unavailableHosts();
   if (down.length > 0) log(`skipped unreachable host(s) after repeated network errors: ${down.join(', ')}`);
+  if (down.length > 0) warn(`unreachable host(s), lookups skipped: ${down.join(', ')}`);
 
   const known = factsKnownAt(facts, now);
   if (known.length < facts.length) {
@@ -259,6 +262,9 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     workflows: ingested.workflows,
   });
   const result = buildScanResult({ target: opts.target, inventory, score, generatedAt: now, warnings: dedupe(warnings) });
+  // Tier 0: never a silent all-clear. Manifests we found but did not analyse are listed in every report.
+  if (ingested.notAnalysed.length > 0) result.notAnalysed = ingested.notAnalysed;
+  if (coverage.length > 0) result.coverage = { sources: coverage };
   // Licences (shown from others): declared values with their sources and changes; no score impact.
   // Always present on new scans (components without data count as unknown), so a missing section
   // means a scan made before licences were collected.
@@ -289,6 +295,19 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     }
   }
   return { result, inventory, facts, incidents, workflows: ingested.workflows, entities, files };
+}
+
+/** Sources whose data decides whether a component is known-vulnerable or malicious. */
+export const SECURITY_SOURCES: ReadonlySet<string> = new Set(['osv', 'pack']);
+
+/**
+ * Coverage of one enricher run (Tier 0): failed when it threw, or reported problems and produced
+ * nothing while there were components to check; partial when it reported problems; ok otherwise.
+ */
+export function sourceCoverage(source: string, factCount: number, notes: readonly string[], threw: boolean, components: number): SourceCoverage {
+  const status: SourceCoverage['status'] = threw || (notes.length > 0 && factCount === 0 && components > 0) ? 'failed' : notes.length > 0 ? 'partial' : 'ok';
+  const reason = notes.length > 0 ? `${notes[0]!.slice(0, 300)}${notes.length > 1 ? ` (+${notes.length - 1} more)` : ''}` : undefined;
+  return { source, status, security: SECURITY_SOURCES.has(source), facts: factCount, problems: notes.length, ...(reason ? { reason } : {}) };
 }
 
 /** Back-compat wrapper returning only the ScanResult. */

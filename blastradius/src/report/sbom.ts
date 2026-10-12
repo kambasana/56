@@ -18,6 +18,19 @@ import * as CDX from '@cyclonedx/cyclonedx-library';
 import { parsePurl, unversionedPurl, type ComponentLicense, type Inventory, type ScanResult } from '../core/types.js';
 import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { parseSpdx } from '../licenses/spdx.js';
+import { componentScopes, type ComponentScope } from '../core/scope.js';
+import { notAnalysedLine } from '../ingest/manifests.js';
+
+/** CycloneDX scope for our project scope: runtime is required, optional/peer optional, the rest excluded. */
+function cdxScope(scope: ComponentScope): CDX.Enums.ComponentScope {
+  if (scope === 'runtime') return CDX.Enums.ComponentScope.Required;
+  if (scope === 'optional' || scope === 'peer') return CDX.Enums.ComponentScope.Optional;
+  return CDX.Enums.ComponentScope.Excluded;
+}
+
+function scopesOf(inventory: Pick<Inventory, 'components' | 'edges' | 'assets'> | undefined): Map<string, ComponentScope> {
+  return inventory && inventory.assets.length > 0 ? componentScopes(inventory) : new Map();
+}
 
 const TOOL = { vendor: 'blastradius', name: 'blastradius', version: '0.1.0' };
 
@@ -67,6 +80,11 @@ export function toCycloneDxBom(result: ScanResult, inventory?: Pick<Inventory, '
   bom.metadata.tools.components.add(new CDX.Models.Component(CDX.Enums.ComponentType.Application, TOOL.name, { version: TOOL.version, group: TOOL.vendor }));
   const root = new CDX.Models.Component(CDX.Enums.ComponentType.Application, result.target.slice(0, 300), { bomRef: 'root' });
   bom.metadata.component = root;
+  // Tier 0: manifests found but not analysed are part of what this SBOM does not cover.
+  for (const n of result.notAnalysed ?? []) bom.metadata.properties.add(new CDX.Models.Property('blastradius:notAnalysed', `${n.file}: ${n.reason}${n.packages !== undefined ? ` (~${n.packages} packages)` : ''}`));
+  if (result.notAnalysed?.length) bom.metadata.properties.add(new CDX.Models.Property('blastradius:notAnalysed:summary', notAnalysedLine(result.notAnalysed)));
+  for (const src of result.coverage?.sources ?? []) if (src.status !== 'ok') bom.metadata.properties.add(new CDX.Models.Property('blastradius:source', `${src.source} ${src.status}${src.reason ? `: ${src.reason}` : ''}`));
+  const scopes = scopesOf(inventory);
 
   const licenses = licenseIndex(result);
   const changes = new Map<string, string[]>();
@@ -87,6 +105,11 @@ export function toCycloneDxBom(result: ScanResult, inventory?: Pick<Inventory, '
     const { group, name } = splitName(c.purl, c.name);
     const comp = new CDX.Models.Component(componentType(c.ecosystem), name, { bomRef: c.purl, version: c.version, ...(group ? { group } : {}) });
     comp.purl = c.purl;
+    const scope = scopes.get(c.purl);
+    if (scope) {
+      comp.scope = cdxScope(scope);
+      comp.properties.add(new CDX.Models.Property('blastradius:scope', scope));
+    }
     const lic = licenses.get(c.purl);
     if (lic) {
       for (const l of cdxLicenses(lic)) comp.licenses.add(l);
@@ -150,6 +173,7 @@ interface SpdxPackage {
   licenseDeclared: string;
   licenseComments?: string;
   copyrightText: string;
+  comment?: string;
   primaryPackagePurpose?: string;
   externalRefs?: { referenceCategory: 'PACKAGE-MANAGER'; referenceType: 'purl'; referenceLocator: string }[];
 }
@@ -160,7 +184,7 @@ export interface SpdxDocument {
   SPDXID: 'SPDXRef-DOCUMENT';
   name: string;
   documentNamespace: string;
-  creationInfo: { created: string; creators: string[] };
+  creationInfo: { created: string; creators: string[]; comment?: string };
   packages: SpdxPackage[];
   relationships: { spdxElementId: string; relationshipType: string; relatedSpdxElement: string }[];
   hasExtractedLicensingInfos?: { licenseId: string; extractedText: string; name: string }[];
@@ -203,6 +227,7 @@ export function toSpdx(result: ScanResult, inventory?: Pick<Inventory, 'componen
     : (result.licenses?.components ?? []).map((c) => ({ purl: c.purl, name: c.name, version: c.version }));
   const sorted = [...new Map(comps.map((c) => [c.purl, c])).values()].sort((a, b) => (a.purl < b.purl ? -1 : a.purl > b.purl ? 1 : 0));
   const ids = new Map<string, string>();
+  const scopes = scopesOf(inventory);
   const root: SpdxPackage = {
     SPDXID: 'SPDXRef-Root',
     name: result.target.slice(0, 300),
@@ -230,6 +255,8 @@ export function toSpdx(result: ScanResult, inventory?: Pick<Inventory, 'componen
       externalRefs: [{ referenceCategory: 'PACKAGE-MANAGER', referenceType: 'purl', referenceLocator: c.purl }],
     };
     if (d.comment) pkg.licenseComments = d.comment;
+    const scope = scopes.get(c.purl);
+    if (scope) pkg.comment = `blastradius:scope=${scope}`;
     packages.push(pkg);
   });
   const relationships: SpdxDocument['relationships'] = [{ spdxElementId: 'SPDXRef-DOCUMENT', relationshipType: 'DESCRIBES', relatedSpdxElement: 'SPDXRef-Root' }];
@@ -252,7 +279,13 @@ export function toSpdx(result: ScanResult, inventory?: Pick<Inventory, 'componen
     SPDXID: 'SPDXRef-DOCUMENT',
     name: `blastradius ${result.target}`.slice(0, 300),
     documentNamespace: `https://blastradius.invalid/spdx/${uuidFrom(`${result.target}\u0000${result.generatedAt}`)}`,
-    creationInfo: { created: result.generatedAt.replace(/\.\d{3}Z$/, 'Z'), creators: [`Tool: ${TOOL.name}-${TOOL.version}`] },
+    creationInfo: {
+      created: result.generatedAt.replace(/\.\d{3}Z$/, 'Z'),
+      creators: [`Tool: ${TOOL.name}-${TOOL.version}`],
+      ...(result.notAnalysed?.length
+        ? { comment: `${notAnalysedLine(result.notAnalysed)}. Not covered by this document: ${result.notAnalysed.map((n) => `${n.file} (${n.reason})`).join('; ')}`.slice(0, 4000) }
+        : {}),
+    },
     packages,
     relationships,
   };

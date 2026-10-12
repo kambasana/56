@@ -10,6 +10,7 @@
  * - Displayed paths are enumerated shortest-first, cycle-safe, capped per (asset, component) pair.
  */
 import type { Asset, AssetExposure, Component, DepScope, Inventory } from '../core/types.js';
+import { assetComponentScopes, assetScopeCap, edgeScope, scopeStrength, strongerScope, weakerScope, type ComponentScope } from '../core/scope.js';
 import { ENVIRONMENT_WEIGHT, INSTALL_SCRIPT_EXPOSURE, PATH_LIMITS, REACH_MULTIPLIER, SCOPE_EXPOSURE } from './weights.js';
 import { cmpStr, round } from './util.js';
 
@@ -23,6 +24,8 @@ interface Edge {
   other: string;
   exposure: number;
   scope: DepScope;
+  /** Strongest project scope among the edges of this pair (src/core/scope.ts). */
+  cscope: ComponentScope;
 }
 
 export interface DependencyGraph {
@@ -32,6 +35,8 @@ export interface DependencyGraph {
   out: Map<string, Edge[]>;
   /** to → reverse edges. */
   in: Map<string, Edge[]>;
+  /** Scope of each asset's best path to each component it reaches (src/core/scope.ts). */
+  scopes: Map<string, Map<string, ComponentScope>>;
 }
 
 export function scopeExposure(scope: DepScope): number {
@@ -39,19 +44,21 @@ export function scopeExposure(scope: DepScope): number {
 }
 
 export function buildDependencyGraph(inv: Inventory): DependencyGraph {
-  const best = new Map<string, { from: string; to: string; scope: DepScope; exposure: number }>();
+  const best = new Map<string, { from: string; to: string; scope: DepScope; exposure: number; cscope: ComponentScope }>();
   for (const e of inv.edges) {
     if (typeof e.from !== 'string' || typeof e.to !== 'string' || e.from === e.to) continue;
     const exposure = scopeExposure(e.scope);
     const key = `${e.from}\u0000${e.to}`;
     const prev = best.get(key);
-    if (!prev || exposure > prev.exposure) best.set(key, { from: e.from, to: e.to, scope: e.scope, exposure });
+    const cscope = prev ? strongerScope(prev.cscope, edgeScope(e.scope)) : edgeScope(e.scope);
+    if (!prev || exposure > prev.exposure) best.set(key, { from: e.from, to: e.to, scope: e.scope, exposure, cscope });
+    else prev.cscope = cscope;
   }
   const out = new Map<string, Edge[]>();
   const inn = new Map<string, Edge[]>();
   for (const e of best.values()) {
-    (out.get(e.from) ?? out.set(e.from, []).get(e.from)!).push({ other: e.to, exposure: e.exposure, scope: e.scope });
-    (inn.get(e.to) ?? inn.set(e.to, []).get(e.to)!).push({ other: e.from, exposure: e.exposure, scope: e.scope });
+    (out.get(e.from) ?? out.set(e.from, []).get(e.from)!).push({ other: e.to, exposure: e.exposure, scope: e.scope, cscope: e.cscope });
+    (inn.get(e.to) ?? inn.set(e.to, []).get(e.to)!).push({ other: e.from, exposure: e.exposure, scope: e.scope, cscope: e.cscope });
   }
   for (const list of [...out.values(), ...inn.values()]) list.sort((a, b) => cmpStr(a.other, b.other));
   return {
@@ -59,19 +66,21 @@ export function buildDependencyGraph(inv: Inventory): DependencyGraph {
     components: new Map(inv.components.map((c) => [c.purl, c])),
     out,
     in: inn,
+    scopes: assetComponentScopes(inv),
   };
 }
 
-/** Shortest distance (edges) from every node that reaches `target`. */
-function distancesTo(g: DependencyGraph, target: string): Map<string, number> {
+/** Shortest distance (edges) from every node that reaches `target`, optionally through edges at least as strong as `minScope`. */
+function distancesTo(g: DependencyGraph, target: string, minScope?: ComponentScope): Map<string, number> {
   const dist = new Map<string, number>([[target, 0]]);
+  const min = minScope ? scopeStrength(minScope) : -1;
   let frontier = [target];
   while (frontier.length > 0) {
     const next: string[] = [];
     for (const n of frontier) {
       const d = dist.get(n)!;
       for (const e of g.in.get(n) ?? []) {
-        if (dist.has(e.other)) continue;
+        if (dist.has(e.other) || scopeStrength(e.cscope) < min) continue;
         dist.set(e.other, d + 1);
         next.push(e.other);
       }
@@ -110,7 +119,9 @@ function enumeratePaths(
   target: string,
   dist: Map<string, number>,
   limits: PathLimits,
+  minScope?: ComponentScope,
 ): { paths: string[][]; truncated: boolean } {
+  const min = minScope ? scopeStrength(minScope) : -1;
   const paths: string[][] = [];
   let steps = 0;
   let truncated = false;
@@ -128,7 +139,7 @@ function enumeratePaths(
       return;
     }
     const nexts = (g.out.get(node) ?? [])
-      .filter((e) => dist.has(e.other) && !onPath.has(e.other) && path.length + dist.get(e.other)! <= limits.maxDepth)
+      .filter((e) => scopeStrength(e.cscope) >= min && dist.has(e.other) && !onPath.has(e.other) && path.length + dist.get(e.other)! <= limits.maxDepth)
       .sort((a, b) => dist.get(a.other)! - dist.get(b.other)! || cmpStr(a.other, b.other));
     for (const e of nexts) {
       onPath.add(e.other);
@@ -184,10 +195,34 @@ export function inboundExposure(
     let scope = width.get(assetId) ?? 0;
     if (opts.hasInstallScript) scope = Math.max(scope, INSTALL_SCRIPT_EXPOSURE);
     const exposure = scope * reachMultiplier(asset, component);
-    const { paths, truncated: cut } = enumeratePaths(g, assetId, purl, dist, limits);
-    if (cut) truncated.push({ assetId, purl });
-    assets.push({ assetId, exposure: round(exposure), paths });
+    const best = g.scopes.get(assetId)?.get(purl) ?? 'unreachable';
+    // The strongest paths first (a runtime path is never hidden behind shorter dev paths by the
+    // per-pair cap), then fill the remaining slots with the shortest paths of any scope.
+    const strong = best === 'unreachable' ? { paths: [], truncated: false } : enumeratePaths(g, assetId, purl, distancesTo(g, purl, best), limits, best);
+    const rest = enumeratePaths(g, assetId, purl, dist, limits);
+    const seen = new Set<string>();
+    const merged: { nodes: string[]; scope: ComponentScope }[] = [];
+    for (const nodes of [...strong.paths, ...rest.paths]) {
+      const key = nodes.join('\u0000');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push({ nodes, scope: scopeOfPath(g, asset, nodes) });
+    }
+    merged.sort((a, b) => scopeStrength(b.scope) - scopeStrength(a.scope) || a.nodes.length - b.nodes.length || cmpStr(a.nodes.join('\u0000'), b.nodes.join('\u0000')));
+    const kept = merged.slice(0, limits.maxPathsPerPair);
+    if (strong.truncated || rest.truncated || merged.length > kept.length) truncated.push({ assetId, purl });
+    assets.push({ assetId, exposure: round(exposure), paths: kept.map((p) => p.nodes), scope: best, pathScopes: kept.map((p) => p.scope) });
     weighted += exposure * assetWeight(asset);
   }
   return { assets, weightedExposure: weighted, truncated };
+}
+
+/** Scope of one displayed path: the asset's cap and every edge on the way. */
+export function scopeOfPath(g: DependencyGraph, asset: Asset | undefined, nodes: readonly string[]): ComponentScope {
+  let s = assetScopeCap(asset);
+  for (let i = 1; i < nodes.length; i++) {
+    const e = g.out.get(nodes[i - 1]!)?.find((x) => x.other === nodes[i]);
+    s = weakerScope(s, e ? e.cscope : 'runtime');
+  }
+  return s;
 }

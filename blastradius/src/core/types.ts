@@ -15,9 +15,11 @@
 
 /** Ecosystems we model. Phase 1 scores npm only; the others are inventory-only. */
 import type { AgentFactValue, AgenticReport } from './agentic-types.js';
+import { componentScopes, countScopes, type ComponentScope } from './scope.js';
 export type * from './agentic-types.js';
+export type { ComponentScope } from './scope.js';
 
-export type Ecosystem = 'npm' | 'githubactions' | 'docker' | 'generic';
+export type Ecosystem = 'npm' | 'pypi' | 'githubactions' | 'docker' | 'generic';
 
 export interface Purl {
   /** purl type, e.g. "npm", "githubactions", "docker", "generic". */
@@ -268,6 +270,11 @@ export interface InventorySummary {
   /** Number of edges per scope. */
   byScope: Partial<Record<DepScope, number>>;
   withInstallScripts: number;
+  /**
+   * Components per project scope (src/core/scope.ts: runtime, peer, optional, ci, dev, unreachable).
+   * Absent on scans made before Tier 0.
+   */
+  byComponentScope?: Partial<Record<ComponentScope, number>>;
 }
 
 export function summarizeInventory(inv: Inventory): InventorySummary {
@@ -287,6 +294,7 @@ export function summarizeInventory(inv: Inventory): InventorySummary {
     byEcosystem,
     byScope,
     withInstallScripts: inv.components.filter((c) => c.hasInstallScript === true).length,
+    byComponentScope: countScopes(componentScopes(inv)),
   };
 }
 
@@ -1082,8 +1090,29 @@ export interface AssetExposure {
   assetId: string;
   /** Exposure multiplier from the scope of the path (PLAN §3.6 step 4). */
   exposure: number;
-  /** Dependency paths from the asset to the component; each path is [assetId, purl, ..., purl]. */
+  /**
+   * Dependency paths from the asset to the component; each path is [assetId, purl, ..., purl].
+   * The strongest path (runtime before optional, peer, CI and dev) comes first.
+   */
   paths: string[][];
+  /** Scope of this asset's best path to the component (src/core/scope.ts). Absent before Tier 0. */
+  scope?: ComponentScope;
+  /** Scope of each entry of `paths`, same order. Absent before Tier 0. */
+  pathScopes?: ComponentScope[];
+}
+
+/**
+ * Why the exposure gate placed a finding where it is (docs/WHO-BEHIND-PLAN.md, Tier 0): a runtime
+ * advisory with CVSS >= 9 and a fix is raised to critical; dev-only and CI-only items are capped
+ * below high; posture signals only break ties.
+ */
+export interface FindingGate {
+  /** 'runtime_critical_fix' | 'non_runtime_cap' | 'install_time' | 'runtime' | 'optional' ... */
+  rule: string;
+  /** One plain sentence shown with the finding. */
+  detail: string;
+  /** Score before the gate (signals only, 0–100). */
+  signalScore: number;
 }
 
 export interface Finding {
@@ -1092,6 +1121,13 @@ export interface Finding {
   /** Combined risk on a 0–100 scale. */
   score: number;
   level: RiskLevel;
+  /**
+   * The component's one scope in this project (src/core/scope.ts). Findings are ordered
+   * production first: runtime, then peer, optional, CI and dev. Absent on scans before Tier 0.
+   */
+  scope?: ComponentScope;
+  /** How exposure shaped the score and rank. Absent on scans before Tier 0. */
+  gate?: FindingGate;
   reasons: Reason[];
   blastRadius: {
     assets: AssetExposure[];
@@ -1174,6 +1210,45 @@ export interface ScanResult {
   stability?: StabilityReport;
   /** Non-fatal problems (enricher failures, missing fixtures in offline mode). */
   warnings?: string[];
+  /**
+   * Manifests and lockfiles found in the target that were NOT analysed (unsupported formats,
+   * manifests without a lockfile). Never a silent all-clear: every report shows them, and
+   * `--strict` fails the scan when any are present. Absent when everything found was analysed.
+   */
+  notAnalysed?: NotAnalysedManifest[];
+  /**
+   * Per-source coverage (Tier 0): whether each data source answered. A source that failed (network
+   * error, 403, 429, offline miss) must never read as a clean result. Absent on older scans.
+   */
+  coverage?: { sources: SourceCoverage[] };
+}
+
+/** How one data source (enricher) did in this scan. */
+export interface SourceCoverage {
+  /** Enricher name: osv, depsdev, npm, licenses, github, history, pack, agentic. */
+  source: string;
+  /** ok: answered without problems; partial: some lookups failed; failed: nothing usable came back. */
+  status: 'ok' | 'partial' | 'failed';
+  /** Security sources (vulnerabilities, malware): their failure fails `--strict`. */
+  security: boolean;
+  /** Facts the source produced. */
+  facts: number;
+  /** Problems it reported (warnings). */
+  problems: number;
+  /** First problem(s), plain text, when not ok. */
+  reason?: string;
+}
+
+/** A manifest or lockfile the scan found but did not turn into components. */
+export interface NotAnalysedManifest {
+  /** Path relative to the scan root. */
+  file: string;
+  /** Ecosystem the file belongs to ("npm", "pypi", "go", "cargo", "maven", ...). */
+  ecosystem: string;
+  /** Why it was not analysed, e.g. "yarn.lock is not supported", "no lockfile". */
+  reason: string;
+  /** Approximate number of packages the file lists (absent when it cannot be estimated). */
+  packages?: number;
 }
 
 /** A component with posture signals only (see ScanResult.health). */
@@ -1181,6 +1256,8 @@ export interface HealthEntry {
   purl: PurlString;
   /** What the combined posture signals would have scored (0–100), for sorting. */
   score: number;
+  /** The component's scope in this project (see Finding.scope). */
+  scope?: ComponentScope;
   reasons: Reason[];
   /** Who is behind the package (see Finding.behind). */
   behind?: EntityChainEntry[];

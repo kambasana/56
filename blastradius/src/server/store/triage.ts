@@ -19,7 +19,7 @@ import { OPEN_FINDING_STATUSES } from '../api-types.js';
 import type { Finding, RiskLevel } from '../../core/types.js';
 import { all, get, likeEscape, nextCursorFor, nowIso, pageWindow, parseJson, placeholders, StoreError, tx, type Param, type Store } from './db.js';
 import { purlNameVersion } from '../reach.js';
-import { applyTriage, FINDING_FROM, findingColumns, findingStatusSql, getFindingRow, introducedByOf, RISK_LEVELS, toFindingRow, worstLevel, type FindingSqlRow, type FindingTriageInput } from './findings.js';
+import { applyTriage, FINDING_FROM, SCOPE_TIER_SQL, findingColumns, findingStatusSql, getFindingRow, introducedByOf, RISK_LEVELS, toFindingRow, worstLevel, type FindingSqlRow, type FindingTriageInput } from './findings.js';
 
 // ---------------------------------------------------------------------------
 // Scope: which scans are listed
@@ -141,7 +141,7 @@ export function parseSince(v: string | undefined): string | undefined {
 // ---------------------------------------------------------------------------
 
 const ORG_SORT_SQL: Record<OrgFindingSort, string> = {
-  '-score': 'f.level_rank DESC, f.score DESC, f.prod_assets DESC, p.name COLLATE NOCASE, f.ord',
+  '-score': `${SCOPE_TIER_SQL}, f.level_rank DESC, f.score DESC, f.prod_assets DESC, p.name COLLATE NOCASE, f.ord`,
   score: 'f.level_rank ASC, f.score ASC, p.name COLLATE NOCASE, f.ord',
   name: 'f.name COLLATE NOCASE ASC, f.version, p.name COLLATE NOCASE',
   reach: 'f.prod_assets DESC, f.assets DESC, f.score DESC, f.ord',
@@ -201,7 +201,7 @@ export function listOrgFindings(
 // ---------------------------------------------------------------------------
 
 const GROUP_SORT_SQL: Record<OrgFindingSort, string> = {
-  '-score': 'max(f.level_rank) DESC, max(f.score) DESC, prod DESC, projects DESC, f.purl',
+  '-score': `min(${SCOPE_TIER_SQL}), max(f.level_rank) DESC, max(f.score) DESC, prod DESC, projects DESC, f.purl`,
   score: 'max(f.level_rank) ASC, max(f.score) ASC, f.purl',
   name: 'min(f.name) COLLATE NOCASE ASC, f.purl',
   reach: 'prod DESC, projects DESC, max(f.score) DESC, f.purl',

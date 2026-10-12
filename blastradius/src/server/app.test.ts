@@ -612,6 +612,24 @@ describe('org-wide incident mode', () => {
     expect((await call('GET', '/api/search/exposure?q=event-stream', { as: 'auditor' })).status).toBe(200);
   });
 
+  it('searches every purl type in the inventory, by name or purl (Tier 0)', async () => {
+    const byName = (await (await call('GET', '/api/search/exposure?q=actions/checkout', { as: 'admin' })).json()) as SearchExposureResponse;
+    expect(byName.items.length).toBeGreaterThan(0);
+    expect(byName.items[0]).toMatchObject({ purl: 'pkg:githubactions/actions/checkout@v4', ecosystem: 'githubactions', scope: 'ci', production: false });
+    const byPurl = (await (await call('GET', `/api/search/exposure?q=${encodeURIComponent('pkg:githubactions/actions/checkout@v4')}`, { as: 'admin' })).json()) as SearchExposureResponse;
+    expect(byPurl.items.map((i) => i.purl)).toEqual(byName.items.map((i) => i.purl));
+    const npm = (await (await call('GET', '/api/search/exposure?q=event-stream@3.3.6', { as: 'admin' })).json()) as SearchExposureResponse;
+    expect(npm.items[0]).toMatchObject({ ecosystem: 'npm', scope: expect.any(String) });
+  });
+
+  it('says what the latest scan did not analyse (project header banner)', async () => {
+    const res = await call('GET', `/api/projects/${seededProjectId}/coverage`, { as: 'admin' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { scanId: string | null; notAnalysed: unknown[] };
+    expect(body.scanId).toEqual(expect.any(String));
+    expect(body.notAnalysed).toEqual([]); // e2e-repo has a package-lock.json and a workflow only
+  });
+
   it('a new advisory becomes alerts once, without re-scanning', async () => {
     const first = await call('POST', '/api/alerts/check', { as: 'admin', body: { advisories: [advisory] } });
     expect(first.status).toBe(200);

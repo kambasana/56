@@ -4,6 +4,7 @@
  * Review status lives in `finding_state`, keyed by (project, versioned purl), so it carries
  * over to later scans of the same project.
  */
+import { isComponentScope, scopeStrength } from '../../core/scope.js';
 import type {
   AssetPathView,
   FindingDetail,
@@ -141,7 +142,9 @@ export function deriveFinding(f: Finding, assetOf: (id: string) => AssetMeta = f
     level: f.level,
     blastScore: f.blastRadius?.score ?? 0,
     assets: exposures.length,
-    prodAssets: exposures.filter((a) => assetOf(a.assetId).environment === 'prod').length,
+    // One scope rule (Tier 0): a production asset that reaches the package through a runtime path.
+    // Findings stored before scopes existed carry no scope and keep the environment-only count.
+    prodAssets: exposures.filter((a) => assetOf(a.assetId).environment === 'prod' && (a.scope === undefined || a.scope === 'runtime')).length,
     paths: exposures.reduce((n, a) => n + (a.paths?.length ?? 0), 0),
     reachText: describeReach(f, (id) => assetOf(id)),
     mainReason: top ? { factor: top.factor, detail: top.detail } : null,
@@ -230,6 +233,7 @@ export interface FindingSqlRow {
   factors: string;
   behind: string | null;
   first_seen_at: string;
+  scope: string | null;
   status: FindingStatus;
   owner_id: string | null;
   owner_name: string | null;
@@ -251,6 +255,7 @@ export function findingStatusSql(s: Store): string {
 export function findingColumns(s: Store): string {
   return `f.id, f.scan_id, f.project_id, f.org_id, f.purl, f.name, f.version, f.ecosystem, f.score, f.level,
   f.blast_score, f.assets, f.prod_assets, f.paths, f.reach_text, f.top_factor, f.top_detail, f.factors, f.behind, f.first_seen_at,
+  json_extract(f.finding_json, '$.scope') AS scope,
   ${findingStatusSql(s)} AS status, st.owner_id, (SELECT u.name FROM app_user u WHERE u.id = st.owner_id) AS owner_name,
   st.risk_expires_at`;
 }
@@ -280,6 +285,7 @@ export function toFindingRow(r: FindingSqlRow): FindingRow {
     reach: { assets: r.assets, prodAssets: r.prod_assets, paths: r.paths },
     reachText: r.reach_text ?? countsReach(r.assets, r.prod_assets),
     blastScore: r.blast_score,
+    scope: isComponentScope(r.scope) ? r.scope : null,
     behind: parseJson<FindingRow['behind']>(r.behind, null),
     status: r.status,
     firstSeenAt: r.first_seen_at,
@@ -290,10 +296,13 @@ export function toFindingRow(r: FindingSqlRow): FindingRow {
 
 /** Who brings the package in, from the finding's dependency paths ([assetId, purl, ..., purl]). */
 export function introducedByOf(f: Pick<Finding, 'blastRadius'> | null | undefined): IntroducedBy {
-  const paths = (f?.blastRadius?.assets ?? []).flatMap((a) => a.paths ?? []);
+  // Strongest scope first (Tier 0: a runtime introducer is named before a dev tool), then shortest.
+  const scoped = (f?.blastRadius?.assets ?? []).flatMap((a) => (a.paths ?? []).map((p, i) => ({ p, s: a.pathScopes?.[i] })));
+  const paths = scoped.map((x) => x.p);
   const direct = paths.some((p) => p.length === 2);
   const via: string[] = [];
-  for (const p of [...paths].filter((x) => x.length > 2).sort((a, b) => a.length - b.length)) {
+  const ordered = [...scoped].filter((x) => x.p.length > 2).sort((a, b) => (b.s ? scopeStrength(b.s) : 0) - (a.s ? scopeStrength(a.s) : 0) || a.p.length - b.p.length);
+  for (const { p } of ordered) {
     const n = purlName(p[1]!) ?? p[1]!;
     if (!via.includes(n)) via.push(n);
     if (via.length >= 5) break;
@@ -303,8 +312,15 @@ export function introducedByOf(f: Pick<Finding, 'blastRadius'> | null | undefine
 
 export type FindingSort = 'score' | '-score' | 'name' | 'reach';
 
+/**
+ * Production first (Tier 0): the finding's scope tier, from the stored engine finding. Malicious
+ * or compromised releases (gate rule install_time) rank with runtime; findings stored before
+ * scopes existed have none and keep their place.
+ */
+export const SCOPE_TIER_SQL = `(CASE WHEN json_extract(f.finding_json, '$.gate.rule') = 'install_time' THEN 0 ELSE CASE COALESCE(json_extract(f.finding_json, '$.scope'), 'runtime') WHEN 'runtime' THEN 0 WHEN 'peer' THEN 1 WHEN 'optional' THEN 2 WHEN 'ci' THEN 3 WHEN 'dev' THEN 4 ELSE 5 END END)`;
+
 const SORT_SQL: Record<FindingSort, string> = {
-  '-score': 'f.score DESC, f.blast_score DESC, f.ord',
+  '-score': `${SCOPE_TIER_SQL}, f.score DESC, f.blast_score DESC, f.ord`,
   score: 'f.score ASC, f.ord',
   name: 'f.name COLLATE NOCASE ASC, f.version, f.ord',
   reach: 'f.assets DESC, f.prod_assets DESC, f.score DESC, f.ord',

@@ -5,6 +5,9 @@
 import { createHash } from 'node:crypto';
 import { levelForScore, type Asset, type Finding, type OutboundFinding, type RiskLevel, type ScanResult } from '../core/types.js';
 import { plainText } from './escape.js';
+import { isPostureReason } from '../scoring/index.js';
+import { notAnalysedLine } from '../ingest/manifests.js';
+import { degradedLine, degradedSources } from './coverage.js';
 
 export const SARIF_SCHEMA = 'https://json.schemastore.org/sarif-2.1.0.json';
 export const TOOL_NAME = 'blastradius';
@@ -82,7 +85,10 @@ function findingResults(f: Finding, assets: Map<string, Asset>, maxLoc: number):
   const uris = [...new Set(f.blastRadius.assets.map((a) => toUri(sourceFileFor(a.assetId, assets))))].sort().slice(0, maxLoc);
   if (uris.length === 0) uris.push(toUri('package-lock.json'));
   const byRule = new Map<string, Finding['reasons']>();
+  // Tier 0: posture and provenance (Scorecard, no provenance, single maintainer, abandoned) only
+  // break ties; they never produce a SARIF result of their own.
   for (const r of f.reasons) {
+    if (isPostureReason(r)) continue;
     const id = ruleForFactor(r.factor).id;
     byRule.set(id, [...(byRule.get(id) ?? []), r]);
   }
@@ -95,7 +101,7 @@ function findingResults(f: Finding, assets: Map<string, Asset>, maxLoc: number):
       ruleIndex: RULE_FAMILIES.findIndex((r) => r.id === ruleId),
       level: sarifLevel(f.level),
       message: {
-        text: plainText(`${f.purl}: risk ${f.score}/100 (${f.level}), blast radius ${f.blastRadius.score} across ${f.blastRadius.assets.length} asset(s). ${details}`, 3000),
+        text: plainText(`${f.purl}${f.scope ? ` [${f.scope}]` : ''}: risk ${f.score}/100 (${f.level}), blast radius ${f.blastRadius.score} across ${f.blastRadius.assets.length} asset(s). ${details}${f.gate ? ` ${f.gate.detail}` : ''}`, 3000),
       },
       locations: locations(uris),
       partialFingerprints: { 'blastradius/v1': fingerprint(ruleId, f.purl) },
@@ -103,6 +109,7 @@ function findingResults(f: Finding, assets: Map<string, Asset>, maxLoc: number):
         purl: f.purl,
         score: f.score,
         riskLevel: f.level,
+        ...(f.scope ? { scope: f.scope, production: f.scope === 'runtime' } : {}),
         blastRadius: f.blastRadius.score,
         assets: f.blastRadius.assets.map((a) => a.assetId),
         factors: reasons.map((r) => r.factor),
@@ -154,16 +161,27 @@ export function toSarif(result: ScanResult, opts: SarifOptions = {}): Record<str
     },
     automationDetails: { id: 'blastradius/' },
     results,
-    properties: { target: plainText(result.target, 1024), generatedAt: result.generatedAt, schemaVersion: result.schemaVersion },
+    properties: {
+      target: plainText(result.target, 1024),
+      generatedAt: result.generatedAt,
+      schemaVersion: result.schemaVersion,
+      // Tier 0: what this run did not cover is part of the run, so a clean code-scanning page is not read as an all-clear.
+      ...(result.notAnalysed?.length
+        ? {
+            notAnalysed: result.notAnalysed.map((n) => ({ file: plainText(n.file, 512), ecosystem: n.ecosystem, reason: plainText(n.reason, 300), ...(n.packages !== undefined ? { packages: n.packages } : {}) })),
+            notAnalysedSummary: plainText(notAnalysedLine(result.notAnalysed), 1000),
+          }
+        : {}),
+    },
   };
-  if (result.warnings && result.warnings.length > 0) {
-    run.invocations = [
-      {
-        executionSuccessful: true,
-        toolExecutionNotifications: result.warnings.map((w) => ({ level: 'warning', message: { text: plainText(w, 1000) } })),
-      },
-    ];
-  }
+  if (result.coverage) (run.properties as Record<string, unknown>).sources = result.coverage.sources.map((x) => ({ source: x.source, status: x.status, security: x.security, facts: x.facts, problems: x.problems }));
+  const bad = degradedSources(result);
+  const notes = [
+    ...(result.notAnalysed?.length ? [{ level: 'error', message: { text: plainText(notAnalysedLine(result.notAnalysed), 1000) } }] : []),
+    ...(bad.length ? [{ level: bad.some((x) => x.security) ? 'error' : 'warning', message: { text: plainText(degradedLine(bad), 1000) } }] : []),
+    ...(result.warnings ?? []).map((w) => ({ level: 'warning', message: { text: plainText(w, 1000) } })),
+  ];
+  if (notes.length > 0) run.invocations = [{ executionSuccessful: true, toolExecutionNotifications: notes }];
   return { $schema: SARIF_SCHEMA, version: '2.1.0', runs: [run] };
 }
 

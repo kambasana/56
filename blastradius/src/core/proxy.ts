@@ -243,3 +243,14 @@ export async function installEnvProxy(env: ProxyEnv = process.env): Promise<bool
   g[GLOBAL_DISPATCHER] = new Agent({ connect: proxyConnector(env) });
   return true;
 }
+
+let ensured: Promise<boolean> | undefined;
+/**
+ * installEnvProxy() once per process. The HttpClient's default transport calls it before its
+ * first request, so every caller of the library (not only the CLI) honours HTTPS_PROXY by default:
+ * without it Node's fetch would bypass the proxy and every source would fail quietly.
+ */
+export function ensureEnvProxy(env: ProxyEnv = process.env): Promise<boolean> {
+  ensured ??= installEnvProxy(env).catch(() => false);
+  return ensured;
+}

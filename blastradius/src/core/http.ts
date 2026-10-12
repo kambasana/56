@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defaultCacheDir } from './paths.js';
+import { ensureEnvProxy } from './proxy.js';
 
 export type HttpMethod = 'GET' | 'POST';
 
@@ -222,7 +223,10 @@ interface StoredResponse {
   location?: string;
 }
 
-const defaultTransport: Transport = async (req) => {
+export const defaultTransport: Transport = async (req) => {
+  // Honour HTTPS_PROXY / HTTP_PROXY / NO_PROXY for every caller, not only the CLI (Tier 0: a
+  // proxy-only network must not turn into silently skipped sources).
+  await ensureEnvProxy();
   const init: RequestInit = {
     method: req.method,
     headers: req.headers,

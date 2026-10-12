@@ -43,7 +43,7 @@ General rules for all modules:
 ## 1. Package URLs (`src/core/types.ts`)
 
 ```ts
-type Ecosystem = 'npm' | 'githubactions' | 'docker' | 'generic';
+type Ecosystem = 'npm' | 'pypi' | 'githubactions' | 'docker' | 'generic';
 type PurlString = string;
 interface Purl { type: string; namespace?: string; name: string; version?: string;
                  qualifiers?: Record<string, string>; subpath?: string }
@@ -64,6 +64,8 @@ Conventions:
 - GitHub Actions: `pkg:githubactions/<owner>/<repo>@<ref>`; a sub-path action (`owner/repo/path@ref`) uses
   the purl subpath `#path`. Reusable workflows: `pkg:githubactions/<owner>/<repo>@<ref>#.github/workflows/x.yml`.
 - Docker images: `pkg:docker/<namespace>/<name>@<tag-or-digest>` (`library/node` for official images).
+- PyPI (Tier 0): `pkg:pypi/<name>@<version>` with the PEP 503 normalised name (lower case, runs of `-_.` → `-`);
+  build with `pypiPurl()` (`src/ingest/python.ts`).
 
 ## 2. Inventory (ingest output)
 
@@ -103,9 +105,17 @@ interface InventorySummary {
   byEcosystem: Partial<Record<Ecosystem, number>>;
   byScope: Partial<Record<DepScope, number>>;
   withInstallScripts: number;
+  byComponentScope?: Partial<Record<ComponentScope, number>>;   // Tier 0
 }
 summarizeInventory(inv: Inventory): InventorySummary
 ```
+
+**One scope per (project, package)** (`src/core/scope.ts`, Tier 0). `ComponentScope = 'runtime' | 'peer' |
+'optional' | 'ci' | 'dev' | 'unreachable'`. A path is as weak as its weakest link (the asset's environment:
+`dev` assets cap at dev, workflows at ci; then every edge: `build` → ci); a package takes its strongest path.
+`componentScopes(inv)`, `productionSet(inv)` (runtime only: optional and peer are not production),
+`isProductionScope`, `scopeTier` (production-first order). Every view reads it: findings, SARIF, SBOM,
+`/api/search/exposure`, `/api/packages/reach`, and the stability production flag.
 
 Edge rules: `direct === true` iff `from` is an `Asset.id`. Workflow `uses:` actions get scope `build`.
 Default environments: repo → `prod`, workflow → `ci`, image → `prod`; default criticality 3.
@@ -242,12 +252,15 @@ interface Reason {
   evidence: string[];
 }
 
-interface AssetExposure { assetId: string; exposure: number; paths: string[][] /* [assetId, purl, …, purl] */ }
+interface AssetExposure { assetId: string; exposure: number; paths: string[][] /* [assetId, purl, …, purl], strongest scope first */;
+                          scope?: ComponentScope; pathScopes?: ComponentScope[] }
 
 interface Finding {
   purl: PurlString;     // versioned
   score: number;        // 0–100 (= combined risk × 100)
   level: RiskLevel;     // levelForScore(score)
+  scope?: ComponentScope;   // Tier 0: the package's one scope in this project
+  gate?: { rule: string; detail: string; signalScore: number };   // Tier 0: how exposure shaped score and rank
   reasons: Reason[];
   blastRadius: { assets: AssetExposure[]; score: number };
   // from → entityId per link; first `from` is the unversioned purl, last entityId is the incident id.
@@ -261,11 +274,20 @@ interface ScanResult {
   target: string;
   generatedAt: string;
   inventory: InventorySummary;
-  findings: Finding[];             // sorted by score desc
+  findings: Finding[];             // production first (scopeTier), then score desc
   outbound?: OutboundFinding[];
   warnings?: string[];
+  notAnalysed?: { file: string; ecosystem: string; reason: string; packages?: number }[];   // Tier 0
 }
 ```
+
+**Exposure gate (Tier 0).** The level comes from signals only (vulnerabilities, malware, ownership changes,
+install scripts, entity incidents). A runtime advisory with CVSS ≥ 9 (or severity critical) and a fixed
+version is raised to critical (80); peer/optional findings stay below critical (79.9); dev, CI and
+unreachable findings stay below high (59.9). Posture and provenance (`weak_posture`, `no_provenance`,
+`single_maintainer`, `abandoned`, an undated `repo_transfer`) add at most 0.9 points as a tie-break and never
+change the level; they produce no SARIF result. Malicious or compromised releases (gate rule
+`install_time`) run at install time and rank with runtime findings in any scope.
 
 Exposure values (PLAN §3.6): runtime/prod 1.0, build/CI 0.8, install script anywhere 0.9, dev 0.3, optional 0.2
 (`peer` treated as runtime). Reach multiplier ×1.2 when a workflow asset has write tokens / OIDC / publish

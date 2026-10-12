@@ -9,6 +9,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useShellHeader } from './shell-header';
+import { NotAnalysedBanner } from './br/NotAnalysedBanner';
 
 export interface Crumb {
   label: ReactNode;
@@ -88,6 +89,7 @@ export function PageHeader({ crumbs, title, meta, actions, children }: PageHeade
         <span className="grow" />
         {children}
       </div>
+      <NotAnalysedBanner />
     </div>
   );
 }

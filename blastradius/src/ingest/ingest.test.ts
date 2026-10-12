@@ -43,11 +43,14 @@ describe('ingest: npm workspace monorepo (lockfile v3)', async () => {
 
   it('merges npm, actions and docker components', () => {
     const s = summarizeInventory(inv);
-    expect(s.byEcosystem.npm).toBe(13); // 12 from the lockfile + marked@4.0.10 from docs (exact pin)
+    // 12 from the lockfile. docs/package.json has no lockfile: its exact pin marked@4.0.10 is not a
+    // component (Tier 0: only lockfile-resolved versions are), it is a not-analysed manifest.
+    expect(s.byEcosystem.npm).toBe(12);
     expect(s.byEcosystem.githubactions).toBe(5); // checkout@sha shared by both workflows
     expect(s.byEcosystem.docker).toBe(6);
     expect(s.withInstallScripts).toBe(2);
-    expect(inv.components.find((c) => c.purl === npmPurl('marked', '4.0.10'))).toBeDefined();
+    expect(inv.components.find((c) => c.purl === npmPurl('marked', '4.0.10'))).toBeUndefined();
+    expect(res.notAnalysed.map((n) => n.file)).toContain('docs/site/package.json');
     // purls unique
     expect(new Set(inv.components.map((c) => c.purl)).size).toBe(inv.components.length);
   });
@@ -84,9 +87,11 @@ describe('ingest: lockfile v1 and manifest-only roots', () => {
 
   it('warns about unsupported lockfiles and unresolved ranges', async () => {
     const warnings: string[] = [];
-    const inv = await ingest(path.join(FIX, 'no-lock'), { warn: (m) => warnings.push(m) });
-    expect(inv.components.map((c) => c.purl)).toEqual([npmPurl('chalk', '5.3.0'), npmPurl('left-pad', '1.3.0')]);
-    expect(warnings.join('\n')).toMatch(/yarn\.lock is not supported yet.*2 dependency range/);
+    const res = await ingestDetailed(path.join(FIX, 'no-lock'), { warn: (m) => warnings.push(m) });
+    // Tier 0: no lockfile we read, so nothing is resolved: no components, one warning, listed as not analysed.
+    expect(res.inventory.components).toEqual([]);
+    expect(warnings.join('\n')).toMatch(/4 unresolved manifest entries \(2 exact pin\(s\), 2 range\(s\) or other spec\(s\)\).*yarn\.lock is not supported yet/);
+    expect(res.notAnalysed).toEqual([expect.objectContaining({ file: 'yarn.lock', ecosystem: 'npm', reason: 'yarn.lock is not supported yet' })]);
   });
 });
 
@@ -106,7 +111,8 @@ describe('ingest: path safety', () => {
 
     const res = await ingestDetailed(root, { maxFileBytes: 1000 });
     expect(res.inventory.assets.map((a) => a.name)).toEqual(['safe']);
-    expect(res.inventory.components.map((c) => c.purl)).toEqual([npmPurl('y', '2.0.0')]);
+    expect(res.inventory.components).toEqual([]); // no lockfile: listed as not analysed instead
+    expect(res.notAnalysed.map((n) => n.file)).toEqual(['package.json']);
     expect(res.warnings.some((w) => /symlink not followed: escape-dir/.test(w))).toBe(true);
     expect(res.warnings.some((w) => /symlink not followed: linked-dir\/package.json/.test(w))).toBe(true);
     expect(res.warnings.some((w) => /big\/package.json.*limit/.test(w))).toBe(true);

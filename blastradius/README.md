@@ -38,6 +38,9 @@ blastradius scan https://github.com/owner/repo --out reports
 # Fail CI when anything is high or critical (exit code 2)
 blastradius scan . --format sarif --fail-on high
 
+# Fail CI when a manifest was found but not analysed (exit code 3)
+blastradius scan . --strict
+
 # Validate the incident knowledge base
 blastradius kb validate            # bundled kb/incidents
 blastradius kb validate path/to/kb
@@ -57,9 +60,14 @@ blastradius kb validate path/to/kb
 | `--history` | read the git history of each source repository (blobless bare clone, cached 30 days, size-capped): contributor absence factor, continuity, signed share, repo-level time-zone change. Emails are hashed; `GITHUB_TOKEN` enables login mapping (≤ 2,000 GraphQL points per scan). Off by default. Stability labels (Fragile, Watch, Steady, Unknown; `stability` in the JSON report) need it for anything beyond Unknown, except npm-deprecated or archived packages |
 | `--license-policy <file>` | licence policy JSON (`src/licenses/policy.ts`) for the HTML report's Licences section; default: permissive allowed, everything else needs review. Not legal advice |
 | `--fail-on critical\|high` | exit code 2 if any finding, including an outbound workflow finding, is at or above that level |
+| `--strict` | exit code 3 when any manifest or lockfile was found but not analysed (unsupported format such as yarn.lock, go.mod, Gemfile.lock; a package.json or pyproject.toml without a lockfile; unpinned requirements) |
 | `--top <n>` | number of findings in the terminal summary (default 5) |
 
-Exit codes: `0` ok, `1` error (or `kb validate` found problems), `2` `--fail-on` matched.
+Exit codes: `0` ok, `1` error (or `kb validate` found problems), `2` `--fail-on` matched, `3` `--strict` and something was not analysed.
+
+What is read (Tier 0): npm `package-lock.json` / `npm-shrinkwrap.json`; Python `requirements*.txt` (exact `==` pins, `-r` includes, `--hash`, the pip-compile `# via` graph), `uv.lock`, `poetry.lock`, `Pipfile.lock` and `pyproject.toml` (as the roots of a lockfile); GitHub Actions workflows; Dockerfiles. Only lockfile-resolved or exactly pinned versions become components: a `package.json` without a lockfile, placeholder `0.0.0` versions and ranges are one "unresolved manifest entries" warning per manifest. Every other manifest found (yarn, pnpm, Go, Cargo, Gemfile, Maven, Gradle, NuGet, CocoaPods, ...) is listed as **NOT ANALYSED** with an approximate package count in the summary, the JSON (`notAnalysed`), the HTML, the SARIF run properties, the SBOM metadata and the web project header: a scan never reads as an all-clear for files it did not read.
+
+Every component has one scope per project (`src/core/scope.ts`): `runtime`, `peer`, `optional`, `ci` (workflows, Docker build stages), `dev` or `unreachable`. Findings carry it, are listed production first, and exposure gates the score: a runtime advisory with CVSS ≥ 9 and a fix is critical and ranks above every non-runtime finding; dev, CI and unreachable findings stay below high; posture and provenance (Scorecard, no provenance, single maintainer, abandoned) only break ties and never produce a SARIF result.
 
 Per-asset settings go in an optional `.blastradius.yml` at the target root. It sets environment and criticality by path; the longest match wins:
 
@@ -216,7 +224,7 @@ Some Phase 2 pieces are already here: npm snapshots, entity resolution with a re
   - more seed incidents with sourced, reviewed entity refs (15 project-level records ship today);
   - maintainer → org → funder → incident chains shown in the report for real scans.
 - **Phase 3 (breadth):**
-  - PyPI, Maven, Go and crates; yarn and pnpm lockfiles;
+  - Maven, Go and crates; yarn and pnpm lockfiles (PyPI is read since Tier 0);
   - container image contents;
   - GuardDog-style behaviour checks and typosquat detection;
   - zizmor/poutine-grade workflow analysis, and dependents for outbound reach;

@@ -7,12 +7,24 @@
  */
 import { realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
-import type { Asset, Component, DepEdge, Inventory } from '../core/types.js';
+import type { Asset, Component, DepEdge, Inventory, NotAnalysedManifest } from '../core/types.js';
 import { applyOverrides, inferEnvironment, parseConfig, type BlastradiusConfig } from './config.js';
 import { dockerfileInventory, parseDockerfile } from './docker.js';
 import { DEFAULT_MAX_FILE_BYTES, DEFAULT_MAX_LOCKFILE_BYTES, readTargetFile, walkTarget } from './fs.js';
 import { cloneRepo, looksLikeGitUrl, type GitRunner } from './git.js';
-import { componentsFromManifest, parsePackageJson, parsePackageLock, type PackageManifest } from './npm.js';
+import { manifestDeps, parsePackageJson, parsePackageLock, type PackageManifest } from './npm.js';
+import { notAnalysedEntry } from './manifests.js';
+import {
+  parsePipfileLock,
+  parsePoetryLock,
+  parsePyproject,
+  parseRequirements,
+  parseUvLock,
+  requirementsInventory,
+  requirementsScope,
+  type PyprojectDeps,
+  type RequirementsFile,
+} from './python.js';
 import { runSyft, type CycloneDxImport } from './syft.js';
 import { parseWorkflow, type WorkflowInfo } from './workflows.js';
 
@@ -44,6 +56,8 @@ export interface IngestResult {
   /** Per-workflow permissions/triggers/actions, for the outbound score. */
   workflows: WorkflowInfo[];
   warnings: string[];
+  /** Manifests found but not analysed (unsupported formats, no lockfile, unresolved entries). */
+  notAnalysed: NotAnalysedManifest[];
 }
 
 /** Ingest a local directory or git URL and return the Inventory. */
@@ -212,23 +226,59 @@ export async function ingestDirectory(dir: string, opts: IngestOptions & { rootN
     }
   }
 
-  // package.json without a lockfile: only exact-version direct deps can be resolved.
-  const unsupportedByDir = new Map(found.unsupportedLockfiles.map((f) => [dirOf(f), f]));
+  // package.json without a lockfile: nothing is resolved (Tier 0: only lockfile-resolved versions
+  // become components). Exact pins, placeholders such as 0.0.0 and ranges are one warning per
+  // manifest, and the manifest is listed as not analysed.
+  const notAnalysed: NotAnalysedManifest[] = [];
+  const unsupportedDirs = found.unsupportedLockfiles.map(dirOf);
+  const coveredByUnsupported = (d: string): boolean => unsupportedDirs.some((u) => u === '' || d === u || d.startsWith(`${u}/`));
   for (const d of pkgDirs) {
     if (covered.has(d)) continue;
     const m = manifests.get(d)!;
-    const asset = repoAssetByDir.get(d)!;
-    const res = componentsFromManifest(m, asset.id);
-    addComponents(res.components);
-    addEdges(res.edges);
-    if (res.unresolved.length > 0) {
-      const other = unsupportedByDir.get(d);
-      warn(
-        `${posixJoin(d, 'package.json')}: no package-lock.json${other ? ` (${other} is not supported yet)` : ''}; ` +
-          `${res.unresolved.length} dependency range(s) could not be resolved statically`,
-      );
-    }
+    const deps = manifestDeps(m);
+    if (deps.length === 0) continue;
+    const file = posixJoin(d, 'package.json');
+    const specOf = (spec: string): string => spec.trim().replace(/^npm:.+@(?=[^@]+$)/, '');
+    const placeholders = deps.filter((x) => /^v?0\.0\.0(-.*)?$/.test(specOf(x.spec))).length;
+    const exact = deps.filter((x) => /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(specOf(x.spec))).length - placeholders;
+    const ranges = deps.length - placeholders - exact;
+    const detail = [placeholders ? `${placeholders} placeholder 0.0.0` : '', exact ? `${exact} exact pin(s)` : '', ranges ? `${ranges} range(s) or other spec(s)` : ''].filter(Boolean).join(', ');
+    const other = found.unsupportedLockfiles.find((f) => dirOf(f) === d);
+    warn(`${file}: ${deps.length} unresolved manifest entries (${detail}): no package-lock.json${other ? ` (${other} is not supported yet)` : ''} resolves them, so none became a component`);
+    if (!coveredByUnsupported(d)) notAnalysed.push({ file, ecosystem: 'npm', reason: 'no package-lock.json: versions not resolved', packages: deps.length });
   }
+
+  // --- Python (Tier 0): requirements*.txt, uv.lock, poetry.lock, Pipfile.lock, pyproject.toml ---------
+  await ingestPython(found.python, {
+    read,
+    maxFile,
+    maxLock,
+    warn,
+    notAnalysed,
+    ensureAsset: (pkgDir, sourceFile, name) => ensureRepoAsset(pkgDir, sourceFile, name).id,
+    addComponents,
+    addEdges,
+  });
+  const pythonDirs = new Set(found.python.map(dirOf));
+
+  // --- Manifests we recognise but do not analyse: listed, never silently dropped ------------------
+  const others = new Set(found.otherManifests);
+  const sameDir = (rel: string, base: string): boolean => others.has(posixJoin(dirOf(rel), base));
+  for (const rel of found.otherManifests) {
+    const base = path.posix.basename(rel).toLowerCase();
+    const d = dirOf(rel);
+    // A manifest whose lockfile sits next to it is counted once, through the lockfile.
+    if (base === 'gemfile' && sameDir(rel, 'Gemfile.lock')) continue;
+    if (base === 'composer.json' && sameDir(rel, 'composer.lock')) continue;
+    if (base === 'cargo.toml' && found.otherManifests.some((f) => path.posix.basename(f) === 'Cargo.lock' && (dirOf(f) === '' || d === dirOf(f) || d.startsWith(`${dirOf(f)}/`)))) continue;
+    if (/\.(cs|fs|vb)proj$/.test(base) && sameDir(rel, 'packages.lock.json')) continue;
+    if (base === 'pipfile' && found.python.includes(posixJoin(d, 'Pipfile.lock'))) continue;
+    if ((base === 'setup.py' || base === 'setup.cfg') && pythonDirs.has(d)) continue;
+    const text = await read(rel, maxLock);
+    const entry = notAnalysedEntry(rel, text);
+    if (entry) notAnalysed.push(entry);
+  }
+  notAnalysed.sort((a, b) => cmp(a.file, b.file));
 
   // --- GitHub Actions workflows ---------------------------------------------------
   const workflows: WorkflowInfo[] = [];
@@ -279,7 +329,143 @@ export async function ingestDirectory(dir: string, opts: IngestOptions & { rootN
     edges: edges.sort((a, b) => cmp(a.from, b.from) || cmp(a.to, b.to) || cmp(a.scope, b.scope)),
   };
   workflows.sort((a, b) => cmp(a.path, b.path));
-  return { target: dir, root, inventory, workflows, warnings };
+  return { target: dir, root, inventory, workflows, warnings, notAnalysed };
+}
+
+interface PythonContext {
+  read: (rel: string, limit: number) => Promise<string | null>;
+  maxFile: number;
+  maxLock: number;
+  warn: (m: string) => void;
+  notAnalysed: NotAnalysedManifest[];
+  ensureAsset: (pkgDir: string, sourceFile: string, name?: string) => string;
+  addComponents: (cs: Component[]) => void;
+  addEdges: (es: DepEdge[]) => void;
+}
+
+/** The project directory a requirements file belongs to ("requirements/base.txt" → ""). */
+function requirementsProjectDir(rel: string): string {
+  const d = dirOf(rel);
+  const base = path.posix.basename(d).toLowerCase();
+  return base === 'requirements' || base === 'reqs' ? dirOf(d) : d;
+}
+
+async function ingestPython(files: readonly string[], ctx: PythonContext): Promise<void> {
+  const byBase = (base: string) => files.filter((f) => path.posix.basename(f).toLowerCase() === base);
+  const unresolvedWarning = (rel: string, list: readonly string[]): void => {
+    if (list.length === 0) return;
+    const shown = list.slice(0, 5).join(', ');
+    ctx.warn(`${rel}: ${list.length} unresolved manifest entries (unpinned, ranges or URLs; no lockfile resolves them): ${shown}${list.length > 5 ? ', …' : ''}`);
+    ctx.notAnalysed.push({ file: rel, ecosystem: 'pypi', reason: `${list.length} unresolved entries (no exact pin or lockfile)`, packages: list.length });
+  };
+  /** Directories whose pyproject.toml a lockfile or compiled requirements file covers. */
+  const coveredProjects = new Set<string>();
+  const pyprojects = new Map<string, { rel: string; deps?: PyprojectDeps; error?: string }>();
+  for (const rel of byBase('pyproject.toml')) {
+    const text = await ctx.read(rel, ctx.maxFile);
+    if (text === null) continue;
+    try {
+      pyprojects.set(dirOf(rel), { rel, deps: parsePyproject(text) });
+    } catch (err) {
+      pyprojects.set(dirOf(rel), { rel, error: (err as Error).message.slice(0, 200) });
+    }
+  }
+
+  for (const rel of byBase('uv.lock')) {
+    const text = await ctx.read(rel, ctx.maxLock);
+    if (text === null) continue;
+    const lockDir = dirOf(rel);
+    try {
+      const res = parseUvLock(text, {
+        assetIdFor: (projectDir, name) => {
+          const d = posixJoin(lockDir, projectDir);
+          if (d.startsWith('..')) return undefined;
+          coveredProjects.add(d);
+          return ctx.ensureAsset(d, pyprojects.has(d) ? posixJoin(d, 'pyproject.toml') : rel, d === lockDir ? undefined : name);
+        },
+      });
+      coveredProjects.add(lockDir);
+      ctx.addComponents(res.components);
+      ctx.addEdges(res.edges);
+      res.warnings.forEach((w) => ctx.warn(`${rel}: ${w}`));
+      unresolvedWarning(rel, res.unresolved);
+    } catch (err) {
+      ctx.warn(`${rel}: could not parse uv.lock (${(err as Error).message.slice(0, 200)})`);
+      ctx.notAnalysed.push({ file: rel, ecosystem: 'pypi', reason: 'uv.lock could not be parsed' });
+    }
+  }
+
+  for (const rel of byBase('poetry.lock')) {
+    const text = await ctx.read(rel, ctx.maxLock);
+    if (text === null) continue;
+    const d = dirOf(rel);
+    try {
+      const res = parsePoetryLock(text, ctx.ensureAsset(d, pyprojects.has(d) ? posixJoin(d, 'pyproject.toml') : rel), pyprojects.get(d)?.deps);
+      coveredProjects.add(d);
+      ctx.addComponents(res.components);
+      ctx.addEdges(res.edges);
+      res.warnings.forEach((w) => ctx.warn(`${rel}: ${w}`));
+      unresolvedWarning(rel, res.unresolved);
+    } catch (err) {
+      ctx.warn(`${rel}: could not parse poetry.lock (${(err as Error).message.slice(0, 200)})`);
+      ctx.notAnalysed.push({ file: rel, ecosystem: 'pypi', reason: 'poetry.lock could not be parsed' });
+    }
+  }
+
+  for (const rel of byBase('pipfile.lock')) {
+    const text = await ctx.read(rel, ctx.maxLock);
+    if (text === null) continue;
+    const d = dirOf(rel);
+    try {
+      const res = parsePipfileLock(text, ctx.ensureAsset(d, rel));
+      coveredProjects.add(d);
+      ctx.addComponents(res.components);
+      ctx.addEdges(res.edges);
+      unresolvedWarning(rel, res.unresolved);
+    } catch (err) {
+      ctx.warn(`${rel}: could not parse Pipfile.lock (${(err as Error).message.slice(0, 200)})`);
+      ctx.notAnalysed.push({ file: rel, ecosystem: 'pypi', reason: 'Pipfile.lock could not be parsed' });
+    }
+  }
+
+  // requirements*.txt: exact pins become components; `-r` includes are followed (inside the root).
+  const requirements = files.filter((f) => !['uv.lock', 'poetry.lock', 'pipfile.lock', 'pyproject.toml'].includes(path.posix.basename(f).toLowerCase()));
+  for (const rel of requirements) {
+    const merged: RequirementsFile = { entries: [], includes: [], local: [], unresolved: [], mentionsProject: false };
+    const visited = new Set<string>();
+    const visit = async (file: string, depth: number): Promise<void> => {
+      if (visited.has(file) || depth > 10 || file.startsWith('..')) return;
+      visited.add(file);
+      const text = await ctx.read(file, ctx.maxFile);
+      if (text === null) return;
+      const r = parseRequirements(text);
+      merged.entries.push(...r.entries);
+      merged.local.push(...r.local);
+      merged.unresolved.push(...r.unresolved);
+      merged.mentionsProject ||= r.mentionsProject;
+      for (const inc of r.includes) await visit(posixJoin(dirOf(file), inc), depth + 1);
+    };
+    await visit(rel, 0);
+    const projectDir = requirementsProjectDir(rel);
+    const res = requirementsInventory(merged, ctx.ensureAsset(projectDir, rel), requirementsScope(rel));
+    if (merged.mentionsProject || merged.local.length > 0) coveredProjects.add(projectDir);
+    ctx.addComponents(res.components);
+    ctx.addEdges(res.edges);
+    unresolvedWarning(rel, [...new Set(res.unresolved)]);
+  }
+
+  // pyproject.toml with nothing that resolves its versions.
+  for (const [d, p] of pyprojects) {
+    if (coveredProjects.has(d)) continue;
+    const n = p.deps?.deps.length;
+    if (n === 0) continue;
+    ctx.notAnalysed.push({
+      file: p.rel,
+      ecosystem: 'pypi',
+      reason: p.error ? `pyproject.toml could not be parsed (${p.error})` : 'pyproject.toml without a lockfile (uv.lock, poetry.lock) or compiled requirements: versions not resolved',
+      ...(n !== undefined ? { packages: n } : {}),
+    });
+  }
 }
 
 function mergeSbom(
@@ -323,6 +509,8 @@ function cmp(a: string, b: string): number {
 }
 
 export { parsePackageJson, parsePackageLock, componentsFromManifest, resolveLockVersion, nameFromInstallPath } from './npm.js';
+export { parseRequirements, requirementsInventory, parseUvLock, parsePoetryLock, parsePipfileLock, parsePyproject, normalizePypiName, pypiPurl } from './python.js';
+export { notAnalysedEntry, notAnalysedLine, estimatePackages, unsupportedKind } from './manifests.js';
 export type { PackageManifest, LockfileParseOptions, LockfileParseResult } from './npm.js';
 export { parseWorkflow, parseUses, classifyActionRef } from './workflows.js';
 export type { WorkflowInfo, WorkflowJobInfo, ActionRef, ActionPinning, PermissionsSpec, PermissionLevel, ParsedWorkflow } from './workflows.js';

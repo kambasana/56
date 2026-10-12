@@ -114,13 +114,14 @@ describe('SARIF report', () => {
       }
       expect(Object.keys(res.partialFingerprints)).toEqual(['blastradius/v1']);
     }
-    // evil: malware (BR001) + install_script (BR004); lib: single maintainer (BR007); outbound (BR010)
-    expect(run.results.map((r: any) => r.ruleId)).toEqual(['BR001', 'BR004', 'BR007', 'BR010']);
+    // evil: malware (BR001) + install_script (BR004); outbound (BR010). lib's single maintainer
+    // (BR007) is posture: a tie-breaker only, never a SARIF result of its own (Tier 0).
+    expect(run.results.map((r: any) => r.ruleId)).toEqual(['BR001', 'BR004', 'BR010']);
     const malware = run.results[0];
     expect(malware.level).toBe('error');
     expect(malware.locations.map((l: any) => l.physicalLocation.artifactLocation.uri)).toEqual(['.github/workflows/ci.yml', 'package-lock.json']);
-    expect(run.results[2].level).toBe('note');
-    expect(run.results[3].locations[0].physicalLocation.artifactLocation.uri).toBe('.github/workflows/ci.yml');
+    expect(run.results[2].ruleId).toBe('BR010');
+    expect(run.results[2].locations[0].physicalLocation.artifactLocation.uri).toBe('.github/workflows/ci.yml');
     expect(run.invocations[0].toolExecutionNotifications).toHaveLength(1);
   });
 
