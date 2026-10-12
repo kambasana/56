@@ -15,6 +15,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { isReleaseBot } from './bots.js';
 
 const NOREPLY_RE = /^(?:\d+\+)?([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))@users\.noreply\.github\.com$/i;
 
@@ -33,7 +34,8 @@ export function noreplyLogin(email: string): string | undefined {
 
 export function isBot(name: string, email: string): boolean {
   const local = normaliseEmail(email).split('@')[0] ?? '';
-  return BOT_RE.test(name.trim()) || BOT_RE.test(local) || /\[bot\]@users\.noreply\.github\.com$/i.test(email);
+  // Tier 0: organisation release bots (bots.ts) are not people either.
+  return BOT_RE.test(name.trim()) || BOT_RE.test(local) || /\[bot\]@users\.noreply\.github\.com$/i.test(email) || isReleaseBot(name) || isReleaseBot(local);
 }
 
 /** Committers that are a platform rather than a person (GitHub's web-flow merges and edits). */
@@ -72,4 +74,24 @@ export function loadSalt(file: string, env: NodeJS.ProcessEnv = process.env): Bu
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
   writeFileSync(file, salt, { mode: 0o600 });
   return salt;
+}
+
+/** Display names that say nothing about who committed (tooling defaults, placeholders). */
+const GENERIC_NAMES = new Set(['root', 'admin', 'administrator', 'user', 'unknown', 'your name', 'ubuntu', 'github', 'gitlab', 'git', 'nobody', 'test', 'dev', 'developer', 'local', 'localhost', 'anonymous', 'none', 'null', 'undefined', 'author', 'committer', 'n/a', 'name', 'me', 'pi', 'vagrant', 'runner', 'build', 'ci', 'jenkins', 'travis', 'circleci', 'bot', 'system']);
+
+/** Lower case, accents folded, punctuation and spacing collapsed. */
+export function normaliseName(name: string): string {
+  return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+/**
+ * `name:` + HMAC-SHA256 of the normalised display name (first 16 hex chars), or undefined for a
+ * generic name or a single word shorter than 6 characters ("Alex" is shared by too many people).
+ * Used only to merge one person's addresses; never stored with the name.
+ */
+export function nameKey(name: string, salt: Buffer | string): string | undefined {
+  const n = normaliseName(name);
+  if (!n || GENERIC_NAMES.has(n)) return undefined;
+  if (!n.includes(' ') && n.length < 6) return undefined;
+  return `name:${createHmac('sha256', salt).update(`name\0${n}`).digest('hex').slice(0, 16)}`;
 }

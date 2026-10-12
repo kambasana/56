@@ -46,7 +46,7 @@ function contributors(caf: number, commits = 60, over: Partial<ContributorsValue
   return { from: '2024-10-11', to: '2026-10-11', commits, absenceFactor: caf, top: [{ id: 'hash:0123456789abcdef', share: 0.9 }], unmapped: commits, ...over };
 }
 
-function facts(opts: { caf?: number; commits?: number; lastCommit?: string; lastRelease?: string; latestDeprecated?: string; declared?: 'deprecated' | 'maintenance_mode'; changes?: CommitHistoryChange[]; irregular?: boolean; archived?: boolean; noHistory?: boolean; cafAtLast?: { commits: number; absenceFactor: number }; size?: { unpackedSize: number; fileCount: number; dependencies: number }; firstPublished?: string; finalYear?: number; vulns?: { id: string; fixed: string[]; published?: string }[] } = {}): Fact[] {
+function facts(opts: { caf?: number; commits?: number; lastCommit?: string; lastRelease?: string; latestDeprecated?: string; declared?: 'deprecated' | 'maintenance_mode'; changes?: CommitHistoryChange[]; resolved?: boolean; irregular?: boolean; archived?: boolean; noHistory?: boolean; cafAtLast?: { commits: number; absenceFactor: number }; size?: { unpackedSize: number; fileCount: number; dependencies: number }; firstPublished?: string; finalYear?: number; vulns?: { id: string; fixed: string[]; published?: string }[] } = {}): Fact[] {
   const lastRelease = opts.lastRelease ?? '2026-09-01';
   const out: Fact[] = [
     makeFact('maintainers', PKG, { maintainers: [{ name: 'alice' }], count: 1 }, meta),
@@ -66,7 +66,7 @@ function facts(opts: { caf?: number; commits?: number; lastCommit?: string; last
   if (opts.archived) out.push(makeFact('scorecard', PKG, { score: 3, repo: 'github.com/example/demo', date: '2026-08-24', checks: [{ name: 'Maintained', score: 0, reason: 'project is archived' }] }, { source: 'depsdev', fetchedAt: NOW }));
   if (!opts.noHistory) {
     out.push(makeFact('contributors', PKG, contributors(opts.caf ?? 3, opts.commits ?? 60), { source: 'git', fetchedAt: NOW }));
-    const h = history({ lastCommit: opts.lastCommit ?? '2026-10-01', ...(opts.cafAtLast ? { cafAtLastCommit: { from: '2018-01-01', to: '2020-01-01', ...opts.cafAtLast } } : {}) }, opts.changes ?? []);
+    const h = history({ lastCommit: opts.lastCommit ?? '2026-10-01', ...(opts.cafAtLast ? { cafAtLastCommit: { from: '2018-01-01', to: '2020-01-01', ...opts.cafAtLast } } : {}), ...(opts.resolved ? { identity: { mapped: 0, hashed: 1, via: ['salted-hash', 'display-name'], resolved: true } } : {}) }, opts.changes ?? []);
     out.push(makeFact('commit_history', PKG, h, { source: 'git', fetchedAt: NOW }));
   }
   return out;
@@ -233,24 +233,30 @@ describe('labels', () => {
     expect(entryOf(facts({ lastCommit: '2026-01-01' })).rules.map((r) => r.rule)).toEqual(['watch_quiet']);
     expect(entryOf(facts({ caf: 2, lastCommit: '2024-01-01', lastRelease: '2024-01-01' })).rules.map((r) => r.rule)).toEqual(['watch_inactive']);
   });
-  it('"contributor base changed" alone is context, never Fragile, and Watch only with another signal', () => {
+  it('Tier 0: window-based kinds (contributor base, signed share) are context only, never a rule', () => {
     const c1: CommitHistoryChange = { kind: 'contributor_base_changed', date: '2026-10-11', text: 'Contributor base changed: commits by long-standing contributors went from 50 % to 16 % (12 months to 2026-10-11).', before: 0.5, after: 0.16 };
     const alone = entryOf(facts({ changes: [c1] }));
     expect(alone.label).toBe('steady');
     expect(alone.context.some((c) => c.signal === 'C1')).toBe(true);
     const withIrregular = entryOf(facts({ changes: [c1], irregular: true }));
-    expect(withIrregular.label).toBe('watch');
-    expect(withIrregular.rules.map((r) => r.rule)).toEqual(['watch_contributor_base_changed_with_other']);
-    const withCafInactive = entryOf(facts({ changes: [c1], caf: 1, lastCommit: '2024-01-01', lastRelease: '2024-01-01' }));
-    expect(withCafInactive.rules.every((r) => r.rule !== 'watch_contributor_base_changed_with_other')).toBe(true);
+    expect(withIrregular.label).toBe('steady');
+    expect(withIrregular.context.some((c) => c.signal === 'C1')).toBe(true);
+    const fell: CommitHistoryChange = { kind: 'signed_share_changed', date: '2026-10-11', text: 'Signed share fell from 95 % to 10 % (12 months to 2026-10-11).', before: 0.95, after: 0.1 };
+    const e = entryOf(facts({ changes: [fell] }));
+    expect(e.label).toBe('steady');
+    expect(e.context.some((c) => c.signal === 'C2')).toBe(true);
   });
-  it('S5a and C2 (fell) within the last 12 months make Watch; older ones do not', () => {
+  it('S5a within the last 12 months makes Watch; older ones do not; git-only S5a needs resolved identities', () => {
     const s5a: CommitHistoryChange = { kind: 'npm_release_by_new_account', date: '2026-05-01', release: '2.0.0', daysSinceFirstSeen: 3, text: 'Release 2.0.0 was published on npm by an account first seen in this repository 3 days earlier.' };
     expect(entryOf(facts({ changes: [s5a] })).rules.map((r) => r.rule)).toEqual(['watch_release_continuity']);
     expect(entryOf(facts({ changes: [{ ...s5a, date: '2025-10-11' }] })).label).toBe('steady');
-    const fell: CommitHistoryChange = { kind: 'signed_share_changed', date: '2026-10-11', text: 'Signed share fell from 95 % to 10 % (12 months to 2026-10-11).', before: 0.95, after: 0.1 };
-    expect(entryOf(facts({ changes: [fell] })).rules.map((r) => r.rule)).toEqual(['watch_signed_share_fell']);
-    expect(entryOf(facts({ changes: [{ ...fell, before: 0.1, after: 0.95 }] })).label).toBe('steady');
+    const git: CommitHistoryChange = { kind: 'release_by_new_person', date: '2026-05-01', release: '2.0.0', daysSinceFirstSeen: 3, text: 'Release 2.0.0 was made by an account first seen in this repository 3 days earlier.' };
+    // Unresolved identities (no display names, no login mapping): context only, with the reason.
+    const unresolved = entryOf(facts({ changes: [git] }));
+    expect(unresolved.label).toBe('steady');
+    expect(unresolved.s5a).toEqual([]);
+    expect(unresolved.context.some((c) => c.signal === 'S5a' && c.confidence === 'low')).toBe(true);
+    expect(entryOf(facts({ changes: [git], resolved: true })).rules.map((r) => r.rule)).toEqual(['watch_release_continuity']);
   });
   it('Steady needs git history; Unknown says what is missing', () => {
     expect(entryOf(facts()).label).toBe('steady');

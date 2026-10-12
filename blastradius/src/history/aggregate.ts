@@ -130,7 +130,11 @@ export interface AggregateResult {
 }
 
 /** Aggregate a pseudonymised history as of `asOf` (later commits and tags are ignored). */
-export function aggregateHistory(rec: HistoryRecord, asOf: Date, opts: { verified?: { checked: number; verified: number }; identityVia?: string[] } = {}): AggregateResult | undefined {
+export function aggregateHistory(
+  rec: HistoryRecord,
+  asOf: Date,
+  opts: { verified?: { checked: number; verified: number }; identityVia?: string[]; identityResolved?: boolean; merged?: { displayName: number; npmPublisher: number } } = {},
+): AggregateResult | undefined {
   const R = HISTORY_RULES;
   const end = secs(asOf);
   const commits = rec.commits.filter((c) => c.at < end);
@@ -227,14 +231,20 @@ export function aggregateHistory(rec: HistoryRecord, asOf: Date, opts: { verifie
     if (cur.topCommitterFirstSeenRecently && cur.commits >= R.minCommitsToCompare) {
       const curTop = topOf(commits, cur);
       const prevTop = topOf(commits, prev);
-      if (curTop && curTop !== prevTop) {
+      // Tier 0: someone first seen on the repository's first day is its creator, never a takeover (picocolors).
+      if (curTop && curTop !== prevTop && first.get(curTop) !== firstAt) {
         const wFrom = secs(new Date(`${cur.from}T00:00:00Z`));
         const wTo = secs(new Date(`${cur.to}T00:00:00Z`));
         const own = releases.filter((r) => r.by === curTop && r.at >= wFrom && r.at < wTo).length;
         const ownBefore = releases.filter((r) => r.by === curTop && r.at < wFrom).length;
+        // Tier 0: a takeover is dated to the first release it made in the window (the causing
+        // release), not to the window end (which moved to "today" every week).
+        const firstOwn = releases.find((r) => r.by === curTop && r.at >= wFrom && r.at < wTo);
+        const takeover = own > 0 && own * 2 > cur.releases;
         changes.push({
-          kind: own > 0 && own * 2 > cur.releases ? 'release_takeover' : 'top_committer_new',
-          date: cur.to,
+          kind: takeover ? 'release_takeover' : 'top_committer_new',
+          date: takeover && firstOwn ? iso(firstOwn.at) : cur.to,
+          ...(takeover && firstOwn ? { release: firstOwn.name } : {}),
           text:
             `The top committer in the 12 months to ${cur.to} was first seen in this repository on ${iso(first.get(curTop)!)}` +
             (own > 0 ? ` and made ${own} of the ${cur.releases} releases in that period (${ownBefore} before it).` : '.'),
@@ -313,6 +323,8 @@ export function aggregateHistory(rec: HistoryRecord, asOf: Date, opts: { verifie
       mapped: [...allIds].filter((id) => !isHashedId(id)).length,
       hashed: [...allIds].filter(isHashedId).length,
       via: opts.identityVia ?? ['mailmap', 'github-noreply', 'salted-hash'],
+      ...(opts.identityResolved !== undefined ? { resolved: opts.identityResolved } : {}),
+      ...(opts.merged ? { merged: opts.merged } : {}),
     },
     cafAtLastCommit,
   };

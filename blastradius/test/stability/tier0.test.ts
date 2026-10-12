@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { StabilityEntry } from '../../src/core/types.js';
-import { loadTier0Ended, tier0FamilyReport, tier0Labels } from './tier0.js';
+import { loadTier0Ended, tier0FamilyReport, tier0IdentityHistory, tier0IdentityLabel, tier0Labels } from './tier0.js';
 
 const fx = loadTier0Ended();
 const rules = (e: StabilityEntry) => e.rules.map((r) => r.rule);
@@ -93,5 +93,84 @@ describe('Tier 0: moved repositories (teardown problem 3)', () => {
     expect(ldap[0]!.action).toMatch(/^Replace or upgrade ldapjs \(direct dependency\): it and 8 packages of the same family it brings in are Fragile/);
     // Moved packages get an upgrade row, not a Fragile one.
     expect(r.decisions!.find((d) => d.packages.includes('agent-base'))!.label).toBe('watch');
+  });
+
+  it('an organisation release bot is not "single maintainer" (gaxios: google-wombot only, recorded packument)', async () => {
+    const { slimPackument } = await import('../../src/enrich/npm/registry.js');
+    const { packumentFacts } = await import('../../src/enrich/npm/packument.js');
+    const { scoreInventory } = await import('../../src/scoring/index.js');
+    const { isReleaseBot, RELEASE_BOTS } = await import('../../src/history/bots.js');
+    const pkg = fx.packages.gaxios!;
+    expect(pkg.packument.maintainers).toEqual([{ name: 'google-wombot' }]);
+    const asOf = new Date(fx.scans['parse-server']!.asOf);
+    const facts = packumentFacts(slimPackument(pkg.packument), 'gaxios', '7.3.1', { now: asOf });
+    const m = facts.find((f) => f.kind === 'maintainers')!;
+    expect(m.value).toMatchObject({ count: 1, releaseBots: 1 });
+    const r = await tier0Labels(fx, 'parse-server');
+    expect(r.packages.find((p) => p.name === 'gaxios')!.context.find((c) => c.signal === 'S1')!.text).toBe('npm lists 1 maintainer with publish rights (an organisation release bot, not a person).');
+    const { productionInventory } = await import('./build.js');
+    const score = scoreInventory(productionInventory([{ name: 'gaxios', version: '7.3.1' }]), facts, { now: asOf });
+    expect(JSON.stringify(score)).not.toContain('single_maintainer');
+    // Every allow-list entry names its source.
+    for (const b of RELEASE_BOTS) expect(b.source).toMatch(/^https:\/\//);
+    for (const n of ['google-wombot', 'github-actions[bot]', 'release-please[bot]', 'semantic-release-bot', 'renovate[bot]', 'dependabot[bot]', 'changeset-bot']) expect(isReleaseBot(n), n).toBe(true);
+    expect(isReleaseBot('stephenplusplus')).toBe(false);
+  });
+});
+
+describe('Tier 0: identity resolution and takeover signals (teardown problem 4), recorded real histories', () => {
+  const s5aKinds = (e: StabilityEntry) => e.s5a.map((x) => `${x.kind}:${x.release ?? ''}`);
+
+  it('nanoid: the author moving to a new e-mail address is not a takeover once display names are compared', async () => {
+    const before = await tier0IdentityLabel('nanoid', '3.3.19', { strip: true });
+    const hist = (before.facts.find((f) => f.kind === 'commit_history') as any).value;
+    // Without the merge the history reads the new address as a new top committer making 21 of 22 releases.
+    expect(hist.changes.some((c: any) => c.kind === 'release_takeover' && /made 21 of the 22 releases/.test(c.text))).toBe(true);
+    const after = await tier0IdentityLabel('nanoid', '3.3.19');
+    const h2 = (after.facts.find((f) => f.kind === 'commit_history') as any).value;
+    expect(h2.identity).toMatchObject({ resolved: true, merged: { displayName: 2 } });
+    expect(h2.changes.filter((c: any) => ['release_takeover', 'release_by_new_person'].includes(c.kind))).toEqual([]);
+    expect(after.entry.rules.map((r) => r.rule)).not.toContain('watch_release_continuity');
+  });
+
+  it('picocolors: the creator, first seen on the repository\'s first day, never "takes over"', async () => {
+    const { entry, facts } = await tier0IdentityLabel('picocolors', '1.1.1');
+    expect((facts.find((f) => f.kind === 'commit_history') as any).value.changes.filter((c: any) => c.kind === 'release_takeover')).toEqual([]);
+    expect(entry.s5a).toEqual([]);
+  });
+
+  it('moment 2.31.0 went out through npm trusted publishing: not a release by a new person', async () => {
+    const { entry, facts } = await tier0IdentityLabel('moment', '2.31.0');
+    const changes = (facts.find((f) => f.kind === 'commit_history') as any).value.changes;
+    expect(changes.filter((c: any) => c.release === '2.31.0')).toEqual([]);
+    expect(entry.rules.map((r) => r.rule)).toEqual(['watch_single_contributor']);
+    // The aggregate alone (as before Tier 0) has a release by a new person and a takeover for 2.31.0.
+    const { aggregateHistory } = await import('../../src/history/aggregate.js');
+    const raw = aggregateHistory(await tier0IdentityHistory('moment'), new Date('2026-10-11T12:00:00Z'))!;
+    expect(raw.history.changes.filter((c) => c.release === '2.31.0' && c.kind !== 'release_handover').map((c) => c.kind).sort()).toEqual(['release_by_new_person', 'release_takeover']);
+  });
+
+  it('react: a takeover is dated to its causing release, not the scan day (identity of that address needs GitHub login mapping)', async () => {
+    const { entry } = await tier0IdentityLabel('react', '18.3.1');
+    const t = entry.s5a.find((x) => x.kind === 'release_takeover')!;
+    expect(t).toMatchObject({ date: '2025-12-03', release: 'v19.0.1' });
+    expect(s5aKinds(entry)).not.toContain('release_takeover:');
+  });
+
+  it('without resolved identities the git-only S5a is context only (the histories as read before Tier 0)', async () => {
+    for (const [slug, v] of [['nanoid', '3.3.19'], ['react', '18.3.1'], ['moment', '2.31.0']] as const) {
+      const { entry } = await tier0IdentityLabel(slug, v, { strip: true });
+      expect(entry.s5a.filter((x) => x.kind !== 'npm_release_by_new_account'), slug).toEqual([]);
+    }
+  });
+
+  it('fixtures keep only salted hashes: no e-mail address, no display name', async () => {
+    for (const slug of ['nanoid', 'react', 'picocolors', 'moment']) {
+      const h = await tier0IdentityHistory(slug);
+      for (const k of Object.values(h.names ?? {})) expect(k).toMatch(/^name:[0-9a-f]{16}$/);
+      const ids = new Set([...h.commits.flatMap((c) => [c.author, c.committer])]);
+      for (const id of ids) expect(id).toMatch(/^(hash:[0-9a-f]{16}|[A-Za-z0-9-]+)$/);
+      expect(JSON.stringify(h)).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/);
+    }
   });
 });

@@ -21,6 +21,7 @@ import { GraphqlBudget, mapLogins, DEFAULT_BUDGET_POINTS } from '../../history/g
 import { npmContinuity } from '../../history/continuity.js';
 import { loadSalt, localIdentity } from '../../history/identity.js';
 import { renameIds, type HistoryRecord } from '../../history/record.js';
+import { mergeIdentities } from '../../history/merge.js';
 import { mapLimit } from '../depsdev/util.js';
 import { orderRepos } from '../../stability/priority.js';
 import { sameRepo } from '../../stability/repo.js';
@@ -64,6 +65,12 @@ export interface HistorySelection {
 }
 
 export const DEFAULT_HISTORY_MAX = 300;
+
+/** The version in a release tag name: "v19.0.1" → "19.0.1", "xz-5.2" → "5.2", "pkg@1.2.3" → "1.2.3". */
+export function releaseVersion(tag: string): string {
+  const m = /(\d+(?:\.\d+)+(?:-[0-9A-Za-z.-]+)?)$/.exec(tag);
+  return m ? m[1]! : tag;
+}
 
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/;
 
@@ -130,9 +137,29 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             return;
           }
         }
-        let renamed: ReadonlyMap<string, string> = new Map();
         let verified: { checked: number; verified: number } | undefined;
         const via = ['mailmap', 'github-noreply', 'salted-hash'];
+        // S5a npm side (P3) and the npm-publisher identity merge (Tier 0): which ids the registry
+        // addresses of each npm account that published a package of this repository hash to.
+        if (!rec.npmPublisherIds && !ctx.offline && !opts.recorded) {
+          const links: Record<string, string> = {};
+          const ids: Record<string, string[]> = {};
+          for (const subject of byRepo.get(url) ?? []) {
+            if (!publishersOf.has(subject)) continue;
+            const l = await publisherLinks(ctx, subject, rec, getSalt);
+            for (const [a, list] of Object.entries(l)) {
+              links[a] ??= list[0]!;
+              ids[a] = [...new Set([...(ids[a] ?? []), ...list])];
+            }
+          }
+          rec = { ...rec, npmPublishers: { ...(rec.npmPublishers ?? {}), ...links }, npmPublisherIds: ids };
+        }
+        // Tier 0 identity merge: display name plus overlapping activity, then the npm publisher
+        // (.mailmap was applied by git while reading).
+        const merged = mergeIdentities(rec);
+        rec = merged.rec;
+        if (merged.namesAvailable) via.splice(1, 0, 'display-name');
+        if (rec.npmPublisherIds) via.splice(via.indexOf('salted-hash'), 0, 'npm-publisher');
         const gh = GITHUB_REPO_RE.exec(url);
         if (gh && token && !ctx.offline) {
           try {
@@ -143,14 +170,19 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
               if (login && c.author.startsWith('hash:') && !rename.has(c.author)) rename.set(c.author, login);
             }
             rec = renameIds(rec, rename);
-            renamed = rename;
             verified = m.verified;
             via.splice(2, 0, 'github-graphql');
           } catch {
             mappingFailed++;
           }
         }
-        const agg = aggregateHistory(rec, ctx.now, { ...(verified ? { verified } : {}), identityVia: via });
+        const agg = aggregateHistory(rec, ctx.now, {
+          ...(verified ? { verified } : {}),
+          identityVia: via,
+          // Identities are resolved when display names were compared or GitHub mapped logins.
+          identityResolved: merged.namesAvailable || verified !== undefined,
+          merged: merged.merged,
+        });
         if (!agg) {
           selection.failed.push(url);
           return;
@@ -165,12 +197,14 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             facts.push(makeFact('commit_history', subject, agg.history, meta));
             continue;
           }
-          let linked = rec;
-          if (!linked.npmPublishers && !ctx.offline && !opts.recorded) linked = { ...rec, npmPublishers: await publisherLinks(ctx, subject, rec, getSalt, renamed) };
-          const npm = npmContinuity(linked, pubs, ctx.now);
+          const npm = npmContinuity(rec, pubs, ctx.now);
+          // Tier 0: a git-side release observation whose release was published to npm through
+          // trusted publishing (the project's CI, an OIDC identity) is not a person's release.
+          const trusted = new Set(pubs.trustedVersions ?? []);
+          const viaCi = (c: { kind: string; release?: string }) => (c.kind === 'release_by_new_person' || c.kind === 'release_takeover' || c.kind === 'release_handover') && c.release !== undefined && trusted.has(releaseVersion(c.release));
           const history = {
             ...agg.history,
-            changes: [...agg.history.changes, ...npm.changes].sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
+            changes: [...agg.history.changes.filter((c) => !viaCi(c)), ...npm.changes].sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
             npmPublishers: { total: npm.accounts, matched: npm.matched },
           };
           facts.push(makeFact('commit_history', subject, history, meta));
@@ -193,7 +227,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
  * publisher (`_npmUser.email`), hashed in memory with the history salt; only matches are kept and
  * the addresses are dropped at once. Empty on any failure (no observation without a match).
  */
-async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: HistoryRecord, salt: () => Buffer | string, renamed: ReadonlyMap<string, string>): Promise<Record<string, string>> {
+async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: HistoryRecord, salt: () => Buffer | string): Promise<Record<string, string[]>> {
   const p = parsePurl(subject);
   if (p.type !== 'npm') return {};
   let packument;
@@ -209,13 +243,15 @@ async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: Hist
     ids.add(c.committer);
   }
   for (const t of rec.tags) ids.add(t.by);
-  const out: Record<string, string> = {};
+  // Every version's address, not only the first: an account whose address changed links both ids.
+  const out: Record<string, string[]> = {};
   for (const m of Object.values(packument.versions)) {
     const u = isObject(m) && isObject(m._npmUser) ? m._npmUser : undefined;
-    if (typeof u?.name !== 'string' || typeof u.email !== 'string' || Object.hasOwn(out, u.name)) continue;
-    const local = localIdentity(u.email, salt());
-    const id = renamed.get(local) ?? local;
-    if (ids.has(id)) out[u.name] = id;
+    if (typeof u?.name !== 'string' || typeof u.email !== 'string') continue;
+    const id = localIdentity(u.email, salt());
+    if (!ids.has(id)) continue;
+    const l = (out[u.name] ??= []);
+    if (!l.includes(id)) l.push(id);
   }
   return out;
 }

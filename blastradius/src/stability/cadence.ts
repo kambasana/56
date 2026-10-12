@@ -83,5 +83,8 @@ export function releasePublishers(history: readonly ReleaseRecord[], asOf: Date)
     }
     byName.set(h.publisher, { name: h.publisher, firstVersion: h.version, firstAt: h.publishedAt, index, releases: 1, trusted: h.trustedPublisher });
   });
-  return { releases: upTo.length, accounts: [...byName.values()].sort((a, b) => a.index - b.index) };
+  const out: ReleasePublishersValue = { releases: upTo.length, accounts: [...byName.values()].sort((a, b) => a.index - b.index) };
+  const trusted = upTo.filter((h) => h.trustedPublisher).map((h) => h.version);
+  if (trusted.length) out.trustedVersions = trusted.slice(-500);
+  return out;
 }

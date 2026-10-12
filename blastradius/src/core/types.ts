@@ -406,6 +406,8 @@ export interface Maintainer {
 export interface MaintainersValue {
   maintainers: Maintainer[];
   count: number;
+  /** Maintainers that are organisation release bots (src/history/bots.ts), e.g. google-wombot (Tier 0). */
+  releaseBots?: number;
 }
 
 export interface PublisherValue {
@@ -714,7 +716,18 @@ export interface CommitHistoryValue {
   /** GitHub's signature verification for the latest commits (GraphQL), when it was queried. */
   verified?: { checked: number; verified: number };
   /** How identities were resolved. */
-  identity: { mapped: number; hashed: number; via: string[] };
+  identity: {
+    mapped: number;
+    hashed: number;
+    via: string[];
+    /**
+     * Tier 0: identities were resolved (display names compared, or GitHub logins mapped). Without it
+     * the git-only continuity signals (S5a git side, C1) are context, never a label rule.
+     */
+    resolved?: boolean;
+    /** Ids merged into another one by display name plus overlapping activity, and by npm publisher. */
+    merged?: { displayName: number; npmPublisher: number };
+  };
   /** CAF over the 24 months up to the last commit (P3: the CAF of the last active period). */
   cafAtLastCommit?: { from: string; to: string; commits: number; absenceFactor: number };
   /**
@@ -850,6 +863,11 @@ export interface ReleasePublishersValue {
     /** Published through npm trusted publishing (an OIDC CI identity, not a person's account). */
     trusted: boolean;
   }[];
+  /**
+   * Stable versions published through npm trusted publishing (an OIDC CI identity), newest last, at
+   * most 500 (Tier 0): a git-side release observation for one of them is not a person's release.
+   */
+  trustedVersions?: string[];
 }
 
 /** A maintenance status the package itself declares (README; plan S3). Low confidence by definition. */

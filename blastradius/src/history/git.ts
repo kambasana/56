@@ -26,7 +26,7 @@ import { mkdir, readdir, rm, stat, utimes } from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { checkGitUrl, cloneEnv } from '../ingest/git.js';
-import { isBot, isPlatformCommitter, localIdentity } from './identity.js';
+import { isBot, isPlatformCommitter, localIdentity, nameKey } from './identity.js';
 import type { HistoryRecord, HistoryCommit, HistoryTag, TzMonth } from './record.js';
 
 /** Config every git command runs with. */
@@ -248,6 +248,15 @@ export async function readHistory(
   let bots = 0;
   const latestOidById = new Map<string, string>();
   const idOf = (email: string) => localIdentity(email, meta.salt);
+  // Display-name keys per id (Tier 0 identity merge): counted per id, the most frequent kept.
+  const nameCounts = new Map<string, Map<string, number>>();
+  const countName = (id: string, name: string) => {
+    const k = nameKey(name, meta.salt);
+    if (!k) return;
+    let m = nameCounts.get(id);
+    if (!m) nameCounts.set(id, (m = new Map()));
+    m.set(k, (m.get(k) ?? 0) + 1);
+  };
   await git([...SAFE_CONFIG, ...READ_CONFIG, ...mailmapCfg, 'log', '--no-color', '--use-mailmap', `--format=%H${SEP}%P${SEP}%aN${SEP}%aE${SEP}%ct${SEP}%cN${SEP}%cE${SEP}%s`, 'HEAD', '--'], {
     cwd: dir,
     timeoutMs,
@@ -262,8 +271,10 @@ export async function readHistory(
         return;
       }
       const author = idOf(aEmail);
+      countName(author, aName);
       // GitHub's web-flow committer (noreply@github.com) is the platform, not a person.
       const committer = isBot(cName, cEmail) || isPlatformCommitter(cEmail) ? author : idOf(cEmail);
+      if (committer !== author) countName(committer, cName);
       if (!latestOidById.has(author)) latestOidById.set(author, oid);
       const c: HistoryCommit = { oid, parents: parents ? parents.split(' ').length : 0, author, committer, at: toDay(Number(ct)), signed: false };
       const v = VERSION_SUBJECT_RE.exec(subject.trim());
@@ -315,6 +326,7 @@ export async function readHistory(
         if (type === 'tag' && tEmail && tDate) {
           if (isBot(tName ?? '', tEmail)) return;
           tags.push({ name, commit: target, by: idOf(tEmail), at: toDay(Number(tDate)), signed: sig === '1', annotated: true });
+          countName(idOf(tEmail), tName ?? '');
         } else if (type === 'commit') {
           // Lightweight tag: the commit's committer made the release point.
           if (commit) tags.push({ name, commit: target, by: commit.committer, at: commit.at, signed: commit.signed, annotated: false });
@@ -334,5 +346,6 @@ export async function readHistory(
     tags,
     tzMonths,
     lookup: [...latestOidById].filter(([id]) => id.startsWith('hash:')).map(([id, oid]) => ({ id, oid })),
+    names: Object.fromEntries([...nameCounts].map(([id, m]) => [id, [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]![0]]).sort((a, b) => a[0]!.localeCompare(b[0]!))),
   };
 }

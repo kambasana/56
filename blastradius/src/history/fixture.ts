@@ -2,7 +2,8 @@
  * Compact fixture form of a HistoryRecord (src/history/record.ts). Commit oids are shortened to
  * 12 hex characters (only used to join tags to commits); `lookup` keeps full oids for GraphQL.
  * Ids are salted hashes made with a random salt that was discarded after recording, or GitHub
- * no-reply logins. No names, emails, messages or per-person time zones are in these files.
+ * no-reply logins. No names, emails, messages or per-person time zones are in these files (display
+ * names only as salted hashes, Tier 0).
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,6 +28,10 @@ export interface HistoryFixture {
   lookup: HistoryRecord['lookup'];
   /** npm account → id in this history (P3 recordings only, see HistoryRecord.npmPublishers). */
   npmPublishers?: Record<string, string>;
+  /** npm account → every id its registry addresses hash to (Tier 0 recordings). */
+  npmPublisherIds?: Record<string, string[]>;
+  /** id → salted display-name key (Tier 0 recordings, see HistoryRecord.names). */
+  names?: Record<string, string>;
 }
 
 export function encodeFixture(rec: HistoryRecord, note: string, recordedAt: Date): HistoryFixture {
@@ -58,6 +63,8 @@ export function encodeFixture(rec: HistoryRecord, note: string, recordedAt: Date
     tzMonths: rec.tzMonths,
     lookup: rec.lookup,
     ...(rec.npmPublishers ? { npmPublishers: rec.npmPublishers } : {}),
+    ...(rec.npmPublisherIds ? { npmPublisherIds: rec.npmPublisherIds } : {}),
+    ...(rec.names ? { names: rec.names } : {}),
   };
 }
 
@@ -72,6 +79,8 @@ export function decodeFixture(f: HistoryFixture): HistoryRecord {
     tzMonths: f.tzMonths,
     lookup: f.lookup,
     ...(f.npmPublishers ? { npmPublishers: f.npmPublishers } : {}),
+    ...(f.npmPublisherIds ? { npmPublisherIds: f.npmPublisherIds } : {}),
+    ...(f.names ? { names: f.names } : {}),
   };
 }
 

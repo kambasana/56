@@ -181,6 +181,16 @@ export function cafFor(x: StabilityInputs): { value: number; commits: number; fr
 }
 
 const S5A_KINDS = new Set<RepoEvent['kind']>(['release_by_new_person', 'npm_release_by_new_account', 'release_takeover']);
+/** S5a kinds that rest on git identities alone (the npm kind is matched through the registry account). */
+const GIT_ONLY_S5A = new Set<RepoEvent['kind']>(['release_by_new_person', 'release_takeover']);
+
+/**
+ * Whether an S5a observation counts (Tier 0): git-only kinds need resolved identities (display
+ * names compared or GitHub logins mapped); without them a new address reads as a new person.
+ */
+export function s5aCounts(e: RepoEvent, identityResolved: boolean): boolean {
+  return S5A_KINDS.has(e.kind) && (identityResolved || !GIT_ONLY_S5A.has(e.kind));
+}
 
 export function isRecent(date: string, asOf: Date, months = R.recentMonths): boolean {
   // Strictly after the cut: a 12-month window comparison dated exactly 12 months ago is the previous window.
@@ -192,7 +202,7 @@ export function continuityEvents(x: StabilityInputs, name: string): ContinuityEv
   const h = x.history;
   if (!h) return [];
   return h.value.events
-    .filter((e) => S5A_KINDS.has(e.kind))
+    .filter((e) => s5aCounts(e, h.value.identityResolved))
     .map((e) => {
       const ev: ContinuityEvent = {
         package: x.package,
@@ -338,7 +348,10 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
   const repoUrl = h?.repo ?? x.repo?.value.url;
 
   // S1 (context only): registry maintainers, the count.
-  if (x.maintainerCount) context.push({ signal: 'S1', text: `npm lists ${plural(x.maintainerCount.value, 'maintainer')} with publish rights.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+  if (x.maintainerCount) {
+    const bots = x.releaseBotCount ?? 0;
+    context.push({ signal: 'S1', text: `npm lists ${plural(x.maintainerCount.value, 'maintainer')} with publish rights${bots ? ` (${bots === x.maintainerCount.value ? (bots === 1 ? 'an organisation release bot' : 'all organisation release bots') : `${plural(bots, 'organisation release bot')} among them`}, not a person)` : ''}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
+  }
 
   // S2.
   let cafFact: StabilityReason | undefined;
@@ -388,12 +401,16 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
     ...(repoUrl ? { evidence: [repoUrl] } : {}),
     date: e.date,
   });
-  const s5a = recent.filter((e) => S5A_KINDS.has(e.kind));
-  const signedFell = recent.filter((e) => e.kind === 'signed_share_changed' && e.after !== undefined && e.before !== undefined && e.after < e.before);
+  const resolved = h?.identityResolved === true;
+  const s5a = recent.filter((e) => s5aCounts(e, resolved));
+  // Tier 0: window-based kinds (release handover, contributor base, new top committer, signed share,
+  // time-zone pattern) are context only; they compare 12-month windows, not two scans.
   const c1 = recent.filter((e) => e.kind === 'contributor_base_changed');
   const topNew = recent.filter((e) => e.kind === 'top_committer_new');
-  for (const e of recent) if (e.kind === 'release_handover' || (e.kind === 'signed_share_changed' && !signedFell.includes(e))) context.push(evFact(e, e.kind === 'release_handover' ? 'S5a' : 'C2'));
+  for (const e of recent) if (e.kind === 'release_handover' || e.kind === 'signed_share_changed') context.push(evFact(e, e.kind === 'release_handover' ? 'S5a' : 'C2'));
   for (const e of topNew) context.push(evFact(e, 'C1'));
+  const demoted = recent.filter((e) => S5A_KINDS.has(e.kind) && !s5a.includes(e));
+  for (const e of demoted) context.push(evFact(e, 'S5a', 'low'));
 
   // L2: licence category changes dated within the recent window.
   const l2 = x.licenseChanges.filter((c) => c.value.fromCategory !== c.value.toCategory && c.value.fromCategory !== 'unknown' && c.value.toCategory !== 'unknown' && c.value.date !== undefined && isRecent(day(c.value.date), asOf));
@@ -447,25 +464,17 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
     if (s3.inactive && !cafIs1) rules.push(hit('watch_inactive', [...s3.facts.filter((f) => /No commit and no release/.test(f.text)), ...(cafFact ? [cafFact] : [])]));
     if (s3.endedHigh || s3.endedDeclared) rules.push(hit('watch_ended', s3.facts.filter((f) => !/No commit/.test(f.text))));
     if (s5a.length) rules.push(hit('watch_release_continuity', s5a.map((e) => evFact(e, 'S5a'))));
-    if (l2.length) rules.push(hit('watch_license_category_change', l2.map((c) => ({ signal: 'L2', text: `Declared licence category changed from ${c.value.fromCategory.replace('_', ' ')} to ${c.value.toCategory.replace('_', ' ')} at version ${c.value.version}.`, source: c.source, confidence: 'high' as const, ...(c.evidence ? { evidence: c.evidence } : {}), ...(c.value.date ? { date: day(c.value.date) } : {}) }))));
-    if (signedFell.length) rules.push(hit('watch_signed_share_fell', signedFell.map((e) => evFact(e, 'C2'))));
+    if (l2.length)
+      rules.push(hit('watch_license_category_change', l2.map((c) => ({ signal: 'L2', text: `Declared licence category changed from ${c.value.fromCategory.replace('_', ' ')} to ${c.value.toCategory.replace('_', ' ')} at version ${c.value.version}.`, source: c.source, confidence: 'high' as const, ...(c.evidence ? { evidence: c.evidence } : {}), ...(c.value.date ? { date: day(c.value.date) } : {}) }))));
   }
-  // C1 counts only together with another signal (P2: it fires on healthy express by itself).
-  if (c1.length) {
-    const others: StabilityReason[] = [];
-    if (cafIs1 && cafFact) others.push(cafFact);
-    if (s3.quiet || s3.quietDeclared || s3.inactive) others.push(...s3.facts.filter((f) => /No commit/.test(f.text)));
-    if (cadence?.irregular) others.push({ signal: 'S4', text: `${lastRel ? `${lastRel}. ` : ''}Irregular releases: gap between the two most recent ${Math.round(cadence.latestGapDays)} days, median ${Math.round(cadence.medianDays)} days, CV ${cadence.cv}.`, source: 'npm', confidence: 'high', evidence: [npmPage(name)] });
-    for (const e of [...topNew, ...s5a, ...signedFell]) others.push(evFact(e, e.kind === 'top_committer_new' ? 'C1' : e.kind === 'signed_share_changed' ? 'C2' : 'S5a'));
-    if (others.length && !fragile) rules.push(hit('watch_contributor_base_changed_with_other', [...c1.map((e) => evFact(e, 'C1')), ...others]));
-    else context.push(...c1.map((e) => evFact(e, 'C1')));
-  }
+  // C1 is context only (Tier 0: a window comparison; P2 found it fires on healthy express by itself).
+  context.push(...c1.map((e) => evFact(e, 'C1')));
   if (cafFact && !rules.some((r) => r.facts.includes(cafFact!))) context.push(cafFact);
   // How contributors are told apart (P2): without GitHub's login mapping, by commit e-mail address.
-  if (h && h.hashedIdentities > 0 && !h.loginsMapped && (caf || s5a.length || c1.length || topNew.length)) {
+  if (h && h.hashedIdentities > 0 && !h.loginsMapped && !resolved && (caf || demoted.length || c1.length || topNew.length)) {
     context.push({
       signal: 'S2',
-      text: 'Contributors are told apart by commit e-mail address (or GitHub no-reply login); GitHub login mapping was not available. One person with two addresses counts twice, and a contributor using a new address shows as newly seen.',
+      text: 'Contributors are told apart by commit e-mail address (or GitHub no-reply login); display names were not compared and GitHub login mapping was not available. One person with two addresses counts twice, and a contributor using a new address shows as newly seen, so git-only release-continuity observations are context here.',
       source: 'git',
       confidence: 'medium',
       ...(repoUrl ? { evidence: [repoUrl] } : {}),

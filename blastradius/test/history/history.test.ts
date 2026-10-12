@@ -57,8 +57,11 @@ describe('§8 row 2: xz-utils (github.com/tukaani-project/xz)', () => {
   it('before 5.6.0 (scan of 2024-02-01): contributor base changed, a recent account is top committer and makes the releases', () => {
     const r = aggregateHistory(record, at('2024-02-01'))!;
     const latest = kinds(r.history.changes, '2024-02-01');
-    expect(latest).toEqual(expect.arrayContaining(['contributor_base_changed', 'release_takeover', 'time_zone_pattern_changed']));
-    const takeover = r.history.changes.find((c) => c.kind === 'release_takeover' && c.date === '2024-02-01')!;
+    expect(latest).toEqual(expect.arrayContaining(['contributor_base_changed', 'time_zone_pattern_changed']));
+    // Tier 0: the takeover is dated to the release that caused it (the first one the account made
+    // in the window, v5.2.11 of 2023-03-18), not to the window end.
+    const takeover = r.history.changes.find((c) => c.kind === 'release_takeover')!;
+    expect(takeover).toMatchObject({ date: '2023-03-18', release: 'v5.2.11' });
     // First seen 2022-02 (the plan said ~2021; the first commit in the history is in February 2022).
     expect(takeover.text).toMatch(/first seen in this repository on 2022-02-0\d/);
     expect(takeover.after).toBeGreaterThan(0);
@@ -68,7 +71,8 @@ describe('§8 row 2: xz-utils (github.com/tukaani-project/xz)', () => {
 
   it('at the disclosure (2024-03-28): the takeover shows; the first release by that account was v5.2.11', () => {
     const r = aggregateHistory(record, at('2024-03-28'))!;
-    expect(kinds(r.history.changes, '2024-03-28')).toContain('release_takeover');
+    // Still fires, dated to its first release in the 12 months to the disclosure (v5.2.12).
+    expect(r.history.changes.find((c) => c.kind === 'release_takeover')).toMatchObject({ date: '2023-05-04', release: 'v5.2.12' });
     const handover = r.history.changes.find((c) => c.kind === 'release_handover' && c.release === 'v5.2.11')!;
     expect(handover.date).toBe('2023-03-18');
     expect(handover.daysSinceFirstSeen).toBeGreaterThan(180);
@@ -88,8 +92,11 @@ describe('§8 row 1: event-stream (github.com/dominictarr/event-stream), scan of
 
   it('contributor base changed and the new account made every release of the year', () => {
     const latest = r.history.changes.filter((c) => c.date === '2018-11-26');
-    expect(latest.map((c) => c.kind).sort()).toEqual(['contributor_base_changed', 'release_takeover']);
-    expect(latest.find((c) => c.kind === 'release_takeover')!.text).toMatch(/first seen in this repository on 2018-09-04 and made 4 of the 4 releases/);
+    expect(latest.map((c) => c.kind).sort()).toEqual(['contributor_base_changed']);
+    // Tier 0: the takeover still fires, dated to the release that caused it (3.3.5, 2018-09-05).
+    const takeover = r.history.changes.find((c) => c.kind === 'release_takeover')!;
+    expect(takeover).toMatchObject({ date: '2018-09-05', release: '3.3.5' });
+    expect(takeover.text).toMatch(/first seen in this repository on 2018-09-04 and made 4 of the 4 releases/);
   });
 
   it('S5a (git part): 3.3.6 was made by an account first seen in the repository days earlier', () => {

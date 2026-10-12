@@ -103,16 +103,18 @@ export async function recordHistory(url: string, emails: Map<string, Set<string>
     for (const c of rec.commits) (ids.add(c.author), ids.add(c.committer));
     for (const t of rec.tags) ids.add(t.by);
     const links: Record<string, string> = {};
+    const all: Record<string, string[]> = {};
     for (const [name, set] of emails) {
       for (const e of set) {
         const id = localIdentity(e, salt);
-        if (ids.has(id)) {
-          links[name] = id;
-          break;
-        }
+        if (!ids.has(id)) continue;
+        links[name] ??= id;
+        (all[name] ??= []).includes(id) || all[name]!.push(id);
       }
     }
     rec.npmPublishers = links;
+    // Tier 0: every id an account's registry addresses hash to (the npm-publisher identity merge).
+    rec.npmPublisherIds = all;
     console.log(`  history ${url}: ${rec.commits.length} commits, ${rec.tags.length} tags, ${Object.keys(links).length}/${emails.size} npm accounts matched, ${Date.now() - t0} ms`);
     return rec;
   } catch (err) {

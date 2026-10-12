@@ -41,6 +41,8 @@ export interface StabilityInputs {
   package: PurlString;
   /** S1: number of npm maintainers (the count only). */
   maintainerCount?: Sourced<number>;
+  /** How many of them are organisation release bots (a count; Tier 0). */
+  releaseBotCount?: number;
   /** npm: latest release, its deprecation, the version in use's deprecation. */
   npm?: Sourced<{
     latestVersion?: string;
@@ -82,6 +84,8 @@ export interface StabilityInputs {
     /** Identities that are salted e-mail hashes, and whether GitHub logins were mapped (repo-level counts). */
     hashedIdentities: number;
     loginsMapped: boolean;
+    /** Tier 0: identities resolved (display names compared or GitHub logins mapped). */
+    identityResolved: boolean;
   }>;
   licenseChanges: Sourced<{ version: string; fromCategory: string; toCategory: string; date?: string }>[];
 }
@@ -107,6 +111,7 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
     switch (f.kind) {
       case 'maintainers':
         x.maintainerCount ??= { value: f.value.count, ...meta(f) };
+        if (f.value.releaseBots) x.releaseBotCount ??= f.value.releaseBots;
         break;
       case 'release_age': {
         const v = f.value;
@@ -186,6 +191,7 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
           events,
           hashedIdentities: v.identity.hashed,
           loginsMapped: v.identity.via.includes('github-graphql'),
+          identityResolved: v.identity.resolved === true || v.identity.via.includes('github-graphql'),
         };
         if (v.cafAtLastCommit) h.cafAtLastCommit = { from: v.cafAtLastCommit.from, to: v.cafAtLastCommit.to, commits: v.cafAtLastCommit.commits, absenceFactor: v.cafAtLastCommit.absenceFactor };
         if (v.npmPublishers) h.npmPublishers = { total: v.npmPublishers.total, matched: v.npmPublishers.matched };

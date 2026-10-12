@@ -22,6 +22,7 @@ import type {
 } from '../../core/types.js';
 import { isObject, npmPackagePage } from './registry.js';
 import { fundingFromManifestField, repoFromManifestField } from './repo.js';
+import { isReleaseBot } from '../../history/bots.js';
 import { analyzeInstallScripts, markNewInstallHooks } from './scripts.js';
 import { addMonths } from '../../history/aggregate.js';
 import { releaseCadence, releasePublishers } from '../../stability/cadence.js';
@@ -421,6 +422,8 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
   const topMaintainers = parseMaintainers(p.maintainers, opts.includeEmails);
   if (topMaintainers) {
     const value: MaintainersValue = { maintainers: topMaintainers, count: topMaintainers.length };
+    const bots = topMaintainers.filter((m) => isReleaseBot(m.name)).length;
+    if (bots > 0) value.releaseBots = bots;
     facts.push(makeFact('maintainers', pkgSubject, value, meta([pkgPage])));
   }
 

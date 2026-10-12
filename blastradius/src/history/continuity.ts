@@ -12,6 +12,7 @@
  */
 import type { CommitHistoryChange, ReleasePublishersValue } from '../core/types.js';
 import { HISTORY_RULES } from './aggregate.js';
+import { isReleaseBot } from './bots.js';
 import type { HistoryRecord } from './record.js';
 
 const DAY = 86400;
@@ -44,7 +45,8 @@ export function npmContinuity(rec: HistoryRecord, publishers: ReleasePublishersV
   const first = firstSeen(rec, asOf);
   const end = Math.floor(asOf.getTime() / 1000);
   const repoStart = Math.min(...rec.commits.filter((c) => c.at < end).map((c) => c.at));
-  const people = publishers.accounts.filter((a) => !a.trusted);
+  // Trusted publishing (an OIDC CI identity) and organisation release bots are not a person.
+  const people = publishers.accounts.filter((a) => !a.trusted && !isReleaseBot(a.name));
   const changes: CommitHistoryChange[] = [];
   let matched = 0;
   for (const a of people) {

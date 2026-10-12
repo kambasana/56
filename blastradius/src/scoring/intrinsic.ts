@@ -265,7 +265,8 @@ export function scoreIntrinsic(
 
   // Single maintainer.
   const maint = mine.find((f): f is Extract<Fact, { kind: 'maintainers' }> => f.kind === 'maintainers');
-  if (maint && maint.value.count === 1) {
+  // An organisation release bot as the only account (google-wombot) is not a single person (Tier 0).
+  if (maint && maint.value.count === 1 && !maint.value.releaseBots) {
     cands.push({
       factor: 'single_maintainer',
       value: 1,

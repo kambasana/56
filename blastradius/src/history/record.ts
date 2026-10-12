@@ -63,6 +63,19 @@ export interface HistoryRecord {
    * is never kept. Absent when the link was not computed.
    */
   npmPublishers?: Record<string, string>;
+  /**
+   * Every id each npm account's registry e-mail addresses hash to in this history (all versions'
+   * `_npmUser.email`, not only the first): the npm-publisher identity merge (Tier 0). Account names
+   * are public npm handles; the addresses are never kept.
+   */
+  npmPublisherIds?: Record<string, string[]>;
+  /**
+   * Per id, a salted hash of the display name it most often committed under (`name:` + HMAC of the
+   * normalised name, same salt as the e-mail hashes): the display-name identity merge (Tier 0). The
+   * name itself is never kept. Generic names ("root", "Your Name", one short word) get no key.
+   * Absent in histories read before Tier 0.
+   */
+  names?: Record<string, string>;
 }
 
 /** Replace ids (e.g. hashed ids GitHub mapped to a login). Ids mapping to the same login merge. */
@@ -74,5 +87,14 @@ export function renameIds(rec: HistoryRecord, map: ReadonlyMap<string, string>):
     commits: rec.commits.map((c) => ({ ...c, author: r(c.author), committer: r(c.committer) })),
     tags: rec.tags.map((t) => ({ ...t, by: r(t.by) })),
     lookup: rec.lookup.filter((l) => !map.has(l.id)),
+    ...(rec.npmPublishers ? { npmPublishers: Object.fromEntries(Object.entries(rec.npmPublishers).map(([k, v]) => [k, r(v)])) } : {}),
+    ...(rec.npmPublisherIds ? { npmPublisherIds: Object.fromEntries(Object.entries(rec.npmPublisherIds).map(([k, v]) => [k, [...new Set(v.map(r))]])) } : {}),
+    ...(rec.names ? { names: renameNames(rec.names, r) } : {}),
   };
+}
+
+function renameNames(names: Record<string, string>, r: (id: string) => string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [id, key] of Object.entries(names)) out[r(id)] ??= key;
+  return out;
 }

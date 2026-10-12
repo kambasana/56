@@ -49,7 +49,9 @@ describe('§8 subjects on recorded data (P3 gate)', () => {
   it('row 7 moment: Watch, not Fragile; the declared maintenance mode is context only (miss: no second fact, S4 not irregular)', async () => {
     const e = await label('moment');
     expect(e.label).toBe('watch');
-    expect(rules(e)).toEqual(['watch_single_contributor', 'watch_release_continuity']);
+    // Tier 0: the git-side "release by a new account" for 2.31.0 is context (this history has no
+    // resolved identities; with them, 2.31.0 went out through npm trusted publishing: tier0.test.ts).
+    expect(rules(e)).toEqual(['watch_single_contributor']);
     expect(e.s3).toMatchObject({ state: 'active', declared: 'maintenance_mode', lastRelease: '2026-09-15' });
     expect(e.context.find((c) => c.source === 'npm.readme')?.text).toMatch(/legacy project, now in maintenance mode/);
     expect(e.s4).toMatchObject({ irregular: false, cv: 1.32, latestGapDays: expect.closeTo(992.6, 0) });
@@ -151,9 +153,11 @@ describe('control repositories and the hand-review sample', () => {
     for (const p of all.values()) by[p.label]++;
     // P3 refinement: 26 small, finished packages move from Fragile to Watch (was 72 / 131 / 8 / 16).
     // Tier 0: the no-clone fallback labels 6 of the 16 Unknown (3 Steady from a recent release or
-    // Scorecard, 3 Watch for no release in 18 months); vue and vue-router are Watch "Moved".
-    expect(by).toEqual({ fragile: 46, watch: 160, steady: 11, unknown: 10 });
-    expect(pop).toHaveLength(203);
+    // Scorecard, 3 Watch for no release in 18 months); vue and vue-router are Watch "Moved"; ajv,
+    // proxy-addr, semver and serve-static were Watch only from git-only S5a or C1, which are context
+    // without resolved identities (these histories were recorded before display-name keys).
+    expect(by).toEqual({ fragile: 46, watch: 156, steady: 15, unknown: 10 });
+    expect(pop).toHaveLength(199);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
     expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);
     for (const p of finished) {
@@ -167,9 +171,14 @@ describe('control repositories and the hand-review sample', () => {
     for (const p of stillFragile) expect(p.finished?.state).not.toBe('yes');
   });
 
-  it('the sample is reproducible (seed 20261011) and matches the reviewed table in the plan', () => {
-    const sample = reviewSample(reviewPopulation(reports));
-    expect(sample.map((e) => `${e.name}:${e.label}`)).toEqual(REVIEWED);
+  it('the P3 reviewed sample (seed 20261011, table in the plan) keeps its labels, except the Tier 0 changes listed', () => {
+    // Tier 0 changed the population (git-only S5a and C1 are context without resolved identities),
+    // so the sample is no longer redrawn: the 30 reviewed packages are checked by name instead.
+    const all = new Map<string, StabilityEntry>();
+    for (const r of reports) for (const p of r.report.packages) if (p.production && !all.has(p.name)) all.set(p.name, p);
+    const now = REVIEWED.map((x) => x.split(':')[0]!).map((n) => `${n}:${all.get(n)!.label}`);
+    const TIER0: Record<string, string> = { 'semver:watch': 'semver:steady' };
+    expect(now).toEqual(REVIEWED.map((x) => TIER0[x] ?? x));
   });
 
   it('labels, facts and fixtures carry no e-mail address and no contributor id', () => {
