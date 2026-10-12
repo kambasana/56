@@ -22,7 +22,10 @@ import { buildDependencyGraph, scopeExposure, type DependencyGraph } from '../sc
 import { AccountIndex, type PackageTimeline } from '../watch/account.js';
 import type { ExposureHit, StoredInventory } from '../watch/match.js';
 import type {
+  AccountCounts,
   AccountDetail,
+  AccountKnownBad,
+  KnownBadRef,
   AccountExposureResponse,
   AccountExposureRow,
   AccountIncidentRef,
@@ -39,8 +42,12 @@ import type {
 } from './api-types-accounts.js';
 import type { IncidentContext } from './incidents.js';
 import { npmNameVersion, pathsTo, viaOf } from './reach.js';
+import { badVersion, fetchMalwareAdvisories, knownBadFor, type KnownBadEntry } from './known-bad.js';
 import {
   accountIncidentFor,
+  advisoriesToRefresh,
+  registryAdvisories,
+  upsertRegistryAdvisories,
   accountListing,
   all,
   findingFor,
@@ -61,6 +68,7 @@ import {
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+
 /** Below this a path only comes through dev or optional dependencies (as in reach.ts). */
 const DEV_EXPOSURE = 0.5;
 
@@ -156,6 +164,39 @@ export class AccountIndexer {
     return { fetched, failed };
   }
 
+  /**
+   * OSV malware advisories (MAL-*) for `names` that are missing or older than the TTL (account
+   * pivot: known-bad versions in place). One query per package through the shared HttpClient.
+   */
+  async refreshAdvisories(names: Iterable<string>, mode: FetchMode = this.defaultMode): Promise<{ fetched: number; failed: number }> {
+    const olderThan = new Date(this.store.now().getTime() - this.ttlMs).toISOString();
+    const todo = advisoriesToRefresh(this.store, names, olderThan).slice(0, this.opts.listingCap ?? 300);
+    const http = this.client(mode);
+    let fetched = 0;
+    let failed = 0;
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const name = todo[next++]!;
+        try {
+          upsertRegistryAdvisories(this.store, name, { malware: await fetchMalwareAdvisories(http, name) });
+          fetched++;
+        } catch {
+          failed++;
+          upsertRegistryAdvisories(this.store, name, { unavailable: true });
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(4, this.opts.concurrency ?? 4)) }, worker));
+    return { fetched, failed };
+  }
+
+  /** The packages an account can publish (stored links and listing): what its advisories cover. */
+  private accountPackages(account: string): string[] {
+    const listed = accountListing(this.store, account);
+    return [...new Set([...linksOfAccount(this.store, 'npm', account).map((l) => l.package), ...(listed?.status === 'ok' ? listed.packages : [])])];
+  }
+
   /** Every npm package in one project's latest inventory (after a scan). Never throws. */
   afterScan(projectId: string, mode: FetchMode = this.defaultMode): void {
     const orgId = get<{ org_id: string }>(this.store, 'SELECT org_id FROM project WHERE id = ?', projectId)?.org_id;
@@ -188,6 +229,7 @@ export class AccountIndexer {
       await this.fetchListing(account, mode, false);
       const listed = accountListing(this.store, account);
       if (listed?.status === 'ok') await this.refreshNames(listed.packages.slice(0, this.opts.listingCap ?? 300), mode);
+      await this.refreshAdvisories(this.accountPackages(account), mode);
     });
   }
 
@@ -241,7 +283,9 @@ export class AccountIndexer {
     if (!isAccountName(account) || this.queuedAccounts.has(account)) return false;
     const now = this.store.now().getTime();
     const listing = accountListing(this.store, account);
-    if (listing && Date.parse(listing.fetchedAt) >= now - this.ttlMs) return false;
+    const olderThan = new Date(now - this.ttlMs).toISOString();
+    const advisoriesStale = advisoriesToRefresh(this.store, this.accountPackages(account), olderThan).length > 0;
+    if (listing && Date.parse(listing.fetchedAt) >= now - this.ttlMs && !advisoriesStale) return false;
     const retryMs = this.opts.accountRetryMs ?? HOUR;
     const last = this.accountAttempts.get(account);
     if (last !== undefined && last > now - retryMs) return false;
@@ -261,6 +305,7 @@ export class AccountIndexer {
         await this.fetchListing(account, mode, false);
         const listed = accountListing(this.store, account);
         if (listed?.status === 'ok') await this.refreshNames(listed.packages.slice(0, this.opts.listingCap ?? 300), mode);
+        await this.refreshAdvisories(this.accountPackages(account), mode);
       } finally {
         this.queuedAccounts.delete(account);
       }
@@ -328,7 +373,8 @@ export function accountRef(registry: AccountRegistry, name: string): AccountRef 
   return {
     registry,
     name,
-    entityId: registry === 'npm' ? `account:npm/${name}` : `org:${registry}/${name}`,
+    // A repository owner's type (user or organisation) is not known from the packument: never an org.
+    entityId: registry === 'npm' ? `account:npm/${name}` : `owner:${registry}/${name.toLowerCase()}`,
     profileUrl: registry === 'npm' ? npmProfileUrl(name) : `https://${registry}.com/${encodeURIComponent(name)}`,
   };
 }
@@ -403,6 +449,8 @@ interface Universe {
   state: AccountIndexState;
   /** Inventory package name → projects / production. */
   usage: Map<string, { projects: Set<string>; production: boolean }>;
+  /** Known-bad records per package name (KB incidents, stored OSV malware advisories). */
+  knownBad: (name: string) => KnownBadEntry[];
 }
 
 function universe(ctx: IncidentContext, registry: AccountRegistry, name: string): Universe {
@@ -420,6 +468,13 @@ function universe(ctx: IncidentContext, registry: AccountRegistry, name: string)
   const pkgs = registryPackages(ctx.store, [...usage.keys(), ...links.map((l) => l.package)]);
   const timelines: PackageTimeline[] = [...pkgs.values()].filter((p) => p.status === 'ok').map((p) => ({ name: p.name, versions: p.versions }));
   const listing = registry === 'npm' ? accountListing(ctx.store, name) : null;
+  const advisories = registryAdvisories(ctx.store, [...links.map((l) => l.package), ...(listing?.status === 'ok' ? listing.packages : [])]);
+  const badCache = new Map<string, KnownBadEntry[]>();
+  const knownBad = (pkg: string): KnownBadEntry[] => {
+    let v = badCache.get(pkg);
+    if (!v) badCache.set(pkg, (v = knownBadFor(pkg, advisories.get(pkg))));
+    return v;
+  };
   const inUse = [...usage.keys()];
   const indexed = inUse.filter((n) => pkgs.get(n)?.status === 'ok').length;
   return {
@@ -429,6 +484,7 @@ function universe(ctx: IncidentContext, registry: AccountRegistry, name: string)
     links,
     index: new AccountIndex(timelines),
     usage,
+    knownBad,
     state: {
       packagesIndexed: indexed,
       packagesWithoutData: inUse.length - indexed,
@@ -464,11 +520,13 @@ export function accountIncidentRef(ctx: IncidentContext, registry: AccountRegist
   return { id: row.incidentId, status, since: row.since, markedAt: row.markedAt };
 }
 
+const refOf = (e: KnownBadEntry): KnownBadRef => ({ id: e.id, source: e.source, url: e.evidence[0] ?? '' });
+
 function packagesList(u: Universe, can: Map<string, AccountLinkSource[]>): AccountPackage[] {
   return [...can.entries()]
     .map(([name, links]) => {
       const use = u.usage.get(name);
-      return { name, links, projects: use?.projects.size ?? 0, production: use?.production ?? false };
+      return { name, links, projects: use?.projects.size ?? 0, production: use?.production ?? false, knownBad: u.knownBad(name).map(refOf) };
     })
     .sort((a, b) => b.projects - a.projects || Number(b.production) - Number(a.production) || a.name.localeCompare(b.name));
 }
@@ -491,7 +549,7 @@ export function accountExposure(ctx: IncidentContext, registry: AccountRegistry,
   const published = new Map<string, AccountPublish>();
   if (sinceMs !== null && registry === 'npm') {
     for (const e of publishesBy(u.pkgs.values(), name, sinceMs, asOfMs)) {
-      published.set(`${e.name}@${e.version}`, { name: e.name, version: e.version, at: new Date(e.at).toISOString(), attribution: e.attribution, projects: 0 });
+      published.set(`${e.name}@${e.version}`, { name: e.name, version: e.version, at: new Date(e.at).toISOString(), attribution: e.attribution, projects: 0, knownBad: badVersion(u.knownBad(e.name), e.version).map(refOf) });
     }
   }
 
@@ -527,6 +585,7 @@ export function accountExposure(ctx: IncidentContext, registry: AccountRegistry,
         links: rowLinks,
         confidence: best(rowLinks.map((l) => l.confidence)),
         findingId: findingFor(ctx.store, inv.scanId, c.purl)?.id ?? null,
+        knownBad: badVersion(u.knownBad(nv.name), nv.version).map(refOf),
       });
     }
   }
@@ -552,7 +611,26 @@ export function accountExposure(ctx: IncidentContext, registry: AccountRegistry,
     },
     index: u.state,
     incident: accountIncidentRef(ctx, registry, name),
+    knownBad: knownBadList(u, can.keys()),
   };
+}
+
+/** Known-bad records over the packages the account can publish, merged per record id, newest first. */
+function knownBadList(u: Universe, names: Iterable<string>): AccountKnownBad[] {
+  const locked = new Set<string>();
+  for (const { inv } of u.invs) for (const c of inv.inventory.components) if (c.ecosystem === 'npm') locked.add(`${c.name}@${c.version}`);
+  const byId = new Map<string, AccountKnownBad>();
+  for (const name of [...new Set(names)].sort()) {
+    for (const e of u.knownBad(name)) {
+      const row = byId.get(e.id) ?? { id: e.id, source: e.source, title: e.title, date: e.date, aliases: [], evidence: [], packages: [], lockedInYourProjects: false };
+      for (const a of e.aliases) if (!row.aliases.includes(a)) row.aliases.push(a);
+      for (const x of e.evidence) if (!row.evidence.includes(x)) row.evidence.push(x);
+      row.packages.push({ name, versions: e.versions });
+      row.lockedInYourProjects ||= e.versions.some((v) => locked.has(`${name}@${v}`)) || (e.versions.includes('*') && u.usage.has(name));
+      byId.set(e.id, row);
+    }
+  }
+  return [...byId.values()].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || a.id.localeCompare(b.id));
 }
 
 /** The Account page: what it can publish now, recent publish activity (context), its share of production dependencies. */
@@ -564,22 +642,33 @@ export function accountDetail(ctx: IncidentContext, registry: AccountRegistry, n
   for (const { inv } of u.invs) for (const c of inv.inventory.components) if (c.ecosystem === 'npm') locked.set(`${c.name}@${c.version}`, (locked.get(`${c.name}@${c.version}`) ?? 0) + 1);
   // Every attributable publish the index knows (any age); the counts are relative to now.
   const events = registry === 'npm' ? publishesBy(u.pkgs.values(), name, 0, nowMs) : [];
+  // The latest 25, plus every older publish a KB incident or OSV malware advisory names (flagged in place).
+  const flagged = (e: { name: string; version: string }) => badVersion(u.knownBad(e.name), e.version);
   const recentPublishes: AccountPublish[] = events
-    .slice(-25)
+    .filter((e, i) => i >= events.length - 25 || flagged(e).length > 0)
     .reverse()
-    .map((e) => ({ name: e.name, version: e.version, at: new Date(e.at).toISOString(), attribution: e.attribution, projects: locked.get(`${e.name}@${e.version}`) ?? 0 }));
+    .map((e) => ({ name: e.name, version: e.version, at: new Date(e.at).toISOString(), attribution: e.attribution, projects: locked.get(`${e.name}@${e.version}`) ?? 0, knownBad: flagged(e).map(refOf) }));
   const distinct = (ms: number) => new Set(events.filter((e) => e.at >= nowMs - ms).map((e) => e.name)).size;
   const org = orgConcentration(u.invs, u.pkgs);
   const mine = registry === 'npm' ? (org.counts.get(name) ?? 0) : 0;
+  const packages = packagesList(u, can);
+  const counts: AccountCounts = {
+    canPublish: packages.length,
+    canPublishInYourProjects: packages.filter((p) => p.projects > 0).length,
+    canPublishInProduction: packages.filter((p) => p.production).length,
+    productionPackagesWithData: org.withData,
+  };
   return {
     account: u.account,
     known: can.size > 0 || u.links.length > 0,
-    packages: packagesList(u, can),
+    packages,
     recentPublishes,
     activity: { last24h: distinct(DAY), last7d: distinct(7 * DAY), last30d: distinct(30 * DAY) },
     concentration: { packages: mine, of: org.withData, share: org.withData ? round3(mine / org.withData) : 0 },
+    counts,
     index: u.state,
     incident: accountIncidentRef(ctx, registry, name),
+    knownBad: knownBadList(u, can.keys()),
   };
 }
 
@@ -595,13 +684,18 @@ function maintainersOf(pkgs: Map<string, StoredPackage>, name: string): string[]
   return [];
 }
 
+/**
+ * Concentration over production packages counted by name (any version), so an account's count
+ * matches the package list on its page: two locked versions of one package count once.
+ */
 function scopeOf(prodKeys: Iterable<string>, pkgs: Map<string, StoredPackage>, limit: number): ConcentrationScope & { counts: Map<string, number> } {
   const counts = new Map<string, number>();
   let total = 0;
   let withData = 0;
-  for (const key of prodKeys) {
+  const names = new Set<string>();
+  for (const key of prodKeys) names.add(key.slice(0, key.lastIndexOf('@')));
+  for (const name of names) {
     total++;
-    const name = key.slice(0, key.lastIndexOf('@'));
     const m = maintainersOf(pkgs, name);
     if (m === null) continue;
     withData++;

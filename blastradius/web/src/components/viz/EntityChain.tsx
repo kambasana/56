@@ -1,7 +1,8 @@
 /**
  * EntityChain (design system: EntityChain): who is behind a package, drawn top-down in SVG.
- * Shape says the type (pill package, circle account or person, square organisation, diamond
- * funder, rounded rectangle repository); line style says confidence (solid High, dashed Medium,
+ * Shape says the type (pill package, circle account or person, square organisation, dashed
+ * rounded square repository owner of unknown type, diamond funding page, rounded rectangle
+ * repository); line style says confidence (solid High, dashed Medium,
  * dotted Low) and the word is always written too. Nodes are buttons (Tab, Enter); "+N" expands a
  * node's links. The page's Table toggle is the accessible equivalent.
  */
@@ -19,6 +20,9 @@ function Shape({ n, selected }: { n: ChainNode; selected: boolean }) {
       return <rect x={n.x - 60} y={n.y - 15} width={120} height={30} rx={15} className={cls} />;
     case 'org':
       return <rect x={n.x - 16} y={n.y - 16} width={32} height={32} rx={3} className={cls} />;
+    case 'owner':
+      return <rect x={n.x - 16} y={n.y - 16} width={32} height={32} rx={10} strokeDasharray="4 3" className={cls} />;
+    case 'funding':
     case 'funder':
       return <rect x={n.x - 12} y={n.y - 12} width={24} height={24} transform={`rotate(45 ${n.x} ${n.y})`} className={cls} />;
     case 'repo':

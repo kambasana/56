@@ -98,7 +98,7 @@ export function AssetPaths({ assets, maxPaths, maxAssets }: { assets: readonly A
   );
 }
 
-const ENTITY_KIND: Record<string, string> = { account: 'Account', org: 'Org', person: 'Person', funder: 'Funder' };
+const ENTITY_KIND: Record<string, string> = { account: 'Account', org: 'Org', owner: 'Owner (type unknown)', funding: 'Funding page', person: 'Person', funder: 'Funder' };
 
 /** "account:npm/qix" -> { kind: "Account", name: "npm/qix" }; anything else is shown as is. */
 export function entityLabel(id: string): { kind?: string; name: string } {
@@ -120,7 +120,7 @@ function ChainList({ chain, label }: { chain: readonly EntityChainEntry[]; label
             </span>
             {to.kind && <Badge variant="secondary">{to.kind}</Badge>}
             <span className="font-medium">{to.name}</span>
-            {e.reviewed === false && <Badge variant="outline">unreviewed</Badge>}
+            {e.reviewed ? <Badge variant="secondary">reviewed</Badge> : <Badge variant="outline">machine-derived{e.method ? ` (${e.method})` : ''}</Badge>}
           </li>
         );
       })}
@@ -130,13 +130,13 @@ function ChainList({ chain, label }: { chain: readonly EntityChainEntry[]; label
 
 /** Incident chain (if any), then who publishes, owns and funds the package. */
 export function BehindIt({ chain, ownership = [] }: { chain: readonly EntityChainEntry[]; ownership?: readonly EntityChainEntry[] }) {
-  if (chain.length === 0 && ownership.length === 0) return <p className="text-sm text-muted-foreground">No linked organisations, funders or incidents.</p>;
+  if (chain.length === 0 && ownership.length === 0) return <p className="text-sm text-muted-foreground">No linked accounts, owners, funding pages or incidents.</p>;
   return (
     <div className="flex flex-col gap-3">
       {chain.length > 0 && <ChainList chain={chain} label="Entity chain" />}
       {ownership.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          {chain.length > 0 && <span className="text-xs font-medium text-muted-foreground">Publishers, owners and funders</span>}
+          {chain.length > 0 && <span className="text-xs font-medium text-muted-foreground">Publishers, owners and funding pages</span>}
           <ChainList chain={ownership} label="Ownership" />
         </div>
       )}

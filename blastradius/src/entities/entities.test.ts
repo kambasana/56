@@ -8,6 +8,7 @@ import {
   buildEntityGraph,
   editDistance,
   entityPathsToIncidents,
+  isKnownOrg,
   isLinkUsable,
   linkKey,
   loadReviewState,
@@ -37,6 +38,8 @@ function syntheticFacts(): Fact[] {
       ],
       via: 'FUNDING.yml',
     }, { source: 'github', fetchedAt: at }),
+    // A User-owned repository: account:github/alice (the probabilistic npm ↔ GitHub match below).
+    makeFact('repo_owner', npmPurl('alice-tools'), { repo: 'github.com/alice/alice-tools', owner: 'alice', ownerType: 'User', url: 'https://github.com/alice/alice-tools' }, { source: 'github', fetchedAt: at }),
     // Junk / hostile values are ignored.
     makeFact('maintainers', npmPurl('baz'), { maintainers: [{ name: 'x; rm -rf /' }], count: 1 }, meta),
   ];
@@ -57,24 +60,54 @@ describe('resolveEntities', () => {
   const { entities, links } = resolveEntities(syntheticFacts(), { incidents: [incidentFor('person:example-person')] });
 
   it('creates deterministic registry links', () => {
-    expect(find(links, 'account:npm/alice', 'maintains', FOO)).toMatchObject({ confidence: 1, method: 'deterministic', reviewed: true });
+    expect(find(links, 'account:npm/alice', 'maintains', FOO)).toMatchObject({ confidence: 1, method: 'deterministic', reviewed: false });
     expect(find(links, 'account:npm/alice', 'publishes', FOO)?.evidence).toContain('https://www.npmjs.com/package/foo');
     expect(find(links, 'account:npm/carol', 'maintains', BAR)?.evidence).toEqual(['https://www.npmjs.com/package/@scope/bar']);
     expect(entities.find((e) => e.id === 'account:npm/alice')).toEqual({ id: 'account:npm/alice', type: 'account', name: 'alice' });
     expect(entities.some((e) => e.id.includes('rm -rf'))).toBe(false);
   });
 
-  it('links repository owners (typed by repo_owner, else org)', () => {
-    expect(find(links, 'org:github/acme', 'owns', FOO)).toMatchObject({ confidence: 0.9, method: 'deterministic', reviewed: true });
-    expect(find(links, 'org:github/carol', 'owns', BAR)?.confidence).toBeGreaterThanOrEqual(0.9);
+  it('links repository owners: typed by repo_owner, else an owner of unknown type (never an org)', () => {
+    expect(find(links, 'org:github/acme', 'owns', FOO)).toMatchObject({ confidence: 0.9, method: 'deterministic', reviewed: false });
+    expect(find(links, 'owner:github/carol', 'owns', BAR)?.confidence).toBeGreaterThanOrEqual(0.9);
+    expect(entities.find((e) => e.id === 'owner:github/carol')?.type).toBe('owner');
+    expect(entities.some((e) => e.id === 'org:github/carol')).toBe(false);
+    expect(isKnownOrg('org:github/acme')).toBe(true);
+    expect(isKnownOrg('owner:github/carol')).toBe(false);
   });
 
-  it('links funding sources', () => {
-    const f = find(links, 'funder:opencollective/acme-collective', 'funds', 'org:github/acme');
-    expect(f).toMatchObject({ confidence: 0.9, method: 'deterministic', reviewed: true });
-    expect(f?.evidence).toContain('https://opencollective.com/acme-collective');
-    expect(find(links, 'account:github/alice', 'linked_to', FOO)?.evidence[0]).toBe('https://github.com/sponsors/alice');
-    expect(entities.find((e) => e.id === 'funder:opencollective/acme-collective')?.type).toBe('funder');
+  it('an org_profile fact types an owner as an org; a User owner is an account', () => {
+    const extra = [
+      makeFact('org_profile', 'org:github/carol', { entity: 'org:github/carol', via: 'github.org' }, { source: 'github', fetchedAt: at }),
+      makeFact('repo', npmPurl('qux'), { url: 'https://github.com/dave/qux', host: 'github', owner: 'dave', name: 'qux', via: 'npm.repository' }, meta),
+      makeFact('repo_owner', npmPurl('qux'), { repo: 'github.com/dave/qux', owner: 'dave', ownerType: 'User', url: 'https://github.com/dave' }, { source: 'github', fetchedAt: at }),
+    ];
+    const r = resolveEntities([...syntheticFacts(), ...extra], { probabilistic: false });
+    expect(find(r.links, 'org:github/carol', 'owns', BAR)).toBeDefined();
+    expect(find(r.links, 'account:github/dave', 'owns', npmPurl('qux'))).toBeDefined();
+  });
+
+  it('links a package to the funding pages it names, never as a funder', () => {
+    const f = find(links, FOO, 'receives_funding_at', 'funding:opencollective/acme-collective');
+    expect(f).toMatchObject({ confidence: 0.9, method: 'deterministic', reviewed: false });
+    expect(f?.evidence[0]).toBe('https://opencollective.com/acme-collective');
+    expect(find(links, FOO, 'receives_funding_at', 'funding:github/alice')?.evidence[0]).toBe('https://github.com/sponsors/alice');
+    expect(entities.find((e) => e.id === 'funding:opencollective/acme-collective')?.type).toBe('funding');
+    expect(links.some((l) => l.relation === 'funds')).toBe(false);
+    expect(entities.some((e) => e.type === 'funder')).toBe(false);
+  });
+
+  it('makes no links from Open Collective backer lists', () => {
+    const backers = makeFact('funding', FOO, {
+      sources: [{ platform: 'open_collective', handle: 'some-backer', url: 'https://opencollective.com/some-backer' }],
+      via: 'opencollective',
+    }, { source: 'github', fetchedAt: at, evidence: ['https://opencollective.com/acme-collective'] });
+    const r = resolveEntities([...syntheticFacts(), backers], { probabilistic: false });
+    expect(JSON.stringify(r)).not.toContain('some-backer');
+  });
+
+  it('never marks a machine-derived link reviewed', () => {
+    expect(links.every((l) => l.reviewed === false)).toBe(true);
   });
 
   it('adds incident entity refs as entities', () => {
@@ -88,7 +121,7 @@ describe('resolveEntities', () => {
     expect(links.some((l) => l.from === 'account:npm/bob' && l.relation === 'linked_to')).toBe(false);
     const handle = find(links, 'account:npm/alice', 'linked_to', 'account:github/alice');
     expect(handle).toMatchObject({ confidence: 0.7, method: 'probabilistic', reviewed: false });
-    const carol = find(links, 'account:npm/carol', 'linked_to', 'org:github/carol');
+    const carol = find(links, 'account:npm/carol', 'linked_to', 'owner:github/carol');
     expect(carol?.confidence).toBe(0.7);
     expect(JSON.stringify({ entities, links })).not.toMatch(/@acme\.dev|@gmail/);
     for (const l of links) {
@@ -162,16 +195,16 @@ describe('entityPathsToIncidents', () => {
     expect(entityPathsToIncidents(g, BAR)).toEqual(paths);
   });
 
-  it('follows org and funder hops with decaying confidence and respects maxHops', () => {
-    const inc = incidentFor('funder:opencollective/acme-collective', 'INC-2023-0002', 1);
-    const data = resolveEntities(syntheticFacts(), { incidents: [inc] });
-    const g = buildEntityGraph(data, [inc]);
+  it('follows multi-hop links with decaying confidence and respects maxHops', () => {
+    const inc = incidentFor('org:github/acme', 'INC-2023-0002', 1);
+    const links: EntityLink[] = [
+      { from: 'account:npm/a', to: FOO, relation: 'maintains', confidence: 1, evidence: ['https://e'], method: 'deterministic', reviewed: false },
+      { from: 'account:npm/a', to: 'org:github/acme', relation: 'member_of', confidence: 0.9, evidence: ['https://e'], method: 'deterministic', reviewed: false },
+    ];
+    const g = buildEntityGraph({ entities: [], links }, [inc]);
     const paths = g.entityPathsToIncidents(FOO);
-    expect(paths[0]).toMatchObject({
-      path: [FOO, 'org:github/acme', 'funder:opencollective/acme-collective'],
-      hops: 2,
-    });
-    expect(paths[0]!.confidence).toBeCloseTo(0.81);
+    expect(paths[0]).toMatchObject({ path: [FOO, 'account:npm/a', 'org:github/acme'], hops: 2 });
+    expect(paths[0]!.confidence).toBeCloseTo(0.9);
     expect(g.entityPathsToIncidents(FOO, 1)).toEqual([]);
   });
 
@@ -226,13 +259,12 @@ describe('entityPathsToIncidents', () => {
 });
 
 describe('ownershipOf (who is behind a package, incident or not)', () => {
-  it('lists accounts and the owner org, then the funders one hop further, without any incident', () => {
+  it('lists accounts, the owner org and the funding pages it names, without any incident', () => {
     const g = buildEntityGraph(resolveEntities(syntheticFacts(), { incidents: [] }));
     const own = g.ownershipOf(npmPurl('foo', '1.2.3'));
     const pairs = own.map((e) => `${e.from} -${e.relation}-> ${e.entityId}`);
-    expect(pairs).toEqual(expect.arrayContaining([`${FOO} -maintains-> account:npm/alice`, `${FOO} -owns-> org:github/acme`, 'org:github/acme -funds-> funder:opencollective/acme-collective']));
-    // Nearest first, every entry carries evidence, never a package node, no unreviewed links.
-    expect(own.findIndex((e) => e.from !== FOO)).toBeGreaterThan(own.findLastIndex((e) => e.from === FOO));
+    expect(pairs).toEqual(expect.arrayContaining([`${FOO} -maintains-> account:npm/alice`, `${FOO} -owns-> org:github/acme`, `${FOO} -receives_funding_at-> funding:opencollective/acme-collective`]));
+    // Every entry carries evidence, never a package node, no unreviewed links.
     for (const e of own) {
       expect(e.evidence!.length).toBeGreaterThan(0);
       expect(e.entityId.startsWith('pkg:')).toBe(false);

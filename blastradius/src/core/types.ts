@@ -975,12 +975,21 @@ export function factsFor(facts: readonly Fact[], purl: PurlString, kind?: FactKi
 // Entities (PLAN §3.3)
 // ---------------------------------------------------------------------------
 
-export type EntityType = 'person' | 'org' | 'funder' | 'account';
+/**
+ * - `owner`: a repository owner whose account type (user or organisation) is not known, e.g. after
+ *   a GitHub 403. Never treated as an org: excluded from every org rule, roll-up, policy and
+ *   jurisdiction check.
+ * - `funding`: a payable funding page the package or repository itself names (FUNDING.yml or
+ *   package.json#funding), e.g. an Open Collective collective. It says where money can be sent, not
+ *   who sends it.
+ */
+export type EntityType = 'person' | 'org' | 'funder' | 'account' | 'owner' | 'funding';
 
 /**
  * Entity ids are namespaced strings:
- *   account:npm/<handle>, account:github/<login>, org:github/<login>,
- *   person:<slug>, funder:opencollective/<slug>, repo:github/<owner>/<name>
+ *   account:npm/<handle>, account:github/<login>, org:github/<login>, owner:github/<login> (type
+ *   unknown), person:<slug>, funding:<platform>/<handle>, funder:opencollective/<slug> (legacy),
+ *   repo:github/<owner>/<name>
  */
 export interface Entity {
   id: string;
@@ -988,7 +997,19 @@ export interface Entity {
   name: string;
 }
 
-export type EntityRelation = 'maintains' | 'publishes' | 'owns' | 'funds' | 'member_of' | 'linked_to';
+/**
+ * `receives_funding_at` runs from a package to the funding page it names (neutral: where money can
+ * be sent). `funds` (who pays whom) is no longer produced until funding direction is modelled (P4);
+ * it stays in the union so stored data and review files still parse.
+ */
+export type EntityRelation = 'maintains' | 'publishes' | 'owns' | 'funds' | 'receives_funding_at' | 'member_of' | 'linked_to';
+
+/**
+ * How a link was established: `deterministic` (a registry or repository field read as-is),
+ * `probabilistic` (a heuristic match), or `agent:<task>` (proposed by the agentic gap-filler and
+ * verified against its source).
+ */
+export type LinkMethod = 'deterministic' | 'probabilistic' | `agent:${string}`;
 
 /** Directed edge. `from`/`to` are Entity ids or component purls (unversioned). */
 export interface EntityLink {
@@ -999,7 +1020,12 @@ export interface EntityLink {
   confidence: number;
   /** Public URLs. At least one is required (PLAN §7). */
   evidence: string[];
-  method: 'deterministic' | 'probabilistic';
+  /** How a machine established the link. Says nothing about human review. */
+  method: LinkMethod;
+  /**
+   * True only after a human decision: a `--review` file entry or an API review decision accepted
+   * the link. Machine-derived links (any `method`) are always false.
+   */
   reviewed: boolean;
 }
 
@@ -1124,7 +1150,10 @@ export interface EntityChainEntry {
   evidence?: string[];
   /** How the link was established; KB incident hops are 'deterministic'. Always set by scoring. */
   method?: EntityLink['method'];
-  /** Whether a human reviewed the link (KB incidents are curated, so true). Always set by scoring. */
+  /**
+   * Whether a human reviewed the link: a review decision accepted it, or (incident hop) the KB entry
+   * is a hand-curated incident. Machine-derived links are false. Always set by scoring.
+   */
   reviewed?: boolean;
 }
 

@@ -1,17 +1,28 @@
 /**
  * Entity resolution (PLAN §3.3): Facts (+ incidents) → Entity[] / EntityLink[].
  *
- * Deterministic rules (confidence ≥ 0.9, reviewed = true):
+ * Every link this module makes is machine-derived, so `reviewed` is false on all of them; only a
+ * human review decision (src/entities/review.ts: `--review` file or the API) sets it. `method`
+ * says how the machine got there.
+ *
+ * Deterministic rules (method 'deterministic', confidence ≥ 0.9):
  *  - npm `maintainers`      → account:npm/<h>  --maintains--> pkg            (1.0)
  *  - npm `publisher`        → account:npm/<h>  --publishes--> pkg            (1.0)
- *  - `repo_owner` (GitHub)  → org:github/<o> | account:github/<o> --owns--> pkg (0.9; repository field → owner)
- *  - `repo` without owner fact, GitHub host → same as above, type inferred    (0.9)
- *  - `funding` (FUNDING.yml / package.json#funding):
- *      open_collective / other platforms → funder:<platform>/<h> --funds--> owner org (or pkg)   (0.9)
- *      github (Sponsors)                  → account:github/<h> --linked_to--> pkg (funding account) (0.9)
+ *  - `repo_owner` (GitHub)  → org:github/<o> (type Organization) | account:github/<o> (type User)
+ *                             --owns--> pkg (0.9)
+ *  - `repo` without an owner type (e.g. the GitHub API answered 403) → owner:github/<o> (type
+ *    unknown) --owns--> pkg (0.9). An unknown owner is never typed as an org: it is excluded from
+ *    every org rule, roll-up, policy and jurisdiction check. It becomes org:github/<o> only when a
+ *    deterministic source says so (a repo_owner fact with ownerType Organization, or an
+ *    org_profile fact for org:github/<o>).
+ *  - `funding` the package itself declares (package.json#funding, the repo's FUNDING.yml):
+ *      pkg --receives_funding_at--> funding:<platform>/<h>   (0.9; a neutral "money can be sent
+ *      here" link, never "X funds Y")
+ *    Backer lists (`funding` facts via 'opencollective') make no links: who pays whom is not
+ *    modelled until P4, and a person's collective backers must never be attributed to an org.
  *  - incident entity refs   → Entity nodes (incidents attach in the graph, see graph.ts)
  *
- * Probabilistic rules (confidence < 0.8, reviewed = false; ignored by scoring until reviewed):
+ * Probabilistic rules (method 'probabilistic', confidence < 0.8; ignored by scoring until reviewed):
  *  - two npm accounts with public emails on the same non-webmail domain → linked_to (0.5)
  *  - npm handle equal (case-insensitive) to a GitHub login → linked_to (0.7)
  *  - npm handle within edit distance 1 of a GitHub login (len ≥ 6) → linked_to (0.4)
@@ -68,14 +79,60 @@ export function githubAccountId(login: string): string {
 export function githubOrgId(login: string): string {
   return `org:github/${login.toLowerCase()}`;
 }
+/** A repository owner whose type (user or organisation) is not known. */
+export function githubOwnerId(login: string): string {
+  return `owner:github/${login.toLowerCase()}`;
+}
+/** A funding page a package names: funding:<platform>/<handle>. */
+export function fundingId(platform: string, handle: string): string {
+  return `funding:${normalisePlatform(platform)}/${handle.toLowerCase()}`;
+}
 export function funderId(platform: string, handle: string): string {
   return `funder:${platform.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}/${handle.toLowerCase()}`;
 }
 
-/** Entity type implied by an id prefix ('account:', 'org:', 'person:', 'funder:'). */
+const ENTITY_TYPES: readonly EntityType[] = ['account', 'org', 'person', 'funder', 'owner', 'funding'];
+
+/** Entity type implied by an id prefix ('account:', 'org:', 'owner:', 'person:', 'funder:', 'funding:'). */
 export function entityTypeOf(id: string): EntityType | undefined {
   const prefix = id.slice(0, id.indexOf(':'));
-  return prefix === 'account' || prefix === 'org' || prefix === 'person' || prefix === 'funder' ? prefix : undefined;
+  return (ENTITY_TYPES as readonly string[]).includes(prefix) ? (prefix as EntityType) : undefined;
+}
+
+/** True only for an entity known to be an organisation. Unknown-type owners are never orgs. */
+export function isKnownOrg(id: string): boolean {
+  return entityTypeOf(id) === 'org';
+}
+
+function normalisePlatform(platform: string): string {
+  const p = platform.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  return p === 'open_collective' ? 'opencollective' : p;
+}
+
+/** Public page of a funding handle, when the platform has a well-known URL. */
+function fundingPageUrl(platform: string, handle: string): string | undefined {
+  switch (platform) {
+    case 'opencollective':
+      return `https://opencollective.com/${handle}`;
+    case 'github':
+      return `https://github.com/sponsors/${handle}`;
+    case 'patreon':
+      return `https://www.patreon.com/${handle}`;
+    case 'ko_fi':
+      return `https://ko-fi.com/${handle}`;
+    case 'liberapay':
+      return `https://liberapay.com/${handle}`;
+    case 'tidelift':
+      return `https://tidelift.com/funding/github/${handle}`;
+    case 'polar':
+      return `https://polar.sh/${handle}`;
+    case 'buy_me_a_coffee':
+      return `https://www.buymeacoffee.com/${handle}`;
+    case 'thanks_dev':
+      return `https://thanks.dev/${handle}`;
+    default:
+      return undefined;
+  }
 }
 
 /** Display name for an entity id: the part after the platform ("account:npm/foo" → "foo"). */
@@ -188,20 +245,32 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
     emailsByAccount.set(accountId, list);
   };
 
-  // GitHub owner types known from repo_owner facts, used when only a `repo` fact is present.
+  // GitHub owner types known from deterministic sources: repo_owner facts (the GitHub API's
+  // owner.type) and org_profile facts about org:github/<login> (an organisation's own profile).
   const ownerTypes = new Map<string, 'User' | 'Organization'>();
   for (const f of facts.filter(isFactOf('repo_owner'))) {
-    if (HANDLE_RE.test(f.value.owner)) ownerTypes.set(f.value.owner.toLowerCase(), f.value.ownerType);
+    if (HANDLE_RE.test(f.value.owner) && (f.value.ownerType === 'User' || f.value.ownerType === 'Organization')) {
+      ownerTypes.set(f.value.owner.toLowerCase(), f.value.ownerType);
+    }
+  }
+  for (const f of facts.filter(isFactOf('org_profile'))) {
+    const m = /^org:github\/([A-Za-z0-9._-]{1,100})$/.exec(f.value.entity);
+    if (m && !ownerTypes.has(m[1]!.toLowerCase())) ownerTypes.set(m[1]!.toLowerCase(), 'Organization');
   }
   const ownerEntity = (login: string): string => {
     const l = login.toLowerCase();
-    if (ownerTypes.get(l) === 'User') {
+    const type = ownerTypes.get(l);
+    if (type === 'User') {
       b.entity(githubAccountId(l), 'account', l);
       return githubAccountId(l);
     }
-    // Organization, or unknown (a repository owner without a type fact is treated as an org-level owner).
-    b.entity(githubOrgId(l), 'org', l);
-    return githubOrgId(l);
+    if (type === 'Organization') {
+      b.entity(githubOrgId(l), 'org', l);
+      return githubOrgId(l);
+    }
+    // Type unknown (no repo_owner fact, e.g. the GitHub API answered 403): never an org.
+    b.entity(githubOwnerId(l), 'owner', l);
+    return githubOwnerId(l);
   };
   const ownersByPkg = new Map<string, string>();
 
@@ -217,7 +286,7 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
           b.entity(id, 'account', m.name.toLowerCase());
           b.link({
             from: id, to: pkg, relation: 'maintains', confidence: DETERMINISTIC_CONFIDENCE.registry,
-            evidence: [...(f.evidence ?? []), pkgUrl], method: 'deterministic', reviewed: true,
+            evidence: [...(f.evidence ?? []), pkgUrl], method: 'deterministic', reviewed: false,
           });
           noteEmail(id, m.email, pkgUrl);
         }
@@ -228,7 +297,7 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
         b.entity(id, 'account', f.value.name.toLowerCase());
         b.link({
           from: id, to: pkg, relation: 'publishes', confidence: DETERMINISTIC_CONFIDENCE.registry,
-          evidence: [...(f.evidence ?? []), pkgUrl], method: 'deterministic', reviewed: true,
+          evidence: [...(f.evidence ?? []), pkgUrl], method: 'deterministic', reviewed: false,
         });
         noteEmail(id, f.value.email, pkgUrl);
         break;
@@ -239,7 +308,7 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
         ownersByPkg.set(pkg, id);
         b.link({
           from: id, to: pkg, relation: 'owns', confidence: DETERMINISTIC_CONFIDENCE.repository,
-          evidence: [f.value.url, ...(f.evidence ?? [])], method: 'deterministic', reviewed: true,
+          evidence: [f.value.url, ...(f.evidence ?? [])], method: 'deterministic', reviewed: false,
         });
         break;
       }
@@ -257,37 +326,27 @@ export function resolveEntities(facts: readonly Fact[], opts: ResolveOptions = {
     ownersByPkg.set(pkg, id);
     b.link({
       from: id, to: pkg, relation: 'owns', confidence: DETERMINISTIC_CONFIDENCE.repository,
-      evidence: [f.value.url, ...(f.evidence ?? [])], method: 'deterministic', reviewed: true,
+      evidence: [f.value.url, ...(f.evidence ?? [])], method: 'deterministic', reviewed: false,
     });
   }
 
-  // Funding (after owners are known so funders attach to the owning org when there is one).
+  // Funding: only what the package itself declares (package.json#funding, its repo's FUNDING.yml),
+  // as a neutral pkg --receives_funding_at--> funding page link. Backer lists (via 'opencollective')
+  // make no links: direction and amounts are P4, and a person's backers are never an org's.
   for (const f of facts.filter(isFactOf('funding'))) {
+    if (f.value.via === 'opencollective') continue;
     const pkg = base(f.subject);
     if (!pkg) continue;
     const pkgUrl = npmPackageUrl(pkg);
     for (const s of f.value.sources) {
-      const platform = s.platform.toLowerCase();
       const handle = s.handle && HANDLE_RE.test(s.handle) ? s.handle : undefined;
-      if (platform === 'github') {
-        if (!handle) continue;
-        const id = githubAccountId(handle);
-        b.entity(id, 'account', handle.toLowerCase());
-        b.link({
-          from: id, to: pkg, relation: 'linked_to', confidence: DETERMINISTIC_CONFIDENCE.funding,
-          evidence: [`https://github.com/sponsors/${handle}`, ...(f.evidence ?? []), pkgUrl],
-          method: 'deterministic', reviewed: true,
-        });
-        continue;
-      }
       if (!handle) continue; // bare URLs (custom) are not resolvable to an entity
-      const isOpenCollective = platform === 'open_collective' || platform === 'opencollective';
-      const fid = funderId(isOpenCollective ? 'opencollective' : platform, handle);
-      b.entity(fid, 'funder', handle.toLowerCase());
-      const ocUrl = isOpenCollective ? `https://opencollective.com/${handle}` : undefined;
+      const platform = normalisePlatform(s.platform);
+      const id = fundingId(platform, handle);
+      b.entity(id, 'funding', handle.toLowerCase());
       b.link({
-        from: fid, to: ownersByPkg.get(pkg) ?? pkg, relation: 'funds', confidence: DETERMINISTIC_CONFIDENCE.funding,
-        evidence: [s.url, ocUrl, ...(f.evidence ?? []), pkgUrl], method: 'deterministic', reviewed: true,
+        from: pkg, to: id, relation: 'receives_funding_at', confidence: DETERMINISTIC_CONFIDENCE.funding,
+        evidence: [fundingPageUrl(platform, handle), s.url, ...(f.evidence ?? []), pkgUrl], method: 'deterministic', reviewed: false,
       });
     }
   }
@@ -338,7 +397,7 @@ function addProbabilisticLinks(
 
   // npm handles vs GitHub logins.
   const npmAccounts = [...b.entities.values()].filter((e) => e.id.startsWith('account:npm/'));
-  const githubIds = [...b.entities.values()].filter((e) => e.id.startsWith('account:github/') || e.id.startsWith('org:github/'));
+  const githubIds = [...b.entities.values()].filter((e) => e.id.startsWith('account:github/') || e.id.startsWith('org:github/') || e.id.startsWith('owner:github/'));
   for (const n of npmAccounts) {
     for (const g of githubIds) {
       const a = n.name.toLowerCase();

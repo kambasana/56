@@ -9,6 +9,7 @@ import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { applyPolicy, SOURCE_LABEL } from '../licenses/report.js';
 import { escapeHtml as h, safeHttpUrl } from './escape.js';
 import { findingReach, nameAndVersion } from './json.js';
+import { behindSection, notAnalysedBanner, reviewState, stabilitySection } from './html-behind.js';
 
 export interface HtmlOptions {
   title?: string;
@@ -37,7 +38,7 @@ th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;le
 .lvl{display:inline-block;border-radius:4px;padding:0 6px;font-size:12px;font-weight:600;color:#fff}.lvl-critical{background:var(--critical)}.lvl-high{background:var(--high)}.lvl-medium{background:var(--medium)}.lvl-low{background:var(--low)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0;overflow-wrap:anywhere}
 code{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}.path{margin:2px 0}a{color:var(--link)}ul{margin:4px 0;padding-left:20px}
-.scroll{overflow-x:auto}`;
+.scroll{overflow-x:auto}.banner{border:2px solid var(--critical);border-radius:8px;padding:10px 14px;margin:16px 0}`;
 
 function levelBadge(level: RiskLevel): string {
   return `<span class="lvl lvl-${h(level)}">${h(level)}</span>`;
@@ -81,7 +82,7 @@ function findingCard(f: Finding, idx: number, opts: Required<Pick<HtmlOptions, '
     : '<p class="muted">Not reachable from any inventory asset.</p>';
   const chain = f.entityChain.length
     ? `<p><strong>Entity chain:</strong> <code>${h(f.purl)}</code>${f.entityChain
-        .map((c) => ` → <code>${h(c.entityId)}</code> <span class="muted">(${h(c.relation)}, confidence ${h(c.confidence)})</span>`)
+        .map((c) => ` → <code>${h(c.entityId)}</code> <span class="muted">(${h(c.relation)}, confidence ${h(c.confidence)}, ${h(reviewState(c))})</span>`)
         .join('')}</p>`
     : '';
   return `<section class="card" id="f${idx}">
@@ -182,6 +183,7 @@ export function renderHtml(result: ScanResult, opts: HtmlOptions = {}): string {
 <body><main>
 <h1>${h(title)}</h1>
 <p class="muted">Target <code>${h(result.target)}</code> · generated ${h(result.generatedAt)} · schema v${h(result.schemaVersion)}</p>
+${notAnalysedBanner(result)}
 <div class="tiles">
 ${LEVELS.map((l) => `<div class="tile">${levelBadge(l)}<strong>${h(counts[l])}</strong></div>`).join('\n')}
 <div class="tile"><span class="muted">Components</span><strong>${h(inv.components)}</strong></div>
@@ -189,11 +191,13 @@ ${LEVELS.map((l) => `<div class="tile">${levelBadge(l)}<strong>${h(counts[l])}</
 <div class="tile"><span class="muted">Direct deps</span><strong>${h(inv.directComponents)}</strong></div>
 <div class="tile"><span class="muted">Install scripts</span><strong>${h(inv.withInstallScripts)}</strong></div>
 </div>
-<p class="muted">Scores combine intrinsic signals and recorded incidents linked through reviewed public evidence. They describe risk signals, not judgements about any person or organisation.</p>
+<p class="muted">Scores combine intrinsic signals and recorded incidents linked through public evidence (machine-derived links are labelled as such; reviewed means a person accepted the link). They describe risk signals, not judgements about any person or organisation.</p>
 <h2>Top ${h(top.length)} of ${h(result.findings.length)} findings</h2>
 ${result.health?.length ? `<p class="muted">${h(result.health.length)} more component(s) have upkeep signals only (no provenance, single maintainer, weak posture, unmaintained). They are listed in the JSON report under <code>health</code>, not counted as findings.</p>` : ''}
 ${summaryTable}
 ${top.map((f, i) => findingCard(f, i, cardOpts)).join('\n')}
+${behindSection(result)}
+${stabilitySection(result)}
 ${outboundSection(result.outbound ?? [])}
 ${result.licenses ? licenseSection(result.licenses, opts.licensePolicy ?? DEFAULT_LICENSE_POLICY, opts.licensePolicyLabel ?? (opts.licensePolicy ? 'custom' : 'default template (permissive allowed, everything else needs review)')) : ''}
 ${warnings}

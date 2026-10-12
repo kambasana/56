@@ -149,6 +149,9 @@ describe('on-demand account refreshes', () => {
     return { s, urls, http, advance: (ms: number) => (t += ms), fail: () => (failListing = true) };
   }
   const listings = (urls: string[], who: string) => urls.filter((u) => u.endsWith(`/-/user/${who}/package`)).length;
+  /** Packument requests (the OSV malware queries for the same packages are counted apart). */
+  const packuments = (urls: string[]) => urls.filter((u) => !u.includes('/-/user/') && !u.includes('api.osv.dev'));
+  const osv = (urls: string[]) => urls.filter((u) => u.includes('api.osv.dev'));
 
   it('page views queue at most one background refresh per account per interval, deduped and bounded', async () => {
     const { s, urls, http, advance, fail } = counting();
@@ -157,7 +160,8 @@ describe('on-demand account refreshes', () => {
     expect(ix.refreshAccountSoon('alice')).toBe(false); // already queued
     await ix.idle();
     expect(listings(urls, 'alice')).toBe(1);
-    expect(urls.filter((u) => !u.includes('/-/user/'))).toHaveLength(2); // pkg-a, pkg-b packuments
+    expect(packuments(urls)).toHaveLength(2); // pkg-a, pkg-b packuments
+    expect(osv(urls)).toHaveLength(2); // and their OSV malware advisories (account pivot)
     expect(ix.refreshAccountSoon('alice')).toBe(false); // fresh
     // Many names at once: never more than maxQueuedAccounts waiting.
     expect(['c1', 'c2', 'c3', 'c4'].map((n) => ix.refreshAccountSoon(n))).toEqual([true, true, false, false]);
@@ -185,10 +189,11 @@ describe('on-demand account refreshes', () => {
     expect(listings(urls, 'bob')).toBe(1);
     expect(accountListing(s, 'bob')).toMatchObject({ status: 'ok', packages: ['pkg-a', 'pkg-b'] });
     await ix.idle(); // packuments came in the background
-    expect(urls.filter((u) => !u.includes('/-/user/'))).toHaveLength(2);
+    expect(packuments(urls)).toHaveLength(2);
+    expect(osv(urls)).toHaveLength(2);
     await ix.ensureListing('bob'); // known: no wait, no request
     await ix.idle();
-    expect(urls).toHaveLength(3);
+    expect(urls).toHaveLength(5);
   });
 
   it('an account page view only queues a background refresh, never fetching on the request', async () => {
