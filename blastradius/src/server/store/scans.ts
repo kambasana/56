@@ -12,6 +12,7 @@ import type { Inventory, ScanResult } from '../../core/types.js';
 import { writeAudit } from './audit.js';
 import { all, get, isConstraintError, newId, nextCursorFor, nowIso, pageWindow, parseJson, placeholders, run, StoreError, tx, type Param, type Store } from './db.js';
 import { assetMetaFromInventory, emptyCounts, insertFindingRows, isRiskLevel } from './findings.js';
+import { packageBehindRows } from './trust-pass.js';
 
 interface ScanRow {
   id: string;
@@ -186,6 +187,7 @@ export function completeScan(s: Store, scanId: string, input: CompleteScanInput)
       scanId,
     );
     insertFindingRows(s, { id: scanId, projectId: row.project_id, orgId: row.org_id, createdAt: row.created_at }, input.result.findings, assets);
+    for (const b of packageBehindRows(input.result)) run(s, 'INSERT OR REPLACE INTO scan_package_behind (scan_id, purl, name, behind_json) VALUES (?, ?, ?, ?)', scanId, b.purl, b.name, b.behindJson);
     syncAgentProposals(s, { orgId: row.org_id, projectId: row.project_id, scanId }, input.result.agentic);
     return getScanById(s, scanId)!;
   });

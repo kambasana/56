@@ -20,7 +20,7 @@ describe('migrations', () => {
     db.close();
   });
 
-  it('numbers migrations 1..N with no gaps or repeats, the agentic proposals last', () => {
+  it('numbers migrations 1..N with no gaps or repeats, the Tier 0 trust pass last', () => {
     expect(MIGRATIONS.map((m) => m.version)).toEqual(MIGRATIONS.map((_, i) => i + 1));
     expect(MIGRATIONS.slice(5).map((m) => [m.version, m.name])).toEqual([
       [6, 'finding triage: fixing, resolved, owner, risk expiry'],
@@ -30,8 +30,9 @@ describe('migrations', () => {
       [10, 'upgrade untouched built-in role defaults in every org'],
       [11, 'licence policy'],
       [12, 'agentic fact proposals'],
+      [13, 'tier 0 trust pass: reviewed, owner types, funding, who-is-behind'],
     ]);
-    expect(SCHEMA_VERSION).toBe(12);
+    expect(SCHEMA_VERSION).toBe(13);
   });
 
   it('upgrades untouched built-in AppSec and Auditor roles in every existing org (v10), never customised ones', () => {
@@ -84,7 +85,7 @@ describe('migrations', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA foreign_keys = ON');
     migrate(db, MIGRATIONS.filter((m) => m.version <= 11));
-    expect(migrate(db)).toEqual([12]);
+    expect(migrate(db)).toEqual([12, 13]);
     db.exec("INSERT INTO org (id, name, slug, created_at) VALUES ('org_1', 'Acme', 'acme', '2026-01-01T00:00:00Z')");
     db.exec(`INSERT INTO agent_proposal (org_id, id, task, subject, subject_kind, status, first_seen_at, last_seen_at) VALUES ('org_1', 'prop_1', 'funding', 'pkg:npm/x', 'package', 'unverified', 't', 't')`);
     expect(() => db.exec(`INSERT INTO agent_proposal (org_id, id, task, subject, subject_kind, status, first_seen_at, last_seen_at) VALUES ('org_1', 'prop_1', 'funding', 'pkg:npm/x', 'package', 'unverified', 't', 't')`)).toThrow(/UNIQUE/);

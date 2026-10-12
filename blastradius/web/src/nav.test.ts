@@ -105,7 +105,7 @@ describe('routing helpers', () => {
     expect(activeNavId('/projects/p1/findings/f1')).toBe('findings');
     expect(activeNavId('/projects/p1/exposure')).toBe('projects');
     expect(activeNavId('/projects')).toBe('projects');
-    expect(activeNavId('/packages')).toBe('incidents');
+    expect(activeNavId('/packages')).toBe('overview');
     expect(activeNavId('/incidents/GHSA-1')).toBe('incidents');
     expect(activeNavId('/exposure')).toBe('overview');
     expect(activeNavId('/licenses')).toBe('overview');

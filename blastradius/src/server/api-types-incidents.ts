@@ -208,17 +208,59 @@ export interface PackageReachResponse {
 // Who's behind a package
 // ---------------------------------------------------------------------------
 
+/**
+ * One "who is behind" link. `method` says how a machine established it (deterministic registry or
+ * repository field, probabilistic match, agent:<task>); `reviewed` is true only when a person
+ * accepted it (POST /api/packages/behind/review, or a --review file in the CLI scan).
+ */
+export type BehindLink = Required<Pick<EntityChainEntry, 'from' | 'entityId' | 'relation' | 'confidence' | 'evidence' | 'method' | 'reviewed'>> & {
+  /** Who accepted it and when (only when reviewed). */
+  review?: { by: string; at: IsoTime; note: string | null };
+};
+
 /** GET /api/packages/behind?name= */
 export interface PackageBehindResponse {
   name: string;
   /** Projects whose latest scan has the package (any version). */
   usedIn: number;
-  /** Merged, de-duplicated links from findings' `behind` and `entityChain` (incident hops left out). */
-  links: Required<Pick<EntityChainEntry, 'from' | 'entityId' | 'relation' | 'confidence' | 'evidence' | 'method' | 'reviewed'>>[];
+  /**
+   * The same graph as the CLI JSON: merged links from every package's `behind` (findings and health
+   * entries) and findings' `entityChain` (incident hops left out), with the org's review decisions
+   * applied (rejected links are left out).
+   */
+  links: BehindLink[];
   /** Incident ids the entity chain ends at, if any. */
   incidents: string[];
   /** Other packages (in your scans) each entity is linked to, by entity id. */
   alsoLinked: Record<string, string[]>;
+  /**
+   * npm accounts that can publish the package now (packument maintainers, from the account index);
+   * null when the index has no registry data for it yet.
+   */
+  publishRights: { account: string; entityId: string; source: string; evidence: string }[] | null;
+  /** Each version your projects lock, newest first: who published it (npm `_npmUser`), when known. */
+  lockedVersions: {
+    version: string;
+    projects: number;
+    production: boolean;
+    publisher: { account: string; attribution: 'npmUser' | 'sole-maintainer'; at: IsoTime | null } | null;
+    /** KB incidents / OSV malware advisories naming this exact version. */
+    knownBad: { id: string; source: 'kb' | 'osv'; url: string }[];
+  }[];
+  /** Counts that let a page say "machine-derived" and "reviewed" apart. */
+  review: { machineDerived: number; reviewed: number; rejected: number };
+}
+
+/** POST /api/packages/behind/review (needs `review`): a person's decision on one link. */
+export interface ReviewBehindLinkRequest {
+  /** The package page the decision is made on; the response is its refreshed PackageBehindResponse. */
+  package: string;
+  from: string;
+  relation: string;
+  to: string;
+  /** accept: mark reviewed; reject: hide it from the org; clear: back to machine-derived. */
+  decision: 'accept' | 'reject' | 'clear';
+  note?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -27,6 +27,8 @@ import {
   listAlerts,
   nowIso,
   recordNotified,
+  clearLinkReview,
+  setLinkReview,
   RISK_LEVELS,
   ruleMatches,
   setIncidentStatus,
@@ -47,6 +49,16 @@ const RuleBody = z.strictObject({
 });
 const PreviewBody = z.strictObject({ minLevel: Level, productionOnly: z.boolean().optional() });
 const TestBody = z.strictObject({ channel: z.string().max(81) });
+const EntityRef = z.string().min(3).max(300).regex(/^(pkg:npm\/|account:|org:|owner:|person:|funder:|funding:)[^\s]+$/);
+const ReviewLinkBody = z.strictObject({
+  /** The package page the decision was made on (the response is its refreshed "who is behind"). */
+  package: z.string().min(1).max(214),
+  from: EntityRef,
+  relation: z.enum(['maintains', 'publishes', 'owns', 'funds', 'receives_funding_at', 'member_of', 'linked_to']),
+  to: EntityRef,
+  decision: z.enum(['accept', 'reject', 'clear']),
+  note: z.string().max(500).optional(),
+});
 
 const DAY = 86_400_000;
 
@@ -118,6 +130,18 @@ export function registerIncidentRoutes(app: Hono<AppEnv>): void {
 
   app.get('/api/packages/behind', (c) => {
     const name = packageQuery(c).name;
+    return c.json<PackageBehindResponse>(packageBehind(ctxFor(c, 'exposure'), name));
+  });
+
+  // A person's decision on one "who is behind" link: the only way a link reads as reviewed.
+  app.post('/api/packages/behind/review', async (c) => {
+    const { orgId, session } = requireOrgPerm(c, 'review');
+    const body = await parseBody(c, ReviewLinkBody);
+    const { store } = deps(c);
+    const actor = { id: session.user.id, name: session.user.name };
+    if (body.decision === 'clear') clearLinkReview(store, orgId, actor, body);
+    else setLinkReview(store, orgId, actor, { ...body, decision: body.decision, note: body.note ?? null });
+    const name = body.package;
     return c.json<PackageBehindResponse>(packageBehind(ctxFor(c, 'exposure'), name));
   });
 

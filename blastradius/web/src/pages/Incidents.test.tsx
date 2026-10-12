@@ -179,6 +179,9 @@ const behind: PackageBehindResponse = {
   ],
   incidents: ['INC-2018-0001'],
   alsoLinked: {},
+  publishRights: null,
+  lockedVersions: [],
+  review: { machineDerived: 1, reviewed: 2, rejected: 0 },
 };
 
 describe("Who's behind it", () => {
@@ -195,7 +198,9 @@ describe("Who's behind it", () => {
     await userEvent.click(screen.getByRole('button', { name: 'Table' }));
     const table = await screen.findByRole('table', { name: 'Links' });
     expect(within(table).getAllByRole('row')).toHaveLength(4);
-    expect(table).toHaveTextContent('Low · probable · Unreviewed');
+    expect(table).toHaveTextContent('Low · never affects a score');
+    expect(table).toHaveTextContent('Machine-derived (probable match)');
+    expect(table).toHaveTextContent('Reviewed');
     expect(within(table).queryByRole('link', { name: /javascript/ })).toBeNull();
   });
 

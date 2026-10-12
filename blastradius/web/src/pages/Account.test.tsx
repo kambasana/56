@@ -18,12 +18,14 @@ const detail = (over: Partial<AccountDetail> = {}): AccountDetail => ({
   account: ref,
   known: true,
   packages: [
-    { name: 'event-stream', links: [link], projects: 1, production: true },
-    { name: 'other-thing', links: [{ ...link, relation: 'listed', source: 'npm account package listing' }], projects: 0, production: false },
+    { name: 'event-stream', links: [link], projects: 1, production: true, knownBad: [] },
+    { name: 'other-thing', links: [{ ...link, relation: 'listed', source: 'npm account package listing' }], projects: 0, production: false, knownBad: [] },
   ],
-  recentPublishes: [{ name: 'event-stream', version: '3.3.6', at: '2018-09-09T08:28:59.503Z', attribution: 'npmUser', projects: 1 }],
+  recentPublishes: [{ name: 'event-stream', version: '3.3.6', at: '2018-09-09T08:28:59.503Z', attribution: 'npmUser', projects: 1, knownBad: [] }],
   activity: { last24h: 0, last7d: 0, last30d: 0 },
   concentration: { packages: 1, of: 9, share: 0.111 },
+  counts: { canPublish: 2, canPublishInYourProjects: 1, canPublishInProduction: 1, productionPackagesWithData: 9 },
+  knownBad: [],
   index: { packagesIndexed: 9, packagesWithoutData: 1, listing: { status: 'unavailable', fetchedAt: '2026-10-08T10:00:00Z', count: 0, detail: 'Offline: not in the recorded registry data' }, unverified: 0 },
   incident: null,
   ...over,
@@ -53,11 +55,13 @@ const exposure = (): AccountExposureResponse => ({
       links: [link],
       confidence: 'high',
       findingId: 'f1',
+      knownBad: [],
     },
   ],
   counts: { exposures: 1, projects: 1, production: 1, packages: 2, packagesInYourProjects: 1, versionsPublishedSince: 0 },
   index: detail().index,
   incident: null,
+  knownBad: [],
 });
 
 describe('account links', () => {
@@ -68,7 +72,10 @@ describe('account links', () => {
     expect(accountPathForEntity('account:github/dominictarr')).toBe('/accounts/github/dominictarr');
     expect(accountPathForEntity('org:npm/x')).toBeNull();
     expect(accountPathForEntity('funder:opencollective/x')).toBeNull();
-    expect(activeNavId('/accounts/npm/qix')).toBe('incidents');
+    expect(accountPathForEntity('owner:github/debug-js')).toBe('/accounts/github/debug-js');
+    expect(accountPathForEntity('owner:npm/x')).toBeNull();
+    expect(accountPathForEntity('funding:opencollective/babel')).toBeNull();
+    expect(activeNavId('/accounts/npm/qix')).toBe('overview');
   });
 });
 

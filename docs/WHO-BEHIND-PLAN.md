@@ -1119,3 +1119,43 @@ proposals API); feeding verified `funding` / `governance` facts into the F1/F4 v
 `lifecycle_events` / `incident_writeups` into KB event proposals (P5); the sanctions matcher itself
 (P7, which reads `confirmedJurisdictions()`); following HTTP redirects is not re-checked against
 the domain list (the stated URL is).
+
+---
+
+## 11. Tier 0 trust pass
+
+Trust fixes to P1–P3 before any new phase (teardown, 2026-10-12: real CLI scans of parse-server,
+jitsi-meet, superset and flask, and the web app on the same data). Measured on parse-server at
+the pinned commit `23d7bbca` (re-scan without `--history`; the GitHub API answered 403 in the
+recording session, as it did in the teardown).
+
+### Entities, who is behind, account pivot (teardown problems 7 and 6)
+
+| Item | Before (teardown) | After (re-scan / web on the migrated DB) |
+|---|---|---|
+| `reviewed` | All 6,683 health links `method: deterministic, reviewed: true` | 0 of 5,927 machine links reviewed. `reviewed` is set only by a `--review` file or `POST /api/packages/behind/review` (org table `entity_link_review`, audited, needs Triage). `method` says how a machine found the link (`deterministic`, `probabilistic`, `agent:<task>`). KB incident hops stay reviewed (hand-curated); OSV-imported incident hops are not. UI and HTML say "Machine-derived (method)" or "Reviewed by X", never both |
+| Owner types | Every owner of unknown type typed `org:github/<login>`: kevva, alexei, kornelski, feross recorded as orgs | Unknown type is `owner:github/<login>` (type `owner`, "type unknown"), never an org: 0 `org:` and 332 `owner:` entities. Orgs only from deterministic sources (`repo_owner` ownerType Organization, an `org_profile` fact). `isKnownOrg()` is the check for org rules, roll-ups, policy and jurisdiction (the agentic `org_jurisdiction` planner already requires ownerType Organization). npm scopes and deps.dev projects carry no deterministic owner type (checked: `/-/org/<scope>/user` answers `{}` for real orgs and `{self: owner}` for users; deps.dev project has no owner type), so they are not used |
+| Funding | 19 `funds` edges from `org:github/chalk` to the backers of `opencollective.com/sindresorhus` (casinoacademia, storis, …); `opencollective/babel` typed as a funder of babel | No `funds` edges, no `funder` entities, "casino" in no output. Only `pkg --receives_funding_at--> funding:<platform>/<handle>` when the package's own `funding` field or its repo's FUNDING.yml names it (chalk: its FUNDING.yml's GitHub Sponsors and `opencollective/sindresorhus`; babel packages: `funding:opencollective/babel`). Backer lists (`via: opencollective`) make no links until P4 models direction |
+| `GET /api/packages/behind?name=debug` | `{"usedIn":3,"links":[]}` (read only the finding table); chalk, express, agent-base the same | qix and tootallnate (maintains), `owner:github/debug-js` (owns), each with evidence, `deterministic`, unreviewed; plus `publishRights` (qix, tootallnate), `lockedVersions` (4.4.3 by qix, `_npmUser`, production; 2.6.9 and 3.1.0 by tootallnate) and `review` counts. chalk: sindresorhus, owner chalk, 4 funding pages; express: 5 maintainers, `owner:github/expressjs`, `funding:opencollective/express`. Reads the health graph through `scan_package_behind` (migration 13, filled at scan completion and backfilled) |
+| Package page | No who-is-behind section; breadcrumbs "Incidents > react-redux" | "Who is behind it": can publish now, who published each locked version (with known-bad badge), repository owner, funding pages, machine-derived/reviewed counts, link to every link with sources. Breadcrumbs (package, who's behind, account) go through Exposure; the sidebar marks Overview |
+| Account pivot `/api/accounts/npm/qix` | `incident: null`; color-convert 3.1.1 not flagged; counts 18 vs 7 | `knownBad`: INC-2025-0002 (KB) with its OSV MAL ids (MAL-2025-46971 … fetched per package by the account index into `registry_advisory`) and 8 of qix's packages; color-convert@3.1.1, color@5.0.1, color-string@2.1.1, is-arrayish@0.3.3, simple-swizzle@0.2.3, backslash@0.2.1 flagged in place (also on package and exposure rows). Counts in one unit (package names): can publish 79 (after its listing), in your projects 7, in production 7 = concentration 7 of 1,917 (the 18 was name@version). Definitions in `ACCOUNT_COUNT_DEFINITIONS`, shown on the page |
+| HTML report | 0 matches for stabil, fragile, funding, behind | "Who is behind" (top npm accounts by production reach, repository owners with type, funding pages, machine-derived vs reviewed), "Stability" (34 production Fragile with action and evidence), NOT ANALYSED banner hook (reads `notAnalysed` or `coverage.notAnalysed`) |
+
+**Stored data (migration 13).** Every stored scan result, finding row and hash is rewritten:
+machine links `reviewed: false`, `org:github/` → `owner:github/` (stored data cannot tell known
+orgs from unknown ones; a rescan restores known orgs), `funds` edges and `funder:` nodes removed,
+GitHub Sponsors `account:github/<h> linked_to` → `funding:github/<h> receives_funding_at`. On the
+teardown web DB (3 scans, 81 MB) it runs in about 2 s.
+
+**Tests on recorded real data** (parse-server @ `23d7bbca`): `test/fixtures/entities/`
+(`parse-server-facts.json.gz`: the real entity facts, e-mails removed; `parse-server-server.json.gz`:
+the real scan result and inventory plus live npm packuments and OSV answers;
+`teardown-parse-server-before.json.gz`: the pre-Tier 0 engine output), recorders
+`test/entities/record*.ts`, tests `test/entities/tier0.test.ts` and `server-tier0.test.ts`; web
+`src/pages/tier0-real.test.tsx` on recorded API answers (`src/test/real/tier0-api.json`) and e2e
+`e2e/screens-f-tier0.spec.ts` (with axe, light and dark).
+
+**Deferred.** Owner types stay unknown while the GitHub API is unreachable (no token in the
+recording session); a "GitHub Sponsors" handle is shown as a funding page, not typed as a person or
+org. Funding direction, amounts and backers are P4. `funds` stays in the relation type so old review
+files parse. Stored scans keep the old owner typing of known orgs only until rescanned.

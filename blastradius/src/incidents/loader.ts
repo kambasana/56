@@ -8,6 +8,7 @@
  *
  * A file may contain one incident (a mapping) or a list of incidents.
  */
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
@@ -102,6 +103,44 @@ export async function loadIncidents(dir: string): Promise<KbLoadResult> {
     }
     seen.set(incident.id, file);
     incidents.push(incident);
+  }
+  incidents.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { incidents, files: names.length, errors };
+}
+
+/** Synchronous `loadIncidents` (the web server loads the bundled KB once, on first use). */
+export function loadIncidentsSync(dir: string): KbLoadResult {
+  const errors: KbError[] = [];
+  let names: string[];
+  try {
+    names = readdirSync(dir).filter((n) => /\.ya?ml$/i.test(n)).sort();
+  } catch (e) {
+    return { incidents: [], files: 0, errors: [{ file: dir, message: `cannot read directory: ${firstLine((e as Error).message)}` }] };
+  }
+  const seen = new Set<string>();
+  const incidents: Incident[] = [];
+  for (const name of names) {
+    const full = path.join(dir, name);
+    try {
+      const st = statSync(full);
+      if (!st.isFile()) continue;
+      if (st.size > MAX_KB_FILE_BYTES) {
+        errors.push({ file: name, message: `file larger than ${MAX_KB_FILE_BYTES} bytes` });
+        continue;
+      }
+      const res = parseIncidentYaml(readFileSync(full, 'utf8'), name);
+      errors.push(...res.errors);
+      for (const incident of res.incidents) {
+        if (seen.has(incident.id)) {
+          errors.push({ file: name, message: `${incident.id}: duplicate id` });
+          continue;
+        }
+        seen.add(incident.id);
+        incidents.push(incident);
+      }
+    } catch (e) {
+      errors.push({ file: name, message: `cannot read file: ${firstLine((e as Error).message)}` });
+    }
   }
   incidents.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   return { incidents, files: names.length, errors };

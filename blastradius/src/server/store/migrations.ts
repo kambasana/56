@@ -4,11 +4,14 @@
  * its own transaction, and refuses to open a database written by a newer build.
  */
 import type { DatabaseSync } from 'node:sqlite';
+import { trustPassMigration } from './trust-pass.js';
 
 export interface Migration {
   version: number;
   name: string;
   sql: string;
+  /** Data step run after `sql`, in the same transaction (for rewrites SQL cannot express). */
+  run?: (db: DatabaseSync) => void;
 }
 
 function sqlString(v: string): string {
@@ -505,6 +508,49 @@ CREATE TABLE agent_proposal (
 CREATE INDEX agent_proposal_status ON agent_proposal (org_id, status, task);
 `,
   },
+  {
+    version: 13,
+    name: 'tier 0 trust pass: reviewed, owner types, funding, who-is-behind',
+    sql: `
+-- docs/WHO-BEHIND-PLAN.md "Tier 0". Human review decisions on "who is behind" links, per org. A link
+-- is reviewed only when a row here (or a --review file in the CLI) accepts it; machine links never are.
+CREATE TABLE entity_link_review (
+  org_id     TEXT NOT NULL REFERENCES org(id) ON DELETE CASCADE,
+  from_id    TEXT NOT NULL,
+  relation   TEXT NOT NULL,
+  to_id      TEXT NOT NULL,
+  decision   TEXT NOT NULL CHECK (decision IN ('accept', 'reject')),
+  reviewer   TEXT NOT NULL,
+  note       TEXT,
+  decided_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, from_id, relation, to_id)
+);
+
+-- The "who is behind" list of every package a scan reports (health entries; findings keep theirs
+-- in finding_json), so GET /api/packages/behind reads the same graph as the CLI JSON.
+CREATE TABLE scan_package_behind (
+  scan_id     TEXT NOT NULL REFERENCES scan(id) ON DELETE CASCADE,
+  purl        TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  behind_json TEXT NOT NULL,
+  PRIMARY KEY (scan_id, purl)
+);
+CREATE INDEX scan_package_behind_name ON scan_package_behind (name, scan_id);
+
+-- Malware advisories (OSV MAL-*) per npm package, for the account pivot: which versions of the
+-- packages an account can publish are known bad. Public data, like registry_package.
+CREATE TABLE registry_advisory (
+  registry      TEXT NOT NULL CHECK (registry IN ('npm')),
+  name          TEXT NOT NULL,
+  status        TEXT NOT NULL CHECK (status IN ('ok', 'unavailable')),
+  fetched_at    TEXT NOT NULL,
+  malware_json  TEXT NOT NULL DEFAULT '[]',
+  PRIMARY KEY (registry, name)
+);
+`,
+    // Stored results: reviewed=false on machine links, org:github → owner:github, no funds edges.
+    run: (db) => trustPassMigration(db),
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
@@ -528,6 +574,7 @@ export function migrate(db: DatabaseSync, migrations: readonly Migration[] = MIG
     db.exec('BEGIN IMMEDIATE');
     try {
       db.exec(m.sql);
+      m.run?.(db);
       db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(m.version, m.name, new Date().toISOString());
       db.exec('COMMIT');
     } catch (e) {

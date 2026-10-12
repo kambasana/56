@@ -1,20 +1,23 @@
 /**
  * Who's behind it (/packages/behind?name=, canvas screen 12): the documented links from a package
- * to its accounts, organisations and funders, top-down. Opens one hop deep behind a focus bar;
+ * to its accounts, repository owners and the funding pages it names, top-down. Every link says
+ * whether it is machine-derived (and how) or reviewed by a person; people with Triage can accept
+ * or reject a link, which is the only way it becomes reviewed. Opens one hop deep behind a focus bar;
  * "+N" expands a node. Unreviewed low-confidence links are hidden until asked for. Every link has
  * its confidence in words and its sources; the rail shows the selected node's sources. The Table
  * view is the accessible equivalent. Data: GET /api/packages/behind.
  */
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Link, useSearchParams } from 'react-router';
 import type { PackageBehindResponse } from '@server/api-types-incidents';
 import { incidentsApi } from '@/api-incidents';
 import { useAuth } from '@/auth';
-import { accountPathForEntity, behindPath, packagePath } from '@/nav';
+import { accountPathForEntity, behindPath, exposurePath, packagePath } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { StateBlock, useUpdateParams } from '@/components/br';
 import { EntityChain } from '@/components/viz/EntityChain';
-import { confidenceWord, entityKind, entityLabel, isUnreviewed, KIND_LABEL, layoutChain, relationText, type BehindLink } from '@/components/viz/entity';
+import { confidenceWord, entityKind, entityLabel, isUnreviewed, KIND_LABEL, layoutChain, relationText, reviewText, type BehindLink } from '@/components/viz/entity';
 import { useViewParam, ViewToggle } from '@/components/viz/ViewToggle';
 import { useApi } from '@/lib/useApi';
 import { safeHref } from '@/lib/safe-href';
@@ -59,13 +62,47 @@ function Legend() {
       <span>╍ Medium</span>
       <span>□ organisation</span>
       <span>┈ Low</span>
-      <span>◇ funder</span>
+      <span>⬚ owner (type unknown)</span>
+      <span>◇ funding page</span>
       <span>+N hidden links</span>
     </div>
   );
 }
 
-function LinkTable({ links }: { links: readonly BehindLink[] }) {
+/** Accept / reject / clear one link (Triage). The response is the refreshed page data. */
+function ReviewButtons({ name, l, onData }: { name: string; l: BehindLink; onData: (d: PackageBehindResponse) => void }) {
+  const [busy, setBusy] = useState(false);
+  const act = async (decision: 'accept' | 'reject' | 'clear') => {
+    setBusy(true);
+    try {
+      onData(await incidentsApi.reviewBehindLink({ package: name, from: l.from, relation: l.relation, to: l.entityId, decision }));
+      toast.success(decision === 'accept' ? 'Marked reviewed' : decision === 'reject' ? 'Link hidden for your organisation' : 'Back to machine-derived');
+    } catch (e) {
+      toast.error('Could not save the review', { description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const label = `${relationText(l.relation)} ${entityLabel(l.entityId)}`;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {l.reviewed ? (
+        <button type="button" disabled={busy} onClick={() => void act('clear')} className="h-6 rounded-[6px] border border-input bg-background px-2 text-label" aria-label={`Undo review: ${label}`}>
+          Undo review
+        </button>
+      ) : (
+        <button type="button" disabled={busy} onClick={() => void act('accept')} className="h-6 rounded-[6px] border border-input bg-background px-2 text-label" aria-label={`Mark reviewed: ${label}`}>
+          Mark reviewed
+        </button>
+      )}
+      <button type="button" disabled={busy} onClick={() => void act('reject')} className="h-6 rounded-[6px] border border-input bg-background px-2 text-label" aria-label={`Reject: ${label}`}>
+        Reject
+      </button>
+    </span>
+  );
+}
+
+function LinkTable({ name, links, canReview, onData }: { name: string; links: readonly BehindLink[]; canReview: boolean; onData: (d: PackageBehindResponse) => void }) {
   return (
     <div className="overflow-x-auto rounded-xl border">
       <table aria-label="Links" className="w-full border-collapse text-left">
@@ -75,7 +112,13 @@ function LinkTable({ links }: { links: readonly BehindLink[] }) {
             <th scope="col" className="px-2 py-2 font-medium">Link</th>
             <th scope="col" className="px-2 py-2 font-medium">To</th>
             <th scope="col" className="px-2 py-2 font-medium">Confidence</th>
+            <th scope="col" className="px-2 py-2 font-medium">State</th>
             <th scope="col" className="px-3 py-2 font-medium">Sources</th>
+            {canReview && (
+              <th scope="col" className="px-3 py-2 font-medium">
+                <span className="sr-only">Review</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -88,12 +131,20 @@ function LinkTable({ links }: { links: readonly BehindLink[] }) {
                 <span className="text-caption text-muted-foreground">({KIND_LABEL[entityKind(l.entityId)].toLowerCase()})</span>
               </td>
               <td className="px-2 py-2">
-                {confidenceWord(l.confidence)} · {l.method === 'deterministic' ? 'deterministic' : 'probable'}
-                {isUnreviewed(l) ? ' · Unreviewed' : l.reviewed ? ' · reviewed' : ''}
+                {confidenceWord(l.confidence)}
+                {isUnreviewed(l) ? ' · never affects a score' : ''}
+              </td>
+              <td className="px-2 py-2">
+                <span className={cn('inline-flex rounded-[6px] px-1.5 text-label', l.reviewed ? 'bg-selection-soft text-selection' : 'bg-muted text-text-secondary')}>{reviewText(l)}</span>
               </td>
               <td className="px-3 py-2">
                 <Sources urls={l.evidence} />
               </td>
+              {canReview && (
+                <td className="px-3 py-2">
+                  <ReviewButtons name={name} l={l} onData={onData} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -117,6 +168,11 @@ function Rail({ data, id, rootId }: { data: PackageBehindResponse; id: string; r
           <dd className="m-0">{data.usedIn} {data.usedIn === 1 ? 'project' : 'projects'}</dd>
           <dt className="text-muted-foreground">Direct links</dt>
           <dd className="m-0">{data.links.filter((l) => l.from === rootId).length}</dd>
+          <dt className="text-muted-foreground">Review</dt>
+          <dd className="m-0">
+            {data.review.machineDerived} machine-derived, {data.review.reviewed} reviewed
+            {data.review.rejected ? `, ${data.review.rejected} rejected` : ''}
+          </dd>
           {data.incidents.length > 0 && (
             <>
               <dt className="text-muted-foreground">Incidents</dt>
@@ -141,9 +197,11 @@ function Rail({ data, id, rootId }: { data: PackageBehindResponse; id: string; r
             </dd>
             <dt className="text-muted-foreground">Confidence</dt>
             <dd className="m-0">
-              {confidenceWord(link.confidence)} · {link.method === 'deterministic' ? 'deterministic' : 'probable'}
-              {isUnreviewed(link) ? ' · Unreviewed: never affects a score' : link.reviewed ? ' · reviewed' : ''}
+              {confidenceWord(link.confidence)}
+              {isUnreviewed(link) ? ' · never affects a score' : ''}
             </dd>
+            <dt className="text-muted-foreground">State</dt>
+            <dd className="m-0">{reviewText(link)}</dd>
           </>
         )}
         {also.length > 0 && (
@@ -164,7 +222,9 @@ function Rail({ data, id, rootId }: { data: PackageBehindResponse; id: string; r
   );
 }
 
-function Behind({ data }: { data: PackageBehindResponse }) {
+function Behind({ data: initial }: { data: PackageBehindResponse }) {
+  const { can } = useAuth();
+  const [data, setData] = useState(initial);
   const [sp] = useSearchParams();
   const update = useUpdateParams();
   const [view, setView] = useViewParam(['graph', 'table'] as const, 'graph');
@@ -177,7 +237,7 @@ function Behind({ data }: { data: PackageBehindResponse }) {
   const tableLinks = showUnreviewed ? data.links : data.links.filter((l) => !isUnreviewed(l));
   const hops = Math.max(0, ...layout.nodes.map((n) => n.depth));
   const expandAll = () => setExpanded(new Set([rootId, ...data.links.map((l) => l.entityId)]));
-  const summary = `${data.name}: ${layout.nodes.length - 1} linked accounts, organisations or funders shown, ${layout.linksHidden} more hidden.`;
+  const summary = `${data.name}: ${layout.nodes.length - 1} linked accounts, owners or funding pages shown, ${layout.linksHidden} more hidden.`;
 
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -215,7 +275,7 @@ function Behind({ data }: { data: PackageBehindResponse }) {
           {view === 'graph' ? (
             <EntityChain layout={layout} selected={selected} onSelect={setSelected} onExpand={(id) => setExpanded((s) => new Set([...s, id]))} summary={summary} legend={<Legend />} />
           ) : (
-            <LinkTable links={tableLinks} />
+            <LinkTable name={data.name} links={tableLinks} canReview={can('review')} onData={setData} />
           )}
         </div>
         <aside aria-label="Selected" className="flex w-full shrink-0 flex-col gap-3 lg:w-[300px]">
@@ -234,7 +294,8 @@ export default function BehindPage() {
   const { data, error, loading, reload } = useApi((s) => (name ? incidentsApi.behind(name, s) : Promise.resolve(null)), [name]);
   const crumbs = [
     { label: me?.org?.name ?? 'Organization', to: '/' },
-    { label: name || 'Package', to: name ? packagePath(name) : '/incidents' },
+    { label: 'Exposure', to: exposurePath() },
+    { label: name || 'Package', to: name ? packagePath(name) : exposurePath() },
     { label: "Who's behind it", to: behindPath(name) },
   ];
   let body;
@@ -246,7 +307,7 @@ export default function BehindPage() {
       <StateBlock
         kind="no-results"
         title={`No documented links for ${name}`}
-        description={data.usedIn ? `It is used in ${data.usedIn} ${data.usedIn === 1 ? 'project' : 'projects'}, but the latest scans recorded no maintainer, owner or funder links for it. ${DISCLAIMER}` : 'No project you can see uses it.'}
+        description={data.usedIn ? `It is used in ${data.usedIn} ${data.usedIn === 1 ? 'project' : 'projects'}, but the latest scans recorded no maintainer, owner or funding links for it. ${DISCLAIMER}` : 'No project you can see uses it.'}
         actions={[{ label: `How far ${name} spreads`, to: packagePath(name) }]}
       />
     );

@@ -11,10 +11,11 @@
 import { useEffect, useId, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
-import type { AccountDetail, AccountExposureResponse, AccountLinkSource } from '@server/api-types-accounts';
+import type { AccountDetail, AccountExposureResponse, AccountKnownBad, AccountLinkSource, KnownBadRef } from '@server/api-types-accounts';
+import { ACCOUNT_COUNT_DEFINITIONS } from '@server/api-types-accounts';
 import { accountsApi } from '@/api-accounts';
 import { useAuth } from '@/auth';
-import { accountPath, behindPath, incidentPath, packagePath, projectPath } from '@/nav';
+import { accountPath, behindPath, exposurePath, incidentPath, packagePath, projectPath } from '@/nav';
 import { PageHeader } from '@/components/PageHeader';
 import { INCIDENT_STEPS, NotAllowedHint, ReachTag, StateBlock, StatusTrack } from '@/components/br';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,59 @@ function Links({ links }: { links: readonly AccountLinkSource[] }) {
               )}
               )
             </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** "Known bad: INC-2025-0002" in place, linked to the record's first source. */
+export function KnownBadBadges({ refs }: { refs: readonly KnownBadRef[] }) {
+  if (refs.length === 0) return null;
+  return (
+    <>
+      {refs.map((k) => {
+        const href = safeHref(k.url);
+        const text = `Known bad: ${k.id}`;
+        return (
+          <span key={k.id} className="inline-flex rounded-[6px] bg-destructive px-1.5 text-label font-medium text-destructive-foreground">
+            {href ? (
+              <a href={href} target="_blank" rel="noreferrer noopener" className="text-destructive-foreground underline">
+                {text}
+              </a>
+            ) : (
+              text
+            )}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+function KnownBadList({ items }: { items: readonly AccountKnownBad[] }) {
+  if (items.length === 0)
+    return <p className="m-0 text-text-secondary">No KB incident or OSV malware advisory names a version of the packages it can publish.</p>;
+  return (
+    <ul aria-label="Known incidents and malware" className="m-0 flex list-none flex-col gap-2 p-0">
+      {items.map((k) => {
+        const href = safeHref(k.evidence[0] ?? '');
+        return (
+          <li key={k.id} className="flex flex-col gap-0.5 rounded-lg border px-3 py-2">
+            <span className="flex flex-wrap items-baseline gap-2">
+              <span className="font-mono text-[12px] font-semibold">{k.id}</span>
+              <span className="text-caption text-text-secondary">{k.source === 'kb' ? 'Knowledge base incident' : 'OSV malware advisory'}{k.date ? ` · ${k.date}` : ''}</span>
+              {k.lockedInYourProjects && <span className="rounded-[6px] bg-destructive px-1.5 text-label font-medium text-destructive-foreground">A bad version is locked in your projects</span>}
+            </span>
+            <span>{k.title}</span>
+            <span className="font-mono text-[12px] text-text-secondary">{k.packages.map((p) => `${p.name}@${p.versions.join(', ')}`).join(' · ')}</span>
+            {k.aliases.length > 0 && <span className="text-caption text-text-secondary">Also: {k.aliases.join(', ')}</span>}
+            {href && (
+              <a href={href} target="_blank" rel="noreferrer noopener" className="break-all text-caption">
+                {k.evidence[0]!.replace(/^https:\/\//, '')}
+              </a>
+            )}
           </li>
         );
       })}
@@ -189,6 +243,7 @@ function ExposureTable({ x }: { x: AccountExposureResponse }) {
                   {e.name}@{e.version}
                 </Link>
                 {e.publishedBy && <span className="block font-sans text-caption text-text-secondary">published by {e.publishedBy.account}</span>}
+                <KnownBadBadges refs={e.knownBad ?? []} />
               </td>
               <td className="px-2 py-2 font-mono text-[12px] text-text-secondary">{e.broughtInBy.length ? e.broughtInBy.join(', ') : e.direct ? 'direct dependency' : '–'}</td>
               <td className="px-2 py-2 text-text-secondary">{e.owner ?? 'No owner set'}</td>
@@ -219,6 +274,7 @@ function Body({ d, x, xError, reload }: { d: AccountDetail; x: AccountExposureRe
   const others = d.packages.filter((p) => p.projects === 0);
   const sections = [
     { id: 'exposure', label: 'Exposure' },
+    { id: 'known-bad', label: 'Known incidents and malware' },
     { id: 'packages', label: 'Packages it can publish' },
     { id: 'publishes', label: 'Recent publishes' },
   ];
@@ -261,10 +317,28 @@ function Body({ d, x, xError, reload }: { d: AccountDetail; x: AccountExposureRe
             ))}
           </nav>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Tile label="Packages it can publish" value={d.packages.length} note={`${inUse.length} in your projects`} />
+            <Tile label="Packages it can publish" value={d.counts.canPublish} note={`${d.counts.canPublishInYourProjects} in your projects`} />
             <Tile label="Projects exposed" value={x?.counts.projects ?? '…'} note={x ? `${x.counts.production} in production` : 'loading'} />
-            <Tile label="Share of production dependencies" value={pct(d.concentration.share)} note={`${d.concentration.packages} of ${d.concentration.of}`} />
+            <Tile label="Share of production dependencies" value={pct(d.concentration.share)} note={`${d.concentration.packages} of ${d.concentration.of} packages`} />
           </div>
+          <details className="text-label text-text-secondary">
+            <summary className="cursor-pointer">How these are counted</summary>
+            <ul className="m-0 mt-1 flex flex-col gap-0.5 pl-5">
+              <li>
+                {d.counts.canPublish} can publish: {ACCOUNT_COUNT_DEFINITIONS.canPublish}
+              </li>
+              <li>
+                {d.counts.canPublishInYourProjects} in your projects: {ACCOUNT_COUNT_DEFINITIONS.canPublishInYourProjects}
+              </li>
+              <li>
+                {d.counts.canPublishInProduction} in production: {ACCOUNT_COUNT_DEFINITIONS.canPublishInProduction}
+              </li>
+              <li>
+                {d.counts.productionPackagesWithData} production packages: {ACCOUNT_COUNT_DEFINITIONS.productionPackagesWithData} The share is {d.concentration.packages} of them.
+              </li>
+              <li>Projects exposed counts projects; the exposure table lists one row per project and locked version.</li>
+            </ul>
+          </details>
 
           <section aria-labelledby="exposure" className="flex flex-col gap-2">
             <h2 id="exposure" className="m-0 text-heading font-semibold">
@@ -278,6 +352,14 @@ function Body({ d, x, xError, reload }: { d: AccountDetail; x: AccountExposureRe
             ) : (
               <StateBlock kind="loading" label="Loading the exposure" rows={3} columns={6} />
             )}
+          </section>
+
+          <section aria-labelledby="known-bad" className="flex flex-col gap-2">
+            <h2 id="known-bad" className="m-0 text-heading font-semibold">
+              Known incidents and malware
+            </h2>
+            <p className="m-0 text-text-secondary">Public records naming versions of the packages it can publish: hand-curated knowledge base incidents and OSV malware advisories. Records about versions, not about the person.</p>
+            <KnownBadList items={d.knownBad ?? []} />
           </section>
 
           <section aria-labelledby="packages" className="flex flex-col gap-2">
@@ -301,6 +383,11 @@ function Body({ d, x, xError, reload }: { d: AccountDetail; x: AccountExposureRe
                       <tr key={p.name} className="border-t align-top">
                         <td className="px-3 py-2 font-mono text-[12px]">
                           {p.projects > 0 ? <Link to={behindPath(p.name)}>{p.name}</Link> : p.name}
+                          {(p.knownBad ?? []).length > 0 && (
+                            <span className="mt-0.5 flex flex-wrap gap-1 font-sans">
+                              <KnownBadBadges refs={p.knownBad} />
+                            </span>
+                          )}
                         </td>
                         <td className="px-2 py-2">
                           {p.projects > 0 ? (
@@ -344,6 +431,7 @@ function Body({ d, x, xError, reload }: { d: AccountDetail; x: AccountExposureRe
                     </span>
                     {p.projects > 0 && <span className="text-label font-medium">locked in {p.projects} {p.projects === 1 ? 'project' : 'projects'}</span>}
                     {p.attribution === 'sole-maintainer' && <span className="text-caption text-text-secondary">deleted version; publisher inferred from the sole maintainer</span>}
+                    <KnownBadBadges refs={p.knownBad ?? []} />
                   </li>
                 ))}
               </ol>
@@ -400,7 +488,7 @@ export default function AccountPage() {
   const exposure = useApi((s) => accountsApi.exposure(registry, name, {}, s), [registry, name]);
   const crumbs = [
     { label: me?.org?.name ?? 'Organization', to: '/' },
-    { label: 'Incidents', to: '/incidents' },
+    { label: 'Exposure', to: exposurePath() },
     { label: `${registryLabel(registry)} · ${name}`, to: accountPath(registry, name) },
   ];
   const d = detail.data;
@@ -414,10 +502,10 @@ export default function AccountPage() {
         crumbs={crumbs}
         title={
           <>
-            {registryLabel(registry)} {registry === 'npm' ? 'account' : 'owner'} <span className="font-mono font-medium">{name}</span>
+            {registryLabel(registry)} {registry === 'npm' ? 'account' : 'repository owner'} <span className="font-mono font-medium">{name}</span>
           </>
         }
-        meta={d ? `can publish ${d.packages.length} ${d.packages.length === 1 ? 'package' : 'packages'}` : undefined}
+        meta={d ? `can publish ${d.counts.canPublish} ${d.counts.canPublish === 1 ? 'package' : 'packages'}` : undefined}
       />
       {detail.loading && !d && (
         <div className="p-4">

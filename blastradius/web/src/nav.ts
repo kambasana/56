@@ -73,10 +73,10 @@ export function accountPath(registry: string, name: string): string {
   return `/accounts/${enc(registry)}/${enc(name)}`;
 }
 
-/** The account page for an entity id from "Who's behind it" ("account:npm/qix", "org:github/chalk"), else null. */
+/** The account page for an entity id from "Who's behind it" ("account:npm/qix", "owner:github/chalk", "org:github/babel"), else null. */
 export function accountPathForEntity(entityId: string): string | null {
-  const m = /^(account|org):(npm|github|gitlab)\/(.+)$/.exec(entityId);
-  if (!m || (m[1] === 'org' && m[2] === 'npm')) return null;
+  const m = /^(account|org|owner):(npm|github|gitlab)\/(.+)$/.exec(entityId);
+  if (!m || (m[1] !== 'account' && m[2] === 'npm')) return null;
   return accountPath(m[2]!, m[3]!);
 }
 
@@ -147,9 +147,10 @@ export function activeNavId(pathname: string): NavId | null {
     case 'findings':
       return 'findings';
     case 'incidents':
+      return 'incidents';
+    // Package and account pages hang off the org-wide Exposure view (their breadcrumbs say so).
     case 'packages':
     case 'accounts':
-      return 'incidents';
     case 'exposure':
     case 'licenses':
       return 'overview';

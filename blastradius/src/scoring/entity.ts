@@ -40,9 +40,15 @@ export interface EntityPathProvider {
 
 export type { EntityChainEntry } from '../core/types.js';
 
-/** Chain entry for the final hop to a KB incident (curated, so deterministic and reviewed). */
+/** KB incident ids ("INC-2025-0002"): hand-curated YAML entries. OSV-imported incidents use the advisory id. */
+const KB_INCIDENT_ID = /^INC-\d{4}-\d{4}$/;
+
+/**
+ * Chain entry for the final hop to an incident: deterministic; reviewed only for a hand-curated KB
+ * entry (an OSV advisory imported by machine is not a human review).
+ */
 function incidentHop(from: string, inc: Incident, confidence: number): EntityChainEntry {
-  return { from, entityId: inc.id, relation: 'incident', confidence, evidence: cleanEvidence(inc.evidence), method: 'deterministic', reviewed: true };
+  return { from, entityId: inc.id, relation: 'incident', confidence, evidence: cleanEvidence(inc.evidence), method: 'deterministic', reviewed: KB_INCIDENT_ID.test(inc.id) };
 }
 
 function safeUnversioned(purl: string): string {
