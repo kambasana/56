@@ -1,8 +1,9 @@
 /**
  * Stability labels on the seeded fixture (payments-platform, replayed offline as of 2018-11-27 with
  * the recorded npm packuments and the recorded event-stream git history): the Maintenance tab,
- * the side panel with the facts behind a label, the Package page section, the Changes page S5a
- * section, and axe in light and dark (docs/WHO-BEHIND-PLAN.md §4, P3).
+ * the side panel with the facts behind a label, the Package page section, the Changes page upkeep
+ * events (Tier 0: a first scan is the baseline), the coverage line, and axe in light and dark
+ * (docs/WHO-BEHIND-PLAN.md §4, P3 and Tier 0).
  */
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -40,12 +41,13 @@ test.describe('stability labels', () => {
     await expect(panel.getByRole('heading', { name: 'Watch: S5a release continuity' })).toBeVisible();
     await expect(panel.getByText('Release 3.3.5 was made by an account first seen in this repository 1 days earlier.').first()).toBeVisible();
     await expect(panel.getByText(/Funding not yet assessed/)).toBeVisible();
-    // Packages without a recorded history say what is missing.
-    await expect(table.getByRole('row').filter({ hasText: /^ms/ }).first()).toContainText('Unknown');
+    // Packages without a recorded history fall back to the npm release record and say so (Tier 0).
+    await expect(table.getByRole('row').filter({ hasText: /^ms/ }).first()).toContainText('git history not read');
+    await expect(section.getByTestId('stability-coverage')).toContainText(/^Upkeep assessed for \d+ of \d+/);
     await shot(page, 'stability-maintenance');
   });
 
-  test('Package page shows the label; Changes page shows S5a observations', async ({ page }) => {
+  test('Package page shows the label; Changes page: the first scan is the upkeep baseline', async ({ page }) => {
     await login(page, 'appsec');
     errors = watchConsole(page);
     const projectId = await devProject(page);
@@ -54,9 +56,8 @@ test.describe('stability labels', () => {
     await expect(section.getByText('Watch', { exact: true }).first()).toBeVisible();
     await expect(section.getByText(/From the scan of payments-platform/)).toBeVisible();
     await page.goto(`/projects/${encodeURIComponent(projectId)}/changes`);
-    const s5a = page.getByRole('region', { name: 'Release continuity (S5a)' });
-    await expect(s5a.getByRole('list', { name: 'Release continuity observations' })).toContainText('event-stream');
-    await expect(s5a).toContainText('Release 3.3.5 was made by an account first seen in this repository 1 days earlier.');
+    const upkeep = page.getByRole('region', { name: 'Upkeep events' });
+    await expect(upkeep).toContainText('it is the baseline, so there are no upkeep events yet');
     await shot(page, 'stability-changes');
   });
 
@@ -69,7 +70,7 @@ test.describe('stability labels', () => {
       const problems: string[] = [];
       for (const path of [`/projects/${encodeURIComponent(projectId)}/findings?view=health`, '/packages?name=event-stream', `/projects/${encodeURIComponent(projectId)}/changes`]) {
         await page.goto(path);
-        await expect(page.getByRole('region', { name: /Stability|Release continuity/ }).first()).toBeVisible();
+        await expect(page.getByRole('region', { name: /Stability|Upkeep events/ }).first()).toBeVisible();
         await page.waitForLoadState('networkidle');
         problems.push(...(await seriousAxe(page)).map((p) => `${path}: ${p}`));
       }

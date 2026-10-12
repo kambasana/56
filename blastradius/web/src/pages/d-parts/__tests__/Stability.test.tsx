@@ -7,8 +7,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
-import type { ContinuityRow, ProjectStabilityResponse, StabilityEntry } from '@server/api-types';
-import { ContinuitySection, StabilityBadge, StabilityDetails, StabilitySection } from '../Stability';
+import type { ProjectStabilityResponse, StabilityEntry, UpkeepEventsResponse } from '@server/api-types';
+import { StabilityBadge, StabilityDetails, StabilitySection, UpkeepEventsSection } from '../Stability';
 
 const DISCLAIMER = 'Stability describes upkeep from public records (registry, repository, Scorecard). It is not a security verdict and not a finding of wrongdoing.';
 
@@ -136,28 +136,59 @@ describe('stability labels', () => {
     expect(screen.getByText(/made before stability labels existed/)).toBeVisible();
   });
 
-  it('the Changes section lists S5a observations with source and confidence, or says there are none', () => {
-    const row: ContinuityRow = {
-      id: 'x',
-      package: 'pkg:npm/event-stream',
-      name: 'event-stream',
-      kind: 'npm_release_by_new_account',
-      date: '2018-09-05',
-      release: '3.3.5',
-      daysSinceFirstSeen: 1,
-      text: 'Release 3.3.5 was published on npm by an account first seen in this repository 1 days earlier.',
-      source: 'npm+git',
-      confidence: 'medium',
-      production: true,
-      isNew: true,
+  it('Tier 0: the coverage line, a pending background history, family decisions and the moved action', async () => {
+    const agent: StabilityEntry = {
+      ...request,
+      package: 'pkg:npm/agent-base',
+      name: 'agent-base',
+      versions: ['6.0.2'],
+      label: 'watch',
+      summary: 'Moved to another repository and still released.',
+      rules: [{ rule: 'watch_moved', name: 'Watch: moved to another repository and still released (upgrade)', facts: [{ signal: 'S3', text: 'The latest release 9.0.0 (2026-04-01) declares the repository github.com/TooTallNate/proxy-agents.', source: 'npm', confidence: 'high' }] }],
+      action: 'Moved: upgrade to 9.x (repo github.com/TooTallNate/proxy-agents, packages/agent-base)',
+      repo: { current: 'https://github.com/TooTallNate/proxy-agents', directory: 'packages/agent-base', previous: ['https://github.com/TooTallNate/node-agent-base'] },
+      basis: 'npm',
+      s3: { state: 'unknown', confidence: 'low', lastRelease: '2026-04-01' },
     };
-    const { unmount } = render(<ContinuitySection rows={[row]} />);
-    const list = screen.getByRole('list', { name: 'Release continuity observations' });
-    expect(list).toHaveTextContent('Published by a new account (npm)');
-    expect(list).toHaveTextContent('New since the previous scan');
-    expect(list).toHaveTextContent('npm and git history · medium confidence');
+    render(
+      <MemoryRouter>
+        <StabilitySection
+          data={{
+            ...data,
+            entries: [agent],
+            counts: { fragile: 0, watch: 1, steady: 0, unknown: 0 },
+            coverage: { packages: 1, assessed: 1, byBasis: { git: 0, 'scorecard+npm': 0, npm: 1 }, direct: { total: 1, assessed: 1 }, runtimeTransitive: { total: 0, assessed: 0 }, production: { total: 1, unknown: 0 }, skipped: [], line: 'Upkeep assessed for 1 of 1 (Scorecard / npm fallback 1): all 1 direct, all 0 runtime transitive; skipped: none.' },
+            historyStatus: 'pending',
+            decisions: [{ direct: 'ldapjs', label: 'fragile', packages: ['ldapjs', '@ldapjs/asn1'], rules: ['fragile_ended_production'], action: 'Replace or upgrade ldapjs (direct dependency): it and 1 package of the same family it brings in are Fragile (deprecated on npm, used in production).' }],
+          }}
+          loading={false}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('stability-coverage')).toHaveTextContent(/^Upkeep assessed for 1 of 1/);
+    expect(screen.getByRole('status')).toHaveTextContent(/Git history is being read in the background/);
+    expect(screen.getByRole('list', { name: 'Upkeep decisions' })).toHaveTextContent(/Replace or upgrade ldapjs \(direct dependency\)/);
+    await userEvent.click(within(screen.getByRole('table', { name: 'Stability labels' })).getByText('agent-base'));
+    const panel = await screen.findByRole('complementary', { name: 'Stability details' });
+    expect(within(panel).getByTestId('stability-action')).toHaveTextContent('Moved: upgrade to 9.x');
+    expect(within(panel).getByText(/github.com\/TooTallNate\/proxy-agents \(packages\/agent-base\) · earlier: github.com\/TooTallNate\/node-agent-base/)).toBeVisible();
+    expect(within(panel).getByText('The npm release record; git history not read')).toBeVisible();
+  });
+
+  it('the Changes section lists upkeep events (crossings between two scans), or says the first scan is the baseline', () => {
+    const upkeep: UpkeepEventsResponse = {
+      baseline: false,
+      since: '2018-08-29',
+      events: [{ id: 'x', kind: 'release_continuity', date: '2018-09-05', packages: ['event-stream'], rules: ['npm_release_by_new_account'], release: '3.3.5', text: 'Release 3.3.5 was published on npm by an account first seen in this repository 1 days earlier.', evidence: [] }],
+      omitted: { older: 2, notProduction: 1, overLimit: 0 },
+    };
+    const { unmount } = render(<UpkeepEventsSection upkeep={upkeep} />);
+    const list = screen.getByRole('list', { name: 'Upkeep events' });
+    expect(list).toHaveTextContent('Release by a new account');
+    expect(list).toHaveTextContent('2018-09-05');
+    expect(screen.getByText(/2 older or further crossings not listed; 1 in dev-only dependencies left out/)).toBeVisible();
     unmount();
-    render(<ContinuitySection rows={[]} />);
-    expect(screen.getByText('No release-continuity observations in the last 12 months.')).toBeVisible();
+    render(<UpkeepEventsSection upkeep={{ ...upkeep, baseline: true, events: [] }} />);
+    expect(screen.getByText(/first scan of the project: it is the baseline/)).toBeVisible();
   });
 });

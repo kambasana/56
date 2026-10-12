@@ -4,7 +4,7 @@
  * records, shown beside findings and never counted as risk; the wording is factual, never a verdict.
  * Used by the Maintenance tab (Findings), the Package page and the Changes page.
  */
-import type { ContinuityRow, ProjectStabilityResponse, StabilityEntry, StabilityLabel, StabilityReason } from '@server/api-types';
+import type { ProjectStabilityResponse, StabilityDecision, StabilityEntry, StabilityEvent, StabilityLabel, StabilityReason, UpkeepEventsResponse } from '@server/api-types';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type ColumnDef } from '@/components/DataTable';
 import { ReachTag } from '@/components/br';
@@ -20,7 +20,7 @@ export const STABILITY_LABEL_HINT: Record<StabilityLabel, string> = {
   fragile:
     'A Fragile rule fired: single active contributor and no activity in 18 months (not a small, finished package), ended (deprecated or archived) while used in production, or an open advisory with no fixed release and no activity.',
   watch: 'A Watch rule fired (for example a small, finished package with a single maintainer); see the facts behind it.',
-  steady: 'No stability rule fired, with git history and maintenance status known.',
+  steady: 'No stability rule fired: from git history, or (when it was not read) from a recent release or the OpenSSF Scorecard Maintained check; the details say which.',
   unknown: 'Not enough data for a label; it says what is missing.',
 };
 
@@ -94,6 +94,11 @@ export function StabilityDetails({ entry, disclaimer, headingLevel = 3 }: { entr
         <StabilityBadge label={entry.label} />
         <span className="break-words">{entry.summary}</span>
       </div>
+      {entry.action && (
+        <p className="m-0 break-words font-medium" data-testid="stability-action">
+          {entry.action}
+        </p>
+      )}
       {entry.rules.length > 0 && (
         <section aria-label="Rules that fired" className="flex flex-col gap-2">
           {entry.rules.map((r) => (
@@ -150,6 +155,8 @@ function StabilityPanel({ entry, disclaimer, onClose }: { entry: StabilityEntry;
               ['Maintenance (S3)', `${STATE_TEXT[entry.s3.state]} (${entry.s3.confidence} confidence)${entry.s3.lastCommit ? ` · last commit ${entry.s3.lastCommit}` : ''}${entry.s3.lastRelease ? ` · last release ${entry.s3.lastRelease}` : ''}`],
               ['Contributor absence factor (S2)', entry.caf ? `${entry.caf.value} over ${fmtNum(entry.caf.commits)} commits, ${entry.caf.from} to ${entry.caf.to}` : 'Not known'],
               ...(entry.finished ? ([['Small, finished package', finishedText(entry.finished)]] as [string, string][]) : []),
+              ['Upkeep from', BASIS_TEXT[entry.basis ?? 'git']],
+              ...(entry.repo ? ([['Repository', `${entry.repo.current.replace(/^https:\/\//, '')}${entry.repo.directory ? ` (${entry.repo.directory})` : ''}${entry.repo.previous?.length ? ` · earlier: ${entry.repo.previous.map((u) => u.replace(/^https:\/\//, '')).join(', ')}` : ''}`]] as [string, string][]) : []),
               ['Release regularity (S4)', entry.s4 ? `${entry.s4.irregular ? 'Irregular' : 'Regular'}: median ${Math.round(entry.s4.medianDays)} days, CV ${entry.s4.cv}` : 'Not known'],
               ['Package ID', <span className="break-all font-mono text-xs text-muted-foreground">{entry.package}</span>],
             ]}
@@ -157,6 +164,35 @@ function StabilityPanel({ entry, disclaimer, onClose }: { entry: StabilityEntry;
         </Section>
       </div>
     </SidePanel>
+  );
+}
+
+const BASIS_TEXT: Record<NonNullable<StabilityEntry['basis']>, string> = {
+  git: 'Git history of the current repository',
+  'scorecard+npm': 'OpenSSF Scorecard (via deps.dev) and the npm release record; git history not read',
+  npm: 'The npm release record; git history not read',
+  none: 'Nothing: no repository history, Scorecard result or npm release record',
+};
+
+/** Family decision rows (Tier 0): one row per direct dependency to change. */
+function DecisionList({ rows }: { rows: StabilityDecision[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <section aria-labelledby="h-stability-decisions" className="flex flex-col gap-2">
+      <h3 id="h-stability-decisions" className="m-0 text-label font-semibold">
+        Decisions for production dependencies ({fmtNum(rows.length)})
+      </h3>
+      <ul aria-label="Upkeep decisions" className="m-0 flex list-none flex-col gap-1.5 p-0">
+        {rows.slice(0, 20).map((d) => (
+          <li key={`${d.direct}:${d.packages.join(',')}`} className="flex flex-wrap items-baseline gap-2">
+            <StabilityBadge label={d.label} />
+            <span className="break-words">{d.action}</span>
+            {d.packages.length > 1 && <span className="text-caption text-muted-foreground">{fmtNum(d.packages.length)} packages</span>}
+          </li>
+        ))}
+      </ul>
+      {rows.length > 20 && <p className="m-0 text-caption text-muted-foreground">{fmtNum(rows.length - 20)} more in the table below.</p>}
+    </section>
   );
 }
 
@@ -197,6 +233,17 @@ export function StabilitySection({ data, loading }: { data: ProjectStabilityResp
       <p className="m-0 text-caption text-muted-foreground">
         {data?.disclaimer ?? 'Stability describes upkeep from public records. It is not a security verdict.'} Funding not yet assessed.
       </p>
+      {data?.coverage && (
+        <p className="m-0 break-words text-label text-text-secondary" data-testid="stability-coverage">
+          {data.coverage.line}
+        </p>
+      )}
+      {data?.historyStatus === 'pending' && (
+        <p className="m-0 text-label text-muted-foreground" role="status">
+          Git history is being read in the background; labels below use the Scorecard / npm fallback until it is done.
+        </p>
+      )}
+      {data?.decisions && <DecisionList rows={data.decisions} />}
       {data && data.entries === null ? (
         <p className="m-0 text-label text-muted-foreground">The newest scan was made before stability labels existed. Run a scan to see them.</p>
       ) : (
@@ -219,42 +266,51 @@ export function StabilitySection({ data, loading }: { data: ProjectStabilityResp
   );
 }
 
-const KIND_TEXT: Record<ContinuityRow['kind'], string> = {
-  release_by_new_person: 'Release by a new account (git)',
-  npm_release_by_new_account: 'Published by a new account (npm)',
-  release_takeover: 'Recent top committer makes the releases',
+const EVENT_KIND_TEXT: Record<StabilityEvent['kind'], string> = {
+  label_worsened: 'Label got worse',
+  release_continuity: 'Release by a new account',
 };
 
-/** Changes page: S5a release-continuity observations of the newer scan (last 12 months). */
-export function ContinuitySection({ rows }: { rows: ContinuityRow[] }) {
+/**
+ * Changes page (Tier 0): upkeep events between the two scans, dated to the commit or release that
+ * caused them; last 90 days, production only, at most 20, one row per account event.
+ */
+export function UpkeepEventsSection({ upkeep }: { upkeep: UpkeepEventsResponse }) {
+  const left = upkeep.omitted.older + upkeep.omitted.overLimit;
   return (
-    <section aria-labelledby="h-continuity" className="flex flex-col gap-2 border-t px-4 py-3">
-      <h2 id="h-continuity" className="m-0 text-heading font-semibold">
-        Release continuity (S5a)
+    <section aria-labelledby="h-upkeep-events" className="flex flex-col gap-2 border-t px-4 py-3">
+      <h2 id="h-upkeep-events" className="m-0 text-heading font-semibold">
+        Upkeep events
       </h2>
       <p className="m-0 text-caption text-muted-foreground">
-        Releases made or published by an account first seen in the repository less than 180 days earlier, in the last 12 months. Facts from git history and npm, not findings and not a statement about any person.
+        Thresholds crossed between the previous scan and this one, dated to the commit or release that caused them, since {upkeep.since}. Production dependencies only. Facts from public records, not findings and not a statement about any person.
       </p>
-      {rows.length === 0 ? (
-        <p className="m-0 text-label text-muted-foreground">No release-continuity observations in the last 12 months.</p>
+      {upkeep.baseline ? (
+        <p className="m-0 text-label text-muted-foreground">This is the first scan of the project: it is the baseline, so there are no upkeep events yet.</p>
+      ) : upkeep.events.length === 0 ? (
+        <p className="m-0 text-label text-muted-foreground">No upkeep thresholds crossed since the previous scan.</p>
       ) : (
-        <ul aria-label="Release continuity observations" className="m-0 flex list-none flex-col gap-2 p-0">
-          {rows.map((r) => (
-            <li key={r.id} className="flex flex-col gap-1 rounded-lg border px-3 py-2">
+        <ul aria-label="Upkeep events" className="m-0 flex list-none flex-col gap-2 p-0">
+          {upkeep.events.map((e) => (
+            <li key={e.id} className="flex flex-col gap-1 rounded-lg border px-3 py-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-medium">{r.name}</span>
-                <Badge variant="outline">{KIND_TEXT[r.kind]}</Badge>
-                <ReachTag reach={r.production ? 'production' : 'dev'} />
-                {r.isNew && <Badge variant="secondary">New since the previous scan</Badge>}
-                <span className="text-caption text-muted-foreground">{r.date}</span>
+                <span className="font-mono text-xs font-medium">{e.packages.length > 1 ? `${e.packages[0]} and ${e.packages.length - 1} more` : e.packages[0]}</span>
+                <Badge variant="outline">{EVENT_KIND_TEXT[e.kind]}</Badge>
+                {e.to && <StabilityBadge label={e.to} />}
+                <span className="text-caption text-muted-foreground">
+                  {e.date}
+                  {e.dateIsScan ? ' (scan date; no dated fact)' : ''}
+                </span>
               </div>
-              <span className="break-words text-text-secondary">{r.text}</span>
-              <span className="text-caption text-muted-foreground">
-                {sourceText(r.source)} · {r.confidence} confidence
-              </span>
+              <span className="break-words text-text-secondary">{e.text}</span>
             </li>
           ))}
         </ul>
+      )}
+      {left > 0 && (
+        <p className="m-0 text-caption text-muted-foreground">
+          {fmtNum(left)} older or further crossings not listed{upkeep.omitted.notProduction ? `; ${fmtNum(upkeep.omitted.notProduction)} in dev-only dependencies left out` : ''}.
+        </p>
       )}
     </section>
   );
