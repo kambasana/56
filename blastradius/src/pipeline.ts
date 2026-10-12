@@ -7,6 +7,7 @@
  * Nothing here executes code from the scanned target. All network I/O goes through one
  * HttpClient per scan, which honours offline mode and recorded fixtures.
  */
+import { productNameOf } from './core/repo-url.js';
 import { randomBytes } from 'node:crypto';
 import { lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -92,6 +93,8 @@ export interface ScanOptions {
   ingest?: Omit<IngestOptions, 'warn' | 'syft'>;
   /** Progress messages (e.g. stderr in the CLI). */
   log?: (message: string) => void;
+  /** The product the SBOMs name (CLI --product-name / --product-version); default: the target's repository or directory name. */
+  product?: { name?: string; version?: string };
 }
 
 export interface ScanOutput {
@@ -278,6 +281,7 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     workflows: ingested.workflows,
   });
   const result = buildScanResult({ target: opts.target, inventory, score, generatedAt: now, warnings: dedupe(warnings) });
+  result.product = { name: opts.product?.name?.trim() || productNameOf(opts.target), ...(opts.product?.version?.trim() ? { version: opts.product.version.trim() } : {}) };
   // Tier 0: never a silent all-clear. Manifests we found but did not analyse are listed in every report.
   if (ingested.notAnalysed.length > 0) result.notAnalysed = ingested.notAnalysed;
   if (coverage.length > 0) result.coverage = { sources: coverage };

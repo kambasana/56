@@ -26,7 +26,8 @@ import { scoreOutbound, type WorkflowRiskInput } from './outbound.js';
 import { PATH_LIMITS, REPO_TRANSFER_UNDATED_VALUE, type FactorWeights } from './weights.js';
 import { clamp01, cmpStr, noisyOr, round, sortReasons } from './util.js';
 import { npmNameFromPurl, parsePurl } from '../core/types.js';
-import { scopeTier, SCOPE_LABEL, strongerScope, type ComponentScope } from '../core/scope.js';
+import { isProductionScope, productionTier, scopeTier, SCOPE_LABEL, strongerScope, type ComponentScope } from '../core/scope.js';
+import { nonRegistryTarball } from '../core/repo-url.js';
 
 export interface ScoreOptions {
   /** Reference time for all decay calculations (fixed per scan). */
@@ -55,10 +56,41 @@ export interface ScoreOptions {
 /** Weak signals that describe a package's upkeep, not something that happened to it. */
 export const POSTURE_FACTORS: ReadonlySet<string> = new Set(['weak_posture', 'no_provenance', 'single_maintainer', 'abandoned']);
 
-/** True when a reason is a posture signal (an undated repo move counts: renames years ago look the same). */
+/**
+ * Signals that are context on their own (Tier 0.5): a maintainer-list change. Teams add and remove
+ * people all the time (fast-uri "removed simoneb", ws "removed 3rdeden, einaros, v1"), so a list
+ * change alone only breaks ties and can never put a finding at #1. Backed by any other signal (a
+ * new publisher, dropped provenance, a new install script, a brand-new dependency, an advisory, an
+ * incident) it counts.
+ *
+ * Dropped provenance is not on this list: compared stable to stable on one release line
+ * (src/enrich/npm/packument.ts) it is the only early warning for nx 21.5.0 / 20.9.0 (published
+ * with a stolen token, without the provenance every earlier stable release had; test/replay).
+ */
+export const CORROBORATION_FACTORS: ReadonlySet<string> = new Set(['maintainer_change']);
+
+/** Mark a lone corroboration-only signal as context (in place). */
+export function markContextReasons(reasons: Reason[]): Reason[] {
+  const signals = reasons.filter((r) => r.value > 0 && !POSTURE_FACTORS.has(r.factor) && !(r.factor === 'repo_transfer' && r.value <= REPO_TRANSFER_UNDATED_VALUE));
+  const factors = new Set(signals.map((r) => r.factor));
+  if (factors.size === 1 && CORROBORATION_FACTORS.has([...factors][0]!)) for (const r of signals) r.context = true;
+  return reasons;
+}
+
+/** True when a reason is a posture signal (an undated repo move counts: renames years ago look the same), or context (Tier 0.5). */
 export function isPostureReason(r: Reason): boolean {
+  if (r.context === true) return true;
   if (POSTURE_FACTORS.has(r.factor)) return true;
   return r.factor === 'repo_transfer' && r.value <= REPO_TRANSFER_UNDATED_VALUE;
+}
+
+/** A maintainer-list change is never a finding's top reason when anything else explains it (Tier 0.5). */
+function demoteMaintainerChange(reasons: Reason[]): Reason[] {
+  const first = reasons[0];
+  if (!first || first.factor !== 'maintainer_change') return reasons;
+  const other = reasons.findIndex((r, i) => i > 0 && r.value > 0 && !isPostureReason(r));
+  if (other < 0) return reasons;
+  return [reasons[other]!, ...reasons.filter((_, i) => i !== other)];
 }
 
 export interface ScoreOutput {
@@ -70,24 +102,23 @@ export interface ScoreOutput {
 }
 
 /**
- * Production first (Tier 0 exposure gate): runtime findings, then peer, optional, CI, dev and
- * unreachable ones; by score within a scope. Malicious or compromised releases run at install
- * time, so they rank with runtime findings whatever their scope.
+ * Production first (Tier 0 exposure gate): production findings (runtime, peer and optional: npm
+ * installs all three, Tier 0.5), then CI, dev and unreachable ones; by score within a tier.
+ * Malicious or compromised releases run at install time, so they rank with production findings
+ * whatever their scope.
  */
 export function compareFindings(a: Finding, b: Finding): number {
   return rankTier(a) - rankTier(b) || b.score - a.score || b.blastRadius.score - a.blastRadius.score || cmpStr(a.purl, b.purl);
 }
 
 function rankTier(f: Finding): number {
-  return f.gate?.rule === 'install_time' ? 0 : scopeTier(f.scope);
+  return f.gate?.rule === 'install_time' ? 0 : productionTier(f.scope);
 }
 
 /** Exposure gate (Tier 0). A runtime advisory at or above this CVSS with a fix is critical. */
 export const RUNTIME_CRITICAL_CVSS = 9;
 /** Highest score a finding outside runtime can reach: dev / CI / unreachable stay below high. */
 export const NON_RUNTIME_MAX_SCORE = LEVEL_THRESHOLDS.high - 0.1;
-/** Peer and optional dependencies stay below critical. */
-export const OPTIONAL_MAX_SCORE = LEVEL_THRESHOLDS.critical - 0.1;
 /** Posture and provenance factors add at most this many points, and never change the level. */
 export const POSTURE_TIEBREAK_POINTS = 0.9;
 
@@ -152,20 +183,24 @@ export function gateScore(args: {
   if (args.installTime) {
     rule = 'install_time';
     detail = `Known malicious or compromised release: it runs at install time, so it ranks with production findings in any scope (here ${SCOPE_LABEL[scope]}${via}).`;
-  } else if (scope === 'runtime') {
+  } else if (isProductionScope(scope)) {
+    // Tier 0.5: npm installs optional and (npm 7+) peer dependencies by default, so they are in
+    // the production install and rank with runtime findings; the label still says which.
+    const what =
+      scope === 'optional'
+        ? `Optional dependency (platform-dependent; npm installs optional dependencies by default)${via}`
+        : scope === 'peer'
+          ? `Peer dependency (npm 7 and later install peer dependencies)${via}`
+          : `Runtime dependency${via}`;
     if (args.criticalFix) {
       rule = 'runtime_critical_fix';
       score = Math.max(score, LEVEL_THRESHOLDS.critical);
       const c = args.criticalFix;
-      detail = `Runtime dependency${via} with ${c.id}${c.cvss !== undefined ? ` (CVSS ${c.cvss})` : ' (critical)'} and a fix available (${c.fixed.slice(0, 3).join(', ')}): raised to critical and ranked above every non-runtime finding.`;
+      detail = `${what} with ${c.id}${c.cvss !== undefined ? ` (CVSS ${c.cvss})` : ' (critical)'} and a fix available (${c.fixed.slice(0, 3).join(', ')}): raised to critical and ranked above every non-production finding.`;
     } else {
       rule = 'runtime';
-      detail = `Runtime dependency${via}: ranked with production findings.`;
+      detail = `${what}: ranked with production findings.`;
     }
-  } else if (scope === 'peer' || scope === 'optional') {
-    rule = 'optional_cap';
-    score = Math.min(score, OPTIONAL_MAX_SCORE);
-    detail = `${scope === 'peer' ? 'Peer' : 'Optional'} dependency only${via}: kept below critical and ranked after runtime findings.`;
   } else {
     rule = 'non_runtime_cap';
     score = Math.min(score, NON_RUNTIME_MAX_SCORE);
@@ -201,7 +236,7 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
     const ent = scoreEntityRisk(c, { now: opts.now, incidents, ...(paths ? { paths } : {}) });
     const risk = clamp01(1 - (1 - intr.intrinsic) * (1 - ent.risk));
     const behind = paths?.ownershipOf?.(c.purl) ?? [];
-    const allReasons = [...intr.reasons, ...ent.reasons];
+    const allReasons = markContextReasons([...intr.reasons, ...ent.reasons]);
     if (noiseRule && allReasons.every((r) => isPostureReason(r) || !(r.value > 0))) {
       const score = round(risk * 100, 1);
       if (!(score > minScore)) continue;
@@ -225,7 +260,7 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
     const inbound = inboundExposure(graph, c.purl, { hasInstallScript, ...(opts.pathLimits ? { limits: opts.pathLimits } : {}) });
     for (const t of inbound.truncated) truncated.push(`${t.assetId} → ${t.purl}`);
 
-    const crit = scope === 'runtime' ? criticalFixable(c.purl, facts) : undefined;
+    const crit = isProductionScope(scope) ? criticalFixable(c.purl, facts) : undefined;
     const { score, gate } = gateScore({
       signalScore: signalRisk * 100,
       postureRisk,
@@ -238,7 +273,10 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
     const tiePoints = Math.max(0, score - Math.max(gate.signalScore, gate.rule === 'runtime_critical_fix' ? LEVEL_THRESHOLDS.critical : 0));
     for (const r of postureReasons) r.contribution = postureWeight > 0 && !intr.malware ? round(((tiePoints / 100) * (r.weight * r.value)) / postureWeight) : 0;
     const entityReasons = ent.reasons.map((r, i) => ({ ...r, contribution: i === 0 ? round((1 - signalIntr) * ent.risk) : 0 }));
-    const reasons = sortReasons([...intr.reasons.filter((r) => !isPostureReason(r)), ...postureReasons, ...entityReasons]);
+    const reasons = demoteMaintainerChange(sortReasons([...intr.reasons.filter((r) => !isPostureReason(r)), ...postureReasons, ...entityReasons]));
+    const off = c.ecosystem === 'npm' ? nonRegistryTarball(c.name, c.resolved) : undefined;
+    const installedFrom = off ? { host: off.host, url: off.url, note: `installed from ${off.host}, not the npm registry: advisory ranges may not apply` } : undefined;
+    if (installedFrom) for (const r of reasons) if (r.factor === 'vuln') r.detail = `${r.detail} (${installedFrom.note})`;
 
     findings.push({
       purl: c.purl,
@@ -249,11 +287,12 @@ export function scoreInventory(inv: Inventory, facts: readonly Fact[], opts: Sco
       reasons,
       blastRadius: { assets: inbound.assets, score: round((score / 100) * inbound.weightedExposure, 3) },
       entityChain: ent.chain,
+      ...(installedFrom ? { installedFrom } : {}),
       ...(behind.length ? { behind } : {}),
     });
   }
   findings.sort(compareFindings);
-  health.sort((a, b) => scopeTier(a.scope) - scopeTier(b.scope) || b.score - a.score || cmpStr(a.purl, b.purl));
+  health.sort((a, b) => productionTier(a.scope) - productionTier(b.scope) || scopeTier(a.scope) - scopeTier(b.scope) || b.score - a.score || cmpStr(a.purl, b.purl));
 
   const warnings: string[] = [];
   if (truncated.length > 0) {

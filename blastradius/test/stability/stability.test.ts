@@ -148,8 +148,10 @@ describe('control repositories and the hand-review sample', () => {
     const pop = reviewPopulation(reports);
     const all = new Map<string, StabilityEntry>();
     for (const r of reports) for (const p of r.report.packages) if (p.production && !all.has(p.name)) all.set(p.name, p);
-    // Tier 0 scope: sshpk's optional bcrypt-pbkdf, ecc-jsbn, jsbn, tweetnacl and vue (a peer) are not production.
-    expect(all.size).toBe(222);
+    // Tier 0 scope made sshpk's optional bcrypt-pbkdf, ecc-jsbn, jsbn, tweetnacl and vue (a peer) not
+    // production (222). Tier 0.5: npm installs optional and peer dependencies by default, so these 5
+    // are production again (227).
+    expect(all.size).toBe(227);
     const by = { fragile: 0, watch: 0, steady: 0, unknown: 0 };
     for (const p of all.values()) by[p.label]++;
     // P3 refinement: 26 small, finished packages move from Fragile to Watch (was 72 / 131 / 8 / 16).
@@ -159,12 +161,14 @@ describe('control repositories and the hand-review sample', () => {
     // without resolved identities (these histories were recorded before display-name keys);
     // content-disposition and range-parser lose their S5a Watch because the npm account that
     // published those releases had already published sibling jshttp packages (a team member).
-    // Tier 0 scope removes 4 Watch (bcrypt-pbkdf, ecc-jsbn, tweetnacl, vue) and 1 Unknown (jsbn).
-    expect(by).toEqual({ fragile: 46, watch: 150, steady: 17, unknown: 9 });
-    expect(pop).toHaveLength(193);
+    // Tier 0 scope removed 4 Watch (bcrypt-pbkdf, ecc-jsbn, tweetnacl, vue) and 1 Unknown (jsbn);
+    // Tier 0.5 (optional and peer are production again) brings exactly those 5 back.
+    expect(by).toEqual({ fragile: 46, watch: 154, steady: 17, unknown: 10 });
+    // The hand-review population (labelled production packages) gains the same 4 Watch (Tier 0.5).
+    expect(pop).toHaveLength(197);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));
-    // Tier 0 scope: ecc-jsbn (an optional dependency of sshpk) is no longer production.
-    expect(finished.map((p) => p.name).sort()).toEqual(FINISHED.filter((n) => n !== 'ecc-jsbn'));
+    // Tier 0 scope dropped ecc-jsbn (an optional dependency of sshpk); Tier 0.5 makes it production again.
+    expect(finished.map((p) => p.name).sort()).toEqual(FINISHED);
     for (const p of finished) {
       expect(p.label).toBe('watch');
       expect(p.summary).toBe('Small, finished package: single maintainer, no recent activity.');

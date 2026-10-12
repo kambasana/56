@@ -1,0 +1,1627 @@
+{
+ "model": "claude-opus-5-5",
+ "conversations": [
+  {
+   "key": "funding pkg:npm/core-js",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run funding-core-js",
+   "responses": [
+    {
+     "id": "msg_live_003",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "No funding facts from the collectors; reading the Open Collective page for core-js."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_001",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/core-js"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_001",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/core-js",
+        "retrieved_at": "2026-10-12T20:22:02Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Fiscal Host: Open Source Collective ... Top financial contributors Organizations ... Cybozu $21,017 USD since Jun 2021"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_002",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "fiscal_host",
+           "organization": "Open Source Collective",
+           "url": "https://opencollective.com/core-js"
+          },
+          "source_url": "https://opencollective.com/core-js",
+          "quote": "Fiscal Host: Open Source Collective",
+          "confidence_note": "High: the collective header on Open Collective names the fiscal host."
+         },
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "Cybozu",
+           "amount": {
+            "value": 21017,
+            "currency": "USD",
+            "since": "Jun 2021"
+           }
+          },
+          "source_url": "https://opencollective.com/core-js",
+          "quote": "Cybozu $21,017 USD since Jun 2021",
+          "confidence_note": "High: entry of the Organizations list under Top financial contributors (lifetime total as shown)."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "funding pkg:npm/@babel/core",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run funding-babel",
+   "responses": [
+    {
+     "id": "msg_live_006",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "No funding facts from the collectors; reading the Open Collective page for babel."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_004",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/babel"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_004",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/babel",
+        "retrieved_at": "2026-10-12T20:22:03Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Fiscal Host: Open Source Collective ... Top financial contributors Organizations ... Airbnb $217,858 USD since Apr 2018 ... Sovereign Tech Agency $207,511.35 USD since May 2025"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_005",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "fiscal_host",
+           "organization": "Open Source Collective",
+           "url": "https://opencollective.com/babel"
+          },
+          "source_url": "https://opencollective.com/babel",
+          "quote": "Fiscal Host: Open Source Collective",
+          "confidence_note": "High: the collective header on Open Collective names the fiscal host."
+         },
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "Airbnb",
+           "amount": {
+            "value": 217858,
+            "currency": "USD",
+            "since": "Apr 2018"
+           }
+          },
+          "source_url": "https://opencollective.com/babel",
+          "quote": "Airbnb $217,858 USD since Apr 2018",
+          "confidence_note": "High: entry of the Organizations list under Top financial contributors (lifetime total as shown)."
+         },
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "Sovereign Tech Agency",
+           "amount": {
+            "value": 207511.35,
+            "currency": "USD",
+            "since": "May 2025"
+           }
+          },
+          "source_url": "https://opencollective.com/babel",
+          "quote": "Sovereign Tech Agency $207,511.35 USD since May 2025",
+          "confidence_note": "High: entry of the Organizations list under Top financial contributors (lifetime total as shown)."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "funding pkg:npm/webpack",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run funding-webpack",
+   "responses": [
+    {
+     "id": "msg_live_009",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "No funding facts from the collectors; reading the Open Collective page for webpack."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_007",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/webpack"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_007",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/webpack",
+        "retrieved_at": "2026-10-12T20:22:04Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Fiscal Host: Open Source Collective ... Top financial contributors Organizations ... trivago $389,985 USD since Aug 2017 ... AG Grid $267,500 USD since Mar 2017"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_008",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "fiscal_host",
+           "organization": "Open Source Collective",
+           "url": "https://opencollective.com/webpack"
+          },
+          "source_url": "https://opencollective.com/webpack",
+          "quote": "Fiscal Host: Open Source Collective",
+          "confidence_note": "High: the collective header on Open Collective names the fiscal host."
+         },
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "trivago",
+           "amount": {
+            "value": 389985,
+            "currency": "USD",
+            "since": "Aug 2017"
+           }
+          },
+          "source_url": "https://opencollective.com/webpack",
+          "quote": "trivago $389,985 USD since Aug 2017",
+          "confidence_note": "High: entry of the Organizations list under Top financial contributors (lifetime total as shown)."
+         },
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "AG Grid",
+           "amount": {
+            "value": 267500,
+            "currency": "USD",
+            "since": "Mar 2017"
+           }
+          },
+          "source_url": "https://opencollective.com/webpack",
+          "quote": "AG Grid $267,500 USD since Mar 2017",
+          "confidence_note": "High: entry of the Organizations list under Top financial contributors (lifetime total as shown)."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "funding pkg:npm/@faker-js/faker",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run funding-faker",
+   "responses": [
+    {
+     "id": "msg_live_012",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "No funding facts from the collectors; reading the Open Collective page for fakerjs."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_010",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/fakerjs"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_010",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/fakerjs",
+        "retrieved_at": "2026-10-12T20:22:05Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Fiscal Host: Open Source Collective ... Top financial contributors Organizations ... Indeed $29,000 USD since Feb 2021"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_011",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "fiscal_host",
+           "organization": "Open Source Collective",
+           "url": "https://opencollective.com/fakerjs"
+          },
+          "source_url": "https://opencollective.com/fakerjs",
+          "quote": "Fiscal Host: Open Source Collective",
+          "confidence_note": "High: the collective header on Open Collective names the fiscal host."
+         },
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "Indeed",
+           "amount": {
+            "value": 29000,
+            "currency": "USD",
+            "since": "Feb 2021"
+           }
+          },
+          "source_url": "https://opencollective.com/fakerjs",
+          "quote": "Indeed $29,000 USD since Feb 2021",
+          "confidence_note": "High: entry of the Organizations list under Top financial contributors (lifetime total as shown)."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "funding pkg:npm/express",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run funding-express",
+   "responses": [
+    {
+     "id": "msg_live_015",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "No funding facts from the collectors; reading the Open Collective page for express."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_013",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/express"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_013",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/express",
+        "retrieved_at": "2026-10-12T20:22:06Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Fiscal Host: Open Source Collective ... Top financial contributors Organizations"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_014",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "fiscal_host",
+           "organization": "Open Source Collective",
+           "url": "https://opencollective.com/express"
+          },
+          "source_url": "https://opencollective.com/express",
+          "quote": "Fiscal Host: Open Source Collective",
+          "confidence_note": "High: the collective header on Open Collective names the fiscal host."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "governance pkg:npm/express",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run governance-express",
+   "responses": [
+    {
+     "id": "msg_live_018",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Checking whether the OpenJS Foundation lists express as a hosted project."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_016",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://openjsf.org/projects"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_016",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://openjsf.org/projects",
+        "retrieved_at": "2026-10-12T20:22:06Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Hosted Projects ... Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications. Learn more"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_017",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "foundation_member",
+           "organization": "OpenJS Foundation",
+           "summary": "The OpenJS Foundation projects page lists express among its hosted projects."
+          },
+          "source_url": "https://openjsf.org/projects",
+          "quote": "Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.",
+          "confidence_note": "High: the foundation's own projects page has an entry for the project."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "governance pkg:npm/webpack",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run governance-webpack",
+   "responses": [
+    {
+     "id": "msg_live_021",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Checking whether the OpenJS Foundation lists webpack as a hosted project."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_019",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://openjsf.org/projects"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_019",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://openjsf.org/projects",
+        "retrieved_at": "2026-10-12T20:22:06Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Hosted Projects ... webpack is a bundler for modules and is primarily used to bundle JavaScript files for usage in a browser. Learn more"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_020",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "foundation_member",
+           "organization": "OpenJS Foundation",
+           "summary": "The OpenJS Foundation projects page lists webpack among its hosted projects."
+          },
+          "source_url": "https://openjsf.org/projects",
+          "quote": "webpack is a bundler for modules and is primarily used to bundle JavaScript files for usage in a browser.",
+          "confidence_note": "High: the foundation's own projects page has an entry for the project."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "governance pkg:npm/lodash",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run governance-lodash",
+   "responses": [
+    {
+     "id": "msg_live_024",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Checking whether the OpenJS Foundation lists lodash as a hosted project."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_022",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://openjsf.org/projects"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_022",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://openjsf.org/projects",
+        "retrieved_at": "2026-10-12T20:22:06Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Hosted Projects ... Lodash is a modern JavaScript utility library delivering modularity, performance & extras. Learn more"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_023",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "foundation_member",
+           "organization": "OpenJS Foundation",
+           "summary": "The OpenJS Foundation projects page lists lodash among its hosted projects."
+          },
+          "source_url": "https://openjsf.org/projects",
+          "quote": "Lodash is a modern JavaScript utility library delivering modularity, performance & extras.",
+          "confidence_note": "High: the foundation's own projects page has an entry for the project."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "lifecycle_events pkg:npm/moment",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run lifecycle-moment",
+   "responses": [
+    {
+     "id": "msg_live_027",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading the project status note on the Moment.js docs (the npm homepage domain)."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_025",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://momentjs.com/docs/"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_025",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://momentjs.com/docs/",
+        "retrieved_at": "2026-10-12T20:22:07Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Project status Moment.js is a legacy project in maintenance mode. Read the latest update"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_026",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "event": "maintenance_mode",
+           "summary": "The Moment.js documentation describes the project as a legacy project in maintenance mode."
+          },
+          "source_url": "https://momentjs.com/docs/",
+          "quote": "Moment.js is a legacy project in maintenance mode.",
+          "confidence_note": "High: project status banner on the official docs; this sentence carries no date, so none is given."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "lifecycle_events pkg:npm/request",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run lifecycle-request",
+   "responses": [
+    {
+     "id": "msg_live_029",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Checking the registry record first."
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_028",
+       "name": "npm_package",
+       "input": {
+        "name": "request"
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    },
+    {
+     "id": "msg_live_032",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "github.com answers 403 here; reading the README through raw.githubusercontent.com."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_030",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://raw.githubusercontent.com/request/request/master/README.md"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_030",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://raw.githubusercontent.com/request/request/master/README.md",
+        "retrieved_at": "2026-10-12T20:22:07Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "# Deprecated! As of Feb 11th 2020, request is fully deprecated. No new changes are expected to land. In fact, none have landed for some time."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_031",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "event": "deprecation",
+           "date": "2020-02-11",
+           "summary": "The request README states that the package is fully deprecated as of 11 February 2020 and that no new changes are expected."
+          },
+          "source_url": "https://raw.githubusercontent.com/request/request/master/README.md",
+          "quote": "As of Feb 11th 2020, request is fully deprecated. No new changes are expected to land.",
+          "confidence_note": "High: first lines of the project's own README; the date is stated in the sentence."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "lifecycle_events pkg:maven/org.elasticsearch/elasticsearch",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run lifecycle-elasticsearch",
+   "responses": [
+    {
+     "id": "msg_live_036",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading Elastic's own licensing announcements of 2021 and 2024."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_033",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://www.elastic.co/blog/licensing-change"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_033",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://www.elastic.co/blog/licensing-change",
+        "retrieved_at": "2026-10-12T20:22:07Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "January 14, 2021 ... We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL) and the Elastic License, giving users the choice of which license to apply."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_034",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://www.elastic.co/blog/elasticsearch-is-open-source-again"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_034",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://www.elastic.co/blog/elasticsearch-is-open-source-again",
+        "retrieved_at": "2026-10-12T20:22:08Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "By Shay Banon August 29, 2024 ... The tl;dr is that we will be adding AGPL as another license option next to ELv2 and SSPL in the coming weeks."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_035",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "event": "relicensing",
+           "date": "2021-01-14",
+           "summary": "Elastic announced that Elasticsearch and Kibana source code would move from Apache 2.0 to dual licensing under SSPL and the Elastic License.",
+           "licenseFrom": [
+            "Apache-2.0"
+           ],
+           "licenseTo": [
+            "SSPL-1.0",
+            "Elastic License"
+           ]
+          },
+          "source_url": "https://www.elastic.co/blog/licensing-change",
+          "quote": "We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL) and the Elastic License, giving users the choice of which license to apply.",
+          "confidence_note": "High: Elastic's own blog post dated January 14, 2021."
+         },
+         {
+          "value": {
+           "event": "relicensing",
+           "date": "2024-08-29",
+           "summary": "Elastic announced that AGPL would be added as a further licence option for Elasticsearch next to ELv2 and SSPL.",
+           "licenseTo": [
+            "AGPL-3.0"
+           ]
+          },
+          "source_url": "https://www.elastic.co/blog/elasticsearch-is-open-source-again",
+          "quote": "The tl;dr is that we will be adding AGPL as another license option next to ELv2 and SSPL in the coming weeks.",
+          "confidence_note": "High: Elastic's own blog post dated August 29, 2024."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "lifecycle_events pkg:github/redis/redis",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run lifecycle-redis",
+   "responses": [
+    {
+     "id": "msg_live_040",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading the two licensing posts on redis.io."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_037",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://redis.io/blog/redis-adopts-dual-source-available-licensing/"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_037",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://redis.io/blog/redis-adopts-dual-source-available-licensing/",
+        "retrieved_at": "2026-10-12T20:22:08Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Redis Adopts Dual Source-Available Licensing March 20, 2024 ... Starting with Redis 7.4, Redis will be dual-licensed under the Redis Source Available License (RSALv2) and Server Side Public License (SSPLv1). Consequently, Redis will no longer be distributed under the three-clause Berkeley Software Distribution (BSD)."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_038",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://redis.io/blog/agplv3/"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_038",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://redis.io/blog/agplv3/",
+        "retrieved_at": "2026-10-12T20:22:08Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Redis is now available under the AGPLv3 open source license May 01, 2025 ... Adding the OSI-approved AGPL as an additional licensing option for Redis, starting with Redis 8 (available now);"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_039",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "event": "relicensing",
+           "date": "2024-03-20",
+           "summary": "Redis announced that from Redis 7.4 it is dual-licensed under RSALv2 and SSPLv1 instead of the three-clause BSD licence.",
+           "licenseFrom": [
+            "BSD-3-Clause"
+           ],
+           "licenseTo": [
+            "RSALv2",
+            "SSPL-1.0"
+           ]
+          },
+          "source_url": "https://redis.io/blog/redis-adopts-dual-source-available-licensing/",
+          "quote": "Starting with Redis 7.4, Redis will be dual-licensed under the Redis Source Available License (RSALv2) and Server Side Public License (SSPLv1). Consequently, Redis will no longer be distributed under the three-clause Berkeley Software Distribution (BSD).",
+          "confidence_note": "High: Redis's own post dated March 20, 2024."
+         },
+         {
+          "value": {
+           "event": "relicensing",
+           "date": "2025-05-01",
+           "summary": "Redis announced AGPL as an additional licence option starting with Redis 8.",
+           "licenseTo": [
+            "AGPL-3.0"
+           ]
+          },
+          "source_url": "https://redis.io/blog/agplv3/",
+          "quote": "Adding the OSI-approved AGPL as an additional licensing option for Redis, starting with Redis 8 (available now)",
+          "confidence_note": "High: Redis's own post dated May 01, 2025."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "incident_writeups pkg:github/tukaani-project/xz",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run incident-xz",
+   "responses": [
+    {
+     "id": "msg_live_044",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading the original oss-security report and the NVD record for CVE-2024-3094 (the NVD detail page renders with JavaScript; the NVD API returns the same description)."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_041",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://www.openwall.com/lists/oss-security/2024/03/29/4"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_041",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+        "retrieved_at": "2026-10-12T20:22:09Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Date: Fri, 29 Mar 2024 ... I figured out the answer: The upstream xz repository and the xz tarballs have been backdoored."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_042",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-3094"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_042",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-3094",
+        "retrieved_at": "2026-10-12T20:22:10Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "\"id\":\"CVE-2024-3094\" ... \"value\":\"Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_043",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "compromise",
+           "date": "2024-03-29",
+           "summary": "Reported on the oss-security list that the upstream xz repository and release tarballs contained a backdoor."
+          },
+          "source_url": "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+          "quote": "The upstream xz repository and the xz tarballs have been backdoored.",
+          "confidence_note": "High: the original public report, dated 29 March 2024."
+         },
+         {
+          "value": {
+           "kind": "compromise",
+           "summary": "NVD describes code in the upstream xz tarballs, starting with version 5.6.0, that modifies the liblzma library.",
+           "advisoryIds": [
+            "CVE-2024-3094"
+           ]
+          },
+          "source_url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-3094",
+          "quote": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0.",
+          "confidence_note": "High: NVD record description for CVE-2024-3094."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "incident_writeups pkg:npm/event-stream",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run incident-event-stream",
+   "responses": [
+    {
+     "id": "msg_live_048",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "github.com issue #116 answers 403 here; reading npm's incident post and the OSV record of the GitHub advisory."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_045",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_045",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident",
+        "retrieved_at": "2026-10-12T20:22:10Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "On the morning of November 26th, npm’s security team was notified ... The malicious package was version 0.1.1 of flatmap-stream. This package was added as a direct dependency of the event-stream package by a new maintainer on September 9, 2018, in version 3.3.6."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_046",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://osv.dev/vulnerability/GHSA-mh6f-8j2x-4483"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_046",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://osv.dev/vulnerability/GHSA-mh6f-8j2x-4483",
+        "retrieved_at": "2026-10-12T20:22:10Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Critical severity vulnerability that affects event-stream and flatmap-stream ... A malicious actor added this package as a dependency to the NPM event-stream package in version 3.3.6."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_047",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "malicious_release",
+           "date": "2018-11-26",
+           "summary": "npm reports that flatmap-stream 0.1.1 was added as a dependency of event-stream 3.3.6 by a new maintainer, and that npm removed both from the registry after being notified on November 26."
+          },
+          "source_url": "https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident",
+          "quote": "The malicious package was version 0.1.1 of flatmap-stream. This package was added as a direct dependency of the event-stream package by a new maintainer on September 9, 2018, in version 3.3.6.",
+          "confidence_note": "High: npm's own incident write-up (2018)."
+         },
+         {
+          "value": {
+           "kind": "malicious_release",
+           "summary": "The GitHub advisory (via OSV) reports that flatmap-stream was added as a dependency of event-stream 3.3.6.",
+           "advisoryIds": [
+            "GHSA-mh6f-8j2x-4483"
+           ]
+          },
+          "source_url": "https://osv.dev/vulnerability/GHSA-mh6f-8j2x-4483",
+          "quote": "A malicious actor added this package as a dependency to the NPM event-stream package in version 3.3.6.",
+          "confidence_note": "High: reviewed GitHub advisory as published on osv.dev."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "incident_writeups pkg:npm/left-pad",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run incident-left-pad",
+   "responses": [
+    {
+     "id": "msg_live_051",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading npm's 2016 post about left-pad."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_049",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_049",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm",
+        "retrieved_at": "2026-10-12T20:22:11Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "kik, left-pad, and npm Earlier this week, many npm users suffered a disruption when a package that many projects depend on — directly or indirectly — was unpublished by its author, as part of a dispute over a package name. ... March 23rd, 2016"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_050",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "unpublish",
+           "date": "2016-03",
+           "summary": "npm reports that a widely used package was unpublished by its author during a dispute over a package name, disrupting many npm users."
+          },
+          "source_url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm",
+          "quote": "Earlier this week, many npm users suffered a disruption when a package that many projects depend on — directly or indirectly — was unpublished by its author, as part of a dispute over a package name.",
+          "confidence_note": "High: npm blog post \"kik, left-pad, and npm\" of March 23rd, 2016; the title names left-pad, the quoted sentence does not."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "incident_writeups pkg:npm/colors",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run incident-colors",
+   "responses": [
+    {
+     "id": "msg_live_054",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading the OSV record of the January 2022 colors advisory (github.com answers 403 here)."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_052",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://osv.dev/vulnerability/GHSA-5rqg-jm4f-cqx7"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_052",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://osv.dev/vulnerability/GHSA-5rqg-jm4f-cqx7",
+        "retrieved_at": "2026-10-12T20:22:11Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Published 2022-01-10T17:29:53Z ... Infinite loop causing Denial of Service in colors ... Between 07 and 09 January 2022, colors versions 1.4.1, 1.4.2, and 1.4.44-liberty-2 were published including malicious code that caused a Denial of Service due to an infinite loop."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_053",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "malicious_release",
+           "date": "2022-01",
+           "summary": "OSV reports that colors 1.4.1, 1.4.2 and 1.4.44-liberty-2, published 7 to 9 January 2022, contained code that causes an infinite loop.",
+           "advisoryIds": [
+            "GHSA-5rqg-jm4f-cqx7"
+           ]
+          },
+          "source_url": "https://osv.dev/vulnerability/GHSA-5rqg-jm4f-cqx7",
+          "quote": "Between 07 and 09 January 2022, colors versions 1.4.1, 1.4.2, and 1.4.44-liberty-2 were published including malicious code that caused a Denial of Service due to an infinite loop.",
+          "confidence_note": "High: reviewed GitHub advisory as published on osv.dev."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "org_jurisdiction funder:opencollective/opensource",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run jurisdiction-osc",
+   "responses": [
+    {
+     "id": "msg_live_058",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Reading the organisation's own site and its ProPublica Nonprofit Explorer record (IRS data)."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_055",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://oscollective.org/"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_055",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://oscollective.org/",
+        "retrieved_at": "2026-10-12T20:21:10Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Get in touch We’re a 501(c)(6) non-profit registered in the USA. EIN 82-2037583"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_056",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://projects.propublica.org/nonprofits/organizations/822037583"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_056",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://projects.propublica.org/nonprofits/organizations/822037583",
+        "retrieved_at": "2026-10-12T20:22:42Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Open Source Collective Covina, CA Tax exemption issued: April 2018 EIN: 82-2037583"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_057",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "country": "US",
+           "basis": "tax_registration",
+           "registry": "org_legal_page",
+           "identifier": "82-2037583"
+          },
+          "source_url": "https://oscollective.org/",
+          "quote": "We’re a 501(c)(6) non-profit registered in the USA. EIN 82-2037583",
+          "confidence_note": "High: the organisation's own site states the registration and EIN; proposed for human confirmation."
+         },
+         {
+          "value": {
+           "country": "US",
+           "region": "CA",
+           "basis": "business_address",
+           "registry": "foundation_filing",
+           "identifier": "82-2037583"
+          },
+          "source_url": "https://projects.propublica.org/nonprofits/organizations/822037583",
+          "quote": "Open Source Collective Covina, CA Tax exemption issued: April 2018 EIN: 82-2037583",
+          "confidence_note": "High: IRS exempt-organisation record as shown by ProPublica Nonprofit Explorer (US filings only)."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "org_jurisdiction org:github/elastic",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). run jurisdiction-elastic",
+   "responses": [
+    {
+     "id": "msg_live_061",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "EDGAR company page renders with JavaScript and lists no state of incorporation; reading the cover page of the latest 10-K (fiscal year ended April 30, 2026)."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_059",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1707753/000170775326000018/estc-20260430.htm"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_059",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://www.sec.gov/Archives/edgar/data/1707753/000170775326000018/estc-20260430.htm",
+        "retrieved_at": "2026-10-12T20:20:40Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Elastic N.V. (Exact name of registrant as specified in its charter) ... The Netherlands 98-1756035 (State or other jurisdiction of incorporation or organization) (I.R.S. Employer Identification No.)"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_060",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "country": "NL",
+           "basis": "incorporation",
+           "registry": "sec_edgar"
+          },
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1707753/000170775326000018/estc-20260430.htm",
+          "quote": "The Netherlands 98-1756035 (State or other jurisdiction of incorporation or organization)",
+          "confidence_note": "High: cover page of the annual report Elastic N.V. filed with the SEC; proposed for human confirmation."
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  }
+ ]
+}

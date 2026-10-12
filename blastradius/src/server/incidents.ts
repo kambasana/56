@@ -416,7 +416,7 @@ const METHOD_RANK = (m: string | undefined): number => (m === 'deterministic' ? 
  * JSON: findings and health entries), plus registry facts from the account index (who can publish
  * it now, who published each locked version) and the org's review decisions.
  */
-export function packageBehind(ctx: IncidentContext, name: string): PackageBehindResponse {
+export function packageBehind(ctx: IncidentContext, name: string, opts: { indexing?: boolean } = {}): PackageBehindResponse {
   const inventories = latestInventories(ctx.store, ctx.orgId, ctx.projectIds);
   const usedIn = inventories.filter((i) => i.inventory.components.some((c) => npmNameVersion(c.purl)?.name === name)).length;
   const scanIds = inventories.map((i) => i.scanId).filter((x): x is string => !!x);
@@ -516,6 +516,8 @@ export function packageBehind(ctx: IncidentContext, name: string): PackageBehind
     })
     .sort((a, b) => (b.publisher?.at ?? '').localeCompare(a.publisher?.at ?? '') || b.version.localeCompare(a.version));
 
+  // Tier 0.5: no registry row yet while the account index runs = pending, not unknown.
+  const pending = opts.indexing === true && reg === undefined;
   return {
     name,
     usedIn,
@@ -523,6 +525,7 @@ export function packageBehind(ctx: IncidentContext, name: string): PackageBehind
     incidents: [...incidents].sort(),
     alsoLinked,
     publishRights,
+    ...(pending ? { pending: true as const } : {}),
     lockedVersions,
     review: { machineDerived: ordered.filter((l) => !l.reviewed).length, reviewed: ordered.filter((l) => l.reviewed).length, rejected: rejected.size },
   };

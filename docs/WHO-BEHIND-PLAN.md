@@ -1113,6 +1113,27 @@ users API responses. **Live runs: untested** (`ANTHROPIC_API_KEY` is not set in 
 environment) [u]. GitHub's users API is not reachable from here (403), so `github_user` is tested
 on the documented response shape only; live use is [u].
 
+**Live run (2026-10-12)** (`blastradius/test/agentic/live-run.ts`, replayed offline by
+`live-replay.test.ts` from `test/fixtures/agentic-live/`). Model turns were produced by a Claude Code
+agent acting as the model on the live web (no API key; it followed each task's prompt and evidence
+domains and wrote the `submit_facts` calls); everything else was the real pipeline, with the gate
+re-fetching every source live. 18 requests (funding ×5, governance ×3, lifecycle ×4, incidents ×4,
+org jurisdiction ×2; contributor identity and self-declared location skipped): **29 proposals, 29
+kept** (26 verified, 3 `pending_confirmation`), each checked by hand against its page. Gate latency
+0.05–1.7 s per request (one 31–92 s outlier when oscollective.org was slow; once it timed out and
+the fact stayed unverified). Before two fixes the gate made **2 false rejects** (an SEC 10-K stating
+"The Netherlands … (State or other jurisdiction of incorporation)" was refused because `sec_edgar`
+implied US; a ProPublica IRS record "Covina, CA" was refused because `foundation_filing` implied no
+country) and **2 false accepts** (core-js's Open Collective backer accepted as a funder of express;
+npm's left-pad post accepted as an express incident). Fixes in `tasks.ts`: the implied country is per
+registry host (sec.gov, ProPublica and IRS → US; Companies House and Charity Commission → GB) and
+another country is accepted only when the quote names it; funding, lifecycle and incident sources
+must name the subject (package name, npm scope, repository owner or name) on the page or in the URL
+path. Adversarial attempts rejected: wrong amount (rules), wrong-subject quotes ×3 (rules), Wikipedia
+source (domain). **Open:** a wrong `date` with a real quote is still kept (dates are not checked
+against the page; pinned by the replay test); pages that render with JavaScript (NVD detail pages,
+SEC EDGAR company pages) cannot verify, so the NVD and EDGAR JSON or filing documents must be cited.
+
 Deferred: a live smoke run on 2–3 §8 subjects (needs a key; `RecordingModel` saves a live run as a
 replay fixture); the Maintainers screen that shows contributor identity (P6; the data is in the
 proposals API); feeding verified `funding` / `governance` facts into the F1/F4 views (P4) and
@@ -1337,3 +1358,89 @@ earlier address used another display name; needs GitHub login mapping, i.e. a to
 reaches the label because v19.0.1 went out through react-bot. The 90-day event view needs two
 stored scans (web); the CLI has no stored baseline. Superset not re-scanned for the Unknown target
 (disk). A server restart leaves a "pending" background history pending until the next scan.
+
+### Tier 0.5: scoring precision (independent verification of Tier 0)
+
+An independent verification re-scanned parse-server, jitsi-meet and superset after Tier 0 and found
+precision problems in finding scoring, scope and reporting. Fixed on recorded real data and measured
+by re-scanning the three repositories at the pinned commits **without `--history`**
+(`NODE_USE_ENV_PROXY=1`, `--no-cache`, one at a time, clones deleted in between; superset from a manifests-only sparse checkout because the shared disk ran low, same inventory: 3,454 components). "Before" is the
+verification's scan of the same commit. Stability and history (README "ended", identity merge,
+Python upkeep, history disk budget) are a separate stream and are not covered here.
+
+| # | Item | Before (verification) | After (re-scan) |
+|---|---|---|---|
+| 1 | False `provenance_dropped` | jitsi #1 react-native-screens@4.23.0 (MEDIUM 50.1, "the previous release (4.23.0-nightly-…) had" provenance); parse-server @typescript-eslint/* 7.18.0 ×3 and jitsi 8.19.1 ×8 against canaries (7.17.1-alpha.9, 8.19.1-alpha.9) | Compared stable to stable on one release line only (`previousStableOnLine`: same major, same major.minor for 0.x; prereleases never compared). 0 `provenance_dropped` in the three re-scans. react-native-screens and @typescript-eslint/* are not flagged (no stable 4.x before 4.25.0, and no stable 7.x / 8.x, had provenance). A drop is an early warning about a fresh release: it decays over 90 days from the release (jose 4.15.5, a 2024 backport that lost 4.15.4's provenance, is context today), weight 0.5 → 0.3. nx 21.5.0 / 20.9.0 (stolen token) still warn an hour after release (proof unchanged: 11 of 16 early warnings) |
+| 1 | Real CVEs first on jitsi | #1 react-native-screens (provenance only), bigint-buffer #2, svgo #3/#4 | bigint-buffer #1 (42.3), svgo 2.8.3 #2 and 3.3.4 #3 (34.6); top 10 all advisories; react-native-screens is a health entry (posture only) |
+| 2 | Maintainer-change-only findings | superset #1 proxy-addr@2.0.8 "added ulisesgascon" (MEDIUM 34.8) and 11 maintainer-change-only findings; parse-server ws, mongodb-connection-string-url ("added dariakp; removed … devtoolsbot", false); fast-uri "removed simoneb" superset #10 | A maintainer-list change alone is context (`Reason.context`, a tie-breaker like posture, no SARIF result) and never a top reason; backed by another signal it counts. The diff comes from the packument's current `maintainers` (an added account must still maintain it, a removed one must not) and `_npmUser` (a later publisher was not removed); lists stored by trusted-publishing releases are never compared (mongodb-connection-string-url 7.0.2 stored 3 of its 8 maintainers). The stability stream's exemptions apply to maintainer and publisher changes: trusted publishing, organisation release bots, and accounts that already maintain or published a sibling package of the same npm scope, repository or **repository owner** (ulisesgascon maintains forwarded and the other jshttp / expressjs packages; madccc the @rc-component scope). maintainer-change-only findings: parse-server 2 → 0, jitsi 4 → 0 (proxy-addr, tar-stream, ws, tinyrainbow), superset 10 → 0 (proxy-addr, fast-uri, ws ×2, @luma.gl/gpgpu, apache-arrow, moment, schema-utils, negotiator, eslint-plugin-jest-dom; the verification counted 11); fast-uri "removed simoneb" is a context reason on its health entry; mongodb-connection-string-url's false text is gone (its remaining changes agree with the current list and have decayed); superset #1 urllib3 2.7.0 (an advisory; was proxy-addr "added ulisesgascon"); the four madccc @rc-component publisher changes are gone too |
+| 3 | Optional and peer dependencies | parse-server uuid@9.0.1 (CVSS 7.5, under @parse/push-adapter → firebase-admin, optional) rank 11, "kept below critical and ranked after runtime findings" | Production = runtime, peer and optional (`src/core/scope.ts` `PRODUCTION_SCOPES`, `productionSet`, `isProductionScope`): npm installs optionalDependencies by default and peers since npm 7; dev and CI stay out. Labelled "optional (platform-dependent)" / "peer". uuid@9.0.1 rank 3, "Optional dependency (platform-dependent; npm installs optional dependencies by default) (brought in by @parse/push-adapter): ranked with production findings". The critical floor for a CVSS ≥ 9 advisory with a fix applies to all three. Exposure weight of an optional edge 0.2 → 1. Stability's production flag follows (stream B's control set: 222 → 227 production packages, +4 Watch +1 Unknown: exactly the 5 Tier 0 had removed — bcrypt-pbkdf, ecc-jsbn, jsbn, tweetnacl, vue; review population 193 → 197) |
+| 4 | HTML Stability section | 51 per-package rows, 9 for the ldapjs family | One row per decision (as the CLI and JSON): parse-server 51 rows → 12 decision rows (ldapjs one row with its 9 packages), jitsi-meet 77 → 29, superset 37 → 27; Fragile packages no decision covers listed after them |
+| 5 | `serve --dev` | seeded and scanned the demo payments-platform project | `--dev` seeds users only; `--dev-seed` creates the demo project, marked `demo: true`, badged "demo" (web), never counted in `/api/home` totals (`totals.demoProjects`), and left out of `/api/overview` when a real project exists (alone, its numbers are labelled demo data) |
+| 6 | `GET /api/packages/behind` while the account index runs | `publishRights: null`, `publisher: null` (agent-base, chalk, debug, express) | `pending: true` while the index is busy and has no registry row for the package; the web package page says "Indexing…" and asks again every 5 s |
+| 7 | Owner evidence | agent-base `owner:github/tootallnate` evidence `tootallnate/node-agent-base` (archived) and deps.dev 6.0.2 | The owner and its evidence come from the current repository (the latest release's `repository.url`, as stream B resolves it): `https://github.com/TooTallNate/proxy-agents` first, on both locked versions |
+| 8 | Funding URL as a repository | flask: "git history: https://github.com/sponsors/encode: git clone failed" (deps.dev lists it as uvicorn 0.52.0's SOURCE_REPO) | `src/core/repo-url.ts` `isNonRepositoryUrl` (GitHub site pages such as /sponsors/, /orgs/; funding platforms) is checked by the deps.dev and npm repository normalisers, so no `repo` fact carries one (uvicorn → kludex/uvicorn). Stream Y has its own clone-side guard (`src/history/repo-url.ts`) |
+| 9 | xlsx@0.20.3 from cdn.sheetjs.com | an ordinary finding | Kept, with `installedFrom` and the reason text "installed from cdn.sheetjs.com, not the npm registry: advisory ranges may not apply" (CLI, JSON, HTML, SARIF property). A lockfile `resolved` URL counts as a registry tarball when it has the `<name>/-/` layout of every npm registry |
+| 10 | CycloneDX `metadata.component.name` | the scan machine's absolute path | The repository or directory name (`parse-server`, `jitsi-meet`, `superset`), or `--product-name` / `--product-version`; the SPDX root package and document name the same |
+
+**Top 10 after (re-scans without history).**
+
+parse-server (41 findings):
+
+| # | Package | Scope | Level | Score | Top reason |
+|---|---|---|---|---|---|
+| 1 | npm/proxy-addr@2.0.7 | runtime | critical | 80.2 | vuln: 1 known vulnerability |
+| 2 | npm/@graphql-tools/utils@11.2.2 | runtime | medium | 33.7 | vuln: 1 known vulnerability |
+| 3 | npm/uuid@9.0.1 | optional | medium | 31.8 | vuln: 1 known vulnerability |
+| 4 | npm/@fastify/busboy@3.2.0 | runtime | medium | 31.7 | vuln: 3 known vulnerabilities |
+| 5 | npm/node-forge@1.4.0 | runtime | medium | 31.7 | vuln: 1 known vulnerability |
+| 6 | npm/core-js-pure@3.49.0 | runtime | medium | 30.3 | install_script: Runs install-time scripts (postinstall) |
+| 7 | npm/moment@2.29.4 | runtime | low | 25 | vuln: 1 known vulnerability |
+| 8 | npm/@apollo/protobufjs@1.2.7 | runtime | low | 15.3 | install_script: Runs install-time scripts (postinstall) |
+| 9 | npm/@firebase/util@1.15.3 | runtime | low | 15.2 | install_script: Runs install-time scripts (postinstall) |
+| 10 | npm/protobufjs@7.6.6 | optional | low | 15.1 | install_script: Runs install-time scripts (postinstall) |
+
+jitsi-meet (69 findings):
+
+| # | Package | Scope | Level | Score | Top reason |
+|---|---|---|---|---|---|
+| 1 | npm/bigint-buffer@1.1.5 | runtime | medium | 42.3 | vuln: 1 known vulnerability |
+| 2 | npm/svgo@2.8.3 | runtime | medium | 34.6 | vuln: 2 known vulnerabilities |
+| 3 | npm/svgo@3.3.4 | runtime | medium | 34.6 | vuln: 2 known vulnerabilities |
+| 4 | npm/linkify-it@2.2.0 | runtime | medium | 33.9 | vuln: 2 known vulnerabilities |
+| 5 | npm/socket.io-parser@4.2.4 | runtime | medium | 33.9 | vuln: 2 known vulnerabilities |
+| 6 | npm/braces@3.0.3 | runtime | medium | 31.9 | vuln: 1 known vulnerability |
+| 7 | npm/image-size@1.2.1 | runtime | medium | 31.9 | vuln: 2 known vulnerabilities |
+| 8 | npm/uuid@8.3.2 | runtime | medium | 31.8 | vuln: 1 known vulnerability |
+| 9 | npm/uuid@9.0.1 | runtime | medium | 31.8 | vuln: 1 known vulnerability |
+| 10 | npm/ws@7.5.10 | runtime | medium | 31.8 | vuln: 1 known vulnerability |
+
+superset (37 findings):
+
+| # | Package | Scope | Level | Score | Top reason |
+|---|---|---|---|---|---|
+| 1 | pypi/urllib3@2.7.0 | runtime | medium | 33.6 | vuln: 3 known vulnerabilities |
+| 2 | npm/xlsx@0.20.3 | runtime | medium | 32.9 | vuln: 2 known vulnerabilities |
+| 3 | npm/core-js@3.50.0 | runtime | medium | 30.3 | install_script: Runs install-time scripts (postinstall) |
+| 4 | npm/sprintf-js@1.0.3 | runtime | low | 22.8 | vuln: 1 known vulnerability |
+| 5 | npm/sprintf-js@1.1.3 | peer | low | 22.8 | vuln: 1 known vulnerability |
+| 6 | pypi/werkzeug@3.1.6 | runtime | low | 21.1 | vuln: 1 known vulnerability |
+| 7 | pypi/geopy@2.4.1 | runtime | low | 16.9 | vuln: 1 known vulnerability |
+| 8 | npm/@scarf/scarf@1.4.0 | runtime | low | 15.4 | install_script: Runs install-time scripts (postinstall) |
+| 9 | npm/unix-dgram@2.0.7 | optional | low | 15.3 | install_script: Runs install-time scripts (install) |
+| 10 | pypi/paramiko@3.5.1 | runtime | low | 14.5 | vuln: 1 known vulnerability |
+
+**Tests on recorded real data.** `test/tier05/tier05.test.ts` (22) replays lockfile slices of the
+three repositories at the pinned commits with the OSV, deps.dev and npm answers recorded for them
+(`test/tier05/record.ts`, `test/fixtures/tier05/{parse-server,jitsi-meet,superset}.json.gz`:
+packuments slimmed as the npm enricher slims them, e-mails removed, packuments kept only for the
+packages under test), plus the real ldapjs slice of the verification's parse-server stability report
+and the jose packument. Web: `src/pages/tier05.test.tsx`, an Overview case, and
+`e2e/screens-g-tier05.spec.ts` (axe light and dark). Changed expectations, each for the reason
+above: `src/core/scope.test.ts`, `src/report/reach.test.ts`, `test/tier0/tier0.test.ts` (production
+tier, gate wording), the stability control set (`test/stability/stability.test.ts`, numbers above)
+and one `productionComponents` case in `src/stability/stability.test.ts`. Counts: blastradius
+996 tests after merging the agentic stream (970 before; 22 in `test/tier05`), web 321 unit (318 before) and 69 e2e (66 before).
+
+**Deferred.** A sibling check reads the scan's own packages (not an account's whole listing). The
+demo project is recognised by its fixture target, not a stored flag. Superset's npm workspaces are
+scanned as found; its `--history` labels are stream Y's.

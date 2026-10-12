@@ -257,21 +257,31 @@ export function derivePublisherChange(
 }
 
 /**
- * maintainer_change from per-version `maintainers` lists: every point at or
- * before `version` (within `windowDays`) where the maintainer set differs from
- * the previous version that recorded one. Most recent first.
- * `daysBeforeRelease` = days from the version where the change was observed to the scanned version.
+ * maintainer_change from per-version `maintainers` lists: every point at or before `version`
+ * (within `windowDays`) where the maintainer set differs from the previous version that recorded
+ * one. Most recent first. `daysBeforeRelease` = days from the version where the change was observed
+ * to the scanned version.
+ *
+ * Tier 0.5: a release published through npm trusted publishing stores whatever list the OIDC
+ * publish wrote (mongodb-connection-string-url 7.0.2 stored 3 of its 8 maintainers, which read as
+ * "removed devtoolsbot, added dariakp"), so those lists are never compared. With `current` (the
+ * packument's own `maintainers`, when it describes the scan's point in time) an "added" account
+ * must still maintain the package and a "removed" one must no longer; an account that published a
+ * later release (`_npmUser`) was not removed.
  */
 export function deriveMaintainerChanges(
   history: readonly VersionRecord[],
   version: string,
   windowDays = 365,
   max = 5,
+  current?: readonly string[],
 ): NpmMaintainerChangeValue[] {
   const idx = history.findIndex((h) => h.version === version);
   const scanned = history[idx];
   if (!scanned) return [];
-  const known = history.slice(0, idx + 1).filter((h) => h.maintainers);
+  const upTo = history.slice(0, idx + 1);
+  const known = upTo.filter((h) => h.maintainers && !h.trustedPublisher);
+  const now = current ? new Set(current) : undefined;
   const out: NpmMaintainerChangeValue[] = [];
   for (let i = known.length - 1; i >= 1 && out.length < max; i--) {
     const cur = known[i]!;
@@ -279,12 +289,25 @@ export function deriveMaintainerChanges(
     if (days > windowDays) break;
     const prevSet = new Set(known[i - 1]!.maintainers);
     const curSet = new Set(cur.maintainers);
-    const added = [...curSet].filter((m) => !prevSet.has(m)).sort();
-    const removed = [...prevSet].filter((m) => !curSet.has(m)).sort();
+    const laterPublishers = new Set(upTo.filter((h) => h.publishedMs >= cur.publishedMs && h.publisher).map((h) => h.publisher!));
+    const added = [...curSet].filter((m) => !prevSet.has(m) && (!now || now.has(m))).sort();
+    const removed = [...prevSet].filter((m) => !curSet.has(m) && (!now || !now.has(m)) && !laterPublishers.has(m)).sort();
     if (added.length === 0 && removed.length === 0) continue;
     out.push({ added, removed, changedAt: cur.publishedAt, version: cur.version, daysBeforeRelease: days, via: 'version-history' });
   }
   return out;
+}
+
+/**
+ * The packument's current maintainer names when they describe the scan's point in time: the
+ * packument was last modified at or before `now` (a live scan). A replay in the past (backtests,
+ * --as-of) gets undefined: today's list is not what the registry said then.
+ */
+export function currentMaintainersAt(p: Packument, now: Date): string[] | undefined {
+  const modified = isObject(p.time) ? parseTime(p.time.modified) : undefined;
+  if (modified === undefined || modified > now.getTime() + DAY_MS) return undefined;
+  const list = parseMaintainers(p.maintainers);
+  return list && list.length > 0 ? list.map((m) => m.name) : undefined;
 }
 
 /**
@@ -296,6 +319,38 @@ export function previousRelease(history: readonly VersionRecord[], version: stri
   if (idx <= 0) return undefined;
   for (let i = idx - 1; i >= 0; i--) {
     const h = history[i]!;
+    if (h.publishedMs < history[idx]!.publishedMs && compareVersions(h.version, version) < 0) return h;
+  }
+  return undefined;
+}
+
+/** True for a prerelease or build-tagged version (4.23.0-nightly-…, 7.17.1-alpha.9, 1.0.0-rc.1). */
+export function isPrerelease(version: string): boolean {
+  return /^\d+\.\d+\.\d+-/.test(version) || !/^\d+\.\d+\.\d+(\+.*)?$/.test(version);
+}
+
+/** Release line: the major for 1.x and later, major.minor for 0.x (semver: 0.x minors may break). */
+export function releaseLine(version: string): string | undefined {
+  const m = /^(\d+)\.(\d+)\./.exec(version);
+  if (!m) return undefined;
+  return m[1] === '0' ? `0.${m[2]}` : m[1];
+}
+
+/**
+ * The release a stable version's provenance is compared with (Tier 0.5): the newest earlier
+ * STABLE release of the same release line. Prereleases and nightlies are built by other pipelines
+ * (typescript-eslint's canaries and react-native-screens' nightlies carry provenance, their stable
+ * releases did not), so a stable release is never compared with one, and a prerelease is never
+ * compared at all. Undefined when there is no such release.
+ */
+export function previousStableOnLine(history: readonly VersionRecord[], version: string): VersionRecord | undefined {
+  if (isPrerelease(version)) return undefined;
+  const line = releaseLine(version);
+  const idx = history.findIndex((h) => h.version === version);
+  if (idx <= 0 || line === undefined) return undefined;
+  for (let i = idx - 1; i >= 0; i--) {
+    const h = history[i]!;
+    if (isPrerelease(h.version) || releaseLine(h.version) !== line) continue;
     if (h.publishedMs < history[idx]!.publishedMs && compareVersions(h.version, version) < 0) return h;
   }
   return undefined;
@@ -465,7 +520,7 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
     facts.push(makeFact('publisher_change', subject, pubChange, meta([...new Set(evidence)])));
   }
 
-  for (const change of deriveMaintainerChanges(history, version, windowDays, opts.maxMaintainerChanges ?? 5)) {
+  for (const change of deriveMaintainerChanges(history, version, windowDays, opts.maxMaintainerChanges ?? 5, currentMaintainersAt(p, opts.now))) {
     facts.push(makeFact('maintainer_change', subject, change, meta([npmPackagePage(name, change.version)])));
   }
 
@@ -485,7 +540,11 @@ export function packumentFacts(p: Packument, name: string, version: string, opts
   }
 
   const provenance = deriveProvenance(m);
-  if (!provenance.hasProvenance && prev && prevManifest && deriveProvenance(prevManifest).hasProvenance) provenance.droppedSince = prev.version;
+  // Tier 0.5: stable to stable on the same release line only, and only when that earlier stable
+  // release had provenance (a package that never had it on a stable release dropped nothing).
+  const prevStable = previousStableOnLine(history, version);
+  const prevStableManifest = prevStable ? manifest(p, prevStable.version) : undefined;
+  if (!provenance.hasProvenance && prevStable && prevStableManifest && deriveProvenance(prevStableManifest).hasProvenance) provenance.droppedSince = prevStable.version;
   facts.push(makeFact('provenance', subject, provenance, meta(provenance.url ? [versionPage, provenance.url] : [versionPage])));
 
   const age = deriveReleaseAge(p, version, opts.now);

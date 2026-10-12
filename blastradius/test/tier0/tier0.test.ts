@@ -45,16 +45,17 @@ describe('Tier 0 · parse-server (lockfile subset at 23d7bbca, recorded OSV)', a
     expect(f.scope).toBe('runtime');
     expect(f.level).toBe('critical');
     expect(f.gate?.rule).toBe('runtime_critical_fix');
-    expect(f.gate?.detail).toMatch(/GHSA-jqcg-44mw-7w3h \(CVSS 9\.1\).*2\.0\.8.*above every non-runtime finding/);
+    expect(f.gate?.detail).toMatch(/GHSA-jqcg-44mw-7w3h \(CVSS 9\.1\).*2\.0\.8.*above every non-production finding/);
     expect(f.gate?.detail).toMatch(/brought in by express/);
   });
 
-  it('lists every runtime finding before any optional, peer, CI or dev-only one', () => {
-    const tiers = result.findings.map((f) => (f.scope === 'runtime' || f.gate?.rule === 'install_time' ? 0 : 1));
+  it('lists every production finding (runtime, peer, optional: Tier 0.5) before any CI or dev-only one', () => {
+    const prod = (f: (typeof result.findings)[number]) => f.scope === 'runtime' || f.scope === 'peer' || f.scope === 'optional' || f.gate?.rule === 'install_time';
+    const tiers = result.findings.map((f) => (prod(f) ? 0 : 1));
     expect([...tiers].sort((a, b) => a - b)).toEqual(tiers);
-    const runtime = result.findings.filter((f) => f.scope === 'runtime').length;
-    expect(runtime).toBeGreaterThan(0);
-    expect(result.findings.slice(0, Math.min(10, runtime)).every((f) => f.scope === 'runtime')).toBe(true);
+    const n = result.findings.filter(prod).length;
+    expect(n).toBeGreaterThan(0);
+    expect(result.findings.slice(0, Math.min(10, n)).every(prod)).toBe(true);
   });
 
   it('keeps dev-only advisories (decompress CVSS 9.1 in CI tooling) below high and after runtime', () => {

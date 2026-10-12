@@ -238,6 +238,12 @@ export interface PackageBehindResponse {
    * null when the index has no registry data for it yet.
    */
   publishRights: { account: string; entityId: string; source: string; evidence: string }[] | null;
+  /**
+   * Tier 0.5: true while the account index is still fetching registry data and has none for this
+   * package yet, so a null `publishRights` / `publisher` means "not indexed yet", not "unknown".
+   * Ask again later. Absent when the index is idle or has the data.
+   */
+  pending?: true;
   /** Each version your projects lock, newest first: who published it (npm `_npmUser`), when known. */
   lockedVersions: {
     version: string;

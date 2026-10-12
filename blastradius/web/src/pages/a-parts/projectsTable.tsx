@@ -33,7 +33,14 @@ export const PROJECT_COLUMNS: ColumnDef<ProjectRow, any>[] = [
     accessorFn: (r) => r.name,
     cell: (c) => (
       <span className="flex min-w-0 flex-col">
-        <span className="font-medium">{c.row.original.name}</span>
+        <span className="flex items-center gap-1.5 font-medium">
+          {c.row.original.name}
+          {c.row.original.demo && (
+            <Badge variant="outline" title="Demo project (serve --dev-seed): recorded fixture data, left out of totals">
+              demo
+            </Badge>
+          )}
+        </span>
         <span className="truncate font-mono text-xs text-muted-foreground" title={c.row.original.target}>
           {c.row.original.target}
         </span>
@@ -88,7 +95,9 @@ export async function homeFromProjects(signal: AbortSignal): Promise<OrgHomeResp
   let assets = 0;
   let components = 0;
   let toReview = 0;
-  for (const p of items) {
+  // The demo project (--dev-seed) is listed but never counted, as in GET /api/home.
+  const real = items.filter((p) => !p.demo);
+  for (const p of real) {
     for (const l of LEVELS) counts[l] += p.counts[l] ?? 0;
     assets += p.assets;
     components += p.components;
@@ -97,6 +106,6 @@ export async function homeFromProjects(signal: AbortSignal): Promise<OrgHomeResp
   const recentScans = items
     .flatMap((p) => (p.lastScan ? [p.lastScan] : []))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return { org: { id: '', name: '', slug: '', createdAt: '' }, totals: { projects: items.length, assets, components, counts, toReview }, projects: items, recentScans };
+  return { org: { id: '', name: '', slug: '', createdAt: '' }, totals: { projects: real.length, assets, components, counts, toReview, ...(real.length !== items.length ? { demoProjects: items.length - real.length } : {}) }, projects: items, recentScans };
 }
 

@@ -116,6 +116,7 @@ function BySeverity({ data, sp, exposureTo, licensesTo, proposedTo }: { data: Ov
       <p className="m-0 text-caption text-muted-foreground">
         From the latest scan of {data.scannedProjects} of {data.projects} {data.projects === 1 ? 'project' : 'projects'}.{' '}
         {data.since ? '"New" counts open findings first seen in this range. Earlier daily counts are not stored, so no trend line is drawn.' : 'Earlier daily counts are not stored, so no trend line is drawn.'}
+        {data.demo && (data.demo.excluded ? ' The demo project is left out of these totals.' : ' Demo data: these numbers come from the demo project (recorded fixtures), not a real project.')}
       </p>
       <span className="mt-auto flex flex-wrap gap-4 text-label">
         <Link to={findingsLink(sp, { status: OPEN })}>View all open findings</Link>

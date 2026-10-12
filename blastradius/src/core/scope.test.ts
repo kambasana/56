@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assetScopeCap, componentScopes, isProductionScope, pathScope, productionSet, scopeTier } from './scope.js';
+import { assetScopeCap, componentScopes, isProductionScope, pathScope, productionSet, productionTier, scopeTier } from './scope.js';
 import type { Asset, Inventory } from './types.js';
 
 const repo = (id: string, environment: Asset['environment'] = 'prod'): Asset => ({ id, kind: 'repo', name: id, environment, criticality: 3, sourceFile: 'package.json' });
@@ -25,10 +25,13 @@ describe('one scope per (project, package)', () => {
   it('takes the weakest link of a path and the strongest path', () => {
     expect(Object.fromEntries([...s].map(([p, v]) => [p.replace(/^pkg:npm\/|@1\.0\.0$/g, ''), v]))).toEqual({ a: 'runtime', b: 'optional', c: 'peer', d: 'dev', e: 'runtime', f: 'dev', g: 'ci', h: 'unreachable' });
   });
-  it('only runtime is production', () => {
-    expect([...productionSet(inv)].sort()).toEqual(['pkg:npm/a@1.0.0', 'pkg:npm/e@1.0.0']);
-    expect(isProductionScope('optional')).toBe(false);
-    expect(isProductionScope('peer')).toBe(false);
+  it('production is runtime, peer and optional (npm installs all three); never dev, CI or unreachable (Tier 0.5)', () => {
+    expect([...productionSet(inv)].sort()).toEqual(['pkg:npm/a@1.0.0', 'pkg:npm/b@1.0.0', 'pkg:npm/c@1.0.0', 'pkg:npm/e@1.0.0']);
+    expect(isProductionScope('optional')).toBe(true);
+    expect(isProductionScope('peer')).toBe(true);
+    for (const s of ['dev', 'ci', 'unreachable'] as const) expect(isProductionScope(s)).toBe(false);
+    expect(productionTier('optional')).toBe(productionTier('runtime'));
+    expect(productionTier('ci')).toBeGreaterThan(0);
   });
   it('orders tiers production first and caps paths by the asset', () => {
     expect(['dev', 'runtime', 'ci', 'optional', 'peer', 'unreachable'].sort((a, b) => scopeTier(a as never) - scopeTier(b as never))).toEqual(['runtime', 'peer', 'optional', 'ci', 'dev', 'unreachable']);

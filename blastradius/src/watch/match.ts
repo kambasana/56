@@ -157,8 +157,8 @@ function hitFor(s: StoredInventory, purl: string, nv: { name: string; version: s
     purl,
     ...nv,
     assets: inbound.assets,
-    // One scope rule for every view: production = runtime scope from a production asset.
-    production: isProductionScope(scope) && inbound.assets.some((a) => a.scope === 'runtime' && g.assets.get(a.assetId)?.environment === 'prod'),
+    // One scope rule for every view: production = a production scope (runtime, peer, optional) from a production asset.
+    production: isProductionScope(scope) && inbound.assets.some((a) => isProductionScope(a.scope) && g.assets.get(a.assetId)?.environment === 'prod'),
     scope,
     ecosystem,
     reachText: describeReach({ blastRadius: { assets: inbound.assets, score: 0 } }, assetOf),

@@ -1,0 +1,1315 @@
+{
+ "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called)",
+ "runAt": "2026-10-12T20:34:07.727Z",
+ "live": [
+  {
+   "id": "funding-core-js",
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/core-js",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "core-js",
+     "ecosystem": "npm",
+     "packageName": "core-js",
+     "repoUrl": "https://github.com/zloirock/core-js",
+     "homepage": "https://core-js.io",
+     "domains": [
+      "core-js.io"
+     ]
+    }
+   },
+   "latencyMs": 1171,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_4e07cfb00e08f0456744",
+     "value": {
+      "kind": "fiscal_host",
+      "organization": "Open Source Collective",
+      "url": "https://opencollective.com/core-js"
+     },
+     "sourceUrl": "https://opencollective.com/core-js",
+     "quote": "Fiscal Host: Open Source Collective",
+     "retrievedAt": "2026-10-12T20:22:02Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_b96cd65f32259e4ba27d",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "Cybozu",
+      "amount": {
+       "value": 21017,
+       "currency": "USD",
+       "since": "Jun 2021"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/core-js",
+     "quote": "Cybozu $21,017 USD since Jun 2021",
+     "retrievedAt": "2026-10-12T20:22:02Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "funding-babel",
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/@babel/core",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "@babel/core",
+     "ecosystem": "npm",
+     "packageName": "@babel/core",
+     "repoUrl": "https://github.com/babel/babel",
+     "homepage": "https://babel.dev/docs/en/next/babel-core",
+     "domains": [
+      "babel.dev"
+     ]
+    }
+   },
+   "latencyMs": 474,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_0fc2f7a2d5150361e0d1",
+     "value": {
+      "kind": "fiscal_host",
+      "organization": "Open Source Collective",
+      "url": "https://opencollective.com/babel"
+     },
+     "sourceUrl": "https://opencollective.com/babel",
+     "quote": "Fiscal Host: Open Source Collective",
+     "retrievedAt": "2026-10-12T20:22:03Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_562e0b26bc6b064c0e69",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "Airbnb",
+      "amount": {
+       "value": 217858,
+       "currency": "USD",
+       "since": "Apr 2018"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/babel",
+     "quote": "Airbnb $217,858 USD since Apr 2018",
+     "retrievedAt": "2026-10-12T20:22:03Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_4d89ce2c8a8b3e4681a8",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "Sovereign Tech Agency",
+      "amount": {
+       "value": 207511.35,
+       "currency": "USD",
+       "since": "May 2025"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/babel",
+     "quote": "Sovereign Tech Agency $207,511.35 USD since May 2025",
+     "retrievedAt": "2026-10-12T20:22:03Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "funding-webpack",
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/webpack",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "webpack",
+     "ecosystem": "npm",
+     "packageName": "webpack",
+     "repoUrl": "https://github.com/webpack/webpack",
+     "homepage": "https://github.com/webpack/webpack"
+    }
+   },
+   "latencyMs": 956,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_f0e1a74ebd7ebc932a78",
+     "value": {
+      "kind": "fiscal_host",
+      "organization": "Open Source Collective",
+      "url": "https://opencollective.com/webpack"
+     },
+     "sourceUrl": "https://opencollective.com/webpack",
+     "quote": "Fiscal Host: Open Source Collective",
+     "retrievedAt": "2026-10-12T20:22:04Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_34860e7a787c80f11dae",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "trivago",
+      "amount": {
+       "value": 389985,
+       "currency": "USD",
+       "since": "Aug 2017"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/webpack",
+     "quote": "trivago $389,985 USD since Aug 2017",
+     "retrievedAt": "2026-10-12T20:22:04Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_aa05a2f006170d54ee1e",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "AG Grid",
+      "amount": {
+       "value": 267500,
+       "currency": "USD",
+       "since": "Mar 2017"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/webpack",
+     "quote": "AG Grid $267,500 USD since Mar 2017",
+     "retrievedAt": "2026-10-12T20:22:04Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "funding-faker",
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/@faker-js/faker",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "@faker-js/faker",
+     "ecosystem": "npm",
+     "packageName": "@faker-js/faker",
+     "repoUrl": "https://github.com/faker-js/faker",
+     "homepage": "https://fakerjs.dev",
+     "domains": [
+      "fakerjs.dev"
+     ]
+    }
+   },
+   "latencyMs": 473,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_766de6ecb44c30797188",
+     "value": {
+      "kind": "fiscal_host",
+      "organization": "Open Source Collective",
+      "url": "https://opencollective.com/fakerjs"
+     },
+     "sourceUrl": "https://opencollective.com/fakerjs",
+     "quote": "Fiscal Host: Open Source Collective",
+     "retrievedAt": "2026-10-12T20:22:05Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_a59c7aae5e9d868de08a",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "Indeed",
+      "amount": {
+       "value": 29000,
+       "currency": "USD",
+       "since": "Feb 2021"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/fakerjs",
+     "quote": "Indeed $29,000 USD since Feb 2021",
+     "retrievedAt": "2026-10-12T20:22:05Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "funding-express",
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/express",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "express",
+     "ecosystem": "npm",
+     "packageName": "express",
+     "repoUrl": "https://github.com/expressjs/express",
+     "homepage": "https://expressjs.com/",
+     "domains": [
+      "expressjs.com"
+     ]
+    }
+   },
+   "latencyMs": 576,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_8362f1453d9c5d47e118",
+     "value": {
+      "kind": "fiscal_host",
+      "organization": "Open Source Collective",
+      "url": "https://opencollective.com/express"
+     },
+     "sourceUrl": "https://opencollective.com/express",
+     "quote": "Fiscal Host: Open Source Collective",
+     "retrievedAt": "2026-10-12T20:22:06Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "governance-express",
+   "request": {
+    "task": "governance",
+    "subject": "pkg:npm/express",
+    "subjectKind": "package",
+    "question": "Which organisation or foundation owns or governs this project?",
+    "context": {
+     "name": "express",
+     "ecosystem": "npm",
+     "packageName": "express",
+     "repoUrl": "https://github.com/expressjs/express",
+     "homepage": "https://expressjs.com/",
+     "domains": [
+      "expressjs.com"
+     ]
+    }
+   },
+   "latencyMs": 925,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_1694331fdc8a2bee5fcb",
+     "value": {
+      "kind": "foundation_member",
+      "organization": "OpenJS Foundation",
+      "summary": "The OpenJS Foundation projects page lists express among its hosted projects."
+     },
+     "sourceUrl": "https://openjsf.org/projects",
+     "quote": "Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.",
+     "retrievedAt": "2026-10-12T20:22:06Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "governance-webpack",
+   "request": {
+    "task": "governance",
+    "subject": "pkg:npm/webpack",
+    "subjectKind": "package",
+    "question": "Which organisation or foundation owns or governs this project?",
+    "context": {
+     "name": "webpack",
+     "ecosystem": "npm",
+     "packageName": "webpack",
+     "repoUrl": "https://github.com/webpack/webpack",
+     "homepage": "https://github.com/webpack/webpack"
+    }
+   },
+   "latencyMs": 288,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_e82d49c97b6ff722cd89",
+     "value": {
+      "kind": "foundation_member",
+      "organization": "OpenJS Foundation",
+      "summary": "The OpenJS Foundation projects page lists webpack among its hosted projects."
+     },
+     "sourceUrl": "https://openjsf.org/projects",
+     "quote": "webpack is a bundler for modules and is primarily used to bundle JavaScript files for usage in a browser.",
+     "retrievedAt": "2026-10-12T20:22:06Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "governance-lodash",
+   "request": {
+    "task": "governance",
+    "subject": "pkg:npm/lodash",
+    "subjectKind": "package",
+    "question": "Which organisation or foundation owns or governs this project?",
+    "context": {
+     "name": "lodash",
+     "ecosystem": "npm",
+     "packageName": "lodash",
+     "repoUrl": "https://github.com/lodash/lodash",
+     "homepage": "https://lodash.com/",
+     "domains": [
+      "lodash.com"
+     ]
+    }
+   },
+   "latencyMs": 338,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_bed9cf45960ebd573576",
+     "value": {
+      "kind": "foundation_member",
+      "organization": "OpenJS Foundation",
+      "summary": "The OpenJS Foundation projects page lists lodash among its hosted projects."
+     },
+     "sourceUrl": "https://openjsf.org/projects",
+     "quote": "Lodash is a modern JavaScript utility library delivering modularity, performance & extras.",
+     "retrievedAt": "2026-10-12T20:22:06Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "lifecycle-moment",
+   "request": {
+    "task": "lifecycle_events",
+    "subject": "pkg:npm/moment",
+    "subjectKind": "package",
+    "question": "Has the project announced maintenance mode, deprecation or end of life? Find the project's own announcement and its date.",
+    "context": {
+     "name": "moment",
+     "ecosystem": "npm",
+     "packageName": "moment",
+     "repoUrl": "https://github.com/moment/moment",
+     "homepage": "https://momentjs.com",
+     "domains": [
+      "momentjs.com"
+     ]
+    }
+   },
+   "latencyMs": 577,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_3664c2c71dfe5570da61",
+     "value": {
+      "event": "maintenance_mode",
+      "summary": "The Moment.js documentation describes the project as a legacy project in maintenance mode."
+     },
+     "sourceUrl": "https://momentjs.com/docs/",
+     "quote": "Moment.js is a legacy project in maintenance mode.",
+     "retrievedAt": "2026-10-12T20:22:07Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "lifecycle-request",
+   "request": {
+    "task": "lifecycle_events",
+    "subject": "pkg:npm/request",
+    "subjectKind": "package",
+    "question": "Our collectors report that npm marks the latest version deprecated (\"request has been deprecated, see https://github.com/request/request/issues/3142\"). Find the project's own announcement and its date.",
+    "context": {
+     "name": "request",
+     "ecosystem": "npm",
+     "packageName": "request",
+     "repoUrl": "https://github.com/request/request",
+     "homepage": "https://github.com/request/request#readme"
+    }
+   },
+   "latencyMs": 444,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 2
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_03523d0007c10f875123",
+     "value": {
+      "event": "deprecation",
+      "date": "2020-02-11",
+      "summary": "The request README states that the package is fully deprecated as of 11 February 2020 and that no new changes are expected."
+     },
+     "sourceUrl": "https://raw.githubusercontent.com/request/request/master/README.md",
+     "quote": "As of Feb 11th 2020, request is fully deprecated. No new changes are expected to land.",
+     "retrievedAt": "2026-10-12T20:22:07Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "lifecycle-elasticsearch",
+   "request": {
+    "task": "lifecycle_events",
+    "subject": "pkg:maven/org.elasticsearch/elasticsearch",
+    "subjectKind": "package",
+    "question": "Our collectors report that the declared licence changed between releases. Find the project's own announcement and its date.",
+    "context": {
+     "name": "Elasticsearch",
+     "ecosystem": "maven",
+     "packageName": "org.elasticsearch:elasticsearch",
+     "repoUrl": "https://github.com/elastic/elasticsearch",
+     "homepage": "https://www.elastic.co/elasticsearch",
+     "domains": [
+      "www.elastic.co"
+     ]
+    }
+   },
+   "latencyMs": 729,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_b91de9c33489d55c21ee",
+     "value": {
+      "event": "relicensing",
+      "date": "2021-01-14",
+      "summary": "Elastic announced that Elasticsearch and Kibana source code would move from Apache 2.0 to dual licensing under SSPL and the Elastic License.",
+      "licenseFrom": [
+       "Apache-2.0"
+      ],
+      "licenseTo": [
+       "SSPL-1.0",
+       "Elastic License"
+      ]
+     },
+     "sourceUrl": "https://www.elastic.co/blog/licensing-change",
+     "quote": "We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL) and the Elastic License, giving users the choice of which license to apply.",
+     "retrievedAt": "2026-10-12T20:22:07Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_a5f086f901d3c43f555b",
+     "value": {
+      "event": "relicensing",
+      "date": "2024-08-29",
+      "summary": "Elastic announced that AGPL would be added as a further licence option for Elasticsearch next to ELv2 and SSPL.",
+      "licenseTo": [
+       "AGPL-3.0"
+      ]
+     },
+     "sourceUrl": "https://www.elastic.co/blog/elasticsearch-is-open-source-again",
+     "quote": "The tl;dr is that we will be adding AGPL as another license option next to ELv2 and SSPL in the coming weeks.",
+     "retrievedAt": "2026-10-12T20:22:08Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "lifecycle-redis",
+   "request": {
+    "task": "lifecycle_events",
+    "subject": "pkg:github/redis/redis",
+    "subjectKind": "package",
+    "question": "Our collectors report that the declared licence changed between releases. Find the project's own announcement and its date.",
+    "context": {
+     "name": "Redis",
+     "repoUrl": "https://github.com/redis/redis",
+     "homepage": "https://redis.io",
+     "domains": [
+      "redis.io"
+     ]
+    }
+   },
+   "latencyMs": 1066,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_907c6296a5959d499afa",
+     "value": {
+      "event": "relicensing",
+      "date": "2024-03-20",
+      "summary": "Redis announced that from Redis 7.4 it is dual-licensed under RSALv2 and SSPLv1 instead of the three-clause BSD licence.",
+      "licenseFrom": [
+       "BSD-3-Clause"
+      ],
+      "licenseTo": [
+       "RSALv2",
+       "SSPL-1.0"
+      ]
+     },
+     "sourceUrl": "https://redis.io/blog/redis-adopts-dual-source-available-licensing/",
+     "quote": "Starting with Redis 7.4, Redis will be dual-licensed under the Redis Source Available License (RSALv2) and Server Side Public License (SSPLv1). Consequently, Redis will no longer be distributed under the three-clause Berkeley Software Distribution (BSD).",
+     "retrievedAt": "2026-10-12T20:22:08Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_3b89461e5a69d7d36557",
+     "value": {
+      "event": "relicensing",
+      "date": "2025-05-01",
+      "summary": "Redis announced AGPL as an additional licence option starting with Redis 8.",
+      "licenseTo": [
+       "AGPL-3.0"
+      ]
+     },
+     "sourceUrl": "https://redis.io/blog/agplv3/",
+     "quote": "Adding the OSI-approved AGPL as an additional licensing option for Redis, starting with Redis 8 (available now)",
+     "retrievedAt": "2026-10-12T20:22:08Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "incident-xz",
+   "request": {
+    "task": "incident_writeups",
+    "subject": "pkg:github/tukaani-project/xz",
+    "subjectKind": "package",
+    "question": "Advisories list this package as compromised or malicious. Find the public write-up or post-mortem.",
+    "context": {
+     "name": "xz-utils",
+     "repoUrl": "https://github.com/tukaani-project/xz"
+    }
+   },
+   "latencyMs": 1698,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_57cda6c8fd3666096334",
+     "value": {
+      "kind": "compromise",
+      "date": "2024-03-29",
+      "summary": "Reported on the oss-security list that the upstream xz repository and release tarballs contained a backdoor."
+     },
+     "sourceUrl": "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+     "quote": "The upstream xz repository and the xz tarballs have been backdoored.",
+     "retrievedAt": "2026-10-12T20:22:09Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_f9a00f55bb1606d3a245",
+     "value": {
+      "kind": "compromise",
+      "summary": "NVD describes code in the upstream xz tarballs, starting with version 5.6.0, that modifies the liblzma library.",
+      "advisoryIds": [
+       "CVE-2024-3094"
+      ]
+     },
+     "sourceUrl": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-3094",
+     "quote": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0.",
+     "retrievedAt": "2026-10-12T20:22:10Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "incident-event-stream",
+   "request": {
+    "task": "incident_writeups",
+    "subject": "pkg:npm/event-stream",
+    "subjectKind": "package",
+    "question": "Advisories list this package as compromised or malicious. Find the public write-up or post-mortem.",
+    "context": {
+     "name": "event-stream",
+     "ecosystem": "npm",
+     "packageName": "event-stream",
+     "repoUrl": "https://github.com/dominictarr/event-stream",
+     "homepage": "http://github.com/dominictarr/event-stream"
+    }
+   },
+   "latencyMs": 1135,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_c53b958458e258b60c8a",
+     "value": {
+      "kind": "malicious_release",
+      "date": "2018-11-26",
+      "summary": "npm reports that flatmap-stream 0.1.1 was added as a dependency of event-stream 3.3.6 by a new maintainer, and that npm removed both from the registry after being notified on November 26."
+     },
+     "sourceUrl": "https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident",
+     "quote": "The malicious package was version 0.1.1 of flatmap-stream. This package was added as a direct dependency of the event-stream package by a new maintainer on September 9, 2018, in version 3.3.6.",
+     "retrievedAt": "2026-10-12T20:22:10Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_1bc58802cf6ab47fcfbb",
+     "value": {
+      "kind": "malicious_release",
+      "summary": "The GitHub advisory (via OSV) reports that flatmap-stream was added as a dependency of event-stream 3.3.6.",
+      "advisoryIds": [
+       "GHSA-mh6f-8j2x-4483"
+      ]
+     },
+     "sourceUrl": "https://osv.dev/vulnerability/GHSA-mh6f-8j2x-4483",
+     "quote": "A malicious actor added this package as a dependency to the NPM event-stream package in version 3.3.6.",
+     "retrievedAt": "2026-10-12T20:22:10Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "incident-left-pad",
+   "request": {
+    "task": "incident_writeups",
+    "subject": "pkg:npm/left-pad",
+    "subjectKind": "package",
+    "question": "Is there a public write-up of a compromise, sabotage or unpublish affecting this package?",
+    "context": {
+     "name": "left-pad",
+     "ecosystem": "npm",
+     "packageName": "left-pad",
+     "repoUrl": "https://github.com/stevemao/left-pad",
+     "homepage": "https://github.com/stevemao/left-pad#readme"
+    }
+   },
+   "latencyMs": 49,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_9a5919fe40bb6fc1c2fb",
+     "value": {
+      "kind": "unpublish",
+      "date": "2016-03",
+      "summary": "npm reports that a widely used package was unpublished by its author during a dispute over a package name, disrupting many npm users."
+     },
+     "sourceUrl": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm",
+     "quote": "Earlier this week, many npm users suffered a disruption when a package that many projects depend on — directly or indirectly — was unpublished by its author, as part of a dispute over a package name.",
+     "retrievedAt": "2026-10-12T20:22:11Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "incident-colors",
+   "request": {
+    "task": "incident_writeups",
+    "subject": "pkg:npm/colors",
+    "subjectKind": "package",
+    "question": "Advisories list this package as compromised or malicious. Find the public write-up or post-mortem.",
+    "context": {
+     "name": "colors",
+     "ecosystem": "npm",
+     "packageName": "colors",
+     "repoUrl": "https://github.com/Marak/colors.js",
+     "homepage": "https://github.com/Marak/colors.js"
+    }
+   },
+   "latencyMs": 170,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_40c4faddb809b863e235",
+     "value": {
+      "kind": "malicious_release",
+      "date": "2022-01",
+      "summary": "OSV reports that colors 1.4.1, 1.4.2 and 1.4.44-liberty-2, published 7 to 9 January 2022, contained code that causes an infinite loop.",
+      "advisoryIds": [
+       "GHSA-5rqg-jm4f-cqx7"
+      ]
+     },
+     "sourceUrl": "https://osv.dev/vulnerability/GHSA-5rqg-jm4f-cqx7",
+     "quote": "Between 07 and 09 January 2022, colors versions 1.4.1, 1.4.2, and 1.4.44-liberty-2 were published including malicious code that caused a Denial of Service due to an infinite loop.",
+     "retrievedAt": "2026-10-12T20:22:11Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "jurisdiction-osc",
+   "request": {
+    "task": "org_jurisdiction",
+    "subject": "funder:opencollective/opensource",
+    "subjectKind": "org",
+    "question": "In which country is this organisation registered or incorporated, according to a public registry or its own legal page?",
+    "context": {
+     "name": "Open Source Collective",
+     "domains": [
+      "oscollective.org"
+     ]
+    }
+   },
+   "latencyMs": 1333,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_0b459b28176ba6a0ba10",
+     "value": {
+      "country": "US",
+      "basis": "tax_registration",
+      "registry": "org_legal_page",
+      "identifier": "82-2037583"
+     },
+     "sourceUrl": "https://oscollective.org/",
+     "quote": "We’re a 501(c)(6) non-profit registered in the USA. EIN 82-2037583",
+     "retrievedAt": "2026-10-12T20:21:10Z",
+     "status": "pending_confirmation",
+     "failedCheck": null,
+     "reasons": []
+    },
+    {
+     "id": "prop_025f77d8615a7f71d033",
+     "value": {
+      "country": "US",
+      "region": "CA",
+      "basis": "business_address",
+      "registry": "foundation_filing",
+      "identifier": "82-2037583"
+     },
+     "sourceUrl": "https://projects.propublica.org/nonprofits/organizations/822037583",
+     "quote": "Open Source Collective Covina, CA Tax exemption issued: April 2018 EIN: 82-2037583",
+     "retrievedAt": "2026-10-12T20:22:42Z",
+     "status": "pending_confirmation",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "jurisdiction-elastic",
+   "request": {
+    "task": "org_jurisdiction",
+    "subject": "org:github/elastic",
+    "subjectKind": "org",
+    "question": "In which country is this organisation registered or incorporated, according to a public registry or its own legal page?",
+    "context": {
+     "name": "elastic",
+     "domains": [
+      "www.elastic.co"
+     ],
+     "known": [
+      "GitHub organisation: https://github.com/elastic"
+     ]
+    }
+   },
+   "latencyMs": 598,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_32e0feb3a6d41105f2ca",
+     "value": {
+      "country": "NL",
+      "basis": "incorporation",
+      "registry": "sec_edgar"
+     },
+     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1707753/000170775326000018/estc-20260430.htm",
+     "quote": "The Netherlands 98-1756035 (State or other jurisdiction of incorporation or organization)",
+     "retrievedAt": "2026-10-12T20:20:40Z",
+     "status": "pending_confirmation",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  }
+ ],
+ "liveFacts": 29,
+ "adversarial": [
+  {
+   "id": "adv-wrong-amount",
+   "attempt": {
+    "kind": "adversarial",
+    "what": "plausible but wrong amount: trivago 398,985 with the real quote \"trivago $389,985 USD since Aug 2017\"",
+    "correct": "reject"
+   },
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/webpack",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "webpack",
+     "ecosystem": "npm",
+     "packageName": "webpack",
+     "repoUrl": "https://github.com/webpack/webpack",
+     "homepage": "https://github.com/webpack/webpack"
+    }
+   },
+   "latencyMs": 1489,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_ff2ad12c50499385f2bd",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "trivago",
+      "amount": {
+       "value": 398985,
+       "currency": "USD",
+       "since": "Aug 2017"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/webpack",
+     "quote": "trivago $389,985 USD since Aug 2017",
+     "retrievedAt": "2026-10-12T20:22:04Z",
+     "status": "unverified",
+     "failedCheck": "task_rules",
+     "reasons": [
+      "amount 398985 is not in the quote"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "adv-wrong-subject-funding",
+   "attempt": {
+    "kind": "adversarial",
+    "what": "real quote on the wrong subject: core-js's Open Collective backer Cybozu proposed as a funder of express",
+    "correct": "reject"
+   },
+   "request": {
+    "task": "funding",
+    "subject": "pkg:npm/express",
+    "subjectKind": "package",
+    "question": "Which funding channels does this project declare, and which organisations back it?",
+    "context": {
+     "name": "express",
+     "ecosystem": "npm",
+     "packageName": "express",
+     "repoUrl": "https://github.com/expressjs/express",
+     "homepage": "https://expressjs.com/",
+     "domains": [
+      "expressjs.com"
+     ]
+    }
+   },
+   "latencyMs": 104,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_f555da9a9d215fdc118b",
+     "value": {
+      "kind": "corporate_backer",
+      "organization": "Cybozu",
+      "amount": {
+       "value": 21017,
+       "currency": "USD",
+       "since": "Jun 2021"
+      }
+     },
+     "sourceUrl": "https://opencollective.com/core-js",
+     "quote": "Cybozu $21,017 USD since Jun 2021",
+     "retrievedAt": "2026-10-12T20:22:02Z",
+     "status": "unverified",
+     "failedCheck": "task_rules",
+     "reasons": [
+      "the source does not name the project (express, expressjs)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "adv-wrong-subject-governance",
+   "attempt": {
+    "kind": "adversarial",
+    "what": "real quote on the wrong subject: OpenJS's Express entry proposed as lodash's foundation membership",
+    "correct": "reject"
+   },
+   "request": {
+    "task": "governance",
+    "subject": "pkg:npm/lodash",
+    "subjectKind": "package",
+    "question": "Which organisation or foundation owns or governs this project?",
+    "context": {
+     "name": "lodash",
+     "ecosystem": "npm",
+     "packageName": "lodash",
+     "repoUrl": "https://github.com/lodash/lodash",
+     "homepage": "https://lodash.com/",
+     "domains": [
+      "lodash.com"
+     ]
+    }
+   },
+   "latencyMs": 1295,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_c1314610c15af2f2fe73",
+     "value": {
+      "kind": "foundation_member",
+      "organization": "OpenJS Foundation"
+     },
+     "sourceUrl": "https://openjsf.org/projects",
+     "quote": "Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.",
+     "retrievedAt": "2026-10-12T20:22:06Z",
+     "status": "unverified",
+     "failedCheck": "task_rules",
+     "reasons": [
+      "the quote does not name the project \"lodash\""
+     ]
+    }
+   ]
+  },
+  {
+   "id": "adv-wrong-subject-incident",
+   "attempt": {
+    "kind": "adversarial",
+    "what": "real quote on the wrong subject: npm's left-pad unpublish post proposed as an incident of express",
+    "correct": "reject"
+   },
+   "request": {
+    "task": "incident_writeups",
+    "subject": "pkg:npm/express",
+    "subjectKind": "package",
+    "question": "Is there a public write-up of a compromise affecting this package?",
+    "context": {
+     "name": "express",
+     "ecosystem": "npm",
+     "packageName": "express",
+     "repoUrl": "https://github.com/expressjs/express",
+     "homepage": "https://expressjs.com/",
+     "domains": [
+      "expressjs.com"
+     ]
+    }
+   },
+   "latencyMs": 427,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_77969ef3478113b62366",
+     "value": {
+      "kind": "unpublish",
+      "date": "2016-03",
+      "summary": "npm reports that the package was unpublished by its author during a dispute over a package name."
+     },
+     "sourceUrl": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm",
+     "quote": "Earlier this week, many npm users suffered a disruption when a package that many projects depend on — directly or indirectly — was unpublished by its author, as part of a dispute over a package name.",
+     "retrievedAt": "2026-10-12T20:22:11Z",
+     "status": "unverified",
+     "failedCheck": "task_rules",
+     "reasons": [
+      "the source does not name the project (express, expressjs)"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "adv-off-domain",
+   "attempt": {
+    "kind": "adversarial",
+    "what": "off-domain source: a real Wikipedia sentence about the 2021 Elasticsearch relicensing",
+    "correct": "reject"
+   },
+   "request": {
+    "task": "lifecycle_events",
+    "subject": "pkg:maven/org.elasticsearch/elasticsearch",
+    "subjectKind": "package",
+    "question": "Our collectors report that the declared licence changed between releases. Find the project's own announcement and its date.",
+    "context": {
+     "name": "Elasticsearch",
+     "ecosystem": "maven",
+     "packageName": "org.elasticsearch:elasticsearch",
+     "repoUrl": "https://github.com/elastic/elasticsearch",
+     "homepage": "https://www.elastic.co/elasticsearch",
+     "domains": [
+      "www.elastic.co"
+     ]
+    }
+   },
+   "latencyMs": 1,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_3534918e4373b5d82b54",
+     "value": {
+      "event": "relicensing",
+      "date": "2021-01",
+      "summary": "Elasticsearch and Kibana were relicensed from Apache 2.0 to SSPL and the Elastic License starting with version 7.11.",
+      "licenseFrom": [
+       "Apache-2.0"
+      ],
+      "licenseTo": [
+       "SSPL-1.0"
+      ]
+     },
+     "sourceUrl": "https://en.wikipedia.org/wiki/Elasticsearch",
+     "quote": "In January 2021, Elastic announced that starting with version 7.11, Elasticsearch and Kibana would be relicensed from Apache License 2.0 to a dual license under the Server Side Public License and the Elastic License",
+     "retrievedAt": "2026-10-12T20:22:42Z",
+     "status": "unverified",
+     "failedCheck": "domain",
+     "reasons": [
+      "en.wikipedia.org is not an allowed source for lifecycle_events"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "probe-wrong-date",
+   "attempt": {
+    "kind": "probe",
+    "what": "wrong date: the Redis AGPL announcement (May 01, 2025) proposed with date 2024-05-01, real quote",
+    "correct": "reject"
+   },
+   "request": {
+    "task": "lifecycle_events",
+    "subject": "pkg:github/redis/redis",
+    "subjectKind": "package",
+    "question": "Our collectors report that the declared licence changed between releases. Find the project's own announcement and its date.",
+    "context": {
+     "name": "Redis",
+     "repoUrl": "https://github.com/redis/redis",
+     "homepage": "https://redis.io",
+     "domains": [
+      "redis.io"
+     ]
+    }
+   },
+   "latencyMs": 687,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_1b0fab17d3a9c85506d3",
+     "value": {
+      "event": "relicensing",
+      "date": "2024-05-01",
+      "summary": "Redis announced AGPL as an additional licence option starting with Redis 8.",
+      "licenseTo": [
+       "AGPL-3.0"
+      ]
+     },
+     "sourceUrl": "https://redis.io/blog/agplv3/",
+     "quote": "Adding the OSI-approved AGPL as an additional licensing option for Redis, starting with Redis 8 (available now)",
+     "retrievedAt": "2026-10-12T20:22:08Z",
+     "status": "verified",
+     "failedCheck": null,
+     "reasons": []
+    }
+   ]
+  },
+  {
+   "id": "probe-js-rendered",
+   "attempt": {
+    "kind": "probe",
+    "what": "JS-rendered page: the true NVD description of CVE-2024-3094 cited on the NVD detail page (which redirects to a lower-case URL and renders its text with JavaScript)",
+    "correct": "accept"
+   },
+   "request": {
+    "task": "incident_writeups",
+    "subject": "pkg:github/tukaani-project/xz",
+    "subjectKind": "package",
+    "question": "Advisories list this package as compromised or malicious. Find the public write-up or post-mortem.",
+    "context": {
+     "name": "xz-utils",
+     "repoUrl": "https://github.com/tukaani-project/xz"
+    }
+   },
+   "latencyMs": 993,
+   "run": {
+    "stop": "submitted",
+    "malformed": [],
+    "turns": 1
+   },
+   "refused": null,
+   "privacyRejections": [],
+   "proposals": [
+    {
+     "id": "prop_7f65e33bc42e3bb0afa4",
+     "value": {
+      "kind": "compromise",
+      "summary": "NVD describes code in the upstream xz tarballs, starting with version 5.6.0, that modifies the liblzma library.",
+      "advisoryIds": [
+       "CVE-2024-3094"
+      ]
+     },
+     "sourceUrl": "https://nvd.nist.gov/vuln/detail/cve-2024-3094",
+     "quote": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0.",
+     "retrievedAt": "2026-10-12T20:22:43Z",
+     "status": "unverified",
+     "failedCheck": "quote_present",
+     "reasons": [
+      "the quoted text is not on the source page"
+     ]
+    }
+   ]
+  }
+ ],
+ "adversarialFacts": 1
+}

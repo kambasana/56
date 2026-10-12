@@ -60,7 +60,7 @@ export default function Projects() {
       <PageHeader
         crumbs={crumbs}
         title="Projects"
-        meta={data ? `${fmtNum(data.projects.length)} projects` : undefined}
+        meta={data ? `${fmtNum(data.totals.projects)} ${data.totals.projects === 1 ? 'project' : 'projects'}${data.totals.demoProjects ? ` · ${fmtNum(data.totals.demoProjects)} demo (not counted)` : ''}` : undefined}
         actions={
           canCreate && (
             <Button onClick={() => setCreating(true)}>

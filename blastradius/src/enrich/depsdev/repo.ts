@@ -1,5 +1,6 @@
 /** Normalise source-repository references (untrusted) into a RepoValue-like shape. */
 import type { RepoValue } from '../../core/types.js';
+import { isNonRepositoryUrl } from '../../core/repo-url.js';
 
 const HOSTS: Record<string, RepoValue['host']> = {
   'github.com': 'github',
@@ -26,6 +27,8 @@ export function normalizeRepoUrl(input: unknown): NormalizedRepo | undefined {
   if (typeof input !== 'string') return undefined;
   let s = input.trim();
   if (!s || s.length > 500) return undefined;
+  // A funding page is never a source repository (deps.dev: uvicorn's SOURCE_REPO github.com/sponsors/encode).
+  if (isNonRepositoryUrl(s)) return undefined;
   s = s.replace(/^git\+/, '');
   const scp = /^[\w.-]+@([\w.-]+):(.+)$/.exec(s); // git@github.com:o/r.git
   if (scp) s = `https://${scp[1]}/${scp[2]}`;

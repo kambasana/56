@@ -37,7 +37,8 @@ import type { AgentProposal } from '../core/agentic-types.js';
 
 /** test/fixtures (recorded API responses) and the e2e fixture repo, from src/ and dist/. */
 export const FIXTURES_DIR = fileURLToPath(new URL('../../test/fixtures', import.meta.url));
-export const E2E_REPO_DIR = fileURLToPath(new URL('../../test/fixtures/e2e-repo', import.meta.url));
+export { E2E_REPO_DIR } from './demo.js';
+import { E2E_REPO_DIR } from './demo.js';
 /** Shortly after the 2018-11-26 event-stream advisory: the replay date for the fixture scan. */
 export const FIXTURE_AS_OF = new Date('2018-11-27T00:00:00Z');
 export const DEV_PROJECT_NAME = 'payments-platform';
@@ -164,6 +165,15 @@ export interface DevSeedOutcome {
 }
 
 /**
+ * `serve --dev` (Tier 0.5): the seeded users and org only. No demo project and no scan: the demo
+ * is only created with --dev-seed.
+ */
+export async function seedDevUsers(deps: Pick<ServerDeps, 'store'>): Promise<Omit<DevSeedOutcome, 'projectId' | 'scanId'>> {
+  const seeded = await seedDev(deps.store, { devMode: true });
+  return { orgId: seeded.org.id, password: seeded.password, users: seeded.users.map((u) => u.email) };
+}
+
+/**
  * Dev seed: users and org from the store seed, plus project "payments-platform" on the e2e
  * fixture repo with an offline fixture scan as of 2018-11-27 (queued, not awaited).
  */
@@ -253,10 +263,15 @@ export async function serve(opts: ServeOptions = {}): Promise<{ url: string; clo
     for (const u of devUsers) ended += deleteUserSessions(store, u.id);
     if (devUsers.length > 0) log(`${devUsers.length} seeded dev user(s) in this database cannot sign in outside --dev${ended ? ` (${ended} session(s) ended)` : ''}`);
   }
-  if (devMode) {
+  if (opts.devSeed === true) {
     const seed = await seedDevData(deps);
     log(`dev mode: users ${seed.users.join(', ')} — password: ${seed.password}`);
+    log(`dev seed: demo project ${DEV_PROJECT_NAME} (badged "demo", left out of totals)`);
     if (seed.scanId) log(`dev mode: queued fixture scan ${seed.scanId} for ${DEV_PROJECT_NAME}`);
+  } else if (devMode) {
+    // --dev alone: seeded users and the role switcher, no demo project and no fixture scan.
+    const seed = await seedDevUsers(deps);
+    log(`dev mode: users ${seed.users.join(', ')} — password: ${seed.password}`);
   }
   if (!deps.config.webDir) log('web/dist not found: serving the API only (build the web app with `npm --prefix web run build`)');
   const port = opts.port ?? 8000;

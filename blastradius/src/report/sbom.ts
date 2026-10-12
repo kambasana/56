@@ -20,6 +20,7 @@ import { describeChangePlacement, isRangeChange } from '../licenses/history.js';
 import { parseSpdx } from '../licenses/spdx.js';
 import { componentScopes, type ComponentScope } from '../core/scope.js';
 import { notAnalysedLine } from '../ingest/manifests.js';
+import { productNameOf } from '../core/repo-url.js';
 
 /** CycloneDX scope for our project scope: runtime is required, optional/peer optional, the rest excluded. */
 function cdxScope(scope: ComponentScope): CDX.Enums.ComponentScope {
@@ -68,6 +69,13 @@ function cdxLicenses(c: ComponentLicense): CDX.Models.License[] {
   return raw.map((r) => new CDX.Models.NamedLicense(r, { acknowledgement: ack }));
 }
 
+/** The product an SBOM describes: the scan's `product`, else the target's repository or directory name. */
+function productOf(result: ScanResult): { name: string; version?: string } {
+  const name = (result.product?.name || productNameOf(result.target)).slice(0, 300);
+  const version = result.product?.version?.slice(0, 100);
+  return version ? { name, version } : { name };
+}
+
 function licenseIndex(result: ScanResult): Map<string, ComponentLicense> {
   return new Map((result.licenses?.components ?? []).map((c) => [c.purl, c]));
 }
@@ -78,7 +86,9 @@ export function toCycloneDxBom(result: ScanResult, inventory?: Pick<Inventory, '
   bom.serialNumber = `urn:uuid:${uuidFrom(`${result.target}\u0000${result.generatedAt}`)}`;
   bom.metadata.timestamp = new Date(result.generatedAt);
   bom.metadata.tools.components.add(new CDX.Models.Component(CDX.Enums.ComponentType.Application, TOOL.name, { version: TOOL.version, group: TOOL.vendor }));
-  const root = new CDX.Models.Component(CDX.Enums.ComponentType.Application, result.target.slice(0, 300), { bomRef: 'root' });
+  // Tier 0.5: the product name (never the scan machine's absolute path).
+  const product = productOf(result);
+  const root = new CDX.Models.Component(CDX.Enums.ComponentType.Application, product.name, { bomRef: 'root', ...(product.version ? { version: product.version } : {}) });
   bom.metadata.component = root;
   // Tier 0: manifests found but not analysed are part of what this SBOM does not cover.
   for (const n of result.notAnalysed ?? []) bom.metadata.properties.add(new CDX.Models.Property('blastradius:notAnalysed', `${n.file}: ${n.reason}${n.packages !== undefined ? ` (~${n.packages} packages)` : ''}`));
@@ -228,9 +238,11 @@ export function toSpdx(result: ScanResult, inventory?: Pick<Inventory, 'componen
   const sorted = [...new Map(comps.map((c) => [c.purl, c])).values()].sort((a, b) => (a.purl < b.purl ? -1 : a.purl > b.purl ? 1 : 0));
   const ids = new Map<string, string>();
   const scopes = scopesOf(inventory);
+  const product = productOf(result);
   const root: SpdxPackage = {
     SPDXID: 'SPDXRef-Root',
-    name: result.target.slice(0, 300),
+    name: product.name,
+    ...(product.version ? { versionInfo: product.version } : {}),
     downloadLocation: 'NOASSERTION',
     filesAnalyzed: false,
     licenseConcluded: 'NOASSERTION',
@@ -277,7 +289,7 @@ export function toSpdx(result: ScanResult, inventory?: Pick<Inventory, 'componen
     spdxVersion: 'SPDX-2.3',
     dataLicense: 'CC0-1.0',
     SPDXID: 'SPDXRef-DOCUMENT',
-    name: `blastradius ${result.target}`.slice(0, 300),
+    name: `blastradius ${product.name}`.slice(0, 300),
     documentNamespace: `https://blastradius.invalid/spdx/${uuidFrom(`${result.target}\u0000${result.generatedAt}`)}`,
     creationInfo: {
       created: result.generatedAt.replace(/\.\d{3}Z$/, 'Z'),

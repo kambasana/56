@@ -259,21 +259,23 @@ describe('Tier 0.5 (2b): PyPI release continuity has no npm publisher: Trusted P
 });
 
 describe('Tier 0.5 (3): PyPI upkeep is labelled, or counted as Unknown with the reason', () => {
-  it('flask: its 7 runtime PyPI packages get labels from the PyPI release record and Scorecard (recorded deps.dev / PyPI responses)', async () => {
+  it('flask: its 7 runtime (and 2 optional) PyPI packages get labels from the PyPI release record and Scorecard (recorded deps.dev / PyPI responses)', async () => {
     const { report, facts, warnings } = await tier05PypiReport('flask');
     expect(warnings).toEqual([]);
     const prod = report.packages.filter((p) => p.production);
-    expect(prod.map((p) => p.name).sort()).toEqual(['blinker', 'click', 'colorama', 'itsdangerous', 'jinja2', 'markupsafe', 'werkzeug']);
+    // The 7 runtime packages, plus asgiref and python-dotenv (flask's optional extras): since Stream X's
+    // scope change (src/core/scope.ts) optional and peer count as installed, so production is 9.
+    expect(prod.map((p) => p.name).sort()).toEqual(['asgiref', 'blinker', 'click', 'colorama', 'itsdangerous', 'jinja2', 'markupsafe', 'python-dotenv', 'werkzeug']);
     for (const p of prod) {
       expect(p.package.startsWith('pkg:pypi/'), p.name).toBe(true);
       if (p.label === 'unknown') expect(p.missing.length, p.name).toBeGreaterThan(0);
       expect(p.basis, p.name).toMatch(/pypi|none/);
     }
-    expect(report.coverage!.production).toEqual({ total: 7, unknown: prod.filter((p) => p.label === 'unknown').length });
+    expect(report.coverage!.production).toEqual({ total: 9, unknown: prod.filter((p) => p.label === 'unknown').length });
     expect(report.coverage!.line).toMatch(/^Upkeep assessed for \d+ of 93 \(PyPI \d+ of 93; Scorecard \/ registry fallback \d+\)/);
     expect(report.coverage!.line).toContain('production Unknown');
     // The release record came from PyPI itself: release dates, the last release, evidence on pypi.org.
-    expect(facts.filter((f) => f.kind === 'release_age' && f.source === 'pypi').length).toBeGreaterThanOrEqual(7);
+    expect(facts.filter((f) => f.kind === 'release_age' && f.source === 'pypi').length).toBeGreaterThanOrEqual(9);
     const werkzeug = prod.find((p) => p.name === 'werkzeug')!;
     expect(werkzeug.context.find((c) => c.signal === 'S4')!.text).toMatch(/^Last release 3\.1\.\d+ on 2026-/);
     expect(werkzeug.context.find((c) => c.signal === 'S4')!.evidence).toEqual(['https://pypi.org/project/werkzeug/']);
@@ -299,10 +301,13 @@ describe('Tier 0.5 (3): PyPI upkeep is labelled, or counted as Unknown with the 
   it('the HTML never says "No production package is labelled Fragile" while production packages are unassessed', async () => {
     const { stabilitySection } = await import('../../src/report/html-behind.js');
     const { report } = await tier05PypiReport('superset');
-    const withoutFragile = { ...report, packages: report.packages.filter((p) => p.label !== 'fragile') };
+    const withoutFragile = { ...report, packages: report.packages.filter((p) => p.label !== 'fragile'), decisions: [] };
     const html = stabilitySection({ stability: withoutFragile } as never);
     expect(html).not.toContain('No production package is labelled Fragile');
-    expect(html).toMatch(/upkeep is not assessed for \d+ of \d+ production packages \(Unknown\)/);
+    expect(html).toMatch(/upkeep is not assessed for \d+ of \d+ production packages \(Unknown\)/i);
+    expect(html).toContain('No assessed production package is labelled Fragile');
+    // With Fragile rows the unassessed count is said too.
+    expect(stabilitySection({ stability: report } as never)).toMatch(/Upkeep is not assessed for \d+ of \d+ production packages \(Unknown\)/);
     expect(html).toContain('Upkeep assessed for');
   });
 

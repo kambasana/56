@@ -233,6 +233,8 @@ export interface Project {
   owner: string | null;
   createdAt: IsoTime;
   updatedAt: IsoTime;
+  /** The demo project (`serve --dev-seed`, recorded 2018 fixture data): badged "demo" and left out of totals. */
+  demo?: true;
 }
 
 /** One row on Org home / Projects. */
@@ -280,7 +282,8 @@ export type UpdateProjectResponse = Project;
 /** GET /api/home */
 export interface OrgHomeResponse {
   org: Org;
-  totals: { projects: number; assets: number; components: number; counts: Record<RiskLevel, number>; toReview: number };
+  /** Real projects only: the demo project (`demo: true`) is listed but never counted; `demoProjects` says how many were left out. */
+  totals: { projects: number; assets: number; components: number; counts: Record<RiskLevel, number>; toReview: number; demoProjects?: number };
   projects: ProjectRow[];
   recentScans: ScanRef[];
 }
@@ -612,6 +615,11 @@ export interface OverviewResponse {
     production: number;
     detectedAt: IsoTime;
   } | null;
+  /**
+   * The demo project (`serve --dev-seed`, Tier 0.5). `excluded`: left out of these numbers because
+   * real projects exist; false: it is the only project, so the numbers are demo data.
+   */
+  demo?: { projects: number; excluded: boolean };
 }
 
 // ---------------------------------------------------------------------------

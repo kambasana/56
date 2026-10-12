@@ -184,12 +184,30 @@ function actionOf(e: StabilityEntry): string {
   return e.s3.state === 'ended' ? 'Plan a replacement or upgrade: upkeep has ended.' : 'Review: check upkeep before relying on it further.';
 }
 
-/** Stability: production Fragile packages with the action and evidence; counts for the rest. */
+/**
+ * Stability: one decision row per family (Tier 0.5, as the CLI and JSON already do: the 9 @ldapjs/*
+ * packages are one "ldapjs" row), then any production Fragile package no decision covers; counts
+ * for the rest.
+ */
 export function stabilitySection(result: ScanResult): string {
   const st = result.stability;
   if (!st) return '';
   const fragile = st.packages.filter((p) => p.label === 'fragile' && p.production).sort((a, b) => a.name.localeCompare(b.name));
-  const rows = fragile
+  const byName = new Map(st.packages.map((p) => [p.name, p] as const));
+  const decisions = st.decisions ?? [];
+  const covered = new Set(decisions.flatMap((d) => d.packages));
+  const single = fragile.filter((p) => !covered.has(p.name));
+  const decisionRows = decisions
+    .slice(0, 100)
+    .map((d) => {
+      const members = d.packages.map((n) => byName.get(n)).filter((p): p is StabilityEntry => !!p);
+      const evidence = [...new Set(members.flatMap(stabilityEvidence))].slice(0, 12);
+      const versions = (n: string) => byName.get(n)?.versions.join(' / ') ?? '';
+      const list = d.packages.map((n) => `${n}${versions(n) ? `@${versions(n)}` : ''}`).join(', ');
+      return `<tr><td><code>${h(d.direct)}</code><div class="muted">${h(d.packages.length)} package${d.packages.length === 1 ? '' : 's'}: ${h(list)}</div></td><td>${h(d.label)}<div class="muted">${h(d.rules.join('; '))}</div></td><td>${h(d.action)}</td><td>${linkList(evidence)}</td></tr>`;
+    })
+    .join('');
+  const singleRows = single
     .slice(0, 100)
     .map(
       (p) =>
@@ -200,20 +218,36 @@ export function stabilitySection(result: ScanResult): string {
   // Tier 0.5: never an all-clear while production packages are unassessed (Python read as clean).
   const prod = st.packages.filter((p) => p.production);
   const unassessed = prod.filter((p) => p.label === 'unknown');
-  const none = unassessed.length
-    ? `<p class="muted">No assessed production package is labelled Fragile, but upkeep is not assessed for ${h(unassessed.length)} of ${h(prod.length)} production packages (Unknown): ${h(
+  const unassessedNote = unassessed.length
+    ? `<p class="muted">Upkeep is not assessed for ${h(unassessed.length)} of ${h(prod.length)} production packages (Unknown): ${h(
         unassessed
           .slice(0, 8)
           .map((p) => p.name)
           .join(', '),
       )}${unassessed.length > 8 ? ', …' : ''}.</p>`
+    : '';
+  const noneText = unassessed.length
+    ? `<p class="muted">No assessed production package is labelled Fragile, but upkeep is not assessed for ${h(unassessed.length)} of ${h(prod.length)} production packages (Unknown).</p>`
     : prod.length
       ? '<p class="muted">No production package is labelled Fragile.</p>'
       : '<p class="muted">No production package was labelled: upkeep was not assessed for this scan.</p>';
   const coverage = st.coverage?.line ? `<p class="muted">${h(st.coverage.line)}</p>` : '';
+  const table = (head: string, rows: string) => `<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
   return `<h2 id="stability">Stability</h2>
 <p class="muted">Upkeep labels from public records (as of ${h(st.asOf)}): fragile ${h(c.fragile)}, watch ${h(c.watch)}, steady ${h(c.steady)}, unknown ${h(c.unknown)}. ${h(st.disclaimer)}</p>
 ${coverage}
-<h3>Fragile in production (${h(fragile.length)})</h3>
-${fragile.length ? `<div class="scroll"><table><thead><tr><th>Package</th><th>Why</th><th>Action</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table></div>${fragile.length > 100 ? `<p class="muted">… ${h(fragile.length - 100)} more in the JSON report.</p>` : ''}${unassessed.length ? `<p class="muted">Upkeep is not assessed for ${h(unassessed.length)} of ${h(prod.length)} production packages (Unknown).</p>` : ''}` : none}`;
+${
+  decisions.length
+    ? `<h3>Decisions in production (${h(decisions.length)} row${decisions.length === 1 ? '' : 's'} covering ${h(covered.size)} Fragile or moved package${covered.size === 1 ? '' : 's'})</h3>
+<p class="muted">One row per family: the direct dependency to change and the packages it brings in that share the label.</p>${table('<th>Direct dependency</th><th>Label and rules</th><th>Action</th><th>Evidence</th>', decisionRows)}${decisions.length > 100 ? `<p class="muted">… ${h(decisions.length - 100)} more in the JSON report.</p>` : ''}`
+    : ''
+}
+${
+  single.length
+    ? `<h3>${decisions.length ? 'Other Fragile packages in production' : 'Fragile in production'} (${h(single.length)})</h3>${table('<th>Package</th><th>Why</th><th>Action</th><th>Evidence</th>', singleRows)}${single.length > 100 ? `<p class="muted">… ${h(single.length - 100)} more in the JSON report.</p>` : ''}`
+    : decisions.length
+      ? ''
+      : noneText
+}
+${single.length || decisions.length ? unassessedNote : ''}`;
 }

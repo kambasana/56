@@ -1,0 +1,9 @@
+{
+ "request": {
+  "url": "https://raw.githubusercontent.com/request/request/master/README.md"
+ },
+ "status": 200,
+ "response": "# deprecated! as of feb 11th 2020, request is fully deprecated. no new changes are expected to land. in fact, none have landed for some time. for more information about why request is deprecated and possible alternatives refer to [this issue](https://github.com/request/request/issues/3142). # request - simplified http client [![npm package](https://nodei.co/npm/request.png?downloads=true&downloadrank=true&stars=true)](https://nodei.co/npm/request/) [![build status](https://img.shields.io/travis/request/request/master.svg?style=flat-square)](https://travis-ci.org/request/request) [![coverage](https://img.shields.io/codecov/c/github/request/request.svg?style=flat-square)](https://codecov.io/gi",
+ "_note": "Live response on the run date (emails removed).",
+ "_recordedAt": "2026-10-12T20:34:07.727Z"
+}

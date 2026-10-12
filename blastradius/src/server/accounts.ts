@@ -345,9 +345,24 @@ export class AccountIndexer {
     return p;
   }
 
+  private queued = 0;
+
+  /**
+   * True while the index has queued or running work (after a scan, the timer, an account refresh):
+   * a package without registry data yet is pending, not unknown (Tier 0.5).
+   */
+  get busy(): boolean {
+    return this.queued > 0 || this.inflight.size > 0;
+  }
+
   /** Refreshes run one at a time, so two never fetch the same packument at once. */
   private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    this.queued++;
     const run = this.running.then(fn);
+    const done = () => {
+      this.queued--;
+    };
+    run.then(done, done);
     this.running = run.catch((e) => this.log(`account index: ${(e as Error).message}`));
     return run;
   }

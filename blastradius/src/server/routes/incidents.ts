@@ -130,7 +130,7 @@ export function registerIncidentRoutes(app: Hono<AppEnv>): void {
 
   app.get('/api/packages/behind', (c) => {
     const name = packageQuery(c).name;
-    return c.json<PackageBehindResponse>(packageBehind(ctxFor(c, 'exposure'), name));
+    return c.json<PackageBehindResponse>(packageBehind(ctxFor(c, 'exposure'), name, { indexing: deps(c).accounts.busy }));
   });
 
   // A person's decision on one "who is behind" link: the only way a link reads as reviewed.
@@ -142,7 +142,7 @@ export function registerIncidentRoutes(app: Hono<AppEnv>): void {
     if (body.decision === 'clear') clearLinkReview(store, orgId, actor, body);
     else setLinkReview(store, orgId, actor, { ...body, decision: body.decision, note: body.note ?? null });
     const name = body.package;
-    return c.json<PackageBehindResponse>(packageBehind(ctxFor(c, 'exposure'), name));
+    return c.json<PackageBehindResponse>(packageBehind(ctxFor(c, 'exposure'), name, { indexing: deps(c).accounts.busy }));
   });
 
   // Alert rules ---------------------------------------------------------------
