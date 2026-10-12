@@ -904,6 +904,7 @@ export interface ReleasePublishersValue {
   /**
    * The npm account that published each version of the last 36 months (at most 500), so a
    * git-side release observation can be checked against who actually published it (Tier 0).
+   * PyPI (Tier 0.5): every version of the window maps to "" (published; the uploader is not public).
    */
   publisherByVersion?: Record<string, string>;
   /** Earliest publish date (YYYY-MM-DD) covered by `publisherByVersion`: before it, a missing version proves nothing. */

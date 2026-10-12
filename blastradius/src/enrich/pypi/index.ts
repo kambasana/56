@@ -5,19 +5,23 @@
  *   GET https://pypi.org/pypi/{name}/json (PyPI JSON API, https://docs.pypi.org/api/json/):
  *     `releases` (each file's `upload_time_iso_8601` and `yanked` / `yanked_reason`, PEP 592) and
  *     `info.classifiers` ("Development Status :: 7 - Inactive", set by the maintainers);
- *   GET https://pypi.org/simple/{name}/?format=application/vnd.pypi.simple.v1+json (PEP 691 JSON
- *     Simple API; `project-status`, PEP 792: active, archived, quarantined, deprecated).
+ *   GET https://pypi.org/simple/{name}/ with Accept: application/vnd.pypi.simple.v1+json (PEP 691
+ *     JSON Simple API; `project-status`, PEP 792: active, archived, quarantined, deprecated; files
+ *     with a PEP 740 provenance attestation, i.e. Trusted Publishing).
  * and derives, as the npm enricher does from a packument:
  *   release_cadence (package): S4 over the stable releases (PEP 440 pre-releases left out);
  *   release_age (per version in use): its upload date, the latest release, the first release, the
  *     stable releases in the final year, whether it is yanked, and the project status;
- *   declared_status (package): the "Inactive" classifier (low confidence, like a README declaration).
+ *   declared_status (package): the "Inactive" classifier (low confidence, like a README declaration);
+ *   release_publishers (package): the versions published in the last 36 months and those with a
+ *     Trusted Publishing attestation (PEP 740), for the git-side release-continuity checks; no
+ *     account names (PyPI does not publish the uploader).
  * A release's date is its earliest file upload. Releases after the scan time are left out.
  * Repository and Scorecard come from deps.dev (src/enrich/depsdev), git history from the history
  * enricher; together they give PyPI packages the same labels as npm ones (src/stability).
  */
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
-import { makeFact, unversionedPurl, type Fact, type Inventory, type ReleaseAgeValue } from '../../core/types.js';
+import { makeFact, unversionedPurl, type Fact, type Inventory, type ReleaseAgeValue, type ReleasePublishersValue } from '../../core/types.js';
 import { isPrereleaseVersion } from '../../history/continuity.js';
 import { releaseCadence, type ReleaseRecord } from '../../stability/cadence.js';
 import { normalizePypiName, pypiPurl } from '../../ingest/python.js';
@@ -53,6 +57,8 @@ export interface PypiProject {
 
 export interface PypiSimple {
   'project-status'?: { status?: unknown; reason?: unknown };
+  /** Files; `provenance` is the URL of a PEP 740 attestation (Trusted Publishing), else null. */
+  files?: { filename?: unknown; provenance?: unknown }[];
 }
 
 export interface PypiRelease {
@@ -121,6 +127,25 @@ export function pypiProjectStatus(s: PypiSimple | null | undefined): ReleaseAgeV
   return { status, ...(reason ? { reason } : {}) };
 }
 
+/** The version in a distribution file name: "flask-3.1.3-py3-none-any.whl", "flask-3.1.3.tar.gz" → "3.1.3". */
+export function versionOfFile(filename: string): string | undefined {
+  if (filename.endsWith('.whl')) return filename.split('-')[1];
+  const base = filename.replace(/\.(tar\.gz|tar\.bz2|tgz|zip|tar)$/i, '');
+  const i = base.lastIndexOf('-');
+  return i > 0 ? base.slice(i + 1) : undefined;
+}
+
+/** Versions with a file published through Trusted Publishing (a PEP 740 provenance attestation): the project's CI, not a person's upload. */
+export function trustedPypiVersions(simple: PypiSimple | null | undefined): Set<string> {
+  const out = new Set<string>();
+  for (const f of Array.isArray(simple?.files) ? simple!.files! : []) {
+    if (typeof f?.filename !== 'string' || typeof f.provenance !== 'string' || !f.provenance) continue;
+    const v = versionOfFile(f.filename);
+    if (v) out.add(v);
+  }
+  return out;
+}
+
 /** All facts for one PyPI project (pure; used by the enricher and the recorded-data tests). */
 export function pypiFacts(name: string, versions: readonly string[], project: PypiProject, simple: PypiSimple | null | undefined, asOf: Date, fetchedAt: string): Fact[] {
   const purl = (v?: string) => pypiPurl(name, v) as Fact['subject'];
@@ -132,6 +157,23 @@ export function pypiFacts(name: string, versions: readonly string[], project: Py
   if (cadence) facts.push(makeFact('release_cadence', purl(), cadence, meta([pypiProjectPage(name)])));
   const status = pypiProjectStatus(simple);
   const latestDeclared = str(project.info?.version, 100);
+  // The release record for the git-side continuity checks (Tier 0.5), as for npm: which versions were
+  // published (a tag PyPI never got is no release of this package) and which went out through Trusted
+  // Publishing (the project's CI, not a person). PyPI does not publish who uploaded a release, so no
+  // account is named: the account fields stay empty.
+  if (releases.length) {
+    const trusted = trustedPypiVersions(simple);
+    const since = asOf.getTime() - 3 * 365 * DAY_MS;
+    const recent = releases.filter((r) => r.publishedMs >= since).slice(-500);
+    const value: ReleasePublishersValue = { releases: releases.length, accounts: [] };
+    const tv = releases.filter((r) => trusted.has(r.version)).map((r) => r.version);
+    if (tv.length) value.trustedVersions = tv.slice(-500);
+    if (recent.length) {
+      value.publisherByVersion = Object.fromEntries(recent.map((r) => [r.version, '']));
+      value.publisherSince = recent[0]!.publishedAt.slice(0, 10);
+    }
+    facts.push(makeFact('release_publishers', purl(), value, meta([pypiProjectPage(name)])));
+  }
   for (const v of versions) {
     const age = pypiReleaseAge(releases, v, latestDeclared, asOf, status);
     if (age) facts.push(makeFact('release_age', purl(v), age, meta([pypiProjectPage(name, age.version)])));
@@ -160,14 +202,17 @@ export function createPypiEnricher(opts: PypiEnricherOptions = {}): Enricher {
         const n = encodeURIComponent(normalizePypiName(p.name));
         let project: PypiProject | null;
         try {
-          project = await ctx.http.fetchJsonOrNull<PypiProject>(`${base}/pypi/${n}/json`);
+          // Not kept in the disk cache (ttl 0): a project's full release list is large (superset's 312
+          // projects: 218 MB of JSON, 122 MB of Simple API) and only a few fields are read.
+          project = await ctx.http.fetchJsonOrNull<PypiProject>(`${base}/pypi/${n}/json`, { ttlMs: 0 });
         } catch {
           failed++;
           return [];
         }
         if (!project || !isObj(project)) return [];
         // The project status is best effort: without it the release record still counts.
-        const simple = await ctx.http.fetchJsonOrNull<PypiSimple>(`${base}/simple/${n}/?format=${encodeURIComponent('application/vnd.pypi.simple.v1+json')}`).catch(() => null);
+        // PEP 691 content negotiation: the JSON form is asked for by Accept header (PyPI answers HTML to a query parameter).
+        const simple = await ctx.http.fetchJsonOrNull<PypiSimple>(`${base}/simple/${n}/`, { ttlMs: 0, headers: { accept: 'application/vnd.pypi.simple.v1+json' } }).catch(() => null);
         return pypiFacts(p.name, [...p.versions].sort(), project, simple, ctx.now, ctx.now.toISOString());
       });
       if (failed > 0) ctx.warn?.(`pypi: ${failed} project${failed === 1 ? '' : 's'} could not be read from PyPI; their upkeep falls back to deps.dev / Scorecard or stays Unknown`);

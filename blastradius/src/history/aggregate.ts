@@ -133,6 +133,13 @@ export function shallowCensorUntil(rec: Pick<HistoryRecord, 'shallowSince'>): nu
   return secs(addMonths(new Date(rec.shallowSince * 1000), SHALLOW_CENSOR_MONTHS));
 }
 
+/**
+ * Tier 0.5: the maker of a lightweight release tag on a commit that GitHub's web flow committed (a
+ * pull request merged in the browser) is not known: git only records the pull request's author, who
+ * did not make the release (sqlglot v30.20.0, a contributor's merged pull request).
+ */
+export const UNKNOWN_TAGGER = 'unknown:tagger';
+
 export interface AggregateResult {
   contributors: ContributorsValue;
   history: CommitHistoryValue;
@@ -162,7 +169,7 @@ export function aggregateHistory(
     seen(c.author, c.at);
     seen(c.committer, c.at);
   }
-  for (const r of releases) seen(r.by, r.at);
+  for (const r of releases) if (r.by !== UNKNOWN_TAGGER) seen(r.by, r.at);
   // Tier 0.5: in a shallow clone, someone first seen in the first SHALLOW_CENSOR_MONTHS of the history
   // read may have been active long before it: their first-seen date is "on or before", read as
   // before the history (never new, never a takeover).
@@ -218,7 +225,7 @@ export function aggregateHistory(
       newShare: share(wc.filter((c) => (first.get(c.author) ?? 0) >= wFrom).length, wc.length),
       signedShare: share(wc.filter((c) => c.signed).length, wc.length),
       releases: wr.length,
-      releasesByLongStandingShare: wr.length ? share(wr.filter((r) => isLong(r.by)).length, wr.length) : null,
+      releasesByLongStandingShare: wr.length ? share(wr.filter((r) => r.by !== UNKNOWN_TAGGER && isLong(r.by)).length, wr.length) : null,
       signedReleaseShare: wr.length ? share(wr.filter((r) => r.signed).length, wr.length) : null,
       topCommitterFirstSeenRecently: top ? (first.get(top[0]) ?? 0) > recentCut : false,
     };
@@ -290,7 +297,8 @@ export function aggregateHistory(
   // Release continuity (S5a git part) and handovers: each account's first release only.
   const releasers = new Set<string>();
   releases.forEach((r, idx) => {
-    if (releasers.has(r.by)) return;
+    // Tier 0.5: a lightweight tag on a commit GitHub's web flow committed says nothing about who released.
+    if (r.by === UNKNOWN_TAGGER || releasers.has(r.by)) return;
     releasers.add(r.by);
     const days = Math.round((r.at - (first.get(r.by) ?? r.at)) / DAY);
     // Only meaningful once the repository itself is older than the threshold.
@@ -304,9 +312,9 @@ export function aggregateHistory(
   changes.sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind));
 
   // People: CAF sets, releasers, top contributors. Counts and dates only.
-  const ids = new Set<string>([...cafSet(recentBy), ...cafSet(allBy), ...releases.map((r) => r.by)]);
+  const ids = new Set<string>([...cafSet(recentBy), ...cafSet(allBy), ...releases.map((r) => r.by).filter((b) => b !== UNKNOWN_TAGGER)]);
   for (const [id] of [...allBy].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, R.topPeople)) ids.add(id);
-  const relBy = countBy(releases, (r) => r.by);
+  const relBy = countBy(releases.filter((r) => r.by !== UNKNOWN_TAGGER), (r) => r.by);
   const people: HistoryPerson[] = [...ids]
     .map((id) => ({ id, firstSeen: iso(first.get(id)!), lastSeen: iso(last.get(id)!), commits: allBy.get(id) ?? 0, commits24m: recentBy.get(id) ?? 0, releases: relBy.get(id) ?? 0 }))
     .sort((a, b) => b.commits - a.commits || a.id.localeCompare(b.id));

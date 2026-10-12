@@ -26,6 +26,7 @@ import { mkdir, readdir, rm, stat, utimes } from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { checkGitUrl, cloneEnv } from '../ingest/git.js';
+import { UNKNOWN_TAGGER } from './aggregate.js';
 import { isBot, isPlatformCommitter, localIdentity, nameKey } from './identity.js';
 import type { HistoryRecord, HistoryCommit, HistoryTag, TzMonth } from './record.js';
 
@@ -344,6 +345,9 @@ export async function readHistory(
 
   const commits: HistoryCommit[] = [];
   const botOids = new Set<string>();
+  // Commits GitHub's web flow committed (pull requests merged in the browser): a lightweight tag on
+  // one names no release maker (Tier 0.5).
+  const platformOids = new Set<string>();
   let bots = 0;
   const latestOidById = new Map<string, string>();
   const idOf = (email: string) => localIdentity(email, meta.salt);
@@ -372,7 +376,9 @@ export async function readHistory(
       const author = idOf(aEmail);
       countName(author, aName);
       // GitHub's web-flow committer (noreply@github.com) is the platform, not a person.
-      const committer = isBot(cName, cEmail) || isPlatformCommitter(cEmail) ? author : idOf(cEmail);
+      const platform = isPlatformCommitter(cEmail);
+      if (platform) platformOids.add(oid);
+      const committer = isBot(cName, cEmail) || platform ? author : idOf(cEmail);
       if (committer !== author) countName(committer, cName);
       if (!latestOidById.has(author)) latestOidById.set(author, oid);
       const c: HistoryCommit = { oid, parents: parents ? parents.split(' ').length : 0, author, committer, at: toDay(Number(ct)), signed: false };
@@ -427,8 +433,10 @@ export async function readHistory(
           tags.push({ name, commit: target, by: idOf(tEmail), at: toDay(Number(tDate)), signed: sig === '1', annotated: true });
           countName(idOf(tEmail), tName ?? '');
         } else if (type === 'commit') {
-          // Lightweight tag: the commit's committer made the release point.
-          if (commit) tags.push({ name, commit: target, by: commit.committer, at: commit.at, signed: commit.signed, annotated: false });
+          // Lightweight tag: the commit's committer made the release point, unless GitHub's web flow
+          // committed it (then git only knows the pull request's author: the maker is unknown).
+          if (commit) tags.push({ name, commit: target, by: platformOids.has(commit.oid) ? UNKNOWN_TAGGER : commit.committer, at: commit.at, signed: commit.signed, annotated: false });
+          else if (cEmail && cDate && isPlatformCommitter(cEmail)) tags.push({ name, commit: target, by: UNKNOWN_TAGGER, at: toDay(Number(cDate)), signed: false, annotated: false });
           else if (cEmail && cDate && !isBot(cName ?? '', cEmail) && !isPlatformCommitter(cEmail)) tags.push({ name, commit: target, by: idOf(cEmail), at: toDay(Number(cDate)), signed: false, annotated: false });
         }
       },

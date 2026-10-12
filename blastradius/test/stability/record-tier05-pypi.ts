@@ -8,7 +8,7 @@
  * the deps.dev and PyPI enrichers read, trimmed to the fields they use:
  *   deps.dev version (SOURCE_REPO links), deps.dev project / Scorecard API (Maintained check),
  *   PyPI JSON API (per release: first upload, yanked; the "Development Status" classifiers;
- *   info.version), PyPI Simple JSON (project-status).
+ *   info.version), PyPI Simple JSON (project-status; files with a Trusted Publishing attestation).
  * The tests replay them through the real enrichers (HttpClient fixtures, offline).
  * Output: test/fixtures/stability/recorded/tier05-pypi-<slug>.json.gz.
  */
@@ -18,6 +18,7 @@ import { gzipSync } from 'node:zlib';
 import { installEnvProxy } from '../../src/core/proxy.js';
 import { HttpClient } from '../../src/core/http.js';
 import type { Inventory } from '../../src/core/types.js';
+import { versionOfFile } from '../../src/enrich/pypi/index.js';
 import { STABILITY_DIR } from './fixture.js';
 
 type Json = Record<string, any>;
@@ -47,7 +48,21 @@ export function trimResponse(url: string, body: Json | null): Json | null {
     const classifiers = (Array.isArray(body.info?.classifiers) ? body.info.classifiers : []).filter((c: unknown) => typeof c === 'string' && c.startsWith('Development Status'));
     return { info: { name: body.info?.name, version: body.info?.version, classifiers }, releases };
   }
-  if (url.includes('/simple/')) return body['project-status'] ? { 'project-status': body['project-status'] } : {};
+  if (url.includes('/simple/')) {
+    // Only files with a Trusted Publishing attestation (their name and the attestation URL).
+    // One per version is enough to know the version went out through Trusted Publishing.
+    const seen = new Set<string>();
+    const files = (body.files ?? [])
+      .filter((f: Json) => typeof f?.provenance === 'string' && f.provenance && typeof f.filename === 'string')
+      .filter((f: Json) => {
+        const v = versionOfFile(f.filename);
+        if (!v || seen.has(v)) return false;
+        seen.add(v);
+        return true;
+      })
+      .map((f: Json) => ({ filename: f.filename, provenance: f.provenance }));
+    return { ...(body['project-status'] ? { 'project-status': body['project-status'] } : {}), ...(files.length ? { files } : {}) };
+  }
   if (url.includes('api.deps.dev') && url.includes('/versions/')) {
     return {
       relatedProjects: (body.relatedProjects ?? []).filter((r: Json) => r?.relationType === 'SOURCE_REPO'),

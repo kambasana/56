@@ -184,6 +184,80 @@ describe('Tier 0.5 (2): identity merge and release continuity, recorded historie
   });
 });
 
+describe('Tier 0.5 (2b): PyPI release continuity has no npm publisher: Trusted Publishing and web-flow tags', () => {
+  async function pypiLabel(name: string, opts: { noTrusted?: boolean } = {}) {
+    const { gunzipSync } = await import('node:zlib');
+    const { readFileSync } = await import('node:fs');
+    const { STABILITY_DIR } = await import('./fixture.js');
+    const { pypiFacts } = await import('../../src/enrich/pypi/index.js');
+    const { decodeFixture } = await import('../../src/history/fixture.js');
+    const { TIER05_PYPI_HISTORY_SUBJECTS, TIER05_PYPI_HISTORY_AS_OF } = await import('./record-tier05-pypi-history.js');
+    const fx = JSON.parse(gunzipSync(readFileSync(join(STABILITY_DIR, 'tier05-pypi-history.json.gz'))).toString('utf8'));
+    const sub = TIER05_PYPI_HISTORY_SUBJECTS.find((x) => x.name === name)!;
+    const asOf = new Date(TIER05_PYPI_HISTORY_AS_OF);
+    const simple = fx.responses[`https://pypi.org/simple/${name}/`];
+    const facts: Fact[] = [
+      ...pypiFacts(name, [sub.version], fx.responses[`https://pypi.org/pypi/${name}/json`], opts.noTrusted ? { ...simple, files: [] } : simple, asOf, fx.recordedAt),
+      makeFact('repo', `pkg:pypi/${name}` as never, { url: sub.repo, host: 'github', via: 'depsdev.links' }, { source: 'depsdev', fetchedAt: fx.recordedAt }),
+    ];
+    const hist = decodeFixture(fx.histories[sub.repo]);
+    const inv = productionInventoryPypi(name, sub.version);
+    const { report } = await stabilityOf(inv as never, facts, (u) => (u.toLowerCase() === sub.repo.toLowerCase() ? hist : undefined), asOf);
+    return { entry: report.packages[0]!, hist };
+  }
+
+  it('filelock: releases that went out through PyPI Trusted Publishing are the project\'s CI, not a new person', async () => {
+    const without = await pypiLabel('filelock', { noTrusted: true });
+    expect(s5aRule(without.entry)).toBe(true);
+    const { entry } = await pypiLabel('filelock');
+    expect(s5aRule(entry)).toBe(false);
+  });
+
+  it('humanize: its release tags are lightweight tags on pull requests GitHub merged (and Trusted Published): no new release maker', async () => {
+    const { UNKNOWN_TAGGER } = await import('../../src/history/aggregate.js');
+    const { entry, hist } = await pypiLabel('humanize');
+    expect(hist.tags.find((t) => t.name === '4.16.0')!.by).toBe(UNKNOWN_TAGGER);
+    expect(s5aRule(entry)).toBe(false);
+  });
+
+  it('sqlglot: a lightweight tag on a pull request GitHub merged names no release maker', async () => {
+    const { UNKNOWN_TAGGER } = await import('../../src/history/aggregate.js');
+    const { entry, hist } = await pypiLabel('sqlglot');
+    expect(hist.tags.find((t) => t.name === 'v30.20.0')!.by).toBe(UNKNOWN_TAGGER);
+    expect(entry.s5a.filter((e) => e.date > '2025-10-12')).toEqual([]);
+    expect(s5aRule(entry)).toBe(false);
+  });
+
+  it('readHistory: web-flow commit + lightweight tag = unknown maker; a person\'s commit + lightweight tag = that person', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const { readHistory } = await import('../../src/history/git.js');
+    const { UNKNOWN_TAGGER } = await import('../../src/history/aggregate.js');
+    const dir = mkdtempSync(join(tmpdir(), 'br-webflow-'));
+    try {
+      const env = { PATH: process.env.PATH ?? '', HOME: dir, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' };
+      const git = (args: string[], extra: Record<string, string> = {}) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgSign=false', '-c', 'tag.gpgSign=false', ...args], { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8' }).trim();
+      git(['init', '-q', '-b', 'main']);
+      const commit = (a: string, ae: string, c: string, ce: string, date: string) => {
+        writeFileSync(join(dir, 'f.txt'), `${date}\n`);
+        git(['add', 'f.txt']);
+        git(['commit', '-q', '-m', 'change'], { GIT_AUTHOR_NAME: a, GIT_AUTHOR_EMAIL: ae, GIT_AUTHOR_DATE: `${date}T10:00:00Z`, GIT_COMMITTER_NAME: c, GIT_COMMITTER_EMAIL: ce, GIT_COMMITTER_DATE: `${date}T10:00:00Z` });
+      };
+      commit('Maintainer', 'maint@example.org', 'Maintainer', 'maint@example.org', '2025-01-01');
+      git(['tag', 'v1.0.0']);
+      commit('Contributor', 'contrib@example.org', 'GitHub', 'noreply@github.com', '2025-02-01');
+      git(['tag', 'v1.1.0']);
+      const bare = join(dir, 'bare.git');
+      execFileSync('git', ['clone', '-q', '--bare', dir, bare], { env });
+      const rec = await readHistory(bare, { repo: 'https://github.com/x/y', salt: 'salt-for-the-web-flow-test' });
+      const by = Object.fromEntries(rec.tags.map((t) => [t.name, t.by]));
+      expect(by['v1.1.0']).toBe(UNKNOWN_TAGGER);
+      expect(by['v1.0.0']).toMatch(/^hash:/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('Tier 0.5 (3): PyPI upkeep is labelled, or counted as Unknown with the reason', () => {
   it('flask: its 7 runtime PyPI packages get labels from the PyPI release record and Scorecard (recorded deps.dev / PyPI responses)', async () => {
     const { report, facts, warnings } = await tier05PypiReport('flask');

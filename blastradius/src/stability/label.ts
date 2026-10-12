@@ -115,10 +115,9 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
   // archived repository with releases in the last 12 months is a repository the project left
   // (google-auth: google-auth-library-python archived, releases from the google-cloud-python monorepo).
   const lastRel = x.cadence?.value.lastRelease?.date ?? (x.npm?.value.latestPublishedAt ? day(x.npm.value.latestPublishedAt) : undefined);
-  const stillReleased = registryOf(x) === 'pypi' && lastRel !== undefined && lastRel > before(asOf, R.movedReleaseMonths);
   const scArchived = x.maintained && scorecardAsOf(x, asOf) && x.maintained.value.reason === 'project is archived';
   let archivedButReleased: S3Result['archivedButReleased'];
-  if (stillReleased && ((archivedAsOf && x.archived) || scArchived)) {
+  if (archivedButReleasedCheck(x, asOf)) {
     const repo = x.archived?.value.repo ?? x.maintained?.value.repo ?? x.repo?.value.url ?? 'the declared repository';
     archivedButReleased = { repo, lastRelease: lastRel! };
     context.push({ signal: 'S3', text: `The declared repository ${repo.replace(/^https?:\/\//, '')} is archived, but PyPI releases continue (last release ${lastRel}): the project has moved to another repository, so the archived one does not describe its upkeep.`, source: archivedAsOf && x.archived ? x.archived.source : 'scorecard', confidence: 'high', ...(x.archived?.evidence ?? x.maintained?.evidence ? { evidence: x.archived?.evidence ?? x.maintained!.evidence! } : {}) });
@@ -204,6 +203,23 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
   if (h) out.lastCommit = h.lastCommit;
   if (lastRelease) out.lastRelease = lastRelease;
   return out;
+}
+
+/**
+ * Tier 0.5 (PyPI): the declared repository is archived (GitHub flag or Scorecard) while PyPI releases
+ * went on in the last 12 months. PyPI does not say which repository the latest release comes from.
+ */
+export function archivedButReleased(x: StabilityInputs, asOf: Date): boolean {
+  return archivedButReleasedCheck(x, asOf);
+}
+
+function archivedButReleasedCheck(x: StabilityInputs, asOf: Date): boolean {
+  if (registryOf(x) !== 'pypi') return false;
+  const lastRel = x.cadence?.value.lastRelease?.date ?? (x.npm?.value.latestPublishedAt ? day(x.npm.value.latestPublishedAt) : undefined);
+  if (lastRel === undefined || lastRel <= before(asOf, R.movedReleaseMonths)) return false;
+  const gh = x.archived?.value.archived === true && (x.archived.value.lastPushAt === undefined || Date.parse(x.archived.value.lastPushAt) <= asOf.getTime());
+  const sc = x.maintained !== undefined && scorecardAsOf(x, asOf) && x.maintained.value.reason === 'project is archived';
+  return gh || sc;
 }
 
 /** S2 used by the rules: the 24-month CAF, or the CAF of the 24 months up to the last commit. */
@@ -373,8 +389,18 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
   // Tier 0: resolve the current repository (latest release's) before any S3 rule; facts about an
   // earlier repository are context only.
   const res = resolveRepo(input, asOf);
-  const { view: x, setAside } = currentView(input, res);
+  const cv = currentView(input, res);
+  const setAside = cv.setAside;
+  let x = cv.view;
   for (const a of setAside) context.push({ signal: 'S3', text: a.text, source: a.source, confidence: 'high', ...(a.evidence ? { evidence: a.evidence } : {}) });
+  // Tier 0.5 (PyPI): an archived repository the project left says nothing about its upkeep, so its
+  // git history is set aside too (google-auth: google-auth-library-python archived, releases go on).
+  if (archivedButReleased(x, asOf) && (x.history || x.caf24)) {
+    context.push({ signal: 'S2', text: `The git history of the archived repository ${(x.history?.value.repo ?? x.repo?.value.url ?? '').replace(/^https?:\/\//, '')} is not used: the project has moved and still releases.`, source: 'git', confidence: 'high', ...(x.history ? { evidence: [x.history.value.repo] } : {}) });
+    x = { ...x, history: undefined, caf24: undefined } as StabilityInputs;
+    delete (x as Partial<StabilityInputs>).history;
+    delete (x as Partial<StabilityInputs>).caf24;
+  }
   const cadence = x.cadence?.value;
   const lastRel = lastReleaseText(x, asOf);
   const s3 = maintenanceState(x, name, asOf, cadence?.irregular === true);
