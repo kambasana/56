@@ -10,15 +10,19 @@
  * run offline and must reach the same verdicts.
  *
  * Output: test/fixtures/agentic-live/{model-live.json, model-adversarial.json, results.json, pages/}.
+ *
+ * Re-record only some pages of the run (live, the rest of the fixtures untouched):
+ *   NODE_USE_ENV_PROXY=1 npx tsx test/agentic/live-run.ts --pages <url> [<url> …]
+ * The page is trimmed with the same evidence terms (from results.json) and the same rules.
  */
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HttpClient } from '../../src/core/http.js';
 import { installEnvProxy } from '../../src/core/proxy.js';
 import { addHomepages } from '../../src/enrich/agentic/index.js';
-import { AgenticPipeline, RecordingModel, ReplayModel, foldText, looksLikeHtml, pageText, type FactRequest, type ReplayFile } from '../../src/agentic/index.js';
+import { AgenticPipeline, RecordingModel, ReplayModel, foldText, htmlDateMetadata, looksLikeHtml, pageText, type FactRequest, type ReplayFile } from '../../src/agentic/index.js';
 import { ADVERSARIAL, LIVE, type ScriptedConversation } from './live-turns.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -86,6 +90,7 @@ export async function runSet(convs: readonly ScriptedConversation[], model: Reco
         failedCheck: x.checks.find((k) => !k.ok)?.check ?? null,
         reasons: x.reasons,
         ...(x.label ? { label: x.label } : {}),
+        ...(x.unverifiedFields ? { unverifiedFields: x.unverifiedFields } : {}),
       })),
     });
   }
@@ -113,6 +118,15 @@ export function trimForFixture(url: string, body: string, terms: readonly string
     }
   }
   if (!looksLikeHtml(body) && body.length <= 40_000) return body.replace(EMAIL_RE, '[email removed]');
+  const text = trimText(url, body, terms);
+  // Publication-date metadata the gate reads (meta tags, JSON-LD datePublished, <time>, byline),
+  // kept as a minimal HTML head so the date check replays exactly; the text stays the gate's text.
+  const meta = looksLikeHtml(body) ? htmlDateMetadata(body).map((m) => m.html) : [];
+  if (meta.length === 0) return text;
+  return `<!doctype html><html><head>${meta.join('')}</head><body>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</body></html>`;
+}
+
+function trimText(url: string, body: string, terms: readonly string[]): string {
   let text = pageText(body);
   if (/(^|\.)opencollective\.com$/.test(new URL(url).hostname)) text = text.replace(/ individuals 1 .*?(?= top financial contributors| $)/g, ' ').replace(/ individuals 1 .*$/, '');
   text = text.replace(/from: [^<]{0,80}<[^>]*>/g, 'from: [removed]').replace(EMAIL_RE, '[email removed]');
@@ -133,6 +147,49 @@ export function trimForFixture(url: string, body: string, terms: readonly string
     else merged.push([...k]);
   }
   return merged.map(([a, b]) => text.slice(a, b)).join(' [...] ');
+}
+
+type RunResult = Awaited<ReturnType<typeof runSet>>['results'][number];
+
+/** Evidence terms per source URL: the quotes, list values and the subject name the rules read. */
+function addTerms(terms: Map<string, Set<string>>, results: readonly Pick<RunResult, 'request' | 'proposals'>[]): void {
+  for (const r of results) {
+    for (const p of r.proposals) {
+      const t = terms.get(p.sourceUrl) ?? new Set<string>();
+      t.add(p.quote);
+      for (const v of Object.values(p.value as Record<string, unknown>)) if (Array.isArray(v)) v.forEach((x) => typeof x === 'string' && t.add(x));
+      const name = r.request.context?.name;
+      if (name) t.add(name);
+      terms.set(p.sourceUrl, t);
+    }
+  }
+}
+
+/** Re-record some pages of the run live (same trimming, same evidence terms); other fixtures stay. */
+async function rerecordPages(urls: readonly string[]): Promise<void> {
+  await installEnvProxy();
+  const report = JSON.parse(readFileSync(join(LIVE_FIXTURES, 'results.json'), 'utf8')) as { live: RunResult[]; adversarial: RunResult[] };
+  const terms = new Map<string, Set<string>>();
+  addTerms(terms, [...report.live, ...report.adversarial]);
+  const http = new HttpClient({ cacheDir: false });
+  const now = new Date();
+  for (const url of urls) {
+    const file = join(LIVE_FIXTURES, 'pages', fixtureName(url));
+    if (!existsSync(file)) throw new Error(`${url} is not a page of the recorded run`);
+    const res = await http.request(url, { headers: { accept: 'text/html,application/xhtml+xml,application/json;q=0.9,text/plain;q=0.8' }, ttlMs: 0, redirect: 'manual' });
+    if (res.status !== 200) throw new Error(`${url}: HTTP ${res.status}`);
+    const old = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+    const env = {
+      request: { url },
+      status: res.status,
+      response: trimForFixture(url, res.body, [...(terms.get(url) ?? [])]),
+      _note: "Live page re-recorded by live-run.ts --pages: the gate's own normalised text (pageText) cut to windows around the quotes, with the page's publication-date metadata (meta tags, JSON-LD datePublished, <time>, byline) kept as a minimal HTML head; personal data removed.",
+      _recordedAt: old._recordedAt,
+      _rerecordedAt: now.toISOString(),
+    };
+    writeFileSync(file, `${JSON.stringify(env, null, 1)}\n`);
+    console.log(`${url}: ${res.body.length} → ${env.response.length} bytes`);
+  }
 }
 
 function fixtureName(url: string): string {
@@ -173,15 +230,8 @@ async function main(): Promise<void> {
     writeFileSync(join(LIVE_FIXTURES, `model-${set.name}.json`), `${JSON.stringify(file, null, 1)}\n`);
     report[set.name] = results;
     report[`${set.name}Facts`] = facts.length;
+    addTerms(terms, results);
     for (const r of results) {
-      for (const p of r.proposals) {
-        const t = terms.get(p.sourceUrl) ?? new Set<string>();
-        t.add(p.quote);
-        for (const v of Object.values(p.value as Record<string, unknown>)) if (Array.isArray(v)) v.forEach((x) => typeof x === 'string' && t.add(x));
-        const name = r.request.context?.name;
-        if (name) t.add(name);
-        terms.set(p.sourceUrl, t);
-      }
       for (const p of r.proposals) {
         const status = p.status === 'unverified' ? `REJECTED (${p.failedCheck}: ${p.reasons.join('; ')})` : p.status.toUpperCase();
         console.log(`[${set.name}] ${r.id} ${r.latencyMs}ms ${p.sourceUrl} → ${status}`);
@@ -237,7 +287,8 @@ async function main(): Promise<void> {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch((e) => {
+  const at = process.argv.indexOf('--pages');
+  (at >= 0 ? rerecordPages(process.argv.slice(at + 1)) : main()).catch((e) => {
     console.error(e);
     process.exitCode = 1;
   });

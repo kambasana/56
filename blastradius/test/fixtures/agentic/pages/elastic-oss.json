@@ -3,7 +3,7 @@
     "url": "https://www.elastic.co/blog/elasticsearch-is-open-source-again"
   },
   "status": 200,
-  "response": "<!doctype html><html><head><title>Elasticsearch Is Open Source. Again! | Elastic Blog</title></head><body>\nThe tl;dr is that we will be adding AGPL as another license option next to ELv2 and SSPL in the coming weeks. We never stopped believing and behaving like an open source community after we changed the license. But being able to use the term Open Source, by using AGPL, an OSI approved license, removes any questions\n</body></html>",
-  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
-  "_recordedAt": "2026-10-11T21:04:04.821Z"
+  "response": "<!doctype html><html><head><title>Elasticsearch Is Open Source. Again! | Elastic Blog</title><script type=\"application/ld+json\">{\"datePublished\":\"2024-08-29T20:00:00.000Z\"}</script><time datetime=\"1724961600000\">August 29, 2024</time></head><body>\nThe tl;dr is that we will be adding AGPL as another license option next to ELv2 and SSPL in the coming weeks. We never stopped believing and behaving like an open source community after we changed the license. But being able to use the term Open Source, by using AGPL, an OSI approved license, removes any questions\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed; publication-date metadata kept in <head>.",
+  "_recordedAt": "2026-10-12T22:53:41.282Z"
 }

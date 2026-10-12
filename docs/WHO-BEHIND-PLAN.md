@@ -1072,7 +1072,8 @@ is reported in `ScanResult.agentic.budgetExhausted` and a warning). Proposals ar
 **Gate on real recorded pages** (`blastradius/test/agentic/gate.test.ts`; pages fetched once by
 `test/agentic/record.ts` on 2026-10-11 and trimmed, Open Collective "Individuals" lists and mail
 headers cut): **16 real quotes verified** (2 of them `pending_confirmation`) and **27 proposals
-rejected**:
+rejected** (as first recorded; the date and backer-kind gate below added 6 accepted and 7 rejected
+cases, now 22 and 34):
 
 | Page | Accepted (real quote → value) | Rejected |
 |---|---|---|
@@ -1130,9 +1131,53 @@ registry host (sec.gov, ProPublica and IRS → US; Companies House and Charity C
 another country is accepted only when the quote names it; funding, lifecycle and incident sources
 must name the subject (package name, npm scope, repository owner or name) on the page or in the URL
 path. Adversarial attempts rejected: wrong amount (rules), wrong-subject quotes ×3 (rules), Wikipedia
-source (domain). **Open:** a wrong `date` with a real quote is still kept (dates are not checked
-against the page; pinned by the replay test); pages that render with JavaScript (NVD detail pages,
-SEC EDGAR company pages) cannot verify, so the NVD and EDGAR JSON or filing documents must be cited.
+source (domain). **Open:** pages that render with JavaScript (NVD detail pages, SEC EDGAR company
+pages) cannot verify, so the NVD and EDGAR JSON or filing documents must be cited.
+
+**Date and backer-kind gate (2026-10-12, closes the two gaps above).**
+- *Dates* (`src/agentic/dates.ts`, used by the `lifecycle_events` and `incident_writeups` rules). The
+  proposed date (`YYYY`, `YYYY-MM` or `YYYY-MM-DD`) must agree with a date the source states:
+  - near the quote: within 400 characters of it in the gate's page text, the quote included
+    ("Feb 11th 2020", "29 Mar 2024", "Between 07 and 09 January 2022", "in March 2024", ISO). A day
+    and month without a year ("on the morning of November 26th") take the publication year;
+  - in the page metadata: `article:published_time` and similar `<meta>`, JSON-LD `datePublished`
+    (never `dateModified`), the first `<time datetime>` (ISO or epoch ms), the first byline element
+    (`<span id="timestamp">` on the npm blog), or a `/YYYY/MM/DD/` URL path (oss-security archive).
+
+  A source date agrees when it is at least as precise as the proposal and equal at the proposal's
+  precision: "2016-03" is supported by the byline "March 23rd, 2016"; "2024-03-15" is not supported
+  by "in March 2024". A year elsewhere on the page does not count. The rejection names the dates the
+  source does state.
+- *Backer kind* (`funding` rules, task version 2). New kind `public_agency`. The kind is checked
+  against deterministic evidence: the known public funders list (Sovereign Tech Agency/Fund, NSF,
+  European Commission/NGI, …), the known fiscal hosts list (Open Source Collective, Software Freedom
+  Conservancy, NumFOCUS, …), the quote ("Fiscal Host: X"), the name (legal form, "Foundation",
+  government words) and the Open Collective page (listed under Organizations = an organisation
+  account; under Individuals = a person, never stored). Strong evidence for another kind rejects the
+  proposal; when nothing supports the kind, the fact and its amount are kept and the kind is marked
+  unverified (`unverifiedFields: ["kind"]` on the proposal and the fact, and a `task_rules` check
+  detail "kind unverified: …"). An amount's `since` must be in the quote.
+- *Fixtures.* Six live pages of the run were re-recorded live with their date metadata
+  (`live-run.ts --pages <url>…`: same trimming and evidence terms, the metadata kept as a minimal
+  HTML head): both Redis posts, both Elastic posts and both npm blog posts (the AGPL post's trimmed
+  text had no date at all; the npm posts carry theirs only in the byline). `record.ts <name>…`
+  re-recorded the 2026-10-11 gate pages `redis-agpl`, `elastic-oss`, `elastic-2021` and
+  `npm-leftpad` with their metadata; the visible segments are unchanged.
+- *Before → after on the run* (`live-replay.test.ts`, every other verdict identical): the probe
+  `probe-wrong-date` (Redis AGPL dated 2024-05-01, real 2025-05-01) **verified → unverified** ("date
+  2024-05-01 is not supported by the source (… 2025-05-01)"); Sovereign Tech Agency filed as
+  `corporate_backer` of babel **verified → unverified** ("is a public agency (known public funders
+  list)"). All 9 dated facts of the run stay verified (request 2020-02-11 from the quote; Elastic
+  2021-01-14 and 2024-08-29, Redis 2024-03-20 and 2025-05-01 from JSON-LD/`<time>`; xz 2024-03-29
+  from the mail date and URL; event-stream 2018-11-26 from "November 26th" with the byline year;
+  left-pad 2016-03 from the byline; colors 2022-01 from the quote). The run now keeps 28 of 29; the
+  five corporate backers listed under Open Collective Organizations keep a verified kind.
+- *Tests*: `test/agentic/dates.test.ts` (parsing, metadata, precision, the probe, "a year elsewhere
+  is not enough", backer-kind evidence), new accepted and rejected cases in `gate.test.ts` (dates at
+  day, month and year precision; dates a year, month or day off; a day more precise than the source;
+  Sovereign Tech Agency and Open Source Collective as `corporate_backer`; an unverified kind keeps
+  the amount; a wrong `since`). Not done: the `github_sponsors` channel rule from the roadmap, and
+  the review API/UI does not yet show `unverifiedFields` (the reason is in the stored check detail).
 
 Deferred: a live smoke run on 2–3 §8 subjects (needs a key; `RecordingModel` saves a live run as a
 replay fixture); the Maintainers screen that shows contributor identity (P6; the data is in the

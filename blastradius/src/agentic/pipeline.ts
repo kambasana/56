@@ -222,6 +222,7 @@ export class AgenticPipeline {
         status: p.status,
         proposalId: p.id,
         ...(p.label ? { label: p.label } : {}),
+        ...(p.unverifiedFields ? { unverifiedFields: p.unverifiedFields } : {}),
       } as const;
       out.push(makeFact('agent_fact', p.subject, value, { source: `agent:${p.task}`, fetchedAt: this.opts.now, evidence: [p.sourceUrl] }));
     }

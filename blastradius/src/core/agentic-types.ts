@@ -48,6 +48,8 @@ export interface AgentFactValue {
   status: 'verified' | 'pending_confirmation' | 'confirmed';
   /** "self-declared" for the person location task. */
   label?: 'self-declared';
+  /** Value fields the gate could not check against the source (e.g. "kind": an unverified backer kind). */
+  unverifiedFields?: string[];
   /** Stable proposal id (review actions use it). */
   proposalId: string;
 }
@@ -68,6 +70,8 @@ export interface AgentProposal {
   /** Why the gate failed (empty when it passed). */
   reasons: string[];
   label?: 'self-declared';
+  /** Value fields the gate could not check against the source (e.g. a funding `kind`): kept, shown as unverified. */
+  unverifiedFields?: string[];
   verifiedAt?: string;
 }
 

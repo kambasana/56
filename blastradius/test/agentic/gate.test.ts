@@ -60,7 +60,7 @@ const eventStream: FactRequest = { task: 'incident_writeups', subject: 'pkg:npm/
 export const ACCEPTED: Case[] = [
   { name: 'babel fiscal host', page: 'oc-babel', req: babel, value: { kind: 'fiscal_host', organization: 'Open Source Collective' }, quote: 'Fiscal Host: Open Source Collective', expect: 'verified' },
   { name: 'babel top backer with amount', page: 'oc-babel', req: babel, value: { kind: 'corporate_backer', organization: 'Airbnb', amount: { value: 217858, currency: 'USD', since: 'Apr 2018' } }, quote: 'Airbnb $217,858 USD since Apr 2018', expect: 'verified' },
-  { name: 'babel second backer, decimals', page: 'oc-babel', req: babel, value: { kind: 'corporate_backer', organization: 'Sovereign Tech Agency', amount: { value: 207511.35, currency: 'USD' } }, quote: 'Sovereign Tech Agency $207,511.35 USD since May 2025', expect: 'verified' },
+  { name: 'babel second backer, decimals (a public agency)', page: 'oc-babel', req: babel, value: { kind: 'public_agency', organization: 'Sovereign Tech Agency', amount: { value: 207511.35, currency: 'USD' } }, quote: 'Sovereign Tech Agency $207,511.35 USD since May 2025', expect: 'verified' },
   { name: 'webpack fiscal host', page: 'oc-webpack', req: webpack, value: { kind: 'fiscal_host', organization: 'Open Source Collective' }, quote: 'Fiscal Host: Open Source Collective', expect: 'verified' },
   { name: 'webpack top backer', page: 'oc-webpack', req: webpack, value: { kind: 'corporate_backer', organization: 'trivago', amount: { value: 389985, currency: 'USD' } }, quote: 'trivago $389,985 USD since Aug 2017', expect: 'verified' },
   { name: 'faker top backer', page: 'oc-fakerjs', req: faker, value: { kind: 'corporate_backer', organization: 'Indeed', amount: { value: 29000, currency: 'USD' } }, quote: 'Indeed $29,000 USD since Feb 2021', expect: 'verified' },
@@ -74,6 +74,14 @@ export const ACCEPTED: Case[] = [
   { name: 'express in the OpenJS Foundation', page: 'openjsf-projects', req: express, value: { kind: 'foundation_member', organization: 'OpenJS Foundation' }, quote: 'Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.', expect: 'verified' },
   { name: 'xz backdoor report', page: 'openwall-xz', req: xz, value: { kind: 'compromise', date: '2024-03-29', summary: 'Reported on oss-security: the upstream xz repository and release tarballs contained a backdoor.' }, quote: 'The upstream xz repository and the xz tarballs have been backdoored.', expect: 'verified' },
   { name: 'left-pad unpublish (npm blog)', page: 'npm-leftpad', req: leftpad, value: { kind: 'unpublish', date: '2016-03', summary: 'npm reported that left-pad was unpublished by its author during a dispute over a package name.' }, quote: 'a package that many projects depend on — directly or indirectly — was unpublished by its author, as part of a dispute over a package name.', expect: 'verified' },
+  // Dates at every precision, from the page metadata (byline, JSON-LD, <time>) or the URL path.
+  { name: 'date from the byline at day precision (npm blog)', page: 'npm-leftpad', req: leftpad, value: { kind: 'unpublish', date: '2016-03-23', summary: 'npm reported that a package was unpublished by its author during a dispute over a package name.' }, quote: 'was unpublished by its author, as part of a dispute over a package name.', expect: 'verified' },
+  { name: 'date at year precision (npm blog)', page: 'npm-leftpad', req: leftpad, value: { kind: 'unpublish', date: '2016', summary: 'npm reported that a package was unpublished by its author during a dispute over a package name.' }, quote: 'was unpublished by its author, as part of a dispute over a package name.', expect: 'verified' },
+  { name: 'date from article:published_time (Elastic 2021, day)', page: 'elastic-2021', req: elastic, value: { event: 'relicensing', date: '2021-01-14', summary: 'Elasticsearch and Kibana moved from Apache 2.0 to SSPL and the Elastic License.', licenseFrom: ['Apache-2.0'], licenseTo: ['SSPL-1.0'] }, quote: 'We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL)', expect: 'verified' },
+  { name: 'date from the URL path (oss-security archive)', page: 'openwall-xz', req: xz, value: { kind: 'compromise', date: '2024-03', summary: 'Reported on oss-security: the upstream xz repository and release tarballs contained a backdoor.' }, quote: 'The upstream xz repository and the xz tarballs have been backdoored.', expect: 'verified' },
+  { name: 'date at month precision from the text near the quote ("in March 2024")', page: 'redis-agpl', req: redis, value: { event: 'relicensing', date: '2024-03', summary: 'Redis moved to the SSPL licence.', licenseTo: ['SSPL-1.0'] }, quote: 'in March 2024, we decided to move Redis to the SSPL license', expect: 'verified' },
+  // Funding kinds checked against deterministic evidence.
+  { name: 'public agency by the known list (Sovereign Tech Agency)', page: 'oc-babel', req: babel, value: { kind: 'public_agency', organization: 'Sovereign Tech Agency' }, quote: 'Sovereign Tech Agency $207,511.35 USD since May 2025', expect: 'verified' },
 ];
 
 export const REJECTED: Case[] = [
@@ -100,6 +108,15 @@ export const REJECTED: Case[] = [
   { name: 'real quote, wrong country', page: 'osc-home', req: osc, value: { country: 'GB', basis: 'registered_office', registry: 'org_legal_page' }, quote: "We're a 501(c)(6) non-profit registered in the USA. EIN 82-2037583", expect: 'unverified', failed: 'task_rules' },
   { name: 'real quote, EDGAR is US-only', page: 'edgar-elastic', req: elasticNv, value: { country: 'NL', basis: 'business_address', registry: 'sec_edgar' }, quote: 'State location: CA | Fiscal Year End: 0430', expect: 'unverified', failed: 'task_rules' },
   { name: 'real quote, wrong event type', page: 'moment-docs', req: moment, value: { event: 'deprecation', summary: 'Moment.js is deprecated.' }, quote: 'Moment.js is a legacy project in maintenance mode.', expect: 'unverified', failed: 'task_rules' },
+  // Real quote, wrong date: the source states another date (or none of that precision).
+  { name: 'real quote, date a year off (Redis AGPL 2024-05-01, real 2025-05-01)', page: 'redis-agpl', req: redis, value: { event: 'relicensing', date: '2024-05-01', summary: 'Redis added AGPLv3 as a licensing option starting with Redis 8.', licenseTo: ['AGPL-3.0-only'] }, quote: 'Adding the OSI-approved AGPL as an additional licensing option for Redis, starting with Redis 8 (available now)', expect: 'unverified', failed: 'task_rules' },
+  { name: 'real quote, date a month off (Elastic 2021-02)', page: 'elastic-2021', req: elastic, value: { event: 'relicensing', date: '2021-02', summary: 'Elasticsearch and Kibana moved from Apache 2.0 to SSPL and the Elastic License.', licenseFrom: ['Apache-2.0'], licenseTo: ['SSPL-1.0'] }, quote: 'We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL)', expect: 'unverified', failed: 'task_rules' },
+  { name: 'real quote, date a day off (npm blog 2016-03-22)', page: 'npm-leftpad', req: leftpad, value: { kind: 'unpublish', date: '2016-03-22', summary: 'npm reported that a package was unpublished by its author during a dispute over a package name.' }, quote: 'was unpublished by its author, as part of a dispute over a package name.', expect: 'unverified', failed: 'task_rules' },
+  { name: 'real quote, date a day off (Elastic AGPL 2024-08-30, the page states 2024-08-29)', page: 'elastic-oss', req: elastic, value: { event: 'relicensing', date: '2024-08-30', summary: 'Elastic announced AGPL as an added licence option next to ELv2 and SSPL.', licenseTo: ['AGPL-3.0-only'] }, quote: 'The tl;dr is that we will be adding AGPL as another license option next to ELv2 and SSPL in the coming weeks.', expect: 'unverified', failed: 'task_rules' },
+  { name: 'real quote, day more precise than the source ("in March 2024")', page: 'redis-agpl', req: redis, value: { event: 'relicensing', date: '2024-03-15', summary: 'Redis moved to the SSPL licence.', licenseTo: ['SSPL-1.0'] }, quote: 'in March 2024, we decided to move Redis to the SSPL license', expect: 'unverified', failed: 'task_rules' },
+  // Real quote, wrong backer kind (contradicted by the known lists).
+  { name: 'real quote, public agency proposed as corporate backer (Sovereign Tech Agency)', page: 'oc-babel', req: babel, value: { kind: 'corporate_backer', organization: 'Sovereign Tech Agency', amount: { value: 207511.35, currency: 'USD' } }, quote: 'Sovereign Tech Agency $207,511.35 USD since May 2025', expect: 'unverified', failed: 'task_rules' },
+  { name: 'real quote, fiscal host proposed as corporate backer', page: 'oc-babel', req: babel, value: { kind: 'corporate_backer', organization: 'Open Source Collective' }, quote: 'Fiscal Host: Open Source Collective', expect: 'unverified', failed: 'task_rules' },
   { name: 'real quote, judgement word in summary', page: 'openwall-xz', req: xz, value: { kind: 'compromise', summary: 'A rogue maintainer backdoored xz.' }, quote: 'The upstream xz repository and the xz tarballs have been backdoored.', expect: 'unverified', failed: 'task_rules' },
   // Domain: the source host is not evidence for this task / subject.
   { name: 'moment quote without the homepage domain', page: 'moment-docs', req: { ...moment, context: { name: 'Moment.js' } }, value: { event: 'maintenance_mode', summary: 'In maintenance mode.' }, quote: 'Moment.js is a legacy project in maintenance mode.', expect: 'unverified', failed: 'domain' },
@@ -176,10 +193,36 @@ describe('verification gate: fabricated or unsupported proposals are rejected', 
   }
 });
 
+describe('funding kind: checked where evidence exists, otherwise kept as an unverified kind', () => {
+  it('a corporate backer listed under Organizations on Open Collective is verified with its kind', async () => {
+    const p = await gate(ACCEPTED.find((c) => c.name === 'babel top backer with amount')!);
+    expect(p.status).toBe('verified');
+    expect(p.unverifiedFields).toBeUndefined();
+  });
+
+  it('a kind nothing deterministic supports keeps the amount and is marked unverified', async () => {
+    // Airbnb is an organisation account on Open Collective; nothing says it is a foundation, and nothing contradicts it.
+    const p = await gate({ name: 'airbnb as foundation', page: 'oc-babel', req: babel, value: { kind: 'foundation', organization: 'Airbnb', amount: { value: 217858, currency: 'USD' } }, quote: 'Airbnb $217,858 USD since Apr 2018', expect: 'verified' });
+    expect(p.status).toBe('verified');
+    expect(p.unverifiedFields).toEqual(['kind']);
+    expect(p.checks.find((c) => c.check === 'task_rules')).toMatchObject({ ok: true, detail: expect.stringMatching(/^kind unverified: foundation not confirmed/) });
+  });
+
+  it('an amount with a "since" the quote does not have is rejected', async () => {
+    const p = await gate({ name: 'since', page: 'oc-babel', req: babel, value: { kind: 'corporate_backer', organization: 'Airbnb', amount: { value: 217858, currency: 'USD', since: 'Apr 2017' } }, quote: 'Airbnb $217,858 USD since Apr 2018', expect: 'unverified' });
+    expect(p.reasons).toEqual(['since "Apr 2017" is not in the quote']);
+  });
+
+  it('the public agency is rejected as a corporate backer with the reason', async () => {
+    const p = await gate(REJECTED.find((c) => c.name.startsWith('real quote, public agency'))!);
+    expect(p.reasons).toEqual(['Sovereign Tech Agency is a public agency (known public funders list), not a corporate backer']);
+  });
+});
+
 describe('gate summary (numbers quoted in the plan)', () => {
   it('counts', () => {
-    expect(ACCEPTED.length).toBe(16);
-    expect(REJECTED.length).toBe(27);
+    expect(ACCEPTED.length).toBe(22);
+    expect(REJECTED.length).toBe(34);
     expect(REJECTED.filter((c) => c.failed === 'quote_present').length).toBe(15);
   });
 });

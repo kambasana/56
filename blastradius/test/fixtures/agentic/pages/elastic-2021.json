@@ -3,7 +3,7 @@
     "url": "https://www.elastic.co/blog/licensing-change"
   },
   "status": 200,
-  "response": "<!doctype html><html><head><title>Doubling down on open, Part II | Elastic Blog</title></head><body>\nUpcoming licensing changes to Elasticsearch and Kibana</h2><p>We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL) and the Elastic License, giving users the choice of which license to apply. This license change ensures our community and customers have free and open access to use, modify, redistribute, and collaborate on the code.\n</body></html>",
-  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
-  "_recordedAt": "2026-10-11T21:04:04.821Z"
+  "response": "<!doctype html><html><head><title>Doubling down on open, Part II | Elastic Blog</title><meta property=\"article:published_time\" content=\"2021-01-14T17:00:00.000Z\"><script type=\"application/ld+json\">{\"datePublished\":\"2021-01-14T17:00:00.000Z\"}</script><script type=\"application/ld+json\">{\"datePublished\":\"2021-01-14T17:00:00.000Z\"}</script><time datetime=\"1610643600000\">January 14, 2021</time></head><body>\nUpcoming licensing changes to Elasticsearch and Kibana</h2><p>We are moving our Apache 2.0-licensed source code in Elasticsearch and Kibana to be dual licensed under Server Side Public License (SSPL) and the Elastic License, giving users the choice of which license to apply. This license change ensures our community and customers have free and open access to use, modify, redistribute, and collaborate on the code.\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed; publication-date metadata kept in <head>.",
+  "_recordedAt": "2026-10-12T22:53:41.282Z"
 }

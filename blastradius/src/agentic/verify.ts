@@ -70,6 +70,8 @@ export async function verifyProposal(p: ProposedFact, req: FactRequest, spec: Ta
   // The evidence is the page that was actually read: the final URL after redirects.
   let evidenceUrl = p.sourceUrl;
   const reasons: string[] = [];
+  /** Fields the task's rules could not verify (kept, shown as unverified). */
+  const flagged: { field: string; reason: string }[] = [];
   const fail = (check: AgentGateCheck['check'], detail: string): void => {
     checks.push({ check, ok: false, detail });
     reasons.push(detail);
@@ -95,6 +97,7 @@ export async function verifyProposal(p: ProposedFact, req: FactRequest, spec: Ta
     };
     // Locations are always labelled self-declared (the person location task, and the location field of contributor_identity).
     const isLocationField = p.value !== null && typeof p.value === 'object' && !Array.isArray(p.value) && p.value.field === 'location';
+    if (flagged.length > 0) proposal.unverifiedFields = [...new Set(flagged.map((f) => f.field))].sort();
     if (spec.label) proposal.label = spec.label;
     else if (isLocationField) proposal.label = 'self-declared';
     if (ok) proposal.verifiedAt = opts.now.toISOString();
@@ -206,8 +209,11 @@ export async function verifyProposal(p: ProposedFact, req: FactRequest, spec: Ta
   pass('quote_present', match);
 
   // 8. Task rules (value ↔ quote).
-  const problems = spec.rules?.({ value: parsed.data, quote: p.quote, sourceUrl: url, request: req, page }) ?? [];
+  const flag = (field: string, reason: string): void => {
+    flagged.push({ field, reason });
+  };
+  const problems = spec.rules?.({ value: parsed.data, quote: p.quote, sourceUrl: url, request: req, page, body, flag }) ?? [];
   if (problems.length > 0) for (const pr of problems) fail('task_rules', pr);
-  else pass('task_rules');
+  else pass('task_rules', flagged.length > 0 ? flagged.map((f) => `${f.field} unverified: ${f.reason}`).join('; ') : undefined);
   return done();
 }

@@ -7,7 +7,8 @@
 import { z } from 'zod';
 import type { AgentJson, AgentSubjectKind } from '../core/agentic-types.js';
 import { findJudgementWord } from '../incidents/schema.js';
-import { foldText } from './normalize.js';
+import { dateProblem } from './dates.js';
+import { foldText, looksLikeHtml } from './normalize.js';
 import { assertTaskSpecAllowed, CONTRIBUTOR_IDENTITY_TASK, PERSON_LOCATION_TASK } from './privacy.js';
 
 /** Client tools the pipeline implements, plus Anthropic's server-side web tools. */
@@ -62,6 +63,13 @@ export interface TaskRuleInput<V> {
   request: FactRequest;
   /** Normalised text of the re-fetched source (pageText()). */
   page: string;
+  /** The re-fetched body as served (HTML, JSON or text): page metadata such as publication dates. */
+  body: string;
+  /**
+   * Mark a field of the value as not verifiable from the source (kept, shown as unverified). The
+   * proposal still passes; use a problem instead when the source contradicts the field.
+   */
+  flag: (field: string, reason: string) => void;
 }
 
 export interface TaskSpec<V extends AgentJson = AgentJson> {
@@ -164,6 +172,11 @@ function sourceNamesSubject(request: FactRequest, page: string, sourceUrl: URL):
   return names.some((n) => page.includes(n) || foldText(path).includes(n)) ? null : `the source does not name the project (${names.join(', ')})`;
 }
 
+/** A lifecycle or incident date must be stated by the source near the quote or in its metadata (dates.ts). */
+function factDateProblem(date: string | undefined, input: { quote: string; sourceUrl: URL; page: string; body: string }): string | null {
+  return date ? dateProblem(date, { ...input, isHtml: looksLikeHtml(input.body) }) : null;
+}
+
 const isoDate = z.string().regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'YYYY, YYYY-MM or YYYY-MM-DD');
 const shortText = z.string().min(1).max(300);
 
@@ -173,7 +186,7 @@ const shortText = z.string().min(1).max(300);
 
 const fundingSchema = z
   .object({
-    kind: z.enum(['open_collective', 'github_sponsors', 'tidelift', 'thanks_dev', 'funding_json', 'corporate_backer', 'foundation', 'fiscal_host', 'other']),
+    kind: z.enum(['open_collective', 'github_sponsors', 'tidelift', 'thanks_dev', 'funding_json', 'corporate_backer', 'foundation', 'public_agency', 'fiscal_host', 'other']),
     /** Organisation named by the source (funder, foundation, fiscal host). Never a private individual. */
     organization: z.string().min(1).max(200).optional(),
     url: z.string().url().max(500).optional(),
@@ -182,9 +195,75 @@ const fundingSchema = z
   .strict();
 type FundingValue = z.infer<typeof fundingSchema>;
 
+/** Backer kinds whose type is checked against deterministic evidence. */
+type BackerKind = 'corporate_backer' | 'foundation' | 'public_agency' | 'fiscal_host';
+
+/**
+ * Government bodies and public agencies that fund open source (folded names). A public agency is
+ * never a corporate backer, whatever its name says ("National Science Foundation" is one too).
+ */
+export const PUBLIC_AGENCIES: readonly string[] = [
+  'sovereign tech agency', 'sovereign tech fund', 'sprind', 'bundesagentur für sprunginnovationen', 'national science foundation', 'darpa',
+  'cisa', 'cybersecurity and infrastructure security agency', 'european commission', 'next generation internet', 'ngi zero',
+  'federal ministry of education and research', 'bmbf', 'uk research and innovation', 'ukri', 'agence nationale de la recherche',
+];
+
+/** Fiscal hosts and fiscal sponsors of open source projects (folded names). */
+export const FISCAL_HOSTS: readonly string[] = [
+  'open source collective', 'open collective foundation', 'open collective europe', 'opencollective europe', 'software freedom conservancy',
+  'numfocus', 'software in the public interest', 'the commons conservancy', 'open source japan', 'allforclimate',
+];
+
+/** Payment platforms that list as an "organisation" but pass on other people's money. */
+const FUNDING_PLATFORMS: readonly string[] = ['github sponsors', 'open collective', 'opencollective', 'tidelift', 'thanks.dev', 'polar', 'patreon', 'liberapay'];
+
+const LEGAL_FORM = /(?:^|[\s,])(inc|llc|ltd|limited|gmbh|corp|corporation|plc|co|s\.a|n\.v|b\.v|ag|sarl|s\.r\.l|oy|ab|pty|kk|k\.k)\.?$/;
+const GOVERNMENT_WORDS = /\b(government|ministry|ministerium|federal agency|public agency|department of|bundes\w*)\b/;
+
+interface KindEvidence {
+  /** `individual`: a person's account. Never a backer kind we store (organisation funders only). */
+  kind: BackerKind | 'individual';
+  /** Strong evidence (a list, a legal form, the source's wording) contradicts another kind; weak only supports. */
+  strong: boolean;
+  why: string;
+}
+
+/**
+ * What deterministic evidence says the organisation is: the known public agency and fiscal host
+ * lists, the name (legal form, "Foundation"), the quote ("Fiscal Host: …", "government"), and
+ * the Open Collective page (listed under Organizations, i.e. an ORGANIZATION account). Null when
+ * nothing says.
+ */
+export function backerKindEvidence(organization: string, quote: string, page: string, sourceUrl: URL): KindEvidence | null {
+  const org = foldText(organization).replace(/^the /, '');
+  const q = foldText(quote);
+  const listed = (list: readonly string[]) => list.some((n) => org === n || org === `the ${n}` || org.startsWith(`${n} (`));
+  if (listed(PUBLIC_AGENCIES)) return { kind: 'public_agency', strong: true, why: 'known public funders list' };
+  if (listed(FISCAL_HOSTS)) return { kind: 'fiscal_host', strong: true, why: 'known fiscal hosts list' };
+  if (q.includes(`fiscal host: ${org}`) || q.includes(`fiscal host ${org}`) || q.includes(`fiscally hosted by ${org}`)) return { kind: 'fiscal_host', strong: true, why: 'the quote names it as fiscal host' };
+  if (GOVERNMENT_WORDS.test(org)) return { kind: 'public_agency', strong: true, why: 'the name is a government body' };
+  if (Object.values(FOUNDATIONS).some((n) => foldText(n) === org) || /\b(foundation|stiftung|fondation|fundación|fundacion|fondazione)\b/.test(org)) return { kind: 'foundation', strong: true, why: 'the name is a foundation' };
+  if (LEGAL_FORM.test(org)) return { kind: 'corporate_backer', strong: true, why: 'the name has a company legal form' };
+  if (GOVERNMENT_WORDS.test(q)) return { kind: 'public_agency', strong: false, why: 'the quote names a government body' };
+  if (listed(FUNDING_PLATFORMS)) return null;
+  if (hostMatches(sourceUrl.hostname, 'opencollective.com')) {
+    // "Top financial contributors · Organizations · 1 Airbnb …" up to "Individuals".
+    const top = page.indexOf('top financial contributors');
+    const start = top >= 0 ? page.indexOf('organizations', top) : -1;
+    if (start >= 0) {
+      const end = page.indexOf(' individuals', start);
+      const section = page.slice(start, end > start ? end : undefined);
+      const row = new RegExp(`(^|\\s)\\d+ ${org.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\$`);
+      if (row.test(section)) return { kind: 'corporate_backer', strong: false, why: 'listed under Organizations on Open Collective (an organisation account) and not a known foundation, fiscal host or public agency' };
+      if (end > start && row.test(page.slice(end))) return { kind: 'individual', strong: true, why: 'listed under Individuals on Open Collective' };
+    }
+  }
+  return null;
+}
+
 const FUNDING: TaskSpec<FundingValue> = {
   id: 'funding',
-  version: 1,
+  version: 2,
   title: 'Funding channels and backers',
   subjectKinds: ['package'],
   personLevel: false,
@@ -194,18 +273,29 @@ const FUNDING: TaskSpec<FundingValue> = {
     'Look for: a funding.json manifest (FLOSS/fund), a GitHub Sponsors page, the Open Collective page (fiscal host, top organisational contributors), Tidelift, thanks.dev, corporate backers named by the project, and foundation membership.',
     'Use collected_facts first (the scan may already know funding links), then the registry and collector tools, and only then the web tools.',
     'Propose one fact per channel or backer. "organization" must be an organisation exactly as the source names it; never propose individual people who donate. For an amount, copy the number and currency the source shows and quote the line that has it.',
+    'Backer kind: corporate_backer for a company, foundation for a private or non-profit foundation, public_agency for a government body or public agency (e.g. Sovereign Tech Agency), fiscal_host for the fiscal host or sponsor. The kind is checked against known lists and the source; when unsure, use "other".',
   ].join('\n'),
   tools: ['collected_facts', 'npm_package', 'pypi_package', 'depsdev_project', 'opencollective_account', 'registry_fetch', 'web_search', 'web_fetch'],
   domains: ['opencollective.com', 'github.com', 'raw.githubusercontent.com', 'tidelift.com', 'thanks.dev', 'floss.fund', 'polar.sh', ...Object.keys(FOUNDATIONS)],
   contextDomains: true,
   schema: fundingSchema,
   maxFacts: 12,
-  rules: ({ value, quote, sourceUrl, request, page }) => {
+  rules: ({ value, quote, sourceUrl, request, page, flag }) => {
     const problems: string[] = [];
     const off = sourceNamesSubject(request, page, sourceUrl);
     if (off) problems.push(off);
     if (value.organization) {
       const p = quoteHas(quote, value.organization, 'organisation');
+      if (p) problems.push(p);
+    }
+    const backer = (['corporate_backer', 'foundation', 'public_agency', 'fiscal_host'] as const).find((k) => k === value.kind);
+    if (backer) {
+      const ev = value.organization ? backerKindEvidence(value.organization, quote, page, sourceUrl) : null;
+      if (ev && ev.kind !== backer && ev.strong) problems.push(`${value.organization} is a ${ev.kind.replace(/_/g, ' ')} (${ev.why}), not a ${backer.replace(/_/g, ' ')}`);
+      else if (!ev || ev.kind !== backer) flag('kind', ev ? `${backer.replace(/_/g, ' ')} not confirmed: ${ev.why} suggests ${ev.kind.replace(/_/g, ' ')}` : `no deterministic evidence that ${value.organization ?? 'the backer'} is a ${backer.replace(/_/g, ' ')}`);
+    }
+    if (value.amount?.since) {
+      const p = quoteHas(quote, value.amount.since, 'since');
       if (p) problems.push(p);
     }
     if (value.amount) {
@@ -404,10 +494,12 @@ const LIFECYCLE: TaskSpec<LifecycleValue> = {
   contextDomains: true,
   schema: lifecycleSchema,
   maxFacts: 4,
-  rules: ({ value, quote, sourceUrl, request, page }) => {
+  rules: ({ value, quote, sourceUrl, request, page, body }) => {
     const problems: string[] = [];
     const off = sourceNamesSubject(request, page, sourceUrl);
     if (off) problems.push(off);
+    const d = factDateProblem(value.date, { quote, sourceUrl, page, body });
+    if (d) problems.push(d);
     if (!EVENT_WORDS[value.event]!.test(foldText(quote))) problems.push(`the quote does not describe a ${value.event.replace(/_/g, ' ')}`);
     // Licence names in announcements are rarely SPDX ids ("Apache 2.0-licensed", "SSPLv1"): the
     // licence family (leading letters of the id) must be in the quote.
@@ -451,10 +543,12 @@ const INCIDENTS: TaskSpec<IncidentValue> = {
   contextDomains: true,
   schema: incidentSchema,
   maxFacts: 4,
-  rules: ({ value, sourceUrl, request, page }) => {
+  rules: ({ value, quote, sourceUrl, request, page, body }) => {
     const problems: string[] = [];
     const off = sourceNamesSubject(request, page, sourceUrl);
     if (off) problems.push(off);
+    const d = factDateProblem(value.date, { quote, sourceUrl, page, body });
+    if (d) problems.push(d);
     for (const id of value.advisoryIds ?? []) if (!page.includes(id.toLowerCase())) problems.push(`advisory id ${id} is not on the source page`);
     const p = neutral(value.summary, 'summary');
     if (p) problems.push(p);

@@ -2,12 +2,15 @@
  * Record the verification-gate page fixtures ONCE (needs network; never run in tests or CI):
  *   npx tsx test/agentic/record.ts
  *
- * Fetches each page in PAGES (real public pages: Open Collective, Moment.js docs, Redis and Elastic
+ * Fetches each page in PAGES (or only the pages named on the command line:
+ *   npx tsx test/agentic/record.ts redis-agpl npm-leftpad) (real public pages: Open Collective, Moment.js docs, Redis and Elastic
  * licensing posts, Open Source Collective, SEC EDGAR, OpenJS Foundation, Openwall, npm blog),
  * trims it, and writes a fixture envelope under test/fixtures/agentic/pages/ that the offline
  * HttpClient replays by URL. Trimming keeps the page's own HTML for the listed segments (so the
  * gate's HTML normalisation is exercised on real markup) and removes scripts, styles, SVG, comments
- * and attributes (only `href` is kept). Segments that would carry individual people's data (Open
+ * and attributes (only `href` is kept). The page's publication-date metadata (meta tags, JSON-LD
+ * datePublished, <time datetime>, byline; dates.ts) goes in the fixture's <head> as the gate's date
+ * check reads it. Segments that would carry individual people's data (Open
  * Collective "Individuals" backers, mail headers) are cut out on purpose: the plan stores
  * organisation funders only.
  *
@@ -19,6 +22,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installEnvProxy } from '../../src/core/proxy.js';
 import { readBodyLimited } from '../../src/core/http.js';
+import { htmlDateMetadata } from '../../src/agentic/dates.js';
 import { PAGES } from './pages.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +50,8 @@ async function main(): Promise<void> {
   await installEnvProxy();
   mkdirSync(OUT, { recursive: true });
   const recordedAt = new Date().toISOString();
-  for (const page of PAGES) {
+  const only = process.argv.slice(2);
+  for (const page of PAGES.filter((p) => only.length === 0 || only.includes(p.name))) {
     let status = 0;
     let body = '';
     try {
@@ -77,7 +82,8 @@ async function main(): Promise<void> {
       if (j < 0) throw new Error(`${page.name}: end marker not found after start: ${end}`);
       parts.push(clean.slice(i, j + end.length));
     }
-    const html = `<!doctype html><html><head><title>${titleOf(body)}</title></head><body>\n${parts.join('\n<hr>\n')}\n</body></html>`;
+    const meta = htmlDateMetadata(body).map((m) => m.html).join('');
+    const html = `<!doctype html><html><head><title>${titleOf(body)}</title>${meta}</head><body>\n${parts.join('\n<hr>\n')}\n</body></html>`;
     writeFileSync(
       file,
       `${JSON.stringify(
@@ -85,7 +91,7 @@ async function main(): Promise<void> {
           request: { url: page.url },
           status: 200,
           response: html,
-          _note: `Trimmed by test/agentic/record.ts: ${page.segments.length} segment(s) of the live page; scripts, styles, attributes and personal data removed.`,
+          _note: `Trimmed by test/agentic/record.ts: ${page.segments.length} segment(s) of the live page; scripts, styles, attributes and personal data removed${meta ? '; publication-date metadata kept in <head>' : ''}.`,
           _recordedAt: recordedAt,
         },
         null,

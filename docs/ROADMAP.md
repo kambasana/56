@@ -69,6 +69,9 @@ with the session's research notes and is not in the repository yet):
 This is step Q1 of [QUALITY-SYSTEM.md §8](QUALITY-SYSTEM.md#8-build-order): the gate is a blocking
 check.
 
+**Status (2026-10-12): done** for dates (lifecycle and incident) and backer kinds; see
+WHO-BEHIND-PLAN §10, "Date and backer-kind gate". Not done: the `github_sponsors` rule.
+
 **Goal.** The verification gate (`blastradius/src/agentic/verify.ts`, `tasks.ts`) closes the two
 gaps found in the live run (WHO-BEHIND-PLAN §10, "Live run (2026-10-12)"):
 - **Dates.** The probe `probe-wrong-date` (`test/agentic/live-turns.ts`) proposes the Redis AGPL

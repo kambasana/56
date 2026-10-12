@@ -3,6 +3,7 @@
  * stay the primary path; this fills what they cannot, with every value verified by the app.
  */
 export * from './agent.js';
+export * from './dates.js';
 export * from './model.js';
 export * from './normalize.js';
 export * from './pipeline.js';
