@@ -1246,3 +1246,94 @@ work) and 66 e2e.
 supplier/hashes/DEV_DEPENDENCY_OF and a build-environment SBOM are Tier 1 (problem 9). yarn, pnpm,
 Go, Cargo, Maven, Gradle, Ruby, CocoaPods stay NOT ANALYSED (listed, counted, `--strict`). Syft
 default-on is not done. PEP 440 ordering for PyPI ranges uses the loose semver comparison.
+
+### Stability, git history and coverage (teardown problems 3, 4 and 5)
+
+Measured by re-scanning parse-server (`23d7bbca`) and jitsi-meet (`36d4c1c7`) with `scan --history`
+(default cap 300 repositories, manifests-only sparse checkouts), against the teardown's scans of the same commits. "Production" is now runtime only (Stream A's `src/core/scope.ts`), so the production totals shrink (parse-server 407 → 340, jitsi-meet 1,343 → 929); the before column keeps the teardown's numbers. The GitHub API
+answered 403 here, so no GitHub login mapping ran; identities were resolved by display name and npm
+publisher only. Superset was not re-scanned (disk); its Ended rows are covered by the recorded
+fixture below.
+
+| Target | Before (teardown) | After |
+|---|---|---|
+| False "Fragile: ended" in production | parse-server 14 of 34 (41 %) moved-and-released; jitsi image-size, superset @jridgewell/trace-mapping, agent-base | 0 % on all three: every remaining Ended row checked by hand (`HAND_CHECKED` in `test/stability/tier0.test.ts`, npm deprecation or GitHub archived flag). re-scans: parse-server 34 → 19 Ended + 7 Watch "Moved" (runtime scope; before the scope change 20 + 16), jitsi-meet 40 → 28 Ended + 6 Moved in production (19 moved overall: socket.io, eslint/js, webdriverio/driver, image-size on Codeberg, …); superset on the recorded Ended set 34 → 29 + 2 Moved |
+| Named moved packages | @google-cloud/firestore, gaxios, google-gax, retry-request, agent-base, gcp-metadata Fragile-ended | Watch, rule `watch_moved`, action e.g. "Moved: upgrade to 9.x (repo github.com/TooTallNate/proxy-agents, packages/agent-base)"; the old repository's archived flag is context |
+| Real ends stay Fragile | ldapjs, crypto-js, npmlog/gauge, @mui/base, request, left-pad | unchanged (tests on recorded data) |
+| "latest gap 35 days" on cluster-key-slot | cadence statistic first | "Last release 1.1.2 on 2022-11-01 (3 years ago). Releases up to then: …, gap between the two most recent 35 days." |
+| Single maintainer on google-wombot | `single_maintainer` finding factor, "1 maintainer" | "npm lists 1 maintainer with publish rights (an organisation release bot, not a person)"; no `single_maintainer` factor |
+| Family rows (9 @ldapjs/*) | 9 rows | one decision row: "Replace or upgrade ldapjs (direct dependency): it and 8 packages of the same family it brings in are Fragile …"; parse-server 34 decision rows (72 Fragile, 7 moved) |
+| Takeovers (release_takeover) in production, last 12 months | parse-server 118 repo-level observations, nanoid's author flagged in all three scans | parse-server 0; jitsi-meet 1 (react-native-sound v0.13.0) |
+| S5a items in production (packages with the S5a rule, last 12 months) | parse-server 20 packages / 31 observations; jitsi-meet 76 packages | parse-server 3 (graphql-relay 0.11.0, jws 4.0.1, process-warning 5.1.0), each its own account event; jitsi-meet 4 (react-native-paper, -safe-area-context, -sound, -video). Both under 5 |
+| Production Unknown | parse-server 204 of 407 (50 %), jitsi-meet 851 of 1,343 (63 %), superset 862 of 1,163 (74 %) | parse-server 9 of 340 (2.6 %), jitsi-meet 26 of 929 (2.8 %); superset not re-scanned |
+| Time per repo | parse-server 867 s, jitsi-meet 806 s (cold) | parse-server 847 s cold, 237 s with a warm HTTP cache and fresh clones, 33 s fully warm; jitsi-meet 945 s cold, 49–206 s warm. Lowest free disk during the scans 558 MB |
+| Web history | only in fixture mode; Unknown for 1,145 of 1,213 | background job after every online scan (`serve`, `--no-history`, `--history-max`); the scan is stored first ("pending"), then history and labels are attached |
+
+**Moved repositories (problem 3).** `release_age` now carries the repository the version in use
+and the latest release declare (`src/enrich/npm/packument.ts`). `src/stability/repo.ts` resolves the
+current repository from the latest release before any S3 rule; archived flags (GitHub, now with
+the repository they are about), Scorecard results and git history about another repository are set
+aside as context. A transferred or renamed repository (same name under a new owner, or the
+"node-" / ".js" decoration changed: visionmedia/debug → debug-js/debug) is the same repository,
+not a move. Moved + released in the last 12 months + latest not deprecated = Watch `watch_moved`
+with an action. The history enricher clones the current repository.
+
+**Release dates and bots.** Every S4 context line starts with the last release and its age.
+`src/history/bots.ts` lists organisation release bots with their sources (google-wombot,
+react-bot, GitHub Actions trusted publishing, github-actions[bot], release-please, semantic-release-bot,
+renovate, dependabot, changesets, …): never "single maintainer", never a contributor, never a new
+releaser.
+
+**Families.** `StabilityReport.decisions`: production Fragile and moved packages grouped by repository
+owner (or npm scope) and by the direct dependency that brings them in; each row names that
+direct dependency.
+
+**Identity and takeover signals (problem 4).**
+- Merge order: `.mailmap` (git), then display name plus overlapping activity (`src/history/merge.ts`;
+  display names are kept only as salted `name:` hashes, generic or short one-word names ignored;
+  activity at most 365 days apart), then the npm publisher (every id an account's registry
+  addresses hash to). nanoid: 2 ids merged, no takeover. picocolors: someone first seen on the
+  repository's first day is never a takeover.
+- Not a person's release: a release published through npm trusted publishing (moment 2.31.0) or by
+  an org release bot (react v19.0.1 by react-bot), or by an npm account that had already published
+  this package (xmldom 0.8.12) or a sibling package of the same owner or scope (the expressjs/jshttp
+  team): the npm publisher is the actor id. A tag counts only for the package it names
+  (`projectify-v5.0.0` in googleapis/google-cloud-node is not a gaxios release) and only when that
+  package published the version (react's `v19.0.1` is no scheduler release, protobufjs `v6.11.5` no
+  @protobufjs/utf8 release).
+- Without identity resolution (no display names and no login mapping) the git-only S5a kinds and
+  C1 are context only; the npm-side observation (matched through the registry account) still counts.
+- Window kinds are context only: release_handover, contributor_base_changed, top_committer_new,
+  time_zone_pattern_changed, signed_share_changed (`watch_signed_share_fell` and
+  `watch_contributor_base_changed_with_other` no longer fire). Takeovers are dated to their
+  causing release (xz: v5.2.11, 2023-03-18; event-stream: 3.3.5, 2018-09-05), not the window end.
+- Events (`src/stability/events.ts`, Changes page): threshold crossings between two stored scans
+  (label got worse, or an S5a observation the previous scan lacked), dated to the causing commit or
+  release; last 90 days, production only, at most 20, one row per account event. A first scan is the
+  baseline. Rising stability is never an event.
+- Maintainer additions by an account that already maintains a sibling package (same scope or
+  repository) are marked `sibling` and not scored: the 8 MEDIUM "added martinrrm" findings in
+  parse-server's npm/cli packages are gone.
+
+**Coverage (problem 5).** History and GitHub lookups pick repositories by priority (direct runtime,
+then production fan-in, then the rest; `src/stability/priority.ts`), `--history-max` sets the cap.
+Repositories not read fall back to the Scorecard Maintained check (deps.dev, no clone) and the npm
+release record (`basis: scorecard+npm | npm`, said in the label): Steady needs a release within 12
+months or Scorecard ≥ 5; no release in 18 months is Watch `watch_no_recent_release` (never Fragile),
+unless small and finished. The CLI prints the coverage line, e.g. parse-server: "Upkeep assessed for 1,167 of 1,213 (git history 515, Scorecard / npm fallback 652): all 41 direct, 290 of 299 runtime transitive; skipped: 33 git history not read, last release 12–18 months ago and no Scorecard result; 12 fewer than 5 commits in the last active 24 months; 1 no npm release record. Git history read for 300 of 889 repositories (589 over the cap of 300, picked by priority).".
+
+**Tests on recorded real data.** `test/stability/tier0.test.ts` with
+`test/fixtures/stability/recorded/tier0-ended.json.gz` (every Ended package of the three real scans:
+packuments, deps.dev/Scorecard for the in-use and latest repositories, sizes, OSV),
+`tier0-identity.json` + `history/tier0-{nanoid,react,picocolors,moment,xmldom}.json` (scheduler shares react's) (histories with salted
+display-name keys and npm-account ids) and `tier0-maintainers.json.gz` (npm/cli packuments);
+`test/fixtures/history/recorded/event-stream.json` re-recorded with display-name keys (same 322
+commits and 13 tags). Recorders: `test/stability/record-tier0*.ts`. Server:
+`src/server/history-job.test.ts` (background history), `src/server/stability.test.ts`; web unit
+tests and `e2e/screens-e-stability.spec.ts` (axe light and dark).
+
+**Deferred.** react's maintainer address change still reads as two people in the aggregate (the
+earlier address used another display name; needs GitHub login mapping, i.e. a token): it no longer
+reaches the label because v19.0.1 went out through react-bot. The 90-day event view needs two
+stored scans (web); the CLI has no stored baseline. Superset not re-scanned for the Unknown target
+(disk). A server restart leaves a "pending" background history pending until the next scan.

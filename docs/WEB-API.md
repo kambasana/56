@@ -101,7 +101,7 @@ Permissions are data (`permissions.ts`):
 | GET | `/api/assignees` | findings (org or per project) | — | `ListAssigneesResponse` |
 | GET | `/api/overview?projects=&env=&range=` | findings (org or per project) | `OverviewQuery` | `OverviewResponse` |
 | GET | `/api/exposure?project=&minLevel=&limit=` | exposure | `ExposureQuery` | `ExposureMatrixResponse` |
-| GET | `/api/changes?project=&from=&to=` | changes | `ChangesQuery` | `ChangesResponse` (adds `continuity`: S5a release-continuity observations of the `to` scan in the last 12 months, `isNew` when the `from` scan lacked them) |
+| GET | `/api/changes?project=&from=&to=` | changes | `ChangesQuery` | `ChangesResponse` (adds `upkeep`, Tier 0: threshold crossings between the `from` and `to` scans, a label that got worse or a new S5a observation, dated to the causing commit or release; last 90 days, production only, at most 20, one row per account event; `baseline: true` on a project's first scan) |
 | GET | `/api/projects/:id/stability` | findings | — | `ProjectStabilityResponse` (stability labels of the newest succeeded scan, with rules, facts, sources and confidence; `entries` null for scans made before labels; `funding: 'not_assessed'`) |
 | GET | `/api/graph?finding=` or `?project=&node=` | investigate (or findings for `finding=`) | — | `GraphResponse` |
 | GET | `/api/investigate/search?project=&q=` | investigate | — | `InvestigateSearchResponse` |
