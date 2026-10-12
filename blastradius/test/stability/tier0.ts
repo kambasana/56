@@ -84,11 +84,17 @@ export async function tier0IdentityHistory(slug: string): Promise<import('../../
  * real history enricher. `strip` removes the display-name keys and npm-account ids (the history as
  * an earlier version read it) to compare.
  */
-export async function tier0IdentityLabel(slug: string, version: string, opts: { strip?: boolean; asOf?: string; noSiblings?: boolean } = {}): Promise<{ entry: import('../../src/core/types.js').StabilityEntry; facts: import('../../src/core/types.js').Fact[] }> {
+export async function tier0IdentityLabel(slug: string, version: string, opts: { strip?: boolean; asOf?: string; noSiblings?: boolean; shallowFrom?: string } = {}): Promise<{ entry: import('../../src/core/types.js').StabilityEntry; facts: import('../../src/core/types.js').Fact[] }> {
   const fx = loadTier0Identity();
   const pkg = fx.packages[slug]!;
   const asOf = new Date(opts.asOf ?? '2026-10-11T12:00:00Z');
   let hist = await tier0IdentityHistory(slug === 'scheduler' ? 'react' : slug);
+  if (opts.shallowFrom) {
+    // The history as a shallow clone (git --shallow-since) from that date would hold it (Tier 0.5).
+    const since = Date.parse(`${opts.shallowFrom}T00:00:00Z`) / 1000;
+    const commits = hist.commits.filter((c) => c.at >= since);
+    hist = { ...hist, commits, shallowSince: Math.min(...commits.map((c) => c.at)) };
+  }
   if (opts.strip) {
     const { names: _n, npmPublisherIds: _i, ...rest } = hist;
     hist = rest;

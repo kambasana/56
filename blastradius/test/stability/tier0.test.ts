@@ -188,7 +188,7 @@ describe('Tier 0: identity resolution and takeover signals (teardown problem 4),
 
   it('fixtures keep only salted hashes: no e-mail address, no display name', async () => {
     // Tier 0.5 recordings add weak (short one-word) keys and login keys, salted the same way.
-    for (const slug of ['nanoid', 'react', 'picocolors', 'moment', 'process-warning', 'react-native-sound', 'react-native-video', 'react-native-paper', 'react-native-safe-area-context']) {
+    for (const slug of ['nanoid', 'react', 'picocolors', 'moment', 'process-warning', 'react-native-sound', 'react-native-video', 'react-native-paper', 'react-native-safe-area-context', 'stack-trace']) {
       const h = await tier0IdentityHistory(slug);
       for (const k of [...Object.values(h.names ?? {}), ...Object.values(h.loginNames ?? {})]) expect(k).toMatch(/^w?name:[0-9a-f]{16}$/);
       for (const l of Object.keys(h.loginNames ?? {})) expect(l).toMatch(/^[A-Za-z0-9-]+$/);

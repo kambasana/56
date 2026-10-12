@@ -118,6 +118,28 @@ describe('Tier 0.5 (2): identity merge and release continuity, recorded historie
     expect(entry.s5a.filter((e) => e.release === '7.0.0-beta.9' || e.release === '6.19.3')).toEqual([]);
   });
 
+  it('stack-trace: an account that published 1.0.0-pre1 in 2021 is no newcomer at its first stable release 1.0.0 (2026)', async () => {
+    const fx = (await import('./tier0.js')).loadTier0Identity();
+    const v = fx.packages['stack-trace']!.packument.versions;
+    expect([v['1.0.0-pre1']._npmUser.name, v['1.0.0']._npmUser.name]).toEqual(['niemyjski', 'niemyjski']);
+    const { entry } = await tier0IdentityLabel('stack-trace', '0.0.10', { asOf: PARSE });
+    expect(entry.s5a.filter((e) => e.release === '1.0.0' || e.release === '1.0.0-pre1')).toEqual([]);
+    // The re-scan saw the account's address first 8 days before 1.0.0 (its 2021 activity was not in
+    // the clone it read): the same history without that account's earlier commits and tags.
+    const { npmContinuity } = await import('../../src/history/continuity.js');
+    const h = await tier0IdentityHistory('stack-trace');
+    const id = h.npmPublishers!.niemyjski!;
+    const cut = Date.parse('2026-01-01T00:00:00Z') / 1000;
+    const late = { ...h, commits: h.commits.filter((c) => !(c.author === id && c.at < cut) && !(c.committer === id && c.at < cut)), tags: h.tags.filter((t) => !(t.by === id && t.at < cut)) };
+    const pubs = (await tier0IdentityLabel('stack-trace', '0.0.10', { asOf: PARSE })).facts.find((f) => f.kind === 'release_publishers')!.value as never;
+    const at = new Date(PARSE);
+    // Counted from the account's first stable release alone, 1.0.0 would read as a newcomer's …
+    const naive = npmContinuity(late, { ...(pubs as object), accounts: (pubs as any).accounts.map((a: any) => ({ ...a, firstVersion: a.firstStableVersion, firstAt: a.firstStableAt, index: a.firstStableIndex })) } as never, at);
+    expect(naive.changes.map((c) => c.release)).toContain('1.0.0');
+    // … but the account had published 1.0.0-pre1 five years earlier: no observation.
+    expect(npmContinuity(late, pubs, at, { stableOnly: true }).changes.map((c) => c.release)).not.toContain('1.0.0');
+  });
+
   it('the real, benign observations stay (react-native-paper v5.15.0, react-native-safe-area-context 5.7.0): nothing is hidden wholesale', async () => {
     const paper = await tier0IdentityLabel('react-native-paper', '5.14.5', { asOf: JITSI });
     expect(paper.entry.s5a.map((e) => e.release)).toContain('v5.15.0');
@@ -135,6 +157,8 @@ describe('Tier 0.5 (2): identity merge and release continuity, recorded historie
     const sh = aggregateHistory(mergeIdentities(shallow).rec, at)!;
     expect(sh.history.changes.some((c) => c.kind === 'release_takeover')).toBe(true);
     expect(sh.history.readFrom).toMatch(/^2019-/);
+    // Release tags older than the shallow boundary keep their own dates: no negative day counts.
+    expect(sh.history.changes.filter((c) => (c.daysSinceFirstSeen ?? 0) < 0)).toEqual([]);
     const { loadSubjects, subjectHistory } = await import('./fixture.js');
     const { STABILITY_SUBJECTS } = await import('./subjects.js');
     const subjects = loadSubjects();

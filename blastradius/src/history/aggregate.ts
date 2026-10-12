@@ -167,7 +167,7 @@ export function aggregateHistory(
   // read may have been active long before it: their first-seen date is "on or before", read as
   // before the history (never new, never a takeover).
   const censorUntil = shallowCensorUntil(rec);
-  if (censorUntil !== undefined) for (const [id, at] of first) if (at < censorUntil) first.set(id, rec.shallowSince! - DAY);
+  if (censorUntil !== undefined) for (const [id, at] of first) if (at < censorUntil) first.set(id, Math.min(at, rec.shallowSince! - DAY));
 
   const inRange = (from: number, to: number) => commits.filter((c) => c.at >= from && c.at < to);
 

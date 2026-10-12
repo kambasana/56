@@ -39,7 +39,7 @@ function firstSeen(rec: HistoryRecord, asOf: Date): Map<string, number> {
   for (const t of rec.tags) see(t.by, t.at);
   // Shallow clone (Tier 0.5): early first-seen dates mean "on or before" (aggregate.ts).
   const censor = shallowCensorUntil(rec);
-  if (censor !== undefined) for (const [id, at] of first) if (at < censor) first.set(id, rec.shallowSince! - DAY);
+  if (censor !== undefined) for (const [id, at] of first) if (at < censor) first.set(id, Math.min(at, rec.shallowSince! - DAY));
   return first;
 }
 
@@ -74,6 +74,9 @@ export function npmContinuity(rec: HistoryRecord, publishers: ReleasePublishersV
     if (rel.index === 0) continue;
     const at = Math.floor(Date.parse(rel.at) / 1000);
     if (!Number.isFinite(at) || at >= end || (at - repoStart) / DAY < HISTORY_RULES.newReleaserDays) continue;
+    // An account that had been publishing pre-releases of the package long before its first stable
+    // release is no newcomer (stack-trace: 1.0.0-pre1 in 2021, 1.0.0 in 2026 by the same account).
+    if (o.stableOnly && (at - Math.floor(Date.parse(a.firstAt) / 1000)) / DAY >= HISTORY_RULES.newReleaserDays) continue;
     // Tier 0: an account that already published a sibling package (same owner or npm scope) is a team member.
     if (establishedElsewhere?.(a.name, at * 1000)) continue;
     const seen = first.get(id);

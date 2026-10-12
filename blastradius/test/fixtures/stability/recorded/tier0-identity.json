@@ -1,6 +1,6 @@
 {
- "_note": "Recorded live 2026-10-12T18:27:13.710Z by test/stability/record-tier0-identity.ts: npm packuments (trimmed, no e-mail addresses), deps.dev / Scorecard Maintained check. Histories in history/tier0-<slug>.json (salted ids and salted display-name keys only; salt discarded).",
- "recordedAt": "2026-10-12T18:27:13.710Z",
+ "_note": "Recorded live 2026-10-12T19:12:40.058Z by test/stability/record-tier0-identity.ts: npm packuments (trimmed, no e-mail addresses), deps.dev / Scorecard Maintained check. Histories in history/tier0-<slug>.json (salted ids and salted display-name keys only; salt discarded).",
+ "recordedAt": "2026-10-12T19:12:40.058Z",
  "packages": {
   "nanoid": {
    "name": "nanoid",
@@ -41971,6 +41971,133 @@
       "firstAt": "2017-05-28T02:29:50.002Z"
      },
      "melvalesca": null
+    }
+   }
+  },
+  "stack-trace": {
+   "name": "stack-trace",
+   "versions": [
+    "0.0.10"
+   ],
+   "packument": {
+    "name": "stack-trace",
+    "dist-tags": {
+     "latest": "1.0.0"
+    },
+    "time": {
+     "created": "2011-06-25T16:09:15.530Z",
+     "modified": "2026-08-20T05:33:04.286Z",
+     "0.0.1": "2011-06-25T16:09:16.216Z",
+     "0.0.2": "2011-07-13T08:16:56.532Z",
+     "0.0.3": "2011-07-13T21:31:27.910Z",
+     "0.0.4": "2011-07-17T08:38:37.454Z",
+     "0.0.5": "2011-07-20T16:10:40.557Z",
+     "0.0.6": "2011-08-01T16:58:53.033Z",
+     "0.0.7": "2013-07-17T20:55:05.848Z",
+     "0.0.8": "2014-02-01T15:11:47.010Z",
+     "0.0.9": "2014-02-20T10:40:57.111Z",
+     "0.0.10": "2017-05-16T07:07:13.840Z",
+     "1.0.0-pre1": "2021-05-07T11:25:24.006Z",
+     "1.0.0-pre2": "2023-02-09T14:44:59.653Z",
+     "1.0.0": "2026-05-02T17:56:34.237Z"
+    },
+    "maintainers": [
+     {
+      "name": "felixge"
+     },
+     {
+      "name": "niemyjski"
+     }
+    ],
+    "repository": {
+     "type": "git",
+     "url": "https://github.com/felixge/node-stack-trace"
+    },
+    "versions": {
+     "0.0.1": {},
+     "0.0.2": {},
+     "0.0.3": {},
+     "0.0.4": {},
+     "0.0.5": {},
+     "0.0.6": {},
+     "0.0.7": {
+      "_npmUser": {
+       "name": "tim-smart"
+      }
+     },
+     "0.0.8": {
+      "_npmUser": {
+       "name": "sebastianhoitz"
+      }
+     },
+     "0.0.9": {
+      "_npmUser": {
+       "name": "sebastianhoitz"
+      }
+     },
+     "0.0.10": {
+      "_npmUser": {
+       "name": "felixge"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/felixge/node-stack-trace"
+      }
+     },
+     "1.0.0-pre1": {
+      "_npmUser": {
+       "name": "niemyjski"
+      }
+     },
+     "1.0.0-pre2": {
+      "_npmUser": {
+       "name": "niemyjski"
+      }
+     },
+     "1.0.0": {
+      "_npmUser": {
+       "name": "niemyjski"
+      },
+      "repository": {
+       "type": "git",
+       "url": "https://github.com/felixge/node-stack-trace"
+      }
+     }
+    }
+   },
+   "repo": {
+    "url": "https://github.com/felixge/node-stack-trace"
+   },
+   "project": {
+    "source": "depsdev",
+    "projectKey": {
+     "id": "github.com/felixge/node-stack-trace"
+    },
+    "scorecard": {
+     "date": "2026-08-24T00:00:00Z",
+     "repository": {
+      "name": "github.com/felixge/node-stack-trace"
+     },
+     "overallScore": 3.4,
+     "checks": [
+      {
+       "name": "Maintained",
+       "score": 0,
+       "reason": "0 commit(s) and 0 issue activity found in the last 90 days -- score normalized to 0"
+      }
+     ]
+    }
+   },
+   "siblings": {
+    "owner": "felixge",
+    "byAccount": {
+     "felixge": {
+      "name": "better-metrics",
+      "firstAt": "2011-11-07T16:09:58.041Z"
+     },
+     "niemyjski": null,
+     "sebastianhoitz": null,
+     "tim-smart": null
     }
    }
   }

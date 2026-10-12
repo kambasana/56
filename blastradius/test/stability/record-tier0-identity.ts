@@ -42,6 +42,9 @@ export const TIER0_IDENTITY_SUBJECTS = [
   { slug: 'react-native-sound', name: 'react-native-sound', version: '0.11.2', repo: 'https://github.com/zmxv/react-native-sound', scan: 'jitsi-meet' },
   // react-native-video: a 7.0.0-beta.9 pre-release while 6.19.1 is in use.
   { slug: 'react-native-video', name: 'react-native-video', version: '6.19.1', repo: 'https://github.com/TheWidlarzGroup/react-native-video', scan: 'jitsi-meet' },
+  // stack-trace: the account that published 1.0.0-pre1 (2021) and 1.0.0 (2026) is no newcomer
+  // (a regression the first-stable-release rule caused in the Tier 0.5 re-scan of parse-server).
+  { slug: 'stack-trace', name: 'stack-trace', version: '0.0.10', repo: 'https://github.com/felixge/node-stack-trace', scan: 'parse-server' },
   // The remaining jitsi-meet S5a items (real, benign: kept as observations).
   { slug: 'react-native-paper', name: 'react-native-paper', version: '5.14.5', repo: 'https://github.com/callstack/react-native-paper', scan: 'jitsi-meet' },
   { slug: 'react-native-safe-area-context', name: 'react-native-safe-area-context', version: '5.9.1', repo: 'https://github.com/AppAndFlow/react-native-safe-area-context', scan: 'jitsi-meet' },
