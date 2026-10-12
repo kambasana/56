@@ -443,6 +443,11 @@ export interface MaintainerChangeValue {
   version?: string;
   /** Days between the change and the next release, if known. */
   daysBeforeRelease?: number;
+  /**
+   * Tier 0: every added account already maintains this many sibling packages in the scan (same npm
+   * scope or the same source repository). A team event, not scored.
+   */
+  sibling?: { packages: number; by: 'scope' | 'repository' };
 }
 
 export type InstallHook = 'preinstall' | 'install' | 'postinstall' | 'prepare';

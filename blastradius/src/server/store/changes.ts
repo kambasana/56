@@ -9,7 +9,7 @@ import { CHANGE_TYPES } from '../api-types.js';
 import type { RiskLevel } from '../../core/types.js';
 import { all, get, parseJson, StoreError, type Store } from './db.js';
 import { LEVEL_RANK, requireSucceededScan } from './findings.js';
-import { continuityRows } from './stability.js';
+import { upkeepEvents } from './stability.js';
 
 export interface DiffRow {
   id: string;
@@ -136,5 +136,6 @@ export function diffScans(s: Store, orgId: string, projectId: string, opts: { fr
   if (fromScan && fromScan.id === toScan.id) throw new StoreError('bad_request', 'from and to are the same scan', ['from']);
   const items = diffFindingRows(fromScan ? rowsFor(s, fromScan.id) : new Map(), rowsFor(s, toScan.id));
   for (const c of items) counts[c.type]++;
-  return { projectId, fromScan, toScan, items, counts, continuity: continuityRows(s, orgId, fromScan?.id ?? null, toScan.id) };
+  const upkeep = upkeepEvents(s, orgId, fromScan?.id ?? null, toScan.id);
+  return { projectId, fromScan, toScan, items, counts, ...(upkeep ? { upkeep } : {}) };
 }

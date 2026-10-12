@@ -158,6 +158,8 @@ export function buildProgram(io: ProgramIo = {}): Command {
     .option('--web <dir>', 'built web app directory (default: web/dist next to the package)')
     .option('--concurrency <n>', 'scans run at once (1-4)', parseConcurrency, 2)
     .option('--agentic', 'scans also run the agentic gap-filler (needs ANTHROPIC_API_KEY in the environment); proposals appear under Proposed facts', false)
+    .option('--no-history', 'do not read git history in the background after online scans (stability then uses the Scorecard / npm fallback only)')
+    .option('--history-max <n>', 'background git history: most repositories read per scan, by priority (default 300)', parseHistoryMax)
     .option(
       '--trust-proxy <ips>',
       'comma-separated reverse proxy addresses whose X-Forwarded-For / X-Forwarded-Proto are honoured (default: $BLASTRADIUS_TRUST_PROXY, else none)',
@@ -179,6 +181,7 @@ export function buildProgram(io: ProgramIo = {}): Command {
         ...(o.allowLocalRoot.length > 0 ? { localRoots: o.allowLocalRoot.map((d) => resolvePath(d)) } : {}),
         ...(o.web !== undefined ? { webDir: resolvePath(o.web) } : {}),
         concurrency: o.concurrency,
+        history: o.history ? (o.historyMax !== undefined ? { maxRepos: o.historyMax } : {}) : false,
         ...(o.agentic ? { scanOptions: { agentic: true } } : {}),
         ...(trustProxy.length > 0 ? { trustProxy } : {}),
         log: (m) => err(`${m}\n`),
@@ -189,6 +192,8 @@ export function buildProgram(io: ProgramIo = {}): Command {
 }
 
 interface ServeCliOptions {
+  history: boolean;
+  historyMax?: number;
   port: number;
   host: string;
   db?: string;

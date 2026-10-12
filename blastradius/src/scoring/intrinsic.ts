@@ -135,6 +135,9 @@ export function scoreIntrinsic(
       });
     } else if (f.kind === 'maintainer_change') {
       if (f.value.added.length === 0 && f.value.removed.length === 0) continue;
+      // Tier 0: an added account that already maintains sibling packages (same scope or repository)
+      // is a team event; only removals would still count.
+      if (f.value.sibling && f.value.removed.length === 0) continue;
       const d = daysSince(f.value.changedAt, now);
       if (d === undefined) continue;
       const v = ownershipDecay(d);

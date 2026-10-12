@@ -86,11 +86,10 @@ describe('GET /api/projects/:id/stability (Maintenance tab)', () => {
 });
 
 describe('Changes and Package pages', () => {
-  it('the Changes response lists S5a observations of the last 12 months (first scan: none marked new)', async () => {
+  it('the Changes response: a first scan is the baseline, with no upkeep events (Tier 0)', async () => {
     const body = (await (await call(`/api/changes?project=${projectId}`, 'appsec')).json()) as ChangesResponse;
-    const rows = body.continuity!;
-    expect(rows.some((r) => r.name === 'event-stream' && r.kind === 'release_by_new_person' && r.release === '3.3.5')).toBe(true);
-    expect(rows.every((r) => r.isNew === false && r.date > '2017-11-27')).toBe(true);
+    expect(body.upkeep).toMatchObject({ baseline: true, events: [] });
+    expect(body.upkeep!.since).toBe('2018-08-29');
   });
   it('the Package reach response carries the label from the newest scan', async () => {
     const body = (await (await call('/api/packages/reach?name=event-stream', 'appsec')).json()) as PackageReachResponse;

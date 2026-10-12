@@ -174,3 +174,79 @@ describe('Tier 0: identity resolution and takeover signals (teardown problem 4),
     }
   });
 });
+
+describe('Tier 0: maintainer additions that are a team event (the npm/cli case)', () => {
+  it('an account added across sibling npm/cli packages is not scored; recorded packuments at parse-server\'s locked versions', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { gunzipSync } = await import('node:zlib');
+    const { STABILITY_DIR } = await import('./fixture.js');
+    const { NPMCLI } = await import('./record-tier0-maintainers.js');
+    const { packumentFacts } = await import('../../src/enrich/npm/packument.js');
+    const { markSiblingMaintainers } = await import('../../src/enrich/npm/siblings.js');
+    const { scoreInventory } = await import('../../src/scoring/index.js');
+    const { productionInventory } = await import('./build.js');
+    const fx = JSON.parse(gunzipSync(readFileSync(join(STABILITY_DIR, 'tier0-maintainers.json.gz'))).toString('utf8'));
+    const now = new Date(fx.asOf);
+    const facts = Object.entries(NPMCLI).flatMap(([n, v]) => packumentFacts(fx.packuments[n], n, v, { now }));
+    const changes = facts.filter((f) => f.kind === 'maintainer_change' && f.value.added.length > 0);
+    expect(changes.length).toBeGreaterThanOrEqual(8);
+    const inv = productionInventory(Object.entries(NPMCLI).map(([name, version]) => ({ name, version })));
+    const before = JSON.stringify(scoreInventory(inv, facts, { now }));
+    expect(before).toMatch(/Maintainer list changed/);
+    expect(markSiblingMaintainers(facts)).toBe(changes.length);
+    for (const c of changes) expect((c as any).value.sibling).toMatchObject({ by: expect.stringMatching(/scope|repository/) });
+    expect(JSON.stringify(scoreInventory(inv, facts, { now }))).not.toMatch(/Maintainer list changed/);
+  });
+
+  it('a lone package gaining an account no sibling has keeps the signal', async () => {
+    const { markSiblingMaintainers } = await import('../../src/enrich/npm/siblings.js');
+    const { makeFact } = await import('../../src/core/types.js');
+    const meta = { source: 'npm', fetchedAt: '2026-10-11T00:00:00Z' };
+    const facts = [
+      makeFact('maintainers', 'pkg:npm/%40acme/a', { maintainers: [{ name: 'old' }, { name: 'newcomer' }], count: 2 }, meta),
+      makeFact('maintainers', 'pkg:npm/%40acme/b', { maintainers: [{ name: 'old' }], count: 1 }, meta),
+      makeFact('maintainer_change', 'pkg:npm/%40acme/a@2.0.0', { added: ['newcomer'], removed: [], changedAt: '2026-10-01T00:00:00Z', version: '2.0.0' }, meta),
+    ];
+    expect(markSiblingMaintainers(facts)).toBe(0);
+  });
+});
+
+describe('Tier 0: upkeep events are threshold crossings between two stored scans', () => {
+  async function eventStreamAt(asOf: string) {
+    const { loadSubjects, subjectHistory } = await import('./fixture.js');
+    const { STABILITY_SUBJECTS } = await import('./subjects.js');
+    const { productionInventory, registryFacts, stabilityOf } = await import('./build.js');
+    const subjects = loadSubjects();
+    const s = STABILITY_SUBJECTS.find((x) => x.slug === 'event-stream')!;
+    const pkg = subjects.packages['event-stream']!;
+    const at = new Date(`${asOf}T00:00:00Z`);
+    const hist = subjectHistory(s.history, 'event-stream');
+    return (await stabilityOf(productionInventory([{ name: 'event-stream', version: '3.3.6' }]), registryFacts(pkg, at, pkg.project, subjects.recordedAt), () => hist, at)).report;
+  }
+
+  it('event-stream: the 3.3.5 release by a new npm account is one event, dated to the release, between scans of 2018-08-31 and 2018-11-26', async () => {
+    const { stabilityEvents } = await import('../../src/stability/events.js');
+    const before = await eventStreamAt('2018-08-31');
+    const after = await eventStreamAt('2018-11-26');
+    expect(stabilityEvents(null, after)).toMatchObject({ baseline: true, events: [] });
+    const r = stabilityEvents(before, after);
+    expect(r.baseline).toBe(false);
+    const s5a = r.events.filter((e) => e.kind === 'release_continuity');
+    expect(s5a.map((e) => [e.date, e.release, e.rules[0]])).toContainEqual(['2018-09-05', '3.3.5', 'npm_release_by_new_account']);
+    for (const e of r.events) expect(e.date >= '2018-08-28').toBe(true);
+    expect(r.events.length).toBeLessThanOrEqual(20);
+  });
+
+  it('rising stability is not an event; the same scan twice has none; dev-only packages are left out', async () => {
+    const { stabilityEvents } = await import('../../src/stability/events.js');
+    const before = await eventStreamAt('2018-08-31');
+    const after = await eventStreamAt('2018-11-26');
+    expect(stabilityEvents(after, before).events.filter((e) => e.kind === 'label_worsened')).toEqual([]);
+    expect(stabilityEvents(after, after).events).toEqual([]);
+    const dev = { ...after, packages: after.packages.map((p) => ({ ...p, production: false })) };
+    const r = stabilityEvents(before, dev);
+    expect(r.events).toEqual([]);
+    expect(r.omitted.notProduction).toBeGreaterThan(0);
+  });
+});

@@ -191,6 +191,25 @@ export function completeScan(s: Store, scanId: string, input: CompleteScanInput)
   });
 }
 
+/**
+ * Replace the history and stability sections of a succeeded scan (Tier 0 background history job):
+ * the exposure answer was stored first; git history arrives later. Findings stay as they were.
+ * Returns false when the scan is no longer there or not succeeded.
+ */
+export function attachScanHistory(s: Store, scanId: string, sections: { history?: ScanResult['history']; stability: NonNullable<ScanResult['stability']> }): boolean {
+  return tx(s, () => {
+    const r = get<{ result_json: string | null; status: string }>(s, `SELECT result_json, status FROM scan WHERE id = ?`, scanId);
+    if (!r?.result_json || r.status !== 'succeeded') return false;
+    const result = parseJson<ScanResult | null>(r.result_json, null);
+    if (!result) return false;
+    const next: ScanResult = { ...result, stability: sections.stability };
+    if (sections.history) next.history = sections.history;
+    const json = JSON.stringify(next);
+    run(s, `UPDATE scan SET result_json = ?, result_sha256 = ?, report_sha256 = ?, summary_json = ? WHERE id = ?`, json, sha256Hex(json), reportJsonSha256(next), JSON.stringify(summarizeResult(next)), scanId);
+    return true;
+  });
+}
+
 export function failScan(s: Store, scanId: string, error: string): Scan {
   return tx(s, () => {
     requireStatus(s, scanId, ['queued', 'running']);

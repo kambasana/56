@@ -14,6 +14,8 @@
  */
 import type {
   ContinuityEvent,
+  StabilityCoverage,
+  StabilityDecision,
   StabilityEntry,
   StabilityLabel,
   StabilityReason,
@@ -706,18 +708,20 @@ export interface ChangesResponse {
   items: ChangeRow[];
   counts: Record<ChangeType, number>;
   /**
-   * S5a release-continuity observations (docs/WHO-BEHIND-PLAN.md S5a) of the packages in the `to`
-   * scan, dated within the last 12 months; `isNew` when the `from` scan did not have it. Empty for
-   * scans made before stability labels existed. Not findings and not risk.
+   * Upkeep events (Tier 0): threshold crossings between the `from` and `to` scans of this project,
+   * dated to the commit or release that caused them; last 90 days, production only, at most 20, one
+   * row per account event. Absent for scans made before stability labels existed.
    */
-  continuity?: ContinuityRow[];
+  upkeep?: UpkeepEventsResponse;
 }
 
-export interface ContinuityRow extends ContinuityEvent {
-  /** Deterministic: `${kind}:${package}:${date}:${release ?? ''}`. */
-  id: string;
-  production: boolean;
-  isNew: boolean;
+export interface UpkeepEventsResponse {
+  /** No earlier scan: this scan is the baseline and has no events. */
+  baseline: boolean;
+  /** First day of the 90-day window. */
+  since: string;
+  events: StabilityEvent[];
+  omitted: { older: number; notProduction: number; overLimit: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -1031,7 +1035,9 @@ export interface HealthResponse {
 
 /** Re-exported engine types the web app needs, so it imports from one place. */
 export type { AssetExposure, Finding, OutboundFinding, Reason, RiskLevel, EntityChainEntry, Environment, Criticality, Ecosystem };
-export type { ContinuityEvent, StabilityEntry, StabilityLabel, StabilityReason };
+export type { ContinuityEvent, StabilityCoverage, StabilityDecision, StabilityEntry, StabilityLabel, StabilityReason };
+export type { StabilityEvent } from '../stability/events.js';
+import type { StabilityEvent } from '../stability/events.js';
 
 /** GET /api/projects/:id/health: upkeep-only signals from the latest succeeded scan (not findings). */
 export interface HealthItem {
@@ -1057,6 +1063,10 @@ export interface ProjectStabilityResponse {
   asOf: IsoTime | null;
   entries: StabilityEntry[] | null;
   counts: Record<StabilityLabel, number> | null;
+  /** Tier 0: family decision rows, the coverage line and whether git history is still being read. */
+  decisions?: StabilityDecision[] | null;
+  coverage?: StabilityCoverage | null;
+  historyStatus?: 'pending' | 'done' | 'off' | null;
   disclaimer: string;
   /** F2/F3 (funding) are phase P4: never applied yet. */
   funding: 'not_assessed';

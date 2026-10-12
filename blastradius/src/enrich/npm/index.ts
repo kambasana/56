@@ -13,6 +13,7 @@
  * used online, so offline/backtest runs never mix fixture data with real history; historical
  * runs (ctx.historical) never read or record snapshots, even with an explicitly supplied store.
  */
+import { markSiblingMaintainers } from './siblings.js';
 import { OfflineMissError, SkippedHosts } from '../../core/http.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, npmPurl } from '../../core/types.js';
@@ -182,6 +183,7 @@ export function createNpmEnricher(opts: NpmEnricherOptions = {}): Enricher {
           `npm: ${offlineMisses.length} packument(s) missing from fixtures/cache in offline mode: ${shown.join(', ')}${offlineMisses.length > 10 ? ', …' : ''}`,
         );
       }
+      markSiblingMaintainers(facts);
       return dedupe(facts);
     },
   };

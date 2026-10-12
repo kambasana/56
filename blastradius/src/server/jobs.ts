@@ -3,15 +3,16 @@
  * first, runs at most `concurrency` at a time through the engine pipeline, and records the
  * outcome. Scanning never executes repository code (the pipeline only parses manifests).
  */
+import type { HistoryEnricherOptions } from '../enrich/history/index.js';
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { isPathInside } from '../core/paths.js';
-import { scan, type ScanOptions } from '../pipeline.js';
+import { addHistory, scan, type ScanOptions, type ScanOutput } from '../pipeline.js';
 import { recordedHistories } from '../history/fixture.js';
 import type { GitRunner } from '../ingest/git.js';
 import { ApiHttpError } from './errors.js';
 import { checkTarget, cloneTarget } from './targets.js';
-import { completeScan, failScan, getScanById, listQueuedScans, markScanRunning, type Store } from './store/index.js';
+import { attachScanHistory, completeScan, failScan, getScanById, listQueuedScans, markScanRunning, type Store } from './store/index.js';
 
 export interface ScanJobOverrides {
   /** Reference time (backtests / fixture replays). */
@@ -47,6 +48,14 @@ export interface ScanJobsOptions {
   onScanSucceeded?: (projectId: string, mode: { offline: boolean; fixturesDir?: string }) => void;
   /** Clone timeout (ms). */
   cloneTimeoutMs?: number;
+  /**
+   * Tier 0: read git history for online scans as a background job after the scan is stored (the
+   * exposure answer first), so the web shows the same stability labels as `scan --history`.
+   * `maxRepos` is the per-scan cap (default 300). Off by default (tests); `serve` turns it on.
+   */
+  history?: false | { maxRepos?: number; cacheDir?: string; recorded?: HistoryEnricherOptions['recorded'] };
+  /** Called after the background history job attached its result (tests, logs). */
+  onHistoryDone?: (scanId: string, ok: boolean) => void;
   log?: (m: string) => void;
 }
 
@@ -72,6 +81,9 @@ export class ScanJobs {
   private readonly running = new Set<string>();
   private readonly overrides = new Map<string, ScanJobOverrides>();
   private readonly waiters = new Map<string, (() => void)[]>();
+  /** Background history jobs, one at a time (clones are disk- and network-heavy). */
+  private readonly historyQueue: { scanId: string; out: ScanOutput; now: Date }[] = [];
+  private historyRunning: Promise<void> | null = null;
   private readonly concurrency: number;
   private stopped = false;
 
@@ -119,6 +131,39 @@ export class ScanJobs {
       const list = this.waiters.get(scanId) ?? [];
       list.push(resolve);
       this.waiters.set(scanId, list);
+    });
+  }
+
+  /** Resolves when no background history job is queued or running. */
+  async historyIdle(): Promise<void> {
+    while (this.historyRunning) await this.historyRunning;
+  }
+
+  private runHistoryQueue(): void {
+    if (this.historyRunning || this.historyQueue.length === 0) return;
+    const log = this.opts.log ?? (() => {});
+    this.historyRunning = (async () => {
+      while (this.historyQueue.length > 0 && !this.stopped) {
+        const job = this.historyQueue.shift()!;
+        let ok = false;
+        try {
+          const h = this.opts.history || {};
+          const sections = await addHistory(job.out, {
+            now: job.now,
+            ...(this.opts.scanOptions?.http ? { http: this.opts.scanOptions.http } : {}),
+            ...(this.opts.scanOptions?.cacheDir !== undefined ? { cacheDir: this.opts.scanOptions.cacheDir } : {}),
+            history: { ...(h.maxRepos !== undefined ? { maxRepos: h.maxRepos } : {}), ...(h.cacheDir ? { cache: { dir: h.cacheDir } } : {}), ...(h.recorded ? { recorded: h.recorded } : {}) },
+          });
+          ok = attachScanHistory(this.opts.store, job.scanId, sections);
+          log(`scan ${job.scanId}: git history attached (${sections.stability.coverage?.line ?? 'no coverage line'})`);
+        } catch (err) {
+          log(`scan ${job.scanId}: git history failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+        this.opts.onHistoryDone?.(job.scanId, ok);
+      }
+    })().finally(() => {
+      this.historyRunning = null;
+      if (this.historyQueue.length > 0 && !this.stopped) this.runHistoryQueue();
     });
   }
 
@@ -170,7 +215,11 @@ export class ScanJobs {
       }
       log(`scan ${scanId}: started`);
       const asOf = o.asOf ?? this.opts.asOf ?? replay?.asOf;
+      // Online scans: git history runs afterwards in the background (Tier 0), so the exposure answer
+      // is stored first and the stability labels say "pending" until history arrives.
+      const backgroundHistory = this.opts.history !== undefined && this.opts.history !== false && !offline;
       const out = await scan({
+        ...(backgroundHistory ? { historyPending: true } : {}),
         // Offline fixture replays also replay recorded git histories (<fixtures>/history/recorded), so
         // the stability labels have their repo-level facts; nothing is cloned.
         ...(offline && fixturesDir !== undefined ? { history: { recorded: recordedHistories(join(fixturesDir, 'history', 'recorded')) } } : {}),
@@ -185,6 +234,10 @@ export class ScanJobs {
       completeScan(store, scanId, { result, inventory: out.inventory, commit });
       log(`scan ${scanId}: succeeded (${result.findings.length} findings)`);
       this.opts.onScanSucceeded?.(s.projectId, { offline, ...(fixturesDir !== undefined ? { fixturesDir } : {}) });
+      if (backgroundHistory) {
+        this.historyQueue.push({ scanId, out, now: asOf ?? new Date() });
+        this.runHistoryQueue();
+      }
     } catch (err) {
       log(`scan ${scanId}: failed: ${err instanceof Error ? err.message : String(err)}`);
       try {

@@ -2,6 +2,7 @@
  * `blastradius serve`: open the store, wire the job runner, optionally seed dev data, and
  * listen with @hono/node-server. Default host is 127.0.0.1 (loopback only).
  */
+import type { HistoryEnricherOptions } from '../enrich/history/index.js';
 import { AlertWatcher, type AlertWatcherOptions } from './watch.js';
 import { AccountIndexer, type AccountIndexerOptions } from './accounts.js';
 import { existsSync, readFileSync } from 'node:fs';
@@ -59,6 +60,8 @@ export function packageVersion(): string {
 }
 
 export interface CreateServerOptions {
+  /** Background git history after online scans (Tier 0); `serve` turns it on unless --no-history. */
+  history?: false | { maxRepos?: number; cacheDir?: string; recorded?: HistoryEnricherOptions['recorded'] };
   /** SQLite path; ':memory:' by default. */
   dbPath?: string;
   store?: Store;
@@ -134,6 +137,7 @@ export function createServer(opts: CreateServerOptions = {}) {
     ...(opts.concurrency !== undefined ? { concurrency: opts.concurrency } : {}),
     ...(opts.scanOptions ? { scanOptions: opts.scanOptions } : {}),
     ...(opts.gitRunner ? { gitRunner: opts.gitRunner } : {}),
+    ...(opts.history !== undefined ? { history: opts.history } : {}),
     log,
   });
   const deps: ServerDeps = {
