@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T02:45:09.827Z by test/licenses/record.ts; response trimmed to the fields the licences enricher reads.",
+"request": {"url":"https://api.deps.dev/v3/systems/npm/packages/flatmap-stream"},
+"status": 200,
+"response": {"packageKey":{"system":"NPM","name":"flatmap-stream"},"versions":[]}
+}
