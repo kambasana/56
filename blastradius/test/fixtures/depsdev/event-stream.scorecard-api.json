@@ -1,0 +1,51 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.securityscorecards.dev/projects/github.com/dominictarr/event-stream"
+  },
+  "status": 200,
+  "response": {
+    "date": "2024-05-13T00:00:00Z",
+    "repo": {
+      "name": "github.com/dominictarr/event-stream",
+      "commit": "0000000000000000000000000000000000000003"
+    },
+    "scorecard": {
+      "version": "v5.0.0",
+      "commit": "0000000000000000000000000000000000000002"
+    },
+    "score": 3.1,
+    "checks": [
+      {
+        "name": "Maintained",
+        "documentation": {
+          "shortDescription": "",
+          "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained"
+        },
+        "score": 0,
+        "reason": "0 commit(s) and 0 issue activity found in the last 90 days -- score normalized to 0",
+        "details": []
+      },
+      {
+        "name": "Code-Review",
+        "documentation": {
+          "shortDescription": "",
+          "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#code-review"
+        },
+        "score": 0,
+        "reason": "Found 0/30 approved changesets -- score normalized to 0",
+        "details": []
+      },
+      {
+        "name": "License",
+        "documentation": {
+          "shortDescription": "",
+          "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#license"
+        },
+        "score": 10,
+        "reason": "license file detected",
+        "details": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/systems/npm/packages/ua-parser-js/versions/0.7.29"
+  },
+  "status": 200,
+  "response": {
+    "versionKey": {
+      "system": "NPM",
+      "name": "ua-parser-js",
+      "version": "0.7.29"
+    },
+    "publishedAt": "2021-10-22T12:15:56Z",
+    "isDefault": false,
+    "licenses": [
+      "MIT"
+    ],
+    "advisoryKeys": [
+      {
+        "id": "GHSA-pjwm-rvh2-c87w"
+      }
+    ],
+    "links": [
+      {
+        "label": "HOMEPAGE",
+        "url": "https://github.com/faisalman/ua-parser-js"
+      },
+      {
+        "label": "ISSUE_TRACKER",
+        "url": "https://github.com/faisalman/ua-parser-js/issues"
+      },
+      {
+        "label": "ORIGIN",
+        "url": "https://registry.npmjs.org/ua-parser-js/0.7.29"
+      },
+      {
+        "label": "SOURCE_REPO",
+        "url": "git+https://github.com/faisalman/ua-parser-js.git"
+      }
+    ],
+    "slsaProvenances": [],
+    "attestations": [],
+    "registries": [
+      "https://registry.npmjs.org/"
+    ],
+    "relatedProjects": [
+      {
+        "projectKey": {
+          "id": "github.com/faisalman/ua-parser-js"
+        },
+        "relationProvenance": "UNVERIFIED_METADATA",
+        "relationType": "SOURCE_REPO"
+      },
+      {
+        "projectKey": {
+          "id": "github.com/faisalman/ua-parser-js"
+        },
+        "relationProvenance": "UNVERIFIED_METADATA",
+        "relationType": "ISSUE_TRACKER"
+      }
+    ]
+  }
+}

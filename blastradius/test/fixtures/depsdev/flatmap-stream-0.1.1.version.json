@@ -1,0 +1,12 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/systems/npm/packages/flatmap-stream/versions/0.1.1"
+  },
+  "status": 404,
+  "response": {
+    "code": 5,
+    "message": "version not found",
+    "details": []
+  }
+}
