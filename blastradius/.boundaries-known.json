@@ -1,0 +1,20 @@
+{
+  "_note": "Known module-level cycles and fetch() callers (tools/boundaries.ts). This list may only shrink: docs/REFACTOR.md.",
+  "moduleCycles": [
+    "module-cycle: core → enrich/npm → core",
+    "module-cycle: core → enrich/npm → history → core",
+    "module-cycle: core → enrich/npm → history → ingest → core",
+    "module-cycle: core → enrich/npm → stability → core",
+    "module-cycle: core → enrich/npm → stability → enrich/pypi → core",
+    "module-cycle: core → enrich/npm → stability → enrich/pypi → enrich/depsdev → core",
+    "module-cycle: core → enrich/npm → stability → enrich/pypi → enrich/depsdev → ingest → core",
+    "module-cycle: core → enrich/npm → stability → enrich/pypi → history → core",
+    "module-cycle: core → enrich/npm → stability → enrich/pypi → ingest → core",
+    "module-cycle: core → enrich/npm → stability → history → core",
+    "module-cycle: enrich/pypi → stability → enrich/pypi",
+    "module-cycle: root → server → root"
+  ],
+  "fetch": [
+    "no-fetch-outside-core-http: src/core/proxy.ts"
+  ]
+}

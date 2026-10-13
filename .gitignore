@@ -16,6 +16,8 @@
 *.gz
 # Recorded test fixtures are committed even when gzipped (P3 stability control set).
 !blastradius/test/fixtures/**/*.json.gz
+# Golden-output snapshots (test/golden, docs/REFACTOR.md) are committed gzipped.
+!blastradius/test/golden/snapshots/**/*.gz
 *.iso
 *.jar
 *.rar

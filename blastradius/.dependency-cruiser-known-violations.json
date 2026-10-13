@@ -1,0 +1,1374 @@
+[
+  {
+    "type": "dependency",
+    "from": "src/enrich/github/index.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/github/index.ts",
+    "to": "src/enrich/npm/repo.ts",
+    "unresolvedTo": "../npm/repo.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/github/index.ts",
+    "to": "src/enrich/npm/util.ts",
+    "unresolvedTo": "../npm/util.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/history/index.ts",
+    "to": "src/enrich/depsdev/util.ts",
+    "unresolvedTo": "../depsdev/util.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/history/index.ts",
+    "to": "src/enrich/npm/attestation.ts",
+    "unresolvedTo": "../npm/attestation.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/history/index.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/licenses/index.ts",
+    "to": "src/enrich/depsdev/util.ts",
+    "unresolvedTo": "../depsdev/util.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/licenses/registry.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/pypi/index.ts",
+    "to": "src/enrich/depsdev/repo.ts",
+    "unresolvedTo": "../depsdev/repo.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/pypi/index.ts",
+    "to": "src/enrich/depsdev/util.ts",
+    "unresolvedTo": "../depsdev/util.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/npm/packument.ts",
+    "to": "src/history/aggregate.ts",
+    "unresolvedTo": "../../history/aggregate.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-history-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/npm/packument.ts",
+    "to": "src/history/bots.ts",
+    "unresolvedTo": "../../history/bots.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-history-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/pypi/index.ts",
+    "to": "src/history/continuity.ts",
+    "unresolvedTo": "../../history/continuity.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-history-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/github/index.ts",
+    "to": "src/stability/priority.ts",
+    "unresolvedTo": "../../stability/priority.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/history/index.ts",
+    "to": "src/stability/priority.ts",
+    "unresolvedTo": "../../stability/priority.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/history/index.ts",
+    "to": "src/stability/repo.ts",
+    "unresolvedTo": "../../stability/repo.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/npm/index.ts",
+    "to": "src/stability/rules.ts",
+    "unresolvedTo": "../../stability/rules.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/npm/packument.ts",
+    "to": "src/stability/cadence.ts",
+    "unresolvedTo": "../../stability/cadence.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/npm/registry.ts",
+    "to": "src/stability/declared.ts",
+    "unresolvedTo": "../../stability/declared.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/pypi/index.ts",
+    "to": "src/stability/cadence.ts",
+    "unresolvedTo": "../../stability/cadence.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/pypi/index.ts",
+    "to": "src/stability/declared.ts",
+    "unresolvedTo": "../../stability/declared.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "collector-imports-rules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/core/osv-range.ts",
+    "to": "src/enrich/npm/packument.ts",
+    "unresolvedTo": "../enrich/npm/packument.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-is-a-leaf"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/agentic/tools.ts",
+    "to": "src/enrich/depsdev/index.ts",
+    "unresolvedTo": "../enrich/depsdev/index.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "gapfill-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/agentic/tools.ts",
+    "to": "src/enrich/github/opencollective.ts",
+    "unresolvedTo": "../enrich/github/opencollective.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "gapfill-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/agentic/tools.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../enrich/npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "gapfill-imports-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/depsdev/index.ts",
+    "to": "src/ingest/python.ts",
+    "unresolvedTo": "../../ingest/python.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/osv/index.ts",
+    "to": "src/ingest/python.ts",
+    "unresolvedTo": "../../ingest/python.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/enrich/pypi/index.ts",
+    "to": "src/ingest/python.ts",
+    "unresolvedTo": "../../ingest/python.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/history/git.ts",
+    "to": "src/ingest/git.ts",
+    "unresolvedTo": "../ingest/git.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sarif.ts",
+    "to": "src/ingest/manifests.ts",
+    "unresolvedTo": "../ingest/manifests.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sbom.ts",
+    "to": "src/ingest/manifests.ts",
+    "unresolvedTo": "../ingest/manifests.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/jobs.ts",
+    "to": "src/ingest/git.ts",
+    "unresolvedTo": "../ingest/git.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/serve.ts",
+    "to": "src/ingest/git.ts",
+    "unresolvedTo": "../ingest/git.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/targets.ts",
+    "to": "src/ingest/git.ts",
+    "unresolvedTo": "../ingest/git.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/summary.ts",
+    "to": "src/ingest/manifests.ts",
+    "unresolvedTo": "./ingest/manifests.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/watch/match.ts",
+    "to": "src/ingest/python.ts",
+    "unresolvedTo": "../ingest/python.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "ingest-internals-outside-ingest"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/history/testing.ts",
+    "to": "child_process",
+    "unresolvedTo": "child_process",
+    "dependencyTypes": [
+      "core",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-child-process-outside-sandbox"
+    }
+  },
+  {
+    "type": "cycle",
+    "from": "src/core/scope.ts",
+    "to": "src/core/types.ts",
+    "unresolvedTo": "./types.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/core/types.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "type-only"
+        ]
+      },
+      {
+        "name": "src/core/scope.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/server/accounts.ts",
+    "to": "src/server/incidents.ts",
+    "unresolvedTo": "./incidents.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/server/incidents.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "type-only"
+        ]
+      },
+      {
+        "name": "src/server/accounts.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/server/store/audit.ts",
+    "to": "src/server/store/db.ts",
+    "unresolvedTo": "./db.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/server/store/db.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/migrations.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/trust-pass.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/findings.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/audit.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/server/store/db.ts",
+    "to": "src/server/store/migrations.ts",
+    "unresolvedTo": "./migrations.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/server/store/migrations.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/trust-pass.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/findings.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/server/store/db.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/jobs.ts",
+    "to": "src/history/fixture.ts",
+    "unresolvedTo": "../history/fixture.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-test-support-in-production"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/html.ts",
+    "to": "src/licenses/classify.ts",
+    "unresolvedTo": "../licenses/classify.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/html.ts",
+    "to": "src/licenses/history.ts",
+    "unresolvedTo": "../licenses/history.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/html.ts",
+    "to": "src/licenses/policy.ts",
+    "unresolvedTo": "../licenses/policy.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/html.ts",
+    "to": "src/licenses/report.ts",
+    "unresolvedTo": "../licenses/report.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/index.ts",
+    "to": "src/licenses/policy.ts",
+    "unresolvedTo": "../licenses/policy.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sarif.ts",
+    "to": "src/ingest/manifests.ts",
+    "unresolvedTo": "../ingest/manifests.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sarif.ts",
+    "to": "src/scoring/index.ts",
+    "unresolvedTo": "../scoring/index.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sbom.ts",
+    "to": "src/ingest/manifests.ts",
+    "unresolvedTo": "../ingest/manifests.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sbom.ts",
+    "to": "src/licenses/history.ts",
+    "unresolvedTo": "../licenses/history.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/report/sbom.ts",
+    "to": "src/licenses/spdx.ts",
+    "unresolvedTo": "../licenses/spdx.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "report-reaches-into-modules"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/stability/label.ts",
+    "to": "src/enrich/pypi/index.ts",
+    "unresolvedTo": "../enrich/pypi/index.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "rules-import-collector"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/entities/review.ts",
+    "to": "src/scoring/weights.ts",
+    "unresolvedTo": "../scoring/weights.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "scoring-weights-private"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/incidents/index.ts",
+    "to": "src/scoring/weights.ts",
+    "unresolvedTo": "../scoring/weights.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "scoring-weights-private"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/incidents/osv-import.ts",
+    "to": "src/scoring/weights.ts",
+    "unresolvedTo": "../scoring/weights.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "scoring-weights-private"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/accounts.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../enrich/npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/accounts.ts",
+    "to": "src/scoring/blast.ts",
+    "unresolvedTo": "../scoring/blast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/accounts.ts",
+    "to": "src/watch/account.ts",
+    "unresolvedTo": "../watch/account.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/accounts.ts",
+    "to": "src/watch/match.ts",
+    "unresolvedTo": "../watch/match.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/incidents.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../enrich/npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/incidents.ts",
+    "to": "src/scoring/blast.ts",
+    "unresolvedTo": "../scoring/blast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/incidents.ts",
+    "to": "src/watch/account.ts",
+    "unresolvedTo": "../watch/account.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/incidents.ts",
+    "to": "src/watch/match.ts",
+    "unresolvedTo": "../watch/match.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/jobs.ts",
+    "to": "src/enrich/history/index.ts",
+    "unresolvedTo": "../enrich/history/index.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/jobs.ts",
+    "to": "src/pipeline.ts",
+    "unresolvedTo": "../pipeline.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/reach.ts",
+    "to": "src/scoring/blast.ts",
+    "unresolvedTo": "../scoring/blast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/routes/alerts.ts",
+    "to": "src/watch/match.ts",
+    "unresolvedTo": "../../watch/match.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/serve.ts",
+    "to": "src/enrich/history/index.ts",
+    "unresolvedTo": "../enrich/history/index.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/serve.ts",
+    "to": "src/pipeline.ts",
+    "unresolvedTo": "../pipeline.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/store/accounts.ts",
+    "to": "src/enrich/npm/registry.ts",
+    "unresolvedTo": "../../enrich/npm/registry.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/store/alerts.ts",
+    "to": "src/watch/match.ts",
+    "unresolvedTo": "../../watch/match.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "type-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/server/watch.ts",
+    "to": "src/watch/match.ts",
+    "unresolvedTo": "../watch/match.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "server-calls-collector-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/api-accounts.ts",
+    "to": "src/server/api-types-accounts.ts",
+    "unresolvedTo": "@server/api-types-accounts",
+    "dependencyTypes": [
+      "undetermined",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/api-agentic.ts",
+    "to": "src/server/api-types-agentic.ts",
+    "unresolvedTo": "@server/api-types-agentic",
+    "dependencyTypes": [
+      "undetermined",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/api-incidents.ts",
+    "to": "src/server/api-types-incidents.ts",
+    "unresolvedTo": "@server/api-types-incidents",
+    "dependencyTypes": [
+      "undetermined",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/api.ts",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/auth.tsx",
+    "to": "src/server/permissions.ts",
+    "unresolvedTo": "@server/permissions",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/nav.ts",
+    "to": "src/server/permissions.ts",
+    "unresolvedTo": "@server/permissions",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/a-parts/triage.tsx",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/Account.tsx",
+    "to": "src/server/api-types-accounts.ts",
+    "unresolvedTo": "@server/api-types-accounts",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/Changes.tsx",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/d-parts/CreateProjectDialog.tsx",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/e-parts/rbac.ts",
+    "to": "src/server/permissions.ts",
+    "unresolvedTo": "@server/permissions",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/e-parts/RolesMatrix.tsx",
+    "to": "src/server/permissions.ts",
+    "unresolvedTo": "@server/permissions",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/e-parts/SettingsParts.tsx",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/FindingDetail.tsx",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/ProposedFacts.tsx",
+    "to": "src/server/api-types-agentic.ts",
+    "unresolvedTo": "@server/api-types-agentic",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/pages/Reports.tsx",
+    "to": "src/server/api-types.ts",
+    "unresolvedTo": "@server/api-types",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "web/src/routes.tsx",
+    "to": "src/server/permissions.ts",
+    "unresolvedTo": "@server/permissions",
+    "dependencyTypes": [
+      "undetermined",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "web-imports-server-types-only"
+    }
+  }
+]
