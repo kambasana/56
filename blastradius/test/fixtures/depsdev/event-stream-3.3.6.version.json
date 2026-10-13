@@ -1,0 +1,52 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/systems/npm/packages/event-stream/versions/3.3.6"
+  },
+  "status": 200,
+  "response": {
+    "versionKey": {
+      "system": "NPM",
+      "name": "event-stream",
+      "version": "3.3.6"
+    },
+    "publishedAt": "2018-09-09T11:14:13Z",
+    "isDefault": false,
+    "licenses": [
+      "MIT"
+    ],
+    "advisoryKeys": [
+      {
+        "id": "GHSA-mh6f-8j2x-4483"
+      }
+    ],
+    "links": [
+      {
+        "label": "HOMEPAGE",
+        "url": "http://github.com/dominictarr/event-stream"
+      },
+      {
+        "label": "ORIGIN",
+        "url": "https://registry.npmjs.org/event-stream/3.3.6"
+      },
+      {
+        "label": "SOURCE_REPO",
+        "url": "git://github.com/dominictarr/event-stream.git"
+      }
+    ],
+    "slsaProvenances": [],
+    "attestations": [],
+    "registries": [
+      "https://registry.npmjs.org/"
+    ],
+    "relatedProjects": [
+      {
+        "projectKey": {
+          "id": "github.com/dominictarr/event-stream"
+        },
+        "relationProvenance": "UNVERIFIED_METADATA",
+        "relationType": "SOURCE_REPO"
+      }
+    ]
+  }
+}
