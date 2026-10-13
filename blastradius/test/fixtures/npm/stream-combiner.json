@@ -1,0 +1,249 @@
+{
+  "note": "Recorded from the live registry on 2026-10-06 and trimmed to the last 8 versions and the fields the npm enricher reads. Email addresses were removed (data minimisation).",
+  "request": {
+    "url": "https://registry.npmjs.org/stream-combiner"
+  },
+  "response": {
+    "_id": "stream-combiner",
+    "name": "stream-combiner",
+    "description": "[![npm version](https://img.shields.io/npm/v/stream-combiner.svg)](https://npmjs.org/package/stream-combiner)  [![Travis CI](https://travis-ci.org/dominictarr/stream-combiner.svg)](https://travis-ci.org/dominictarr/stream-combiner)",
+    "dist-tags": {
+      "latest": "0.2.2"
+    },
+    "maintainers": [
+      {
+        "name": "nopersonsmodules"
+      }
+    ],
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/dominictarr/stream-combiner.git"
+    },
+    "time": {
+      "created": "2012-11-27T07:24:47.850Z",
+      "modified": "2022-11-08T10:38:50.859Z",
+      "0.0.0": "2012-11-27T07:24:49.721Z",
+      "0.0.1": "2013-01-31T21:17:59.894Z",
+      "0.0.2": "2013-03-18T01:18:20.646Z",
+      "0.0.4": "2013-12-11T17:01:21.554Z",
+      "0.1.0": "2014-05-09T10:54:26.499Z",
+      "0.2.0": "2014-05-18T08:20:50.712Z",
+      "0.2.1": "2014-05-29T20:11:38.164Z",
+      "0.2.2": "2015-06-05T08:49:04.050Z"
+    },
+    "versions": {
+      "0.0.0": {
+        "name": "stream-combiner",
+        "version": "0.0.0",
+        "dependencies": {
+          "duplexer": "0.0.2"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.0.0.tgz",
+          "integrity": "sha512-jITtBrIxPPau97ac1KxvVbTFj0zBM4Ge7uCGmSJ0JZPatNrLm9JeW/OQLNtqx8WL/t3GXhcDVeOjuRJ1qYR3vw=="
+        }
+      },
+      "0.0.1": {
+        "name": "stream-combiner",
+        "version": "0.0.1",
+        "dependencies": {
+          "duplexer": "~0.0.3"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.0.1.tgz",
+          "integrity": "sha512-d+OEvB9XSeFq6U6pCRfWdZus+yii2WQcUTwylpGRmMBCuWkhYQnj9BcfnDHnOI00gdn0YAXI2eE1gPww5nFHrg=="
+        }
+      },
+      "0.0.2": {
+        "name": "stream-combiner",
+        "version": "0.0.2",
+        "dependencies": {
+          "duplexer": "~0.0.3"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.0.2.tgz",
+          "integrity": "sha512-Z2D5hPQapscuHNqiyUgjnF1sxG/9CB7gs1a9vcS2/OvMiFwmm6EZw9IjbU34l5mPXS62RidpoBdyB83E0GXHLw=="
+        }
+      },
+      "0.0.4": {
+        "name": "stream-combiner",
+        "version": "0.0.4",
+        "dependencies": {
+          "duplexer": "~0.1.1"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.0.4.tgz",
+          "integrity": "sha512-rT00SPnTVyRsaSz5zgSPma/aHSOic5U1prhYdRy5HS2kTZviFpmDgzilbtsJsxiroqACmayynDN/9VzIbX5DOw=="
+        }
+      },
+      "0.1.0": {
+        "name": "stream-combiner",
+        "version": "0.1.0",
+        "dependencies": {
+          "duplexer": "~0.1.1",
+          "through": "~2.3.4"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.1.0.tgz",
+          "integrity": "sha512-/RD3Tuc5XWyB2zLMO1kZlSUC7Pogi64BoYPDbAHEkFJNt5RKmRmsrEU3Kpr0hNxQ1p/KlUWBeJflr5zLtmdYGw=="
+        }
+      },
+      "0.2.0": {
+        "name": "stream-combiner",
+        "version": "0.2.0",
+        "dependencies": {
+          "duplexer": "~0.1.1",
+          "through": "~2.3.4"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.2.0.tgz",
+          "integrity": "sha512-bEc3Qn9hpfN2xKxGLxSQjT+CyLEBfK4PF48ZcZSRMEcqP8cBJdOjmAsHk6aHZTkEsIkPz/CfUvv1Ea6H4A/m6Q=="
+        }
+      },
+      "0.2.1": {
+        "name": "stream-combiner",
+        "version": "0.2.1",
+        "dependencies": {
+          "duplexer": "~0.1.1",
+          "through": "~2.3.4"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.2.1.tgz",
+          "integrity": "sha512-aUMUPySv46/4MD/DxqPJtgUhtozwGPqT2vfpV4+2Gm35kisyWXjoOdUkbEh0qOSLH9+6qcdw4cBzPCIttQw8aA=="
+        }
+      },
+      "0.2.2": {
+        "name": "stream-combiner",
+        "version": "0.2.2",
+        "dependencies": {
+          "duplexer": "~0.1.1",
+          "through": "~2.3.4"
+        },
+        "scripts": {
+          "test": "set -e; for t in test/*.js; do node $t; done"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/dominictarr/stream-combiner.git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/stream-combiner/-/stream-combiner-0.2.2.tgz",
+          "integrity": "sha512-6yHMqgLYDzQDcAkL+tjJDC5nSNuNIx0vZtRZeiPh7Saef7VHX9H5Ijn9l2VIol2zaNYlYEX6KyuT/237A58qEQ=="
+        }
+      }
+    }
+  }
+}

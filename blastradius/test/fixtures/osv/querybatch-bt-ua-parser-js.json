@@ -1,0 +1,31 @@
+{
+  "_note": "Hand-authored from the documented OSV API shape (POST /v1/querybatch returns ids + modified only); api.osv.dev is not reachable from the recording environment. Query order = npm components sorted by purl. Advisory mapping follows the public GHSA records referenced in the GHSA-*.json fixtures; packages without an entry had no OSV advisory for that version at the time of writing. Inventory: test/backtest/repos/ua-parser-js-2021.",
+  "request": {
+    "url": "https://api.osv.dev/v1/querybatch",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "package": {
+            "name": "ua-parser-js",
+            "ecosystem": "npm"
+          },
+          "version": "0.7.29"
+        }
+      ]
+    }
+  },
+  "status": 200,
+  "response": {
+    "results": [
+      {
+        "vulns": [
+          {
+            "id": "GHSA-pjwm-rvh2-c87w",
+            "modified": "2024-02-05T21:12:30.417143Z"
+          }
+        ]
+      }
+    ]
+  }
+}

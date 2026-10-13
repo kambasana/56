@@ -1,0 +1,7 @@
+{
+  "note": "Recorded from raw.githubusercontent.com on 2026-10-06.",
+  "request": {
+    "url": "https://raw.githubusercontent.com/faisalman/ua-parser-js/HEAD/.github/funding.yml"
+  },
+  "response": "# These are supported funding model platforms\n\ngithub: faisalman\npatreon: # Replace with a single Patreon username\nopen_collective: ua-parser-js\nko_fi: # Replace with a single Ko-fi username\ntidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel\ncommunity_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry\nliberapay: # Replace with a single Liberapay username\nissuehunt: # Replace with a single IssueHunt username\notechie: # Replace with a single Otechie username\ncustom: ['https://www.paypal.me/faisalman/', 'https://uaparser.dev']\n"
+}
