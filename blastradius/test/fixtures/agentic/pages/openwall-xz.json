@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://www.openwall.com/lists/oss-security/2024/03/29/4"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>oss-security - backdoor in upstream xz/liblzma leading to ssh server compromise</title></head><body>\nSubject: backdoor in upstream xz/liblzma leading to ssh server compromise Hi, After observing a few odd symptoms around liblzma (part of the xz package) on Debian sid installations over the last weeks (logins with ssh taking a lot of CPU, valgrind errors) I figured out the answer: The upstream xz repository and the xz tarballs have been backdoored.\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}

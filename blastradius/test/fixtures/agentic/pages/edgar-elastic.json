@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001707753&type=10-K&dateb=&owner=include&count=40"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>EDGAR Search Results</title></head><body>\nElastic N.V. <acronym>CIK</acronym>#: <a>0001707753 (see all company filings)</a></span> <p><acronym>SIC</acronym>: <a>7372</a> - SERVICES-PREPACKAGED SOFTWARE<br>State location: <a>CA</a> | Fiscal Year End: 0430\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}

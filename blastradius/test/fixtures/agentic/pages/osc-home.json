@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://www.oscollective.org/"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>Home - Open Source Collective</title></head><body>\nAs a 501(c)(6) nonprofit fiscal host, we provide the financial and legal infrastructure for thousands of open source projects.\n<hr>\nWe’re a 501(c)(6) non-profit registered in the USA. EIN 82-2037583\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 2 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}
