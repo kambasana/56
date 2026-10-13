@@ -1,0 +1,8 @@
+{
+  "request": {
+    "url": "https://api.github.com/users/synthetic--profile/ssh_signing_keys"
+  },
+  "status": 200,
+  "response": "[\n  {\n    \"id\": 2,\n    \"key\": \"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAISYNTHETICKEYONLYFORTESTS\",\n    \"title\": \"laptop\",\n    \"created_at\": \"2022-01-01T00:00:00Z\"\n  }\n]",
+  "_note": "SYNTHETIC TEST DATA (not a real account): GitHub logins cannot contain '--'. Shape of the GitHub REST users API (https://docs.github.com/en/rest/users); api.github.com is not reachable from this environment, so this is a stub, not a recording."
+}

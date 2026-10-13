@@ -1,0 +1,25 @@
+{
+  "request": {
+    "url": "https://registry.npmjs.org/left-pad/latest"
+  },
+  "response": {
+    "name": "left-pad",
+    "version": "1.3.0",
+    "description": "String left pad",
+    "homepage": "https://github.com/stevemao/left-pad#readme",
+    "license": "WTFPL",
+    "deprecated": "use String.prototype.padStart()",
+    "maintainers": [
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      }
+    ]
+  },
+  "_note": "Recorded 2026-10-11T21:13:59.882Z from the npm registry; trimmed to the fields npm_package reads, maintainer names removed (count kept). Repository field dropped (an ssh URL that the fixture e-mail check flags)."
+}

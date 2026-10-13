@@ -1,0 +1,10 @@
+{
+ "request": {
+  "url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm"
+ },
+ "status": 200,
+ "response": "<!doctype html><html><head><span id=\"timestamp\">March 23rd, 2016 6:21pm</span></head><body>npm blog archive: kik, left-pad, and npm npm blog (archive) npmjs.com status support the npm blog has been discontinued. updates from the npm team are now published on the github blog and the github changelog. kik, left-pad, and npm earlier this week, many npm users suffered a disruption when a package that many projects depend on - directly or indirectly - was unpublished by its author, as part of a dispute over a package name. the event generated a lot of attention and raised many concerns, because of the scale of disruption, the circumstances that led to this dispute, and the actions npm, inc. took in response. here's an explanation of what happened. timeline in recent weeks, azer koçulu and kik exchanged correspondence over the use of the module name kik. they weren't able to come to an agreement. last week, a representative of kik contacted us to ask for help resolving the disagreement. this hasn't been the first time that members of the community have disagreed over a name. in a global namespace for unscoped mo</body></html>",
+ "_note": "Live page re-recorded by live-run.ts --pages: the gate's own normalised text (pageText) cut to windows around the quotes, with the page's publication-date metadata (meta tags, JSON-LD datePublished, <time>, byline) kept as a minimal HTML head; personal data removed.",
+ "_recordedAt": "2026-10-12T20:34:07.727Z",
+ "_rerecordedAt": "2026-10-12T22:53:25.385Z"
+}

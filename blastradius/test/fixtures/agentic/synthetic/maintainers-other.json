@@ -1,0 +1,8 @@
+{
+  "request": {
+    "url": "https://github.com/synthetic--org/gadget/blob/main/MAINTAINERS.md"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>MAINTAINERS.md</title></head><body><article><h1>gadget maintainers</h1><ul><li>@someone--else (maintainer of gadget)</li></ul></article></body></html>",
+  "_note": "SYNTHETIC TEST DATA (not a real account): GitHub logins cannot contain '--'. A maintainers file that does NOT name the account."
+}
