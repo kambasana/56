@@ -1,0 +1,527 @@
+{
+ "model": "claude-opus-5-5",
+ "conversations": [
+  {
+   "key": "funding pkg:npm/webpack",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). adversarial: plausible but wrong amount: trivago 398,985 with the real quote \"trivago $389,985 USD since Aug 2017\"",
+   "responses": [
+    {
+     "id": "msg_live_003",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Adversarial: transposed digits in the amount."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_001",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/webpack"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_001",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/webpack",
+        "retrieved_at": "2026-10-12T20:22:04Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "trivago $389,985 USD since Aug 2017"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_002",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "trivago",
+           "amount": {
+            "value": 398985,
+            "currency": "USD",
+            "since": "Aug 2017"
+           }
+          },
+          "source_url": "https://opencollective.com/webpack",
+          "quote": "trivago $389,985 USD since Aug 2017",
+          "confidence_note": "adversarial"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "funding pkg:npm/express",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). adversarial: real quote on the wrong subject: core-js's Open Collective backer Cybozu proposed as a funder of express",
+   "responses": [
+    {
+     "id": "msg_live_006",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Adversarial: another project's Open Collective page."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_004",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://opencollective.com/core-js"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_004",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://opencollective.com/core-js",
+        "retrieved_at": "2026-10-12T20:22:02Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Cybozu $21,017 USD since Jun 2021"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_005",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "corporate_backer",
+           "organization": "Cybozu",
+           "amount": {
+            "value": 21017,
+            "currency": "USD",
+            "since": "Jun 2021"
+           }
+          },
+          "source_url": "https://opencollective.com/core-js",
+          "quote": "Cybozu $21,017 USD since Jun 2021",
+          "confidence_note": "adversarial"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "governance pkg:npm/lodash",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). adversarial: real quote on the wrong subject: OpenJS's Express entry proposed as lodash's foundation membership",
+   "responses": [
+    {
+     "id": "msg_live_009",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Adversarial: another project's line on the foundation page."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_007",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://openjsf.org/projects"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_007",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://openjsf.org/projects",
+        "retrieved_at": "2026-10-12T20:22:06Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "Express is a minimal and flexible Node.js web application framework"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_008",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "foundation_member",
+           "organization": "OpenJS Foundation"
+          },
+          "source_url": "https://openjsf.org/projects",
+          "quote": "Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.",
+          "confidence_note": "adversarial"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "incident_writeups pkg:npm/express",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). adversarial: real quote on the wrong subject: npm's left-pad unpublish post proposed as an incident of express",
+   "responses": [
+    {
+     "id": "msg_live_012",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Adversarial: another package's incident write-up."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_010",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_010",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm",
+        "retrieved_at": "2026-10-12T20:22:11Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "was unpublished by its author, as part of a dispute over a package name."
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_011",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "unpublish",
+           "date": "2016-03",
+           "summary": "npm reports that the package was unpublished by its author during a dispute over a package name."
+          },
+          "source_url": "https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm",
+          "quote": "Earlier this week, many npm users suffered a disruption when a package that many projects depend on — directly or indirectly — was unpublished by its author, as part of a dispute over a package name.",
+          "confidence_note": "adversarial"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "lifecycle_events pkg:maven/org.elasticsearch/elasticsearch",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). adversarial: off-domain source: a real Wikipedia sentence about the 2021 Elasticsearch relicensing",
+   "responses": [
+    {
+     "id": "msg_live_015",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Adversarial: Wikipedia is not an evidence domain for this task."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_013",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://en.wikipedia.org/wiki/Elasticsearch"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_013",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://en.wikipedia.org/wiki/Elasticsearch",
+        "retrieved_at": "2026-10-12T20:22:42Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "In January 2021, Elastic announced that starting with version 7.11, Elasticsearch and Kibana would be relicensed from Apache License 2.0 to a dual license under the Server Side Public License and the Elastic License"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_014",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "event": "relicensing",
+           "date": "2021-01",
+           "summary": "Elasticsearch and Kibana were relicensed from Apache 2.0 to SSPL and the Elastic License starting with version 7.11.",
+           "licenseFrom": [
+            "Apache-2.0"
+           ],
+           "licenseTo": [
+            "SSPL-1.0"
+           ]
+          },
+          "source_url": "https://en.wikipedia.org/wiki/Elasticsearch",
+          "quote": "In January 2021, Elastic announced that starting with version 7.11, Elasticsearch and Kibana would be relicensed from Apache License 2.0 to a dual license under the Server Side Public License and the Elastic License",
+          "confidence_note": "adversarial"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "lifecycle_events pkg:github/redis/redis",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). probe: wrong date: the Redis AGPL announcement (May 01, 2025) proposed with date 2024-05-01, real quote",
+   "responses": [
+    {
+     "id": "msg_live_018",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Probe: the date is a year off."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_016",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://redis.io/blog/agplv3/"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_016",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://redis.io/blog/agplv3/",
+        "retrieved_at": "2026-10-12T20:22:08Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "May 01, 2025"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_017",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "event": "relicensing",
+           "date": "2024-05-01",
+           "summary": "Redis announced AGPL as an additional licence option starting with Redis 8.",
+           "licenseTo": [
+            "AGPL-3.0"
+           ]
+          },
+          "source_url": "https://redis.io/blog/agplv3/",
+          "quote": "Adding the OSI-approved AGPL as an additional licensing option for Redis, starting with Redis 8 (available now)",
+          "confidence_note": "probe"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  },
+  {
+   "key": "incident_writeups pkg:github/tukaani-project/xz",
+   "note": "model turns produced by a Claude Code agent acting as the model, live web, 2026-10-12 (no Anthropic API key; the agent fetched the sources itself on the task evidence domains and wrote the submit_facts calls; usage counters are 0 because no model API was called). probe: JS-rendered page: the true NVD description of CVE-2024-3094 cited on the NVD detail page (which redirects to a lower-case URL and renders its text with JavaScript)",
+   "responses": [
+    {
+     "id": "msg_live_021",
+     "type": "message",
+     "role": "assistant",
+     "model": "claude-opus-5-5",
+     "content": [
+      {
+       "type": "text",
+       "text": "Probe: the human-facing NVD page."
+      },
+      {
+       "type": "server_tool_use",
+       "id": "srvtoolu_live_019",
+       "name": "web_fetch",
+       "input": {
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-3094"
+       }
+      },
+      {
+       "type": "web_fetch_tool_result",
+       "tool_use_id": "srvtoolu_live_019",
+       "content": {
+        "type": "web_fetch_result",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-3094",
+        "retrieved_at": "2026-10-12T20:22:43Z",
+        "content": {
+         "type": "document",
+         "source": {
+          "type": "text",
+          "media_type": "text/plain",
+          "data": "(page body is rendered by JavaScript)"
+         },
+         "title": null,
+         "citations": null
+        }
+       }
+      },
+      {
+       "type": "tool_use",
+       "id": "toolu_live_020",
+       "name": "submit_facts",
+       "input": {
+        "facts": [
+         {
+          "value": {
+           "kind": "compromise",
+           "summary": "NVD describes code in the upstream xz tarballs, starting with version 5.6.0, that modifies the liblzma library.",
+           "advisoryIds": [
+            "CVE-2024-3094"
+           ]
+          },
+          "source_url": "https://nvd.nist.gov/vuln/detail/CVE-2024-3094",
+          "quote": "Malicious code was discovered in the upstream tarballs of xz, starting with version 5.6.0.",
+          "confidence_note": "probe"
+         }
+        ]
+       }
+      }
+     ],
+     "stop_reason": "tool_use",
+     "stop_sequence": null,
+     "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation_input_tokens": 0
+     }
+    }
+   ]
+  }
+ ]
+}

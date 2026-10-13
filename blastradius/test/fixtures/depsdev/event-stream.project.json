@@ -1,0 +1,18 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/projects/github.com%2Fdominictarr%2Fevent-stream"
+  },
+  "status": 200,
+  "response": {
+    "projectKey": {
+      "id": "github.com/dominictarr/event-stream"
+    },
+    "openIssuesCount": "30",
+    "starsCount": "2100",
+    "forksCount": "170",
+    "license": "MIT",
+    "description": "EventStream is like functional programming meets IO",
+    "homepage": ""
+  }
+}

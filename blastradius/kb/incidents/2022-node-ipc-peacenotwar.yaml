@@ -1,0 +1,30 @@
+# node-ipc / peacenotwar (2022): protestware releases that write a message file to the user's
+# desktop. Same event as INC-2022-0002 (node-ipc 10.1.1/10.1.2, file overwrite), but a different,
+# non-destructive behaviour on other release lines, so it is its own record.
+id: INC-2022-0003
+title: node-ipc 9.2.2, 11.0.0 and 11.1.0 shipped the peacenotwar module, which writes a message file to the user's desktop
+type: maintainer_sabotage
+status: confirmed
+# node-ipc 9.2.2 published 2022-03-15T05:40Z; GHSA-8gr3-2gjw-jj7g and GHSA-3mpp-xfvh-qh37 published 2022-03-16.
+date: 2022-03-15
+severity: medium
+affected:
+  - purl: pkg:npm/node-ipc
+    # npm bulk advisory API (2026-10-07): GHSA-8gr3-2gjw-jj7g "Hidden functionality in node-ipc"
+    # (=9.2.2, CWE-912: "uses a dependency that writes a file to disk"), and GHSA-3mpp-xfvh-qh37
+    # "node-ipc behavior change" (>=11.0.0 <12.0.0: "a message from the maintainer that is written
+    # to the user's desktop"). Registry releases in that range: 11.0.0 (2022-03-08T17:25Z,
+    # depends on peacenotwar ^9.1.3) and 11.1.0 (2022-03-15T04:49Z, peacenotwar ^9.1.5).
+    # 9.2.3 and 12.x are not covered by either advisory.
+    versions: ["9.2.2", "11.0.0", "11.1.0"]
+  - purl: pkg:npm/peacenotwar
+    # Every published version (registry: 9.1.1 2022-03-08T16:38Z ... 9.1.7 2022-03-18T09:30Z). The
+    # package README on npm states it "will add a message of peace on your users' desktops".
+    # A real lockfile resolving node-ipc 9.2.2 pulls peacenotwar 9.1.6 (project-qwerty, 2022-03).
+    versions: ["9.1.1", "9.1.2", "9.1.3", "9.1.4", "9.1.5", "9.1.6", "9.1.7"]
+entities: []
+evidence:
+  - https://github.com/advisories/GHSA-8gr3-2gjw-jj7g
+  - https://github.com/advisories/GHSA-3mpp-xfvh-qh37
+  - https://www.npmjs.com/package/peacenotwar
+  - https://registry.npmjs.org/peacenotwar

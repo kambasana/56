@@ -1,0 +1,41 @@
+{
+  "note": "Shape follows GET /repos/{owner}/{repo} (https://docs.github.com/en/rest/repos/repos#get-a-repository); api.github.com is not reachable from the recording environment, so ids/timestamps are illustrative.",
+  "request": {
+    "url": "https://api.github.com/repos/faisalman/ua-parser-js"
+  },
+  "response": {
+    "id": 1854108,
+    "name": "ua-parser-js",
+    "full_name": "faisalman/ua-parser-js",
+    "private": false,
+    "owner": {
+      "login": "faisalman",
+      "id": 160302,
+      "type": "User",
+      "site_admin": false,
+      "html_url": "https://github.com/faisalman"
+    },
+    "html_url": "https://github.com/faisalman/ua-parser-js",
+    "description": "UAParser.js - Detect Browser, Engine, OS, CPU, and Device type/model from User-Agent data.",
+    "fork": false,
+    "url": "https://api.github.com/repos/faisalman/ua-parser-js",
+    "created_at": "2012-06-04T12:51:20Z",
+    "updated_at": "2026-10-01T10:00:00Z",
+    "pushed_at": "2021-10-22T16:40:00Z",
+    "homepage": null,
+    "stargazers_count": 9500,
+    "watchers_count": 9500,
+    "language": "JavaScript",
+    "has_issues": true,
+    "forks_count": 1200,
+    "archived": false,
+    "disabled": false,
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT"
+    },
+    "visibility": "public",
+    "default_branch": "master"
+  }
+}

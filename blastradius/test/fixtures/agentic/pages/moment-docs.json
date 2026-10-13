@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://momentjs.com/docs/"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>Moment.js | Docs</title></head><body>\nProject status</strong> <span>Moment.js is a legacy project in maintenance mode.</span> <a>Read the latest update\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}

@@ -1,0 +1,14 @@
+# ua-parser-js (2021): versions published from a compromised npm account.
+id: INC-2021-0001
+title: ua-parser-js versions 0.7.29, 0.8.0 and 1.0.0 published from a compromised npm account with an added payload
+type: account_takeover
+status: confirmed
+date: 2021-10-22
+severity: critical
+affected:
+  - purl: pkg:npm/ua-parser-js
+    versions: ["0.7.29", "0.8.0", "1.0.0"]
+# The account owner was the victim of the takeover; no entity is attributed.
+entities: []
+evidence:
+  - https://github.com/advisories/GHSA-pjwm-rvh2-c87w

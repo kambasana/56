@@ -1,0 +1,63 @@
+{
+  "_note": "Hand-authored from the documented deps.dev v3 / Scorecard API response shapes; values are representative, not a live recording.",
+  "request": {
+    "url": "https://api.deps.dev/v3/projects/github.com%2Fsigstore%2Fsigstore-js"
+  },
+  "status": 200,
+  "response": {
+    "projectKey": {
+      "id": "github.com/sigstore/sigstore-js"
+    },
+    "openIssuesCount": "15",
+    "starsCount": "250",
+    "forksCount": "50",
+    "license": "Apache-2.0",
+    "description": "Code-signing for npm packages",
+    "homepage": "",
+    "scorecard": {
+      "date": "2024-05-20T00:00:00Z",
+      "repository": {
+        "name": "github.com/sigstore/sigstore-js",
+        "commit": "0000000000000000000000000000000000000004"
+      },
+      "scorecard": {
+        "version": "v5.0.0",
+        "commit": "0000000000000000000000000000000000000002"
+      },
+      "checks": [
+        {
+          "name": "Maintained",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained"
+          },
+          "score": 10,
+          "reason": "30 commit(s) and 10 issue activity found in the last 90 days -- score normalized to 10",
+          "details": []
+        },
+        {
+          "name": "Code-Review",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#code-review"
+          },
+          "score": 10,
+          "reason": "all changesets reviewed",
+          "details": []
+        },
+        {
+          "name": "Pinned-Dependencies",
+          "documentation": {
+            "shortDescription": "",
+            "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md#pinned-dependencies"
+          },
+          "score": 9,
+          "reason": "dependency not pinned by hash detected -- score normalized to 9",
+          "details": []
+        }
+      ],
+      "overallScore": 8.4,
+      "metadata": []
+    }
+  }
+}

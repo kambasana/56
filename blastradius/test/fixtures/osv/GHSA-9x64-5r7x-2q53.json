@@ -1,0 +1,32 @@
+{
+  "_note": "Hand-authored from the OSV schema; content follows the public GitHub advisory for flatmap-stream 0.1.1 (event-stream incident, Nov 2018).",
+  "request": { "url": "https://api.osv.dev/v1/vulns/GHSA-9x64-5r7x-2q53" },
+  "response": {
+    "id": "GHSA-9x64-5r7x-2q53",
+    "summary": "Malicious Package in flatmap-stream",
+    "details": "Version 0.1.1 of `flatmap-stream` contained malicious code that targeted a specific application. The package has been removed from the npm registry.\n\n## Recommendation\n\nRemove the package from your environment.",
+    "modified": "2023-11-08T03:57:44.646612Z",
+    "published": "2019-06-05T09:33:43Z",
+    "aliases": [],
+    "database_specific": {
+      "cwe_ids": ["CWE-506"],
+      "github_reviewed": true,
+      "github_reviewed_at": "2019-06-05T09:33:43Z",
+      "nvd_published_at": null,
+      "severity": "CRITICAL"
+    },
+    "references": [
+      { "type": "ADVISORY", "url": "https://github.com/advisories/GHSA-9x64-5r7x-2q53" },
+      { "type": "WEB", "url": "https://github.com/dominictarr/event-stream/issues/116" }
+    ],
+    "affected": [
+      {
+        "package": { "ecosystem": "npm", "name": "flatmap-stream", "purl": "pkg:npm/flatmap-stream" },
+        "versions": ["0.1.1"],
+        "ranges": [{ "type": "SEMVER", "events": [{ "introduced": "0" }, { "last_affected": "0.1.1" }] }]
+      }
+    ],
+    "schema_version": "1.6.0",
+    "severity": [{ "type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" }]
+  }
+}

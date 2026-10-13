@@ -1,0 +1,17 @@
+{
+  "name": "@jitsi/react-native-sdk",
+  "version": "0.0.0",
+  "dependencies": {
+    "@xmldom/xmldom": "0.0.0",
+    "uuid": "0.0.0",
+    "lodash-es": "0.0.0",
+    "@braintree/sanitize-url": "0.0.0",
+    "i18next": "0.0.0",
+    "@jitsi/logger": "0.0.0"
+  },
+  "peerDependencies": {
+    "@amplitude/analytics-react-native": "0.0.0",
+    "@giphy/react-native-sdk": "0.0.0",
+    "@react-native-async-storage/async-storage": "0.0.0"
+  }
+}

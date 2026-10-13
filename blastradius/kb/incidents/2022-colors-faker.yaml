@@ -1,0 +1,21 @@
+# colors.js and faker.js (2022): releases published by the project's own maintainer account
+# that broke consumers (infinite loop in colors, emptied faker). Project-level record only.
+id: INC-2022-0001
+title: colors and faker releases published with changes that made dependent applications hang or fail
+type: maintainer_sabotage
+status: confirmed
+date: 2022-01-08
+severity: high
+affected:
+  - purl: pkg:npm/colors
+    # Registry publish times: 1.4.44-liberty-2 2022-01-08T04:24Z, 1.4.1 2022-01-08T19:22Z,
+    # 1.4.2 2022-01-09T19:35Z. GHSA-gh88-3pxp-6fm8 ("Infinite Loop in colors.js", >=1.4.1).
+    versions: ["1.4.1", "1.4.2", "1.4.44-liberty-2"]
+  - purl: pkg:npm/faker
+    # Published 2022-01-05T01:38Z; GHSA-5w9c-rv96-fr7g ("Removal of functional code in faker.js", =6.6.6).
+    versions: ["6.6.6"]
+entities: []
+evidence:
+  # Advisory ids as returned by the npm bulk advisory API for these exact versions.
+  - https://github.com/advisories/GHSA-gh88-3pxp-6fm8
+  - https://github.com/advisories/GHSA-5w9c-rv96-fr7g

@@ -1,0 +1,22 @@
+# event-stream / flatmap-stream (2018). Project-level record only; no individuals are named.
+id: INC-2018-0001
+title: event-stream 3.3.6 depended on flatmap-stream 0.1.1, which contained code targeting a specific wallet application
+type: malicious_handover
+status: confirmed
+# Public disclosure date of the GitHub issue below.
+date: 2018-11-20
+severity: critical
+affected:
+  - purl: pkg:npm/event-stream
+    versions: ["3.3.6"]
+  - purl: pkg:npm/flatmap-stream
+    versions: ["0.1.1"]
+# Publish rights were handed to a new maintainer account shortly before the affected release.
+# TODO(kb-review): add the new maintainer account ref only with a sourced, reviewed entry.
+entities: []
+evidence:
+  - https://github.com/dominictarr/event-stream/issues/116
+  # Per the npm bulk advisory API: GHSA-9x64-5r7x-2q53 (flatmap-stream =0.1.1, CWE-506) and
+  # GHSA-mh6f-8j2x-4483 (event-stream =3.3.6 and flatmap-stream, CWE-506).
+  - https://github.com/advisories/GHSA-9x64-5r7x-2q53
+  - https://github.com/advisories/GHSA-mh6f-8j2x-4483

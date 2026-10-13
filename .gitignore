@@ -14,6 +14,8 @@
 *.7z
 *.dmg
 *.gz
+# Recorded test fixtures are committed even when gzipped (P3 stability control set).
+!blastradius/test/fixtures/**/*.json.gz
 *.iso
 *.jar
 *.rar
@@ -35,3 +37,12 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Local secrets (API keys/tokens shared as text files) - never commit
+secrets/
+*.secret.txt
+*token*.txt
+*key*.txt
+.env
+.env.*
+blastradius/test/replay/out/

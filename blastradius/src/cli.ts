@@ -1,0 +1,294 @@
+#!/usr/bin/env node
+import { notAnalysedLine } from './ingest/manifests.js';
+import { degradedLine, securitySourcesDegraded } from './report/coverage.js';
+import { realpathSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { resolve as resolvePath } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Command, InvalidArgumentError, Option } from 'commander';
+import { defaultCacheDir } from './core/paths.js';
+import { ensureEnvProxy } from './core/proxy.js';
+import { DEFAULT_HTTP_CACHE_MAX_MB } from './core/http.js';
+import type { RiskLevel } from './core/types.js';
+import { ALL_OUTPUT_FORMATS, DEFAULT_KB_DIR, OUTPUT_FORMATS, scan, validateKb, type OutputFormat, type ScanOptions } from './pipeline.js';
+import { failsThreshold, formatSummary } from './summary.js';
+import { parseLicensePolicy } from './licenses/policy.js';
+
+/** Exit code when --fail-on matches (distinct from 1 = error). */
+export const EXIT_POLICY = 2;
+/** Exit code under --strict when some manifest was not analysed (Tier 0: no silent all-clear). */
+export const EXIT_NOT_ANALYSED = 3;
+
+export function parseFormats(value: string): OutputFormat[] {
+  const parts = value
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (parts.length === 1 && parts[0] === 'all') return [...ALL_OUTPUT_FORMATS];
+  const out: OutputFormat[] = [];
+  for (const p of parts) {
+    if (!(ALL_OUTPUT_FORMATS as readonly string[]).includes(p)) {
+      throw new InvalidArgumentError(`unknown format "${p}" (allowed: ${ALL_OUTPUT_FORMATS.join(', ')}, all)`);
+    }
+    if (!out.includes(p as OutputFormat)) out.push(p as OutputFormat);
+  }
+  if (out.length === 0) throw new InvalidArgumentError('no format given');
+  return out;
+}
+
+export function parseAsOf(value: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$/.test(value)) {
+    throw new InvalidArgumentError('expected an ISO date, e.g. 2018-11-27 or 2018-11-27T00:00:00Z');
+  }
+  const d = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);
+  if (Number.isNaN(d.getTime())) throw new InvalidArgumentError(`invalid date "${value}"`);
+  return d;
+}
+
+export function parseHistoryMax(value: string): number {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < 1 || n > 5000) throw new InvalidArgumentError('expected a whole number of repositories from 1 to 5000');
+  return n;
+}
+
+export function parseHistoryMaxMb(value: string): number {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < 50 || n > 1_000_000) throw new InvalidArgumentError('expected a whole number of megabytes from 50 to 1000000');
+  return n;
+}
+
+interface ScanCliOptions {
+  format: OutputFormat[];
+  out: string;
+  offline: boolean;
+  fixtures?: string;
+  cache: boolean;
+  asOf?: Date;
+  kb: string;
+  review?: string;
+  pack?: string;
+  syft: boolean;
+  history: boolean;
+  historyMax?: number;
+  historyMaxMb?: number;
+  cacheMaxMb?: number;
+  agentic: boolean;
+  agenticPeople: boolean;
+  licensePolicy?: string;
+  failOn?: RiskLevel;
+  strict?: boolean;
+  top: string;
+  productName?: string;
+  productVersion?: string;
+}
+
+export interface ProgramIo {
+  stdout?: (s: string) => void;
+  stderr?: (s: string) => void;
+}
+
+export function buildProgram(io: ProgramIo = {}): Command {
+  const out = io.stdout ?? ((s: string) => void process.stdout.write(s));
+  const err = io.stderr ?? ((s: string) => void process.stderr.write(s));
+  const program = new Command();
+  program
+    .name('blastradius')
+    .description('Supply-chain blast-radius auditor. Parses manifests statically; never runs code from scanned repos.')
+    .version('0.1.0');
+
+  program
+    .command('scan')
+    .description('Scan a local directory or git URL and report risky dependencies and their blast radius')
+    .argument('<target>', 'local path or git repository URL (https/ssh; cloned with --depth 1)')
+    .option('--format <formats>', 'comma-separated report formats: json, sarif, html, cyclonedx (CycloneDX 1.6 SBOM), spdx (SPDX 2.3 SBOM), or all', parseFormats, [...OUTPUT_FORMATS])
+    .option('--out <dir>', 'output directory for report files', 'out')
+    .option('--offline', 'no network: answer from fixtures/cache only', false)
+    .option('--fixtures <dir>', 'directory of recorded API responses (implies --offline)')
+    .option(
+      '--no-cache',
+      `disable the on-disk HTTP cache (per-user cache dir ${defaultCacheDir()}: $BLASTRADIUS_CACHE_DIR, else $XDG_CACHE_HOME/blastradius, else ~/.cache/blastradius)`,
+    )
+    .option('--as-of <date>', 'reference time for decay and registry history (backtests), ISO date', parseAsOf)
+    .option('--kb <dir>', 'incident knowledge base directory', DEFAULT_KB_DIR)
+    .option('--pack <file>', 'knowledge pack (pack.json.gz) with the known-bad list; default $BLASTRADIUS_PACK')
+    .option('--review <file>', 'entity-link review decisions (JSON)')
+    .option('--syft', 'also import a Syft SBOM when syft is on PATH', false)
+    .option('--history', 'read the git history of source repositories (blobless clones): contributor absence factor, continuity, signed share', false)
+    .option('--history-max <n>', 'with --history: most repositories read per scan, picked by priority (direct runtime dependencies, then production fan-in); the rest use the Scorecard / registry fallback (default 300)', parseHistoryMax)
+    .option('--history-max-mb <mb>', 'with --history: disk budget of the clone cache in MB; least recently used clones are deleted to stay under it, and a repository larger than its share (budget / 3, at most 300 MB) is skipped (default 600)', parseHistoryMaxMb)
+    .option('--cache-max-mb <mb>', `disk budget of the HTTP response cache in MB; least recently used entries are deleted to stay under it (default ${DEFAULT_HTTP_CACHE_MAX_MB})`, parseHistoryMaxMb)
+    .option('--agentic', 'fill facts the collectors could not find with a Claude agent (needs ANTHROPIC_API_KEY in the environment; every value is verified against its source before it is kept)', false)
+    .option('--agentic-people', 'with --agentic and --history: also collect what contributors published on their own public profiles (person-level data, removable on request, shown only to project managers; never nationality or country)', false)
+    .option('--license-policy <file>', 'licence policy JSON for the HTML report (default: permissive allowed, everything else needs review)')
+    .addOption(new Option('--fail-on <level>', `exit with code ${EXIT_POLICY} if any finding (including outbound workflow findings) is at or above this level`).choices(['critical', 'high']))
+    .option('--top <n>', 'findings to list in the terminal summary', '5')
+    .option('--product-name <name>', 'product name for the SBOMs (CycloneDX metadata.component, SPDX root package); default: the repository or directory name')
+    .option('--product-version <version>', 'product version for the SBOMs')
+    .option('--strict', `exit with code ${EXIT_NOT_ANALYSED} when any manifest or lockfile was found but not analysed (unsupported format, no lockfile, unresolved entries), or a security source (OSV) failed or answered only in part`, false)
+    .action(async (target: string, o: ScanCliOptions) => {
+      const offline = o.offline || o.fixtures !== undefined || process.env.BLASTRADIUS_OFFLINE === '1';
+      const opts: ScanOptions = {
+        target,
+        formats: o.format,
+        outDir: o.out,
+        offline,
+        kbDir: o.kb,
+        syft: o.syft,
+        history: o.history ? (o.historyMax !== undefined || o.historyMaxMb !== undefined ? { ...(o.historyMax !== undefined ? { maxRepos: o.historyMax } : {}), ...(o.historyMaxMb !== undefined ? { maxMb: o.historyMaxMb } : {}) } : true) : false,
+        agentic: o.agentic ? (o.agenticPeople ? { personTasks: true } : true) : false,
+        log: (m) => err(`… ${m}\n`),
+      };
+      if (o.fixtures !== undefined) opts.fixturesDir = o.fixtures;
+      if (!o.cache) opts.cacheDir = false;
+      if (o.cacheMaxMb !== undefined) opts.cacheMaxMb = o.cacheMaxMb;
+      if (o.asOf) opts.now = o.asOf;
+      if (o.review) opts.reviewFile = o.review;
+      if (o.pack) opts.packFile = o.pack;
+      if (o.productName || o.productVersion) opts.product = { ...(o.productName ? { name: o.productName } : {}), ...(o.productVersion ? { version: o.productVersion } : {}) };
+      if (o.licensePolicy) opts.licensePolicy = parseLicensePolicy(JSON.parse(await readFile(o.licensePolicy, 'utf8')));
+      const { result, files } = await scan(opts);
+      const top = Math.max(0, Math.min(100, Number.parseInt(o.top, 10) || 5));
+      out(formatSummary(result, { top, files }));
+      if (o.failOn && failsThreshold(result, o.failOn)) {
+        err(`blastradius: findings at or above "${o.failOn}" (--fail-on)\n`);
+        process.exitCode = EXIT_POLICY;
+      }
+      if (o.strict && (result.notAnalysed?.length ?? 0) > 0) {
+        err(`blastradius: ${notAnalysedLine(result.notAnalysed!)} (--strict)\n`);
+        if (!process.exitCode) process.exitCode = EXIT_NOT_ANALYSED;
+      }
+      const security = securitySourcesDegraded(result);
+      if (o.strict && security.length > 0) {
+        err(`blastradius: ${degradedLine(security)} (--strict)\n`);
+        if (!process.exitCode) process.exitCode = EXIT_NOT_ANALYSED;
+      }
+    });
+
+  const kb = program.command('kb').description('Incident knowledge base tools');
+  kb.command('validate')
+    .description('Validate incident YAML files')
+    .argument('[dir]', 'directory of incident YAML files', DEFAULT_KB_DIR)
+    .action(async (dir: string) => {
+      const res = await validateKb(dir);
+      for (const e of res.errors) err(`${e.file}: ${e.message}\n`);
+      out(`${res.files} file(s) checked, ${res.errors.length} error(s)\n`);
+      if (!res.ok) process.exitCode = 1;
+    });
+
+  program
+    .command('serve')
+    .description('Start the web app and API (binds to 127.0.0.1 by default). Scans never execute repository code.')
+    .option('--port <port>', 'port to listen on', parsePort, 8000)
+    .option('--host <host>', 'interface to bind (use 0.0.0.0 only behind TLS)', '127.0.0.1')
+    .option('--db <path>', 'SQLite database file (default: in memory, lost on exit)')
+    .option('--dev', 'dev mode: seeded users and the role switcher', false)
+    .option('--dev-seed', 'dev mode plus a demo project scanned offline from test/fixtures (implies --dev)', false)
+    .option('--offline', 'no network for scans: answer from fixtures/cache only', false)
+    .option('--fixtures <dir>', 'directory of recorded API responses for offline scans (implies --offline)')
+    .option('--as-of <date>', 'reference time for every scan (offline demos), ISO date', parseAsOf)
+    .option('--allow-local-root <dir>', 'root under which local paths may be scanned (repeatable; default: $BLASTRADIUS_SCAN_ROOT or the cwd)', collect, [])
+    .option('--web <dir>', 'built web app directory (default: web/dist next to the package)')
+    .option('--concurrency <n>', 'scans run at once (1-4)', parseConcurrency, 2)
+    .option('--agentic', 'scans also run the agentic gap-filler (needs ANTHROPIC_API_KEY in the environment); proposals appear under Proposed facts', false)
+    .option('--no-history', 'do not read git history in the background after online scans (stability then uses the Scorecard / npm fallback only)')
+    .option('--history-max <n>', 'background git history: most repositories read per scan, by priority (default 300)', parseHistoryMax)
+    .option('--history-max-mb <mb>', 'background git history: disk budget of the clone cache in MB (default 600)', parseHistoryMaxMb)
+    .option('--cache-max-mb <mb>', `disk budget of the HTTP response cache in MB, least recently used entries deleted first (default ${DEFAULT_HTTP_CACHE_MAX_MB})`, parseHistoryMaxMb)
+    .option(
+      '--trust-proxy <ips>',
+      'comma-separated reverse proxy addresses whose X-Forwarded-For / X-Forwarded-Proto are honoured (default: $BLASTRADIUS_TRUST_PROXY, else none)',
+      parseAddressList,
+    )
+    .action(async (o: ServeCliOptions) => {
+      const { serve } = await import('./server/serve.js');
+      const offline = o.offline || o.fixtures !== undefined || process.env.BLASTRADIUS_OFFLINE === '1';
+      const trustProxy = o.trustProxy ?? parseAddressList(process.env.BLASTRADIUS_TRUST_PROXY ?? '');
+      await serve({
+        port: o.port,
+        host: o.host,
+        ...(o.db !== undefined ? { dbPath: o.db } : {}),
+        devMode: o.dev || o.devSeed,
+        devSeed: o.devSeed,
+        offline,
+        ...(o.fixtures !== undefined ? { fixturesDir: resolvePath(o.fixtures) } : {}),
+        ...(o.asOf ? { asOf: o.asOf } : {}),
+        ...(o.allowLocalRoot.length > 0 ? { localRoots: o.allowLocalRoot.map((d) => resolvePath(d)) } : {}),
+        ...(o.web !== undefined ? { webDir: resolvePath(o.web) } : {}),
+        concurrency: o.concurrency,
+        history: o.history ? { ...(o.historyMax !== undefined ? { maxRepos: o.historyMax } : {}), ...(o.historyMaxMb !== undefined ? { maxMb: o.historyMaxMb } : {}) } : false,
+        ...(o.agentic || o.cacheMaxMb !== undefined ? { scanOptions: { ...(o.agentic ? { agentic: true } : {}), ...(o.cacheMaxMb !== undefined ? { cacheMaxMb: o.cacheMaxMb } : {}) } } : {}),
+        ...(trustProxy.length > 0 ? { trustProxy } : {}),
+        log: (m) => err(`${m}\n`),
+      });
+    });
+
+  return program;
+}
+
+interface ServeCliOptions {
+  history: boolean;
+  historyMax?: number;
+  historyMaxMb?: number;
+  cacheMaxMb?: number;
+  port: number;
+  host: string;
+  db?: string;
+  dev: boolean;
+  devSeed: boolean;
+  offline: boolean;
+  fixtures?: string;
+  asOf?: Date;
+  allowLocalRoot: string[];
+  web?: string;
+  concurrency: number;
+  agentic: boolean;
+  trustProxy?: string[];
+}
+
+/** Comma-separated address list (--trust-proxy, $BLASTRADIUS_TRUST_PROXY). */
+export function parseAddressList(value: string): string[] {
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function parsePort(value: string): number {
+  const n = Number(value);
+  if (!/^\d{1,5}$/.test(value) || n < 0 || n > 65535) throw new InvalidArgumentError('expected a port number 0-65535');
+  return n;
+}
+
+function parseConcurrency(value: string): number {
+  const n = Number(value);
+  if (!/^\d$/.test(value) || n < 1 || n > 4) throw new InvalidArgumentError('expected 1-4');
+  return n;
+}
+
+function collect(value: string, previous: string[]): string[] {
+  return [...previous, value];
+}
+
+function isMain(): boolean {
+  const argv1 = process.argv[1];
+  if (!argv1) return false;
+  try {
+    return realpathSync(argv1) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain()) {
+  // Node's fetch ignores HTTPS_PROXY/HTTP_PROXY on its own; route it through them (NO_PROXY respected).
+  ensureEnvProxy()
+    .catch((e: unknown) => {
+      process.stderr.write(`blastradius: could not set up the HTTPS_PROXY/HTTP_PROXY dispatcher: ${(e as Error).message}\n`);
+      return false;
+    })
+    .then(() => buildProgram().parseAsync(process.argv))
+    .catch((e: unknown) => {
+      process.stderr.write(`blastradius: ${(e as Error).message}\n`);
+      process.exitCode = 1;
+    });
+}

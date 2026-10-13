@@ -1,0 +1,41 @@
+{
+ "_id": "flatmap-stream",
+ "name": "flatmap-stream",
+ "versions": {
+  "0.1.1": {
+   "name": "flatmap-stream",
+   "version": "0.1.1",
+   "_npmUser": {
+    "name": "right9ctrl"
+   },
+   "maintainers": [
+    {
+     "email": "npm@npmjs.com",
+     "name": "npm"
+    }
+   ],
+   "dependencies": {},
+   "_replay": {
+    "reconstructed": true,
+    "reason": "unpublished by npm; rebuilt from the advisory",
+    "source": "https://github.com/advisories/GHSA-9x64-5r7x-2q53",
+    "provenance": null
+   }
+  }
+ },
+ "time": {
+  "created": "2018-11-29T16:56:02.864Z",
+  "modified": "2022-05-02T14:26:06.405Z",
+  "0.1.1": "2018-09-09T00:00:00.000Z"
+ },
+ "maintainers": [
+  {
+   "email": "npm@npmjs.com",
+   "name": "npm"
+  }
+ ],
+ "repository": {
+  "type": "git",
+  "url": "git+https://github.com/npm/security-holder.git"
+ }
+}

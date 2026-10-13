@@ -1,0 +1,106 @@
+{
+  "_note": "Hand-authored from the documented OSV API shape (POST /v1/querybatch returns ids + modified only); api.osv.dev is not reachable from the recording environment. Query order = npm components sorted by purl. Advisory mapping follows the public GHSA records referenced in the GHSA-*.json fixtures; packages without an entry had no OSV advisory for that version at the time of writing. Inventory: test/backtest/repos/event-stream-2018.",
+  "request": {
+    "url": "https://api.osv.dev/v1/querybatch",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "package": {
+            "name": "duplexer",
+            "ecosystem": "npm"
+          },
+          "version": "0.1.1"
+        },
+        {
+          "package": {
+            "name": "event-stream",
+            "ecosystem": "npm"
+          },
+          "version": "3.3.6"
+        },
+        {
+          "package": {
+            "name": "flatmap-stream",
+            "ecosystem": "npm"
+          },
+          "version": "0.1.1"
+        },
+        {
+          "package": {
+            "name": "from",
+            "ecosystem": "npm"
+          },
+          "version": "0.1.7"
+        },
+        {
+          "package": {
+            "name": "map-stream",
+            "ecosystem": "npm"
+          },
+          "version": "0.0.7"
+        },
+        {
+          "package": {
+            "name": "pause-stream",
+            "ecosystem": "npm"
+          },
+          "version": "0.0.11"
+        },
+        {
+          "package": {
+            "name": "split",
+            "ecosystem": "npm"
+          },
+          "version": "1.0.1"
+        },
+        {
+          "package": {
+            "name": "stream-combiner",
+            "ecosystem": "npm"
+          },
+          "version": "0.2.2"
+        },
+        {
+          "package": {
+            "name": "through",
+            "ecosystem": "npm"
+          },
+          "version": "2.3.8"
+        }
+      ]
+    }
+  },
+  "status": 200,
+  "response": {
+    "results": [
+      {},
+      {
+        "vulns": [
+          {
+            "id": "GHSA-mh6f-8j2x-4483",
+            "modified": "2023-11-08T03:57:44.646612Z"
+          }
+        ]
+      },
+      {
+        "vulns": [
+          {
+            "id": "GHSA-9x64-5r7x-2q53",
+            "modified": "2023-11-08T03:57:44.646612Z"
+          },
+          {
+            "id": "GHSA-mh6f-8j2x-4483",
+            "modified": "2023-11-08T03:57:44.646612Z"
+          }
+        ]
+      },
+      {},
+      {},
+      {},
+      {},
+      {},
+      {}
+    ]
+  }
+}

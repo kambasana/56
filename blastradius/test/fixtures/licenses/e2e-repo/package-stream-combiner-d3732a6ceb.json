@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T02:45:09.827Z by test/licenses/record.ts; response trimmed to the fields the licences enricher reads.",
+"request": {"url":"https://api.deps.dev/v3/systems/npm/packages/stream-combiner"},
+"status": 200,
+"response": {"packageKey":{"system":"NPM","name":"stream-combiner"},"versions":[{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.0.0"},"publishedAt":"2012-11-27T07:24:49Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.0.1"},"publishedAt":"2013-01-31T21:17:59Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.0.2"},"publishedAt":"2013-03-18T01:18:20Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.0.4"},"publishedAt":"2013-12-11T17:01:21Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.1.0"},"publishedAt":"2014-05-09T10:54:26Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.2.0"},"publishedAt":"2014-05-18T08:20:50Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.2.1"},"publishedAt":"2014-05-29T20:11:38Z"},{"versionKey":{"system":"NPM","name":"stream-combiner","version":"0.2.2"},"publishedAt":"2015-06-05T08:49:04Z"}]}
+}

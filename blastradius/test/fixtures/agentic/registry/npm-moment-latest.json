@@ -1,0 +1,37 @@
+{
+  "request": {
+    "url": "https://registry.npmjs.org/moment/latest"
+  },
+  "response": {
+    "name": "moment",
+    "version": "2.31.0",
+    "description": "Parse, validate, manipulate, and display dates",
+    "homepage": "https://momentjs.com",
+    "repository": {
+      "url": "github:moment/moment",
+      "type": "git"
+    },
+    "license": "MIT",
+    "maintainers": [
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      },
+      {
+        "name": "[removed]"
+      }
+    ]
+  },
+  "_note": "Recorded 2026-10-11T21:13:59.662Z from the npm registry; trimmed to the fields npm_package reads, maintainer names removed (count kept)."
+}

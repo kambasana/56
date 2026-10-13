@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T02:47:36.288156Z with curl; response trimmed to the field the licences enricher reads (license).",
+"request": {"url": "https://api.deps.dev/v3/projects/github.com%2Factions%2Fcheckout"},
+"status": 200,
+"response": {"projectKey": {"id": "github.com/actions/checkout"}, "license": "MIT"}
+}

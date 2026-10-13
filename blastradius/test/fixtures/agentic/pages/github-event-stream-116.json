@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://github.com/dominictarr/event-stream/issues/116"
+  },
+  "status": 403,
+  "response": "",
+  "_blocked": "HTTP 403 at 2026-10-11T21:04:04.821Z",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}

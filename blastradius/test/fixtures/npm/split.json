@@ -1,0 +1,583 @@
+{
+  "note": "Recorded from the live registry on 2026-10-06 and trimmed to the last 20 versions and the fields the npm enricher reads. Email addresses were removed (data minimisation).",
+  "request": {
+    "url": "https://registry.npmjs.org/split"
+  },
+  "response": {
+    "_id": "split",
+    "name": "split",
+    "description": "split a Text Stream into a Line Stream",
+    "dist-tags": {
+      "latest": "1.0.1"
+    },
+    "maintainers": [
+      {
+        "name": "nopersonsmodules"
+      }
+    ],
+    "repository": {
+      "url": "git://github.com/dominictarr/split.git",
+      "type": "git"
+    },
+    "time": {
+      "created": "2012-08-30T14:21:55.557Z",
+      "modified": "2026-09-07T20:44:12.115Z",
+      "0.0.0": "2012-08-30T14:21:57.957Z",
+      "0.1.0": "2012-08-30T14:37:53.053Z",
+      "0.1.1": "2013-01-06T10:24:50.760Z",
+      "0.1.2": "2013-01-23T00:07:27.593Z",
+      "0.2.0": "2013-02-05T07:14:33.746Z",
+      "0.2.1": "2013-02-14T23:19:03.153Z",
+      "0.2.3": "2013-04-11T08:58:24.117Z",
+      "0.2.4": "2013-04-12T15:27:07.809Z",
+      "0.2.5": "2013-04-25T16:18:29.114Z",
+      "0.2.6": "2013-07-11T07:12:00.385Z",
+      "0.2.7": "2013-08-06T16:03:52.085Z",
+      "0.2.8": "2013-08-06T16:05:21.343Z",
+      "0.2.9": "2013-08-07T08:46:01.975Z",
+      "0.2.10": "2013-08-07T08:48:33.572Z",
+      "0.3.0": "2014-01-29T18:11:50.069Z",
+      "0.3.1": "2014-11-03T16:41:06.661Z",
+      "0.3.2": "2014-12-02T14:06:56.546Z",
+      "0.3.3": "2015-02-02T10:08:33.385Z",
+      "1.0.0": "2015-05-24T17:07:19.889Z",
+      "1.0.1": "2017-08-03T08:03:58.517Z"
+    },
+    "versions": {
+      "0.0.0": {
+        "name": "split",
+        "version": "0.0.0",
+        "dependencies": {
+          "through": "0.0.4"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.0.0.tgz",
+          "integrity": "sha512-O2rc+VspibjIbhCXDgzu2QHPl+hvnHB3xUEsFuBcUEoZ7gQc1kUfmlXJ2brGk++h9KL7jp7rbGthfqmFmGOOKQ=="
+        }
+      },
+      "0.1.0": {
+        "name": "split",
+        "version": "0.1.0",
+        "dependencies": {
+          "through": "0.0.4"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.1.0.tgz",
+          "integrity": "sha512-csgBh5/AlXXY/4a+2f9GLXdcg8AkEJhDtLbvjjDKV9+lUanzVL9EvaGkdTJpSXDgCpbQQM6xMrgmUMRHessTqg=="
+        }
+      },
+      "0.1.1": {
+        "name": "split",
+        "version": "0.1.1",
+        "dependencies": {
+          "through": "1"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.1.1.tgz",
+          "integrity": "sha512-cODlXI2fzUuWMk+FoBq3xFjq1CWHYexjcE4oPO737pqO27oQPfj9nrNxHumpwyWbMCu8mIQxRL5dlsQsci2J+A=="
+        }
+      },
+      "0.1.2": {
+        "name": "split",
+        "version": "0.1.2",
+        "dependencies": {
+          "through": "1"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.1.2.tgz",
+          "integrity": "sha512-KovAcDCS2xGeulhU2zVUUglt9/M6yIZVtKqsT0uOaA0UuEyUrxQoC5EhVt5doxVyodJ6trD3Q79fbIiD6bqb4g=="
+        }
+      },
+      "0.2.0": {
+        "name": "split",
+        "version": "0.2.0",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.0.tgz",
+          "integrity": "sha512-oo46t5f23u/XV2AKma9KjzT4teGqo17QNIgMWOlEhlO7Uj/Uj5zi11BWczL5cg7e0gmvziEWBLW4eT5xsF+UUQ=="
+        }
+      },
+      "0.2.1": {
+        "name": "split",
+        "version": "0.2.1",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.1.tgz",
+          "integrity": "sha512-SvL/RGpGWGaCDcptF6i4vidfPoqgho4TiKLdrQgUPKwrjo7MS3bRtE5/MlN72yx3AiEwSKwNUJ/L4/x708db6A=="
+        }
+      },
+      "0.2.3": {
+        "name": "split",
+        "version": "0.2.3",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.3.tgz",
+          "integrity": "sha512-neCmc9+6oMeHZdmxEcL9J6867vhCo77RNG0zMj09QdB3c+GtEI0g3L+iuXC+mVp0WRIn2sSI1sIa9ert46zhZg=="
+        }
+      },
+      "0.2.4": {
+        "name": "split",
+        "version": "0.2.4",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.4.tgz",
+          "integrity": "sha512-xKdjCc2bLX4/QQVtRnxXUguak+giT2vQkDNrSAMb/0af5vSb1rC0PxdlNnKdDonWZ6RBJ0FZ/W40Gddrx36lUA=="
+        }
+      },
+      "0.2.5": {
+        "name": "split",
+        "version": "0.2.5",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.5.tgz",
+          "integrity": "sha512-c0vI3T2x/Umt9pH7hGopjUCCRc12ilJCDhYmtP0fg7iwRqLxGo2YOMZCBKMj25jo+tdjoBrJ8sfljEOwtAZhkQ=="
+        }
+      },
+      "0.2.6": {
+        "name": "split",
+        "version": "0.2.6",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.6.tgz",
+          "integrity": "sha512-m5TyfBcIHJCLMdRvV3g1sS/pSQNzq6qu5ydRJVU/vN4UVyU1MCcUuEVm969UL/aQcLhDMqwx1gqC/jVP7TJZ7g=="
+        }
+      },
+      "0.2.7": {
+        "name": "split",
+        "version": "0.2.7",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.7.tgz",
+          "integrity": "sha512-3nVRQr527C/dFAalVUJD85e13PEnQ8eedvd1+PDY540angq+bYm7IMjFwv/RVJzAmvsXoY7MDKpiSdD3DQMceQ=="
+        }
+      },
+      "0.2.8": {
+        "name": "split",
+        "version": "0.2.8",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.8.tgz",
+          "integrity": "sha512-xwaneRx1Aqh2wcftC67EkhNB1/V0K3kS6fujAXPhRxbOFULiOj/aOm6KFIYH2dwOT32seSi/vUpzOIZNv17w9w=="
+        }
+      },
+      "0.2.9": {
+        "name": "split",
+        "version": "0.2.9",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.9.tgz",
+          "integrity": "sha512-N2ARbPSBXWG4B6yxXdLtZTA3Hkwn8YtNRF3H8SS7L41ibL+I+bWH0D26/ZyxouCW0dqGAVGflIeCOwSVL0EMmg=="
+        }
+      },
+      "0.2.10": {
+        "name": "split",
+        "version": "0.2.10",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.2.10.tgz",
+          "integrity": "sha512-e0pKq+UUH2Xq/sXbYpZBZc3BawsfDZ7dgv+JtRTUPNcvF5CMR4Y9cvJqkMY0MoxWzTHvZuz1beg6pNEKlszPiQ=="
+        }
+      },
+      "0.3.0": {
+        "name": "split",
+        "version": "0.3.0",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.3.0.tgz",
+          "integrity": "sha512-5Nm8iS/ee4hkv0yRdMQR5ugMzfGY/IpLTAdSgSbSvVXFTCyNchNxfYIzBE7Hy+W62luXpOngjxypiL9QyNWkhg=="
+        }
+      },
+      "0.3.1": {
+        "name": "split",
+        "version": "0.3.1",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.3.1.tgz",
+          "integrity": "sha512-hCHXkQDs1HFKRsrT9EutGT1hmjS1FW1Aei8dk/CxrT7mslcMtAxbiv8LYA/AYDvjB6h9rSXgW8zAZwg20tKMTw=="
+        }
+      },
+      "0.3.2": {
+        "name": "split",
+        "version": "0.3.2",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.3.2.tgz",
+          "integrity": "sha512-msIn6RYPI0Vj4LmUdViUvckpH9VCdrhYaLBZUV0pyOeB8DObl2iUveXi2OL0iQ87Z/Eix2x7biiV8SMeREZq8g=="
+        }
+      },
+      "0.3.3": {
+        "name": "split",
+        "version": "0.3.3",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-0.3.3.tgz",
+          "integrity": "sha512-wD2AeVmxXRBoX44wAycgjVpMhvbwdI2aZjCkvfNcH1YqHQvJVa1duWc73OyVGJUc05fhFaTZeQ/PYsrmyH0JVA=="
+        }
+      },
+      "1.0.0": {
+        "name": "split",
+        "version": "1.0.0",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-1.0.0.tgz",
+          "integrity": "sha512-3SVfJe2A0WZg3D+ZEtXqYkvpSGAVaZ1MgufNCeHioBESCqQFsuT1VcQufiopBfJZqh92ZwQ6ddL378iUSbqVNQ=="
+        }
+      },
+      "1.0.1": {
+        "name": "split",
+        "version": "1.0.1",
+        "dependencies": {
+          "through": "2"
+        },
+        "optionalDependencies": {},
+        "scripts": {
+          "test": "asynct test/"
+        },
+        "_npmUser": {
+          "name": "dominictarr"
+        },
+        "maintainers": [
+          {
+            "name": "dominictarr"
+          }
+        ],
+        "repository": {
+          "url": "git://github.com/dominictarr/split.git",
+          "type": "git"
+        },
+        "dist": {
+          "tarball": "https://registry.npmjs.org/split/-/split-1.0.1.tgz",
+          "integrity": "sha512-mTyOoPbrivtXnwnIxZRFYRrPNtEFKlpB2fvjSnCQUiAA6qAZzqwna5envK4uk6OIeP17CsdF3rSBGYVBsU0Tkg=="
+        }
+      }
+    }
+  }
+}

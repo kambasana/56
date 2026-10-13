@@ -1,0 +1,9 @@
+{
+  "request": {
+    "url": "https://openjsf.org/projects"
+  },
+  "status": 200,
+  "response": "<!doctype html><html><head><title>Projects | OpenJS Foundation</title></head><body>\n<h3>Express</h3></div><p>Express is a minimal and flexible Node.js web application framework that provides a robust set of features for web and mobile applications.\n</body></html>",
+  "_note": "Trimmed by test/agentic/record.ts: 1 segment(s) of the live page; scripts, styles, attributes and personal data removed.",
+  "_recordedAt": "2026-10-11T21:04:04.821Z"
+}
