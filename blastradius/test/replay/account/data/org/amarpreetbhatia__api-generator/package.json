@@ -1,0 +1,54 @@
+{
+  "name": "api-generator",
+  "version": "0.1.0",
+  "description": "CLI to scaffold a lightweight Node.js + TypeScript + Express microservice with Winston logging and config.",
+  "bin": {
+    "api-generator": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "ts-node-dev --transpile-only --respawn src/index.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "cli",
+    "generator",
+    "express",
+    "typescript",
+    "winston",
+    "microservice"
+  ],
+  "author": "Amarpreet Bhatia <>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amarpreetbhatia/api-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amarpreetbhatia/api-generator/issues"
+  },
+  "homepage": "https://github.com/amarpreetbhatia/api-generator#readme",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "inquirer": "^9.2.23"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
+

@@ -1,0 +1,94 @@
+{
+ "_id": "peacenotwar",
+ "name": "peacenotwar",
+ "versions": {
+  "9.1.5": {
+   "name": "peacenotwar",
+   "version": "9.1.5",
+   "_npmUser": {
+    "name": "riaevangelist",
+    "email": "brandon@diginow.it"
+   },
+   "maintainers": [
+    {
+     "name": "riaevangelist",
+     "email": "brandon@diginow.it"
+    }
+   ],
+   "scripts": {
+    "prepare": "esbuild index.js --bundle --format=cjs --target=es2018 --platform=node --outfile=index.cjs",
+    "test": "echo \"Lovin' You! Peace not War, Forgive them. ♥\" && node test.js && exit 1"
+   },
+   "dependencies": {},
+   "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RIAEvangelist/peacenotwar.git"
+   },
+   "dist": {}
+  },
+  "9.1.6": {
+   "name": "peacenotwar",
+   "version": "9.1.6",
+   "_npmUser": {
+    "name": "riaevangelist",
+    "email": "brandon@diginow.it"
+   },
+   "maintainers": [
+    {
+     "name": "riaevangelist",
+     "email": "brandon@diginow.it"
+    }
+   ],
+   "scripts": {
+    "test": "echo \"Lovin' You! Peace not War, Forgive them. ♥\" && node test.js && exit 1"
+   },
+   "dependencies": {},
+   "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RIAEvangelist/peacenotwar.git"
+   },
+   "dist": {}
+  },
+  "9.1.7": {
+   "name": "peacenotwar",
+   "version": "9.1.7",
+   "_npmUser": {
+    "name": "riaevangelist",
+    "email": "brandon@diginow.it"
+   },
+   "maintainers": [
+    {
+     "name": "riaevangelist",
+     "email": "brandon@diginow.it"
+    }
+   ],
+   "scripts": {
+    "prepare": "esbuild index.js --bundle --format=cjs --target=es5 --platform=node --outfile=index.cjs",
+    "test": "echo \"Lovin' You! Peace not War, Forgive them. ♥\" && node test.js && exit 1"
+   },
+   "dependencies": {},
+   "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RIAEvangelist/peacenotwar.git"
+   },
+   "dist": {}
+  }
+ },
+ "time": {
+  "created": "2022-03-08T16:38:45.605Z",
+  "modified": "2022-05-12T18:25:52.149Z",
+  "9.1.5": "2022-03-15T04:39:10.435Z",
+  "9.1.6": "2022-03-15T05:29:55.742Z",
+  "9.1.7": "2022-03-18T09:30:02.793Z"
+ },
+ "maintainers": [
+  {
+   "name": "riaevangelist",
+   "email": "brandon@diginow.it"
+  }
+ ],
+ "repository": {
+  "type": "git",
+  "url": "git+https://github.com/RIAEvangelist/peacenotwar.git"
+ }
+}
