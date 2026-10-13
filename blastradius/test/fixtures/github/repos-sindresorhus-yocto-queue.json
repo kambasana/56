@@ -1,0 +1,41 @@
+{
+  "note": "Shape follows GET /repos/{owner}/{repo} (https://docs.github.com/en/rest/repos/repos#get-a-repository); api.github.com is not reachable from the recording environment, so ids/timestamps are illustrative.",
+  "request": {
+    "url": "https://api.github.com/repos/sindresorhus/yocto-queue"
+  },
+  "response": {
+    "id": 315603392,
+    "name": "yocto-queue",
+    "full_name": "sindresorhus/yocto-queue",
+    "private": false,
+    "owner": {
+      "login": "sindresorhus",
+      "id": 170270,
+      "type": "User",
+      "site_admin": false,
+      "html_url": "https://github.com/sindresorhus"
+    },
+    "html_url": "https://github.com/sindresorhus/yocto-queue",
+    "description": "Tiny queue data structure",
+    "fork": false,
+    "url": "https://api.github.com/repos/sindresorhus/yocto-queue",
+    "created_at": "2020-11-24T10:00:00Z",
+    "updated_at": "2026-09-20T10:00:00Z",
+    "pushed_at": "2025-11-11T06:32:00Z",
+    "homepage": null,
+    "stargazers_count": 400,
+    "watchers_count": 400,
+    "language": "JavaScript",
+    "has_issues": true,
+    "forks_count": 20,
+    "archived": false,
+    "disabled": false,
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT"
+    },
+    "visibility": "public",
+    "default_branch": "main"
+  }
+}
