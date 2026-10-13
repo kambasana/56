@@ -1,0 +1,8 @@
+assets:
+  - path: .
+    criticality: 4
+  - path: packages/web
+    environment: prod
+    criticality: 5
+  - path: .github/workflows/release.yml
+    criticality: 5
