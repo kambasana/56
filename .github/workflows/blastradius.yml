@@ -48,6 +48,23 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
+      # Refactor gate (docs/REFACTOR.md). npm test already runs the golden check; this step prints the full diff.
+      - name: Golden outputs (recorded scans; undeclared differences fail)
+        run: npm run golden:check
+      - name: Check out main's known-violation lists (base of the boundary ratchet)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          path: ratchet-base
+          persist-credentials: false
+          sparse-checkout: |
+            blastradius/.dependency-cruiser-known-violations.json
+            blastradius/.boundaries-known.json
+          sparse-checkout-cone-mode: false
+      - name: Import boundaries (dependency-cruiser ratchet; the known list may only shrink)
+        run: npm run boundaries -- --against ../ratchet-base/blastradius
+      - name: Licences of both packages (allow-list plus reviewed exceptions)
+        run: npm run license-check
       - run: npm run build
       - name: Validate incident knowledge base
         run: node dist/cli.js kb validate

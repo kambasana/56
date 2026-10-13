@@ -20,7 +20,14 @@
     "hammer:quick": "npm run build && tsx test/hammer/run.ts --skip-scale",
     "pack:build": "tsx src/pack/main.ts",
     "proof": "tsx test/replay/proof.ts",
-    "proof:account": "tsx test/replay/account/proof-account.ts"
+    "proof:account": "tsx test/replay/account/proof-account.ts",
+    "golden:check": "tsx test/golden/run.ts --check",
+    "golden:update": "tsx test/golden/run.ts --update",
+    "golden:determinism": "tsx test/golden/run.ts --determinism",
+    "boundaries": "depcruise --validate .dependency-cruiser.cjs --ignore-known --output-type err src web/src && tsx tools/boundaries.ts",
+    "boundaries:baseline": "depcruise-baseline --config .dependency-cruiser.cjs src web/src",
+    "boundaries:update": "tsx tools/boundaries.ts --update",
+    "license-check": "tsx tools/licenses.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
@@ -36,10 +43,12 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@swc/core": "1.16.2",
     "@types/node": "^26.6.4",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "ajv-formats-draft2019": "1.6.1",
+    "dependency-cruiser": "18.4.0",
     "spdx-satisfies": "6.0.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

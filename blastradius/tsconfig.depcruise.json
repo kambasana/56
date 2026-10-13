@@ -1,0 +1,10 @@
+{
+  "//": "Module resolution for dependency-cruiser only (.dependency-cruiser.cjs): the web app's aliases from web/tsconfig.json and web/vite.config.ts, with a baseUrl so one config resolves the engine and the web app.",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@server/*": ["src/server/*"],
+      "@/*": ["web/src/*"]
+    }
+  }
+}
