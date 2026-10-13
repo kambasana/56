@@ -8,18 +8,22 @@
  * of a dev dependency is dev). The scope of a package is the strongest scope over all its paths,
  * so a package that is both a runtime and a dev dependency is runtime.
  *
- * Strength, strongest first: runtime > peer > optional > ci > dev > unreachable.
+ * Strength, strongest first: runtime > peer > optional > extra > ci > dev > unreachable.
  *
  * - runtime: shipped and loaded in production.
  * - peer: only reached as a peer dependency. npm 7 and later install peer dependencies, so it is
  *   in the production install (Tier 0.5).
- * - optional: only reached through optional dependencies. npm installs optionalDependencies by
+ * - optional: only reached through npm optional dependencies. npm installs optionalDependencies by
  *   default (`--omit=optional` is opt-in); only the platform decides whether one is present
  *   (fsevents on macOS), so it is in the production install, labelled "optional
  *   (platform-dependent)" (Tier 0.5: parse-server's uuid@9.0.1 under firebase-admin, an optional
  *   dependency of @parse/push-adapter, is installed in production).
  *
  * Production = runtime, peer and optional: what `npm ci --omit=dev` installs. dev and ci never are.
+ * - extra (Tier 0.6): only reached through a Python extra ([project.optional-dependencies], Poetry
+ *   `optional = true`). pip installs extras only on request (`pip install flask[async]`), so an
+ *   extra is not production (flask's asgiref and python-dotenv). npm optional dependencies stay
+ *   production.
  * - ci: the build environment: GitHub Actions, Docker build stages.
  * - dev: tests, linters, bundlers: only reached through dev dependencies or dev/test projects.
  * - unreachable: in a lockfile, but no path from any asset reaches it.
@@ -28,16 +32,16 @@
  */
 import type { Asset, DepEdge, DepScope, Inventory, PurlString } from './types.js';
 
-export const COMPONENT_SCOPES = ['runtime', 'peer', 'optional', 'ci', 'dev', 'unreachable'] as const;
+export const COMPONENT_SCOPES = ['runtime', 'peer', 'optional', 'extra', 'ci', 'dev', 'unreachable'] as const;
 export type ComponentScope = (typeof COMPONENT_SCOPES)[number];
 
 /** Strength: higher is closer to production. */
-const STRENGTH: Readonly<Record<ComponentScope, number>> = Object.freeze({ runtime: 5, peer: 4, optional: 3, ci: 2, dev: 1, unreachable: 0 });
+const STRENGTH: Readonly<Record<ComponentScope, number>> = Object.freeze({ runtime: 6, peer: 5, optional: 4, extra: 3, ci: 2, dev: 1, unreachable: 0 });
 
-/** Sort tier for production-first views: 0 = runtime first, 5 = unreachable last. */
+/** Sort tier for production-first views: 0 = runtime first, 6 = unreachable last. */
 export function scopeTier(scope: ComponentScope | undefined): number {
   // Results stored before scopes existed have none: keep them where they were (first tier).
-  return scope === undefined ? 0 : 5 - STRENGTH[scope];
+  return scope === undefined ? 0 : 6 - STRENGTH[scope];
 }
 
 export function scopeStrength(scope: ComponentScope): number {
@@ -79,6 +83,7 @@ export const SCOPE_LABEL: Readonly<Record<ComponentScope, string>> = Object.free
   runtime: 'runtime',
   peer: 'peer',
   optional: 'optional (platform-dependent)',
+  extra: 'extra (installed only on request)',
   ci: 'CI / build',
   dev: 'dev / test',
   unreachable: 'not reached',
@@ -93,6 +98,8 @@ export function edgeScope(scope: DepScope): ComponentScope {
       return 'peer';
     case 'optional':
       return 'optional';
+    case 'extra':
+      return 'extra';
     case 'build':
       return 'ci';
     case 'dev':

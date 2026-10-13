@@ -26,6 +26,8 @@ import { isPrereleaseVersion } from '../../history/continuity.js';
 import { releaseCadence, type ReleaseRecord } from '../../stability/cadence.js';
 import { normalizePypiName, pypiPurl } from '../../ingest/python.js';
 import { mapLimit } from '../depsdev/util.js';
+import { normalizeRepoUrl } from '../depsdev/repo.js';
+import { declaredStatusOf } from '../../stability/declared.js';
 
 export const PYPI_BASE = 'https://pypi.org';
 const DAY_MS = 86_400_000;
@@ -51,7 +53,7 @@ interface PypiFile {
 }
 
 export interface PypiProject {
-  info?: { version?: unknown; classifiers?: unknown; name?: unknown };
+  info?: { version?: unknown; classifiers?: unknown; name?: unknown; description?: unknown; project_urls?: unknown; home_page?: unknown };
   releases?: Record<string, PypiFile[] | unknown>;
 }
 
@@ -174,14 +176,43 @@ export function pypiFacts(name: string, versions: readonly string[], project: Py
     }
     facts.push(makeFact('release_publishers', purl(), value, meta([pypiProjectPage(name)])));
   }
+  // Tier 0.6: the source repository the LATEST release declares (project_urls); the labels use it
+  // only when deps.dev knows none for the version in use (geographiclib 2.0 declares only a homepage).
+  const latestRepo = latestDeclared ? pypiSourceRepo(project.info) : undefined;
   for (const v of versions) {
     const age = pypiReleaseAge(releases, v, latestDeclared, asOf, status);
+    if (age && latestRepo) age.latestRepository = latestRepo;
     if (age) facts.push(makeFact('release_age', purl(v), age, meta([pypiProjectPage(name, age.version)])));
   }
   const classifiers = Array.isArray(project.info?.classifiers) ? (project.info.classifiers as unknown[]).filter((c): c is string => typeof c === 'string') : [];
   const inactive = classifiers.find((c) => /^Development Status :: 7 - Inactive$/i.test(c.trim()));
-  if (inactive) facts.push(makeFact('declared_status', purl(), { status: 'unmaintained', phrase: inactive.trim(), via: 'pypi.classifier' }, meta([pypiProjectPage(name)])));
+  // Tier 0.6: the project description is the PyPI README; a project-level declaration in it counts
+  // like an npm README's, and together with the Inactive classifier the two are the second fact
+  // for each other (click-plugins: "This PyPI package is no longer actively maintained").
+  const described = declaredStatusOf(project.info?.description, name);
+  if (inactive && described && described.status !== 'maintenance_mode')
+    facts.push(makeFact('declared_status', purl(), { status: 'unmaintained', phrase: described.phrase, via: 'pypi.description', also: `the PyPI classifier "${inactive.trim()}"` }, meta([pypiProjectPage(name)])));
+  else if (inactive) facts.push(makeFact('declared_status', purl(), { status: 'unmaintained', phrase: inactive.trim(), via: 'pypi.classifier' }, meta([pypiProjectPage(name)])));
+  else if (described) facts.push(makeFact('declared_status', purl(), { ...described, via: 'pypi.description' }, meta([pypiProjectPage(name)])));
   return facts;
+}
+
+/** project_urls keys that name the source repository (PyPA's well-known labels, case-insensitive). */
+const SOURCE_KEYS = /^(?:source|source code|sourcecode|repository|repo|code|github|gitlab|git|source repository)$/i;
+
+/**
+ * Tier 0.6: the source repository the project's latest release declares: a project_urls entry
+ * labelled as source (Source, Source Code, Repository, …), else a homepage that is itself a GitHub,
+ * GitLab or Bitbucket repository. Funding and profile pages never count.
+ */
+export function pypiSourceRepo(info: PypiProject['info']): { url: string } | undefined {
+  const urls = isObj(info?.project_urls) ? (info!.project_urls as Record<string, unknown>) : {};
+  const candidates = [...Object.entries(urls).filter(([k]) => SOURCE_KEYS.test(k.trim())).map(([, v]) => v), ...Object.entries(urls).filter(([k]) => /^home ?page$/i.test(k.trim())).map(([, v]) => v), info?.home_page];
+  for (const c of candidates) {
+    const n = normalizeRepoUrl(c);
+    if (n && /^https:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/[^/]+\/[^/]+$/.test(n.url)) return { url: n.url };
+  }
+  return undefined;
 }
 
 export function createPypiEnricher(opts: PypiEnricherOptions = {}): Enricher {

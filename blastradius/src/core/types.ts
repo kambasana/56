@@ -243,7 +243,12 @@ export interface Component {
   declaredLicenses?: { values: string[]; via: 'lockfile' | 'sbom' };
 }
 
-export type DepScope = 'runtime' | 'dev' | 'optional' | 'peer' | 'build';
+/**
+ * `extra` (Tier 0.6): a Python extra ([project.optional-dependencies], Poetry `optional = true`). pip
+ * installs it only when asked for (`pip install flask[async]`), so unlike npm's optional dependencies
+ * it is not in the production install.
+ */
+export type DepScope = 'runtime' | 'dev' | 'optional' | 'peer' | 'extra' | 'build';
 
 /** A dependency edge. `from` is an Asset.id or a Component.purl; `to` is a Component.purl. */
 export interface DepEdge {
@@ -498,6 +503,12 @@ export interface RepoOwnerValue {
   owner: string;
   ownerType: 'User' | 'Organization';
   url: string;
+  /**
+   * Tier 0.6: the organisation's website domain when GitHub marks the organisation verified
+   * (GET /orgs/{org}: `is_verified` true, hostname of `blog`). Deterministic domain evidence: an npm
+   * publisher whose registry address is at this domain is an organisation member, not a newcomer.
+   */
+  verifiedDomain?: string;
 }
 
 export interface RepoTransferValue {
@@ -757,8 +768,15 @@ export interface CommitHistoryValue {
      * the git-only continuity signals (S5a git side, C1) are context, never a label rule.
      */
     resolved?: boolean;
-    /** Ids merged into another one by display name plus overlapping activity, and by npm publisher. */
-    merged?: { displayName: number; npmPublisher: number };
+    /**
+     * Ids merged into another one, per evidence type (Tier 0.6, history/merge.ts). Strong evidence
+     * (npm publisher account, GitHub's login mapping or a signature it verified; the committed
+     * .mailmap, applied by git) resolves identities for every signal. Weak evidence (a display-name
+     * match, `displayName` and `loginName`) only merges for the CAF and contributor counts;
+     * `keptDespiteNameMatch` counts the continuity signals a name-only merge would have hidden,
+     * kept and annotated. Histories stored before Tier 0.6 have only `displayName` and `npmPublisher`.
+     */
+    merged?: { displayName: number; npmPublisher: number; githubLogin?: number; signingKey?: number; mailmap?: boolean; loginName?: number; keptDespiteNameMatch?: number };
   };
   /** CAF over the 24 months up to the last commit (P3: the CAF of the last active period). */
   cafAtLastCommit?: { from: string; to: string; commits: number; absenceFactor: number };
@@ -828,6 +846,18 @@ export interface CommitHistoryChange {
   /** For release observations: the release and days between the releaser's first commit and it. */
   release?: string;
   daysSinceFirstSeen?: number;
+  /**
+   * Tier 0.6: the person this observation is about matches an earlier identity by display name only
+   * (weak evidence an attacker can choose): who it would be, e.g. "the GitHub login fnwk" or "an
+   * address first seen in this repository on 2019-03-02". The observation is kept; its text says
+   * "possibly the same person as … (name match only, unverified)".
+   */
+  possiblySameAs?: string;
+  /**
+   * Tier 0.6: the release has npm provenance from this repository's CI (SLSA provenance workflow
+   * "<repository>/<workflow path>"): lower-risk context, not a Watch rule.
+   */
+  ciProvenance?: string;
 }
 
 /** ScanResult.history: one entry per source repository read. */
@@ -923,8 +953,17 @@ export interface DeclaredStatusValue {
   status: 'deprecated' | 'unmaintained' | 'maintenance_mode';
   /** The matched sentence, verbatim (≤ 200 characters). */
   phrase: string;
-  /** npm README, or the PyPI "Development Status :: 7 - Inactive" classifier (Tier 0.5). */
-  via: 'npm.readme' | 'pypi.classifier';
+  /**
+   * npm README, the PyPI "Development Status :: 7 - Inactive" classifier (Tier 0.5), or the PyPI
+   * project description (its README; Tier 0.6).
+   */
+  via: 'npm.readme' | 'pypi.classifier' | 'pypi.description';
+  /**
+   * Tier 0.6: a second, independent declaration by the maintainers (the Inactive classifier together
+   * with a description that says the project is no longer maintained, click-plugins). Two
+   * declarations count as the second fact the rule needs.
+   */
+  also?: string;
 }
 
 /** Money received through a funding platform with public books (plan F2/F3; produced in P4). */
@@ -1494,6 +1533,8 @@ export interface ContinuityEvent {
   date: string;
   release?: string;
   daysSinceFirstSeen?: number;
+  /** Tier 0.6: a display-name match to an earlier identity, unverified (CommitHistoryChange.possiblySameAs). */
+  possiblySameAs?: string;
   text: string;
   source: 'git' | 'npm+git';
   confidence: StabilityConfidence;
@@ -1586,7 +1627,9 @@ export interface StabilityCoverage {
   /** Unknown packages by reason. */
   skipped: { reason: string; count: number }[];
   /** Git history selection (absent when history collection was off). */
-  history?: { declared: number; read: number; capped: number; failed: number; maxRepos: number; tooLarge?: number; budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number } };
+  history?: { declared: number; read: number; capped: number; failed: number; maxRepos: number; tooLarge?: number; budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number }; identity?: IdentityMergeTotals };
+  /** Tier 0.6: the HTTP response cache's disk budget (--cache-max-mb) and what it held. */
+  httpCache?: HttpCacheUsage;
   /** "Upkeep assessed for N of M: all D direct, R runtime transitive; skipped: …". */
   line: string;
 }
@@ -1608,4 +1651,33 @@ export interface StabilityReport {
    * answer was stored, `done` when it ran, `off` when history collection was not asked for.
    */
   historyStatus?: 'pending' | 'done' | 'off';
+}
+
+/**
+ * Tier 0.6: identity merges over every repository read, per evidence type (history/merge.ts), so
+ * over-merging is measurable. Strong evidence merges for every signal; weak (name-only) merges only
+ * for the CAF and contributor counts.
+ */
+export interface IdentityMergeTotals {
+  repos: number;
+  npmPublisher: number;
+  githubLogin: number;
+  signingKey: number;
+  /** Repositories whose committed .mailmap git applied. */
+  mailmapRepos: number;
+  displayName: number;
+  loginName: number;
+  /** Continuity signals a name-only merge would have hidden: kept and annotated. */
+  keptDespiteNameMatch: number;
+}
+
+/** Tier 0.6: the HTTP response cache's disk budget and use in one scan. */
+export interface HttpCacheUsage {
+  maxMb: number;
+  /** Largest the cache got during the scan (MB, entries written by this process counted as they land). */
+  peakMb: number;
+  /** Size at the end of the scan (MB). */
+  sizeMb: number;
+  /** Entries deleted (least recently used first) to stay under the budget. */
+  evicted: number;
 }

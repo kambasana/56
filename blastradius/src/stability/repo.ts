@@ -68,7 +68,10 @@ export function resolveRepo(x: StabilityInputs, asOf: Date): RepoResolution {
   // Tier 0.5: a funding page (github.com/sponsors/encode, declared by some PyPI projects) is not a repository.
   const latest = npm?.latestRepo && !isFundingUrl(npm.latestRepo.url) ? npm.latestRepo : undefined;
   const declared = x.repo && !isFundingUrl(x.repo.value.url) ? x.repo : undefined;
-  const current = latest?.url ?? declared?.value.url;
+  // Tier 0.6 (PyPI): the latest release's project_urls only when deps.dev knows no repository for
+  // the version in use (geographiclib); deps.dev's repository otherwise stays the current one.
+  const pypi = x.package.startsWith('pkg:pypi/');
+  const current = pypi ? (declared?.value.url ?? latest?.url) : (latest?.url ?? declared?.value.url);
   const out: RepoResolution = { previous: [], previousVersions: [] };
   if (!current) return out;
   out.current = current;

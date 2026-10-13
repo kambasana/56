@@ -46,7 +46,11 @@ export function trimResponse(url: string, body: Json | null): Json | null {
       releases[v] = [{ upload_time_iso_8601: times[0], yanked, ...(yanked && reason ? { yanked_reason: reason } : {}) }];
     }
     const classifiers = (Array.isArray(body.info?.classifiers) ? body.info.classifiers : []).filter((c: unknown) => typeof c === 'string' && c.startsWith('Development Status'));
-    return { info: { name: body.info?.name, version: body.info?.version, classifiers }, releases };
+    // Tier 0.6: the latest release's source links, and the opening of the description (the PyPI
+    // README) where a project-level status declaration would be.
+    const urls = body.info?.project_urls && typeof body.info.project_urls === 'object' ? body.info.project_urls : undefined;
+    const description = typeof body.info?.description === 'string' ? body.info.description.slice(0, 3000) : undefined;
+    return { info: { name: body.info?.name, version: body.info?.version, classifiers, ...(urls ? { project_urls: urls } : {}), ...(body.info?.home_page ? { home_page: body.info.home_page } : {}), ...(description ? { description } : {}) }, releases };
   }
   if (url.includes('/simple/')) {
     // Only files with a Trusted Publishing attestation (their name and the attestation URL).

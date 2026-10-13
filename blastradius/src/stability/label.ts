@@ -87,6 +87,19 @@ export interface S3Result {
   context: StabilityReason[];
   /** PyPI: the declared repository is archived but releases continue (Tier 0.5): moved, not ended. */
   archivedButReleased?: { repo: string; lastRelease: string };
+  /** Tier 0.6: an @types package deprecated as a stub (the typed package ships its own types): remove it, nothing ended. */
+  stubTypes?: { target: string; fact: StabilityReason };
+}
+
+/** DefinitelyTyped's stub notice: "This is a stub types definition. X provides its own type definitions, …". */
+const STUB_TYPES_RE = /\bstub types? definitions?\b|\bprovides its own type definitions\b|\bships (?:with )?its own types\b/i;
+
+/** The typed package an @types stub names ("@types/long" → "long", "@types/babel__core" → "@babel/core"). */
+export function stubTarget(name: string): string | undefined {
+  const m = /^@types\/(.+)$/.exec(name);
+  if (!m) return undefined;
+  const t = m[1]!;
+  return t.includes('__') ? `@${t.replace('__', '/')}` : t;
 }
 
 function before(asOf: Date, months: number): string {
@@ -137,7 +150,16 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
     endedHigh = true;
     facts.push({ signal: 'S3', text: `PyPI marks the project ${ps.status}${ps.reason ? `: "${clean(ps.reason)}"` : ''} (project status).`, source: 'pypi', confidence: 'high', evidence: [pageOf(x, name)] });
   } else if (ps?.status === 'quarantined') context.push({ signal: 'S3', text: `PyPI has the project quarantined${ps.reason ? `: "${clean(ps.reason)}"` : ''} (an index hold; new files cannot be installed while it lasts).`, source: 'pypi', confidence: 'high', evidence: [pageOf(x, name)] });
-  if (npm?.latestDeprecated) {
+  const stub = npm?.latestDeprecated && STUB_TYPES_RE.test(npm.latestDeprecated) ? stubTarget(name) : undefined;
+  let stubTypes: S3Result['stubTypes'];
+  if (stub && npm?.latestDeprecated) {
+    // Tier 0.6: a stub is not an end. The typed package ships its own types: the @types package is
+    // dead weight to remove (Watch with an action), never "Fragile: ended in production".
+    stubTypes = {
+      target: stub,
+      fact: { signal: 'S3', text: `npm marks the latest release${npm.latestVersion ? ` (${npm.latestVersion})` : ''} a stub: "${clean(npm.latestDeprecated)}".`, source: 'npm', confidence: 'high', evidence: [pageOf(x, name, npm.latestVersion)], ...(npm.latestPublishedAt ? { date: day(npm.latestPublishedAt) } : {}) },
+    };
+  } else if (npm?.latestDeprecated) {
     endedHigh = true;
     facts.push({
       signal: 'S3',
@@ -179,9 +201,10 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
     const second: string[] = [];
     if (noRelease18) second.push(`no release in ${R.inactiveMonths} months`);
     if (h && h.lastCommit < cutQuiet) second.push(`no commit in ${R.quietCommitMonths} months`);
+    if (d.also) second.push(d.also);
     if (cadenceIrregular && x.cadence) second.push(`irregular releases (gap between the two most recent releases ${Math.round(x.cadence.value.latestGapDays)} days, median ${Math.round(x.cadence.value.medianDays)})`);
     const what = d.status === 'maintenance_mode' ? 'maintenance mode' : d.status === 'unmaintained' ? 'that it is no longer maintained' : 'deprecation';
-    const by = d.via === 'pypi.classifier' ? 'The PyPI classifiers declare' : 'The README declares';
+    const by = d.via === 'pypi.classifier' ? 'The PyPI classifiers declare' : d.via === 'pypi.description' ? 'The PyPI project description declares' : 'The README declares';
     const reason: StabilityReason = { signal: 'S3', text: `${by} ${what}: "${clean(d.phrase, 200)}"${second.length ? `; and ${second.join(', ')}` : ''}.`, source: d.via ?? 'npm.readme', confidence: 'low', evidence: [pageOf(x, name)] };
     if (second.length && !endedHigh) {
       if (d.status === 'maintenance_mode') quietDeclared = true;
@@ -199,7 +222,7 @@ export function maintenanceState(x: StabilityInputs, name: string, asOf: Date, c
   else if (quietDeclared) [state, confidence] = ['quiet', 'low'];
   else if (h) [state, confidence] = ['active', 'medium'];
   else [state, confidence] = ['unknown', 'low'];
-  const out: S3Result = { state, confidence, endedHigh, endedDeclared, quietDeclared, inactive, quiet, facts, context, ...(archivedButReleased ? { archivedButReleased } : {}) };
+  const out: S3Result = { state, confidence, endedHigh, endedDeclared, quietDeclared, inactive, quiet, facts, context, ...(archivedButReleased ? { archivedButReleased } : {}), ...(stubTypes ? { stubTypes } : {}) };
   if (h) out.lastCommit = h.lastCommit;
   if (lastRelease) out.lastRelease = lastRelease;
   return out;
@@ -240,7 +263,9 @@ const GIT_ONLY_S5A = new Set<RepoEvent['kind']>(['release_by_new_person', 'relea
  * names compared or GitHub logins mapped); without them a new address reads as a new person.
  */
 export function s5aCounts(e: RepoEvent, identityResolved: boolean): boolean {
-  return S5A_KINDS.has(e.kind) && (identityResolved || !GIT_ONLY_S5A.has(e.kind));
+  // Tier 0.6: a release built and published by the repository's own CI (npm provenance) is
+  // lower-risk context, not a Watch rule.
+  return S5A_KINDS.has(e.kind) && (identityResolved || !GIT_ONLY_S5A.has(e.kind)) && e.ciProvenance === undefined;
 }
 
 export function isRecent(date: string, asOf: Date, months = R.recentMonths): boolean {
@@ -267,6 +292,7 @@ export function continuityEvents(x: StabilityInputs, name: string): ContinuityEv
       };
       if (e.release !== undefined) ev.release = e.release;
       if (e.daysSinceFirstSeen !== undefined) ev.daysSinceFirstSeen = e.daysSinceFirstSeen;
+      if (e.possiblySameAs !== undefined) ev.possiblySameAs = e.possiblySameAs;
       return ev;
     })
     .sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind));
@@ -297,6 +323,8 @@ function shortText(h: StabilityRuleHit, s3: S3Result, caf?: { value: number }): 
       return `No commit and no release in ${R.inactiveMonths} months`;
     case 'watch_moved':
       return 'Moved to another repository and still released';
+    case 'watch_stub_types':
+      return `Stub type definitions: ${s3.stubTypes?.target ?? 'the typed package'} ships its own types`;
     case 'watch_no_recent_release':
       return `No release in ${R.inactiveMonths} months (git history not read)`;
     case 'watch_release_continuity':
@@ -473,6 +501,7 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
   for (const e of topNew) context.push(evFact(e, 'C1'));
   const demoted = recent.filter((e) => S5A_KINDS.has(e.kind) && !s5a.includes(e));
   for (const e of demoted) context.push(evFact(e, 'S5a', 'low'));
+  const ciBuilt = demoted.filter((e) => e.ciProvenance !== undefined);
 
   // L2: licence category changes dated within the recent window.
   const l2 = x.licenseChanges.filter((c) => c.value.fromCategory !== c.value.toCategory && c.value.fromCategory !== 'unknown' && c.value.toCategory !== 'unknown' && c.value.date !== undefined && isRecent(day(c.value.date), asOf));
@@ -515,6 +544,11 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
         ]),
       );
   }
+  if (s3.stubTypes && !fragile) {
+    const t = s3.stubTypes.target;
+    action = `Remove: stub types (${t} ships its own types; upgrade ${t} first if the version in use predates them)`;
+    rules.push(hit('watch_stub_types', [s3.stubTypes.fact]));
+  }
   if (!res.moved && s3.archivedButReleased) {
     const ab = s3.archivedButReleased;
     action = `Moved: the declared repository ${ab.repo.replace(/^https?:\/\//, '')} is archived while PyPI releases continue; find the current repository`;
@@ -538,7 +572,7 @@ export function labelPackage(input: StabilityInputs, info: { name: string; versi
   context.push(...c1.map((e) => evFact(e, 'C1')));
   if (cafFact && !rules.some((r) => r.facts.includes(cafFact!))) context.push(cafFact);
   // How contributors are told apart (P2): without GitHub's login mapping, by commit e-mail address.
-  if (h && h.hashedIdentities > 0 && !h.loginsMapped && !resolved && (caf || demoted.length || c1.length || topNew.length)) {
+  if (h && h.hashedIdentities > 0 && !h.loginsMapped && !resolved && (caf || demoted.length > ciBuilt.length || c1.length || topNew.length)) {
     context.push({
       signal: 'S2',
       text: 'Contributors are told apart by commit e-mail address (or GitHub no-reply login); display names were not compared and GitHub login mapping was not available. One person with two addresses counts twice, and a contributor using a new address shows as newly seen, so git-only release-continuity observations are context here.',

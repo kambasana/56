@@ -25,7 +25,7 @@ import { productNameOf } from '../core/repo-url.js';
 /** CycloneDX scope for our project scope: runtime is required, optional/peer optional, the rest excluded. */
 function cdxScope(scope: ComponentScope): CDX.Enums.ComponentScope {
   if (scope === 'runtime') return CDX.Enums.ComponentScope.Required;
-  if (scope === 'optional' || scope === 'peer') return CDX.Enums.ComponentScope.Optional;
+  if (scope === 'optional' || scope === 'peer' || scope === 'extra') return CDX.Enums.ComponentScope.Optional;
   return CDX.Enums.ComponentScope.Excluded;
 }
 

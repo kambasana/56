@@ -1535,3 +1535,58 @@ publisher of @great-expectations/jsonforms-antd-renderers). The npm search API r
 failed sibling lookup keeps the observation. Offline scans from a warm cache have no PyPI release
 record (not disk-cached), so PyPI upkeep falls back to Scorecard or Unknown there. The HTTP cache
 (npm packuments, 1.15 GB for superset) is now the largest disk user of a scan.
+
+### Tier 0.6: identity evidence, HTTP cache budget, Python extras, S5a context, README and PyPI rules (independent re-check of Tier 0.5)
+
+An independent re-check of Tier 0.5 replayed the recorded xz history with Jia Tan committing under
+Lasse Collin's display name (`spoof2.mts`): the Tier 0.5 display-name merge joined the two identities
+and the takeover disappeared. It also found the HTTP cache outside any disk budget, Python extras
+counted as production, one S5a false positive in superset and gaps in the README and PyPI rules.
+Fixed on recorded real data (`test/tier06/`, recorder `test/tier06/record-tier06.ts`) and measured by
+re-scanning parse-server (`23d7bbca`) with `--history` and default settings (cold caches,
+`NODE_USE_ENV_PROXY=1`); the other repositories are measured on their recorded fixtures.
+
+| # | Item | Before (Tier 0.5 / re-check) | After |
+|---|---|---|---|
+| 1 | Display name hides a takeover (HIGH) | xz with Jia Tan as "Lasse Collin" or "LasseCollin": merged, **no takeover** | Identities merge for signals only on evidence the person cannot choose (`src/history/merge.ts`): the same address, the committed .mailmap (git applies it), the GitHub no-reply login, the npm publisher account (`_npmUser.email`, tied to the account by the registry), GitHub's own login mapping or the signer of a signature GitHub verified (token only). Display-name matches (spacing, case, single-word variants, name = login) are weak: they merge only in a second view used for the CAF and contributor counts. Takeover, handover, release_takeover, S5a (git and npm side) and contributor-base signals come from the strong view; one that only a name match would hide is kept and annotated "Possibly the same person as … (name match only, unverified)" (`possiblySameAs`). Spoof replays: honest names, "Lasse Collin", "LasseCollin", "lasse collin", "lassecollin" all fire the v5.2.11 takeover (2023-03-18), annotated when a name matched. event-stream 3.3.5 still fires with right9ctrl's id given dominictarr's display name |
+| 1 | Name key strength | "Li Wei" strong, "LiWei" weak (different keys); two different "Michael"s merged (7 letters = strong) | A key is weak unless the name has two words (camelCase counts: "RomualdPercereau" = 2) and 6+ letters; spacing variants share one digest and one strength. "Li Wei" = "LiWei" (weak), "Michael" weak: two Michaels no longer merge |
+| 1 | Over-merging measurable | `merged: { displayName, npmPublisher }` | `identity.merged` per repository: npmPublisher, githubLogin, signingKey, mailmap (strong); displayName, loginName (weak); keptDespiteNameMatch. Coverage line, parse-server: "Identity merges: strong 18 (npm publisher 18, GitHub login 0, verified signature 0; .mailmap applied in 2 of 300 repositories); name-only 438 (display name 392, name = login 46), used for contributor counts only; 127 continuity signals kept despite a name match (annotated)." (most of the 127 are older or context-only kinds; none became a parse-server Watch rule) |
+| 1 | Earlier false positives | quiet | nanoid (npm publisher account and an earlier release by the same account), react (v19.0.1 by react-bot), picocolors (creator on day one), process-warning (climba03003 already published fastify: npm sibling) stay quiet on strong evidence. **react-native-sound v0.13.0 and react-native-video 6.19.3 relied on a name match only** ("RomualdPercereau" = login romualdpercereau; "fnwk" = login fnwk): they come back as Watch S5a, annotated with the possible match. They are not demoted to context: a demotion on a name match is exactly what the spoof uses. jitsi-meet S5a in production on the recorded data: 2 → 4 (still under 5) |
+| 2 | HTTP cache budget | none; superset 1,145 MB, jitsi-meet 800 MB, parse-server 573 MB | `--cache-max-mb` (default 500, `scan` and `serve`): least recently used entries (file time, refreshed on every hit) are deleted to 90 % of the budget; an existing cache over budget is trimmed at once; said in the coverage line. parse-server: "HTTP cache: peak 500 MB of the 500 MB budget (--cache-max-mb), 504 least recently used entries deleted to stay under it." (493 MB on disk after the scan; 1,104 s cold, as before); lowest free disk 2,174 MB |
+| 3 | Python extras | flask production 9 (asgiref, python-dotenv as "optional") | Scope `extra` for `[project.optional-dependencies]`, Poetry `optional = true` and uv/poetry lock extras: pip installs them only on request, so not production (ranked with dev, exposure 0.3, "Python extra only" in the gate text, CycloneDX optional). npm optional dependencies stay production. flask production 9 → **7** (the 7 runtime packages); `src/stability/production.ts` comment corrected |
+| 4 | S5a: jsonforms-antd-renderers 2.2.8 (superset) | Watch: "published by an account first seen 56 days earlier" | (a) An npm publisher whose registry address is at the repository owner's verified organisation domain (GitHub `/orgs/{org}`: `is_verified` and the `blog` hostname; `repo_owner.verifiedDomain`) is an organisation member: no observation. Registry addresses are compared in memory; only the per-version yes/no is kept. Commit addresses are not used (anyone can commit as anyone). No verified domain: the signal stays. (b) A release whose npm provenance (SLSA v1, `/-/npm/v1/attestations`) names this repository's workflow is lower-risk context (`ciProvenance`), not a Watch rule. On the recorded data 2.2.8 (tyler-hoffman-gx, the only release from greatexpectations.io) has provenance from `.github/workflows/release.yml`: context. GitHub's org API answered 403 from this session, so the domain rule is tested with a stated org answer |
+| 5 | README rule | missed "TSLint is deprecated", "This PyPI package is no longer actively maintained", aws-sdk "🚫 End-of-support as of …"; matched "Version 1.x is in maintenance mode", "The v3 branch …", an "IE11 – deprecated" badge | "<Name> is deprecated / no longer maintained" with the package name or README title; qualifiers before the subject ("this PyPI package"); End-of-support / End-of-life headings with a date; version- or branch-scoped sentences skipped; a shields badge counts only under a status label (status, project, maintenance, …). All 8 `rx.mts` cases and the real aws-sdk and tslint READMEs as tests |
+| 6 | PyPI labels | click-plugins Unknown; geographiclib Unknown "no source repository declared" | The PyPI description is read like a README. "Development Status :: 7 - Inactive" plus a description saying the project is not maintained are two declarations and the second fact for each other: click-plugins Watch `watch_ended` (low confidence). The latest release's `project_urls` source repository is used when deps.dev has none for the version in use: geographiclib → github.com/geographiclib/geographiclib-python (resolved, and read by `--history`); deps.dev's repository stays first where it has one |
+| 7 | @types stubs | Fragile "Ended in production" (parse-server 2, jitsi-meet 2, superset 5, control set 1) | "This is a stub types definition. X provides its own type definitions" → Watch `watch_stub_types`, action "Remove: stub types (X ships its own types; upgrade X first if the version in use predates them)". A real deprecation of an @types package still ends it |
+
+**Tier 0 targets after Tier 0.6.**
+
+| Repository | False Ended in production | S5a items in production | Production Unknown |
+|---|---|---|---|
+| parse-server (re-scan) | 0 of 18 (was 20: @types/long, @types/mime are now Watch stub) | 2 (graphql-relay 0.11.0, jws), as before | 11 of 408, as before |
+| jitsi-meet (recorded) | Ended 28 → 26 (@types/long, @types/parse-json) | 4 (react-native-paper, react-native-safe-area-context, and react-native-sound, react-native-video annotated) | unchanged |
+| superset (recorded) | Ended 31 → 26 (5 @types stubs) | 1 (numexpr); jsonforms-antd-renderers 2.2.8 is context (CI provenance) | unchanged; geographiclib's repository resolved |
+| flask (recorded) | none | 0 | 0 of 7 (production 9 → 7) |
+
+parse-server's top 10 are all production. Five runtime packages (available-typed-arrays, call-bind,
+define-data-property, has-property-descriptors, read-pkg) carry a `dependency_added` reason in this
+re-scan because npm's downloads API gave no answer for their new dependencies during the run (the
+existing rule keeps the signal without download data); a replay of the same packages afterwards got
+the counts (80–191 M a week) and the reason is dropped. Not caused by this change.
+
+**Tests.** `test/tier06/` (37): identity spoof replays on the recorded xz and event-stream histories
+and the six earlier false positives (`identity.test.ts`), HTTP cache budget (`http-cache.test.ts`),
+flask's real `pyproject.toml` / `uv.lock` (`scope.test.ts`), and jsonforms-antd-renderers, READMEs,
+PyPI and @types stubs (`stability.test.ts`, `test/fixtures/tier06/`,
+`test/fixtures/stability/recorded/history/tier06-jsonforms-antd-renderers.json`). Changed
+expectations, each for the reason above: tier05 identity tests (rn-sound, rn-video annotated; the
+weak view for process-warning), nanoid's merge counts, flask production 7, the uv.lock scope
+`extra`, the Ended counts (stubs) and the control set (fragile 46 → 45, watch 154 → 155:
+@types/arcgis-js-api). The tier05 flask fixture's inventory was re-ingested from the same commit
+(two edges changed to `extra`; responses unchanged). Counts: blastradius 1,084 tests (1,047 before),
+proof 11 of 16 early warnings (unchanged); web 321 unit and 69 e2e (one display word for `extra` in
+the path tree).
+
+**Deferred.** Signing keys are used only through GitHub's verification (a token); keys are not
+verified locally. The organisation domain needs GitHub's org API (403 here). jitsi-meet and superset
+were not re-scanned (the jitsi-meet pin could not be fetched by its short id; disk).

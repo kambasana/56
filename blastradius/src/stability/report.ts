@@ -7,7 +7,7 @@
  * Tier 0 additions: decision rows (a family such as ldapjs + 9 @ldapjs/* packages becomes one row
  * naming the direct dependency to change) and the coverage line ("Upkeep assessed for N of M: …").
  */
-import { STABILITY_LABELS, unversionedPurl, type Fact, type Inventory, type PurlString, type StabilityCoverage, type StabilityDecision, type StabilityEntry, type StabilityLabel, type StabilityReport } from '../core/types.js';
+import { STABILITY_LABELS, unversionedPurl, type Fact, type HttpCacheUsage, type IdentityMergeTotals, type Inventory, type PurlString, type StabilityCoverage, type StabilityDecision, type StabilityEntry, type StabilityLabel, type StabilityReport } from '../core/types.js';
 import { labelPackage } from './label.js';
 import { productionComponents } from './production.js';
 import { packagePriorities } from './priority.js';
@@ -53,7 +53,9 @@ export interface StabilityReportOptions {
    */
   advisoriesChecked?: boolean;
   /** Git history selection of the scan (history enricher), for the coverage line. */
-  historySelection?: { declared: number; read: string[]; capped: string[]; failed: string[]; maxRepos: number; tooLarge?: string[]; budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number } };
+  historySelection?: { declared: number; read: string[]; capped: string[]; failed: string[]; maxRepos: number; tooLarge?: string[]; budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number }; identity?: IdentityMergeTotals };
+  /** Tier 0.6: the HTTP cache budget and use (said in the coverage line). */
+  httpCache?: HttpCacheUsage;
   historyStatus?: StabilityReport['historyStatus'];
 }
 
@@ -81,7 +83,7 @@ export function buildStabilityReport(inventory: Inventory, facts: readonly Fact[
   for (const e of packages) counts[e.label]++;
   const report: StabilityReport = { asOf: asOf.toISOString(), rulesVersion: 3, packages, counts, disclaimer: STABILITY_DISCLAIMER };
   report.decisions = stabilityDecisions(inventory, packages);
-  report.coverage = stabilityCoverage(inventory, packages, opts.historySelection);
+  report.coverage = stabilityCoverage(inventory, packages, opts.historySelection, opts.httpCache);
   // Packages of ecosystems without an upkeep source outside production (CI actions, dev images).
   const notAssessed: Record<string, number> = {};
   for (const p of byPkg.values()) if (!LABELLED.has(p.ecosystem) && !p.production) notAssessed[p.ecosystem] = (notAssessed[p.ecosystem] ?? 0) + 1;
@@ -196,7 +198,18 @@ function skipReason(e: StabilityEntry): string {
   return `${pre}git history not read, last release 12–18 months ago and no Scorecard result`;
 }
 
-export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEntry[], sel?: StabilityReportOptions['historySelection']): StabilityCoverage {
+/** Tier 0.6: identity merges per evidence type, for the coverage line. */
+export function identityLine(t: IdentityMergeTotals): string {
+  const strong = t.npmPublisher + t.githubLogin + t.signingKey;
+  const weak = t.displayName + t.loginName;
+  return (
+    `Identity merges: strong ${fmt(strong)} (npm publisher ${fmt(t.npmPublisher)}, GitHub login ${fmt(t.githubLogin)}, verified signature ${fmt(t.signingKey)}; .mailmap applied in ${fmt(t.mailmapRepos)} of ${fmt(t.repos)} repositories); ` +
+    `name-only ${fmt(weak)} (display name ${fmt(t.displayName)}, name = login ${fmt(t.loginName)}), used for contributor counts only; ` +
+    `${fmt(t.keptDespiteNameMatch)} continuity signal${t.keptDespiteNameMatch === 1 ? '' : 's'} kept despite a name match (annotated).`
+  );
+}
+
+export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEntry[], sel?: StabilityReportOptions['historySelection'], http?: HttpCacheUsage): StabilityCoverage {
   const prio = packagePriorities(inv);
   const known = (e: StabilityEntry) => e.label !== 'unknown';
   const direct = entries.filter((e) => prio.get(e.package)?.direct);
@@ -237,7 +250,9 @@ export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEnt
     ].filter(Boolean);
     line += ` Git history read for ${fmt(sel.read.length)} of ${fmt(sel.declared)} repositories${skippedRepos.length ? `; skipped: ${skippedRepos.join('; ')}` : ''}.`;
     if (sel.budget) line += ` Clone cache: ${sel.budget.shallowMonths ? `shallow clones of the last ${sel.budget.shallowMonths} months` : 'whole histories'}, peak ${fmt(sel.budget.peakMb)} MB of the ${fmt(sel.budget.maxMb)} MB budget${sel.budget.evicted ? `, ${fmt(sel.budget.evicted)} older clones deleted to stay under it` : ''}.`;
+    if (sel.identity && sel.identity.repos > 0) line += ` ${identityLine(sel.identity)}`;
   }
+  if (http) line += ` HTTP cache: peak ${fmt(http.peakMb)} MB of the ${fmt(http.maxMb)} MB budget (--cache-max-mb)${http.evicted ? `, ${fmt(http.evicted)} least recently used entries deleted to stay under it` : ''}.`;
   const out: StabilityCoverage = {
     packages: entries.length,
     assessed,
@@ -249,6 +264,7 @@ export function stabilityCoverage(inv: Inventory, entries: readonly StabilityEnt
     skipped,
     line,
   };
-  if (sel) out.history = { declared: sel.declared, read: sel.read.length, capped: sel.capped.length, failed: sel.failed.length, maxRepos: sel.maxRepos, ...(sel.tooLarge ? { tooLarge: sel.tooLarge.length } : {}), ...(sel.budget ? { budget: sel.budget } : {}) };
+  if (sel) out.history = { declared: sel.declared, read: sel.read.length, capped: sel.capped.length, failed: sel.failed.length, maxRepos: sel.maxRepos, ...(sel.tooLarge ? { tooLarge: sel.tooLarge.length } : {}), ...(sel.budget ? { budget: sel.budget } : {}), ...(sel.identity ? { identity: sel.identity } : {}) };
+  if (http) out.httpCache = http;
   return out;
 }

@@ -86,22 +86,31 @@ export function normaliseName(name: string): string {
 
 /**
  * `name:` + HMAC-SHA256 of the normalised display name with spacing removed (first 16 hex chars),
- * so "Romuald Percereau" and "RomualdPercereau" are one key (Tier 0.5); undefined for a generic
- * name. A single word shorter than 6 characters ("Alex", "KaKa") is shared by too many people: it
- * gets a weak `wname:` key, which merges addresses only when they are also tied to a GitHub login
- * that is an npm account publishing this repository's packages (merge.ts).
- * Used only to merge one person's addresses; never stored with the name.
+ * so "Romuald Percereau" and "RomualdPercereau" share one digest (Tier 0.5); undefined for a generic
+ * name. A name of one word ("Michael", "Alex", "KaKa"; camelCase counts as separate words, so
+ * "LiWei" is two) or shorter than 6 letters without spaces ("Li Wei") is shared by too many people:
+ * it gets a weak `wname:` key with the same digest. Tier 0.6: the strength depends on the words, not
+ * on how they were spaced, so "Li Wei" and "LiWei" are both weak, and two different people named
+ * "Michael" no longer merge. Every display-name match is weak evidence anyway (merge.ts): it never
+ * hides a continuity signal. Used only to merge one person's addresses; never stored with the name.
  */
 export function nameKey(name: string, salt: Buffer | string): string | undefined {
   const n = normaliseName(name);
   if (!n || GENERIC_NAMES.has(n) || GENERIC_NAMES.has(n.replace(/ /g, ''))) return undefined;
   const compact = n.replace(/ /g, '');
   const digest = createHmac('sha256', salt).update(`name\0${compact}`).digest('hex').slice(0, 16);
-  if (!n.includes(' ') && n.length < 6) return `wname:${digest}`;
+  // Words before lower-casing: spaces and punctuation, and camelCase boundaries ("RomualdPercereau").
+  const words = normaliseName(name.normalize('NFKD').replace(/(\p{Ll})(\p{Lu})/gu, '$1 $2')).split(' ').filter(Boolean).length;
+  if (words < 2 || compact.length < 6) return `wname:${digest}`;
   return `name:${digest}`;
 }
 
-/** A weak display-name key (a short single word): merges only with a login / npm account tie. */
+/** A weak display-name key (one word or a short name): merges only with a login / npm account tie. */
 export function isWeakNameKey(key: string): boolean {
   return key.startsWith('wname:');
+}
+
+/** The digest of a display-name key, the same for its weak and strong forms ("Li Wei" / "LiWei"). */
+export function nameDigest(key: string): string {
+  return key.slice(key.indexOf(':') + 1);
 }

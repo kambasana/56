@@ -17,7 +17,7 @@ const SECTION_SCOPE: Record<ManifestSection, DepScope> = {
 const SECTIONS = Object.keys(SECTION_SCOPE) as ManifestSection[];
 
 /** Precedence when the same dependency appears in several sections (strongest exposure first). */
-const SCOPE_RANK: Record<DepScope, number> = { runtime: 0, build: 1, peer: 2, optional: 3, dev: 4 };
+const SCOPE_RANK: Record<DepScope, number> = { runtime: 0, build: 1, peer: 2, optional: 3, extra: 4, dev: 5 };
 
 export const INSTALL_HOOKS = ['preinstall', 'install', 'postinstall', 'prepare'] as const;
 

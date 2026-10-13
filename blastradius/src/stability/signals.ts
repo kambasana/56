@@ -28,6 +28,10 @@ export interface RepoEvent {
   daysSinceFirstSeen?: number;
   before?: number;
   after?: number;
+  /** Tier 0.6: a display-name match to an earlier identity, unverified. */
+  possiblySameAs?: string;
+  /** Tier 0.6: built and published by this repository's CI (npm provenance). */
+  ciProvenance?: string;
 }
 
 export interface Sourced<T> {
@@ -149,7 +153,7 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
         break;
       }
       case 'declared_status':
-        x.declared ??= { value: { status: f.value.status, phrase: f.value.phrase, via: f.value.via }, ...meta(f) };
+        x.declared ??= { value: { status: f.value.status, phrase: f.value.phrase, via: f.value.via, ...(f.value.also ? { also: f.value.also } : {}) }, ...meta(f) };
         break;
       case 'scorecard': {
         const checks = f.value.checks;
@@ -186,6 +190,8 @@ export function collectInputs(facts: readonly Fact[]): Map<PurlString, Stability
           if (c.daysSinceFirstSeen !== undefined) e.daysSinceFirstSeen = c.daysSinceFirstSeen;
           if (c.before !== undefined) e.before = c.before;
           if (c.after !== undefined) e.after = c.after;
+          if (c.possiblySameAs !== undefined) e.possiblySameAs = c.possiblySameAs;
+          if (c.ciProvenance !== undefined) e.ciProvenance = c.ciProvenance;
           events.push(e);
         }
         const h: NonNullable<StabilityInputs['history']>['value'] = {

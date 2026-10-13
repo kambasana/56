@@ -65,13 +65,15 @@ describe('Tier 0: moved repositories (teardown problem 3)', () => {
       const r = await tier0Labels(fx, repo);
       const after = r.packages.filter(ended);
       for (const e of after) expect(HAND_CHECKED[e.name], `${repo} ${e.name} not hand-checked`).toBeDefined();
-      counts[repo] = { before: Object.keys(fx.scans[repo]!.ended).length, after: after.length, moved: r.packages.filter((p) => rules(p).includes('watch_moved')).length };
+      counts[repo] = { before: Object.keys(fx.scans[repo]!.ended).length, after: after.length, moved: r.packages.filter((p) => rules(p).includes('watch_moved')).length, stubs: r.packages.filter((p) => rules(p).includes('watch_stub_types')).map((p) => p.name).sort() } as never;
     }
     // Before → after on the real scans (teardown numbers: 34 / 40 / 34; 14 parse-server false).
+    // Tier 0.6: deprecated @types stubs ("X provides its own type definitions") are Watch "Remove:
+    // stub types", no longer Ended (was 20 / 37 / 29).
     expect(counts).toEqual({
-      'parse-server': { before: 34, after: 20, moved: 14 },
-      'jitsi-meet': { before: 40, after: 37, moved: 2 },
-      superset: { before: 34, after: 29, moved: 2 },
+      'parse-server': { before: 34, after: 18, moved: 14, stubs: ['@types/long', '@types/mime'] },
+      'jitsi-meet': { before: 40, after: 35, moved: 2, stubs: ['@types/long', '@types/parse-json'] },
+      superset: { before: 34, after: 24, moved: 2, stubs: ['@types/color-convert', '@types/expect', '@types/mapbox-gl', '@types/pako', '@types/parse-json'] },
     });
   });
 
@@ -128,7 +130,8 @@ describe('Tier 0: identity resolution and takeover signals (teardown problem 4),
     expect(raw.history.changes.some((c) => c.kind === 'release_takeover' && /made 21 of the 22 releases/.test(c.text))).toBe(true);
     const after = await tier0IdentityLabel('nanoid', '3.3.19');
     const h2 = (after.facts.find((f) => f.kind === 'commit_history') as any).value;
-    expect(h2.identity).toMatchObject({ resolved: true, merged: { displayName: 2 } });
+    // Tier 0.6: the npm account's two registry addresses join them (strong); the name match is the other.
+    expect(h2.identity).toMatchObject({ resolved: true, merged: { npmPublisher: 1, displayName: 1, keptDespiteNameMatch: 0 } });
     expect(h2.changes.filter((c: any) => ['release_takeover', 'release_by_new_person'].includes(c.kind))).toEqual([]);
     expect(after.entry.rules.map((r) => r.rule)).not.toContain('watch_release_continuity');
   });

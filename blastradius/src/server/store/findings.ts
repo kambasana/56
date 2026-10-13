@@ -318,7 +318,7 @@ export type FindingSort = 'score' | '-score' | 'name' | 'reach';
  * or compromised releases (gate rule install_time) rank with runtime; findings stored before
  * scopes existed have none and keep their place.
  */
-export const SCOPE_TIER_SQL = `(CASE WHEN json_extract(f.finding_json, '$.gate.rule') = 'install_time' THEN 0 ELSE CASE COALESCE(json_extract(f.finding_json, '$.scope'), 'runtime') WHEN 'runtime' THEN 0 WHEN 'peer' THEN 1 WHEN 'optional' THEN 2 WHEN 'ci' THEN 3 WHEN 'dev' THEN 4 ELSE 5 END END)`;
+export const SCOPE_TIER_SQL = `(CASE WHEN json_extract(f.finding_json, '$.gate.rule') = 'install_time' THEN 0 ELSE CASE COALESCE(json_extract(f.finding_json, '$.scope'), 'runtime') WHEN 'runtime' THEN 0 WHEN 'peer' THEN 1 WHEN 'optional' THEN 2 WHEN 'extra' THEN 3 WHEN 'ci' THEN 4 WHEN 'dev' THEN 5 ELSE 6 END END)`;
 
 const SORT_SQL: Record<FindingSort, string> = {
   '-score': `${SCOPE_TIER_SQL}, f.score DESC, f.blast_score DESC, f.ord`,

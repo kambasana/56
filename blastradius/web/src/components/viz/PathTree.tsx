@@ -14,7 +14,7 @@ export const pathKey = (p: ReachPath) => `${p.projectId}|${p.assetId}|${p.nodes.
 const SEV_BORDER: Record<Severity, string> = { critical: 'border-sev-critical', high: 'border-sev-high', medium: 'border-sev-medium', low: 'border-sev-low' };
 const SEV_INK: Record<Severity, string> = { critical: 'text-sev-critical', high: 'text-sev-high', medium: 'text-sev-medium', low: 'text-sev-low' };
 
-const scopeWord = (s: string) => (s === 'dev' ? 'dev' : s === 'optional' ? 'optional' : s === 'peer' ? 'peer' : s === 'build' ? 'build' : 'runtime');
+const scopeWord = (s: string) => (s === 'dev' ? 'dev' : s === 'optional' ? 'optional' : s === 'extra' ? 'extra' : s === 'peer' ? 'peer' : s === 'build' ? 'build' : 'runtime');
 
 export interface PathTreeProps {
   paths: readonly ReachPath[];

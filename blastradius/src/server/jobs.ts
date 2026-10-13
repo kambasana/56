@@ -152,6 +152,7 @@ export class ScanJobs {
             now: job.now,
             ...(this.opts.scanOptions?.http ? { http: this.opts.scanOptions.http } : {}),
             ...(this.opts.scanOptions?.cacheDir !== undefined ? { cacheDir: this.opts.scanOptions.cacheDir } : {}),
+            ...(this.opts.scanOptions?.cacheMaxMb !== undefined ? { cacheMaxMb: this.opts.scanOptions.cacheMaxMb } : {}),
             history: { ...(h.maxRepos !== undefined ? { maxRepos: h.maxRepos } : {}), ...(h.maxMb !== undefined ? { maxMb: h.maxMb } : {}), ...(h.cacheDir ? { cache: { dir: h.cacheDir } } : {}), ...(h.recorded ? { recorded: h.recorded } : {}) },
           });
           ok = attachScanHistory(this.opts.store, job.scanId, sections);

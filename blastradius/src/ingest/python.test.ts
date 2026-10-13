@@ -129,7 +129,9 @@ describe('Python lockfiles', () => {
     expect(res.components.map((c) => c.name).sort()).toEqual(['asgiref', 'blinker', 'click', 'colorama', 'itsdangerous', 'jinja2', 'markupsafe', 'python-dotenv', 'ruff', 'werkzeug']);
     const direct = (scope: string) => res.edges.filter((e) => e.from === 'repo:flask' && e.scope === scope).map((e) => e.to.replace(/@.*/, '')).sort();
     expect(direct('runtime')).toEqual(['pkg:pypi/blinker', 'pkg:pypi/click', 'pkg:pypi/itsdangerous', 'pkg:pypi/jinja2', 'pkg:pypi/markupsafe', 'pkg:pypi/werkzeug']);
-    expect(direct('optional')).toEqual(['pkg:pypi/asgiref', 'pkg:pypi/python-dotenv']);
+    // Tier 0.6: flask's own extras ([project.optional-dependencies]) are installed only on request.
+    expect(direct('extra')).toEqual(['pkg:pypi/asgiref', 'pkg:pypi/python-dotenv']);
+    expect(direct('optional')).toEqual([]);
     // asgiref and python-dotenv are also in flask's "tests" dependency group.
     expect(direct('dev')).toEqual(['pkg:pypi/asgiref', 'pkg:pypi/python-dotenv', 'pkg:pypi/ruff']);
     expect(res.edges).toContainEqual({ from: 'pkg:pypi/werkzeug@3.1.8', to: 'pkg:pypi/markupsafe@3.0.3', scope: 'runtime', direct: false });

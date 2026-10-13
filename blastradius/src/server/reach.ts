@@ -53,7 +53,7 @@ function edgeScope(g: DependencyGraph, from: string, to: string): DepScope {
   return SCOPE_TO_DEP[e.cscope] ?? e.scope;
 }
 
-const SCOPE_TO_DEP: Partial<Record<ComponentScope, DepScope>> = { runtime: 'runtime', peer: 'peer', optional: 'optional', ci: 'build', dev: 'dev' };
+const SCOPE_TO_DEP: Partial<Record<ComponentScope, DepScope>> = { runtime: 'runtime', peer: 'peer', optional: 'optional', extra: 'extra', ci: 'build', dev: 'dev' };
 
 /** Every displayed path (engine caps apply) from the inventory's assets to `purl`. */
 export function pathsTo(inv: Inventory, purl: string, graph: DependencyGraph = buildDependencyGraph(inv)): InventoryPath[] {

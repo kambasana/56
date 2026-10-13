@@ -149,7 +149,14 @@ export interface AggregateResult {
 export function aggregateHistory(
   rec: HistoryRecord,
   asOf: Date,
-  opts: { verified?: { checked: number; verified: number }; identityVia?: string[]; identityResolved?: boolean; merged?: { displayName: number; npmPublisher: number } } = {},
+  opts: {
+    verified?: { checked: number; verified: number };
+    identityVia?: string[];
+    identityResolved?: boolean;
+    merged?: CommitHistoryValue['identity']['merged'];
+    /** Filled with the id each person-level change is about (Tier 0.6: the name-match annotation); never stored. */
+    actors?: Map<CommitHistoryChange, string>;
+  } = {},
 ): AggregateResult | undefined {
   const R = HISTORY_RULES;
   const end = secs(asOf);
@@ -262,7 +269,7 @@ export function aggregateHistory(
         // release), not to the window end (which moved to "today" every week).
         const firstOwn = releases.find((r) => r.by === curTop && r.at >= wFrom && r.at < wTo);
         const takeover = own > 0 && own * 2 > cur.releases;
-        changes.push({
+        const change: CommitHistoryChange = {
           kind: takeover ? 'release_takeover' : 'top_committer_new',
           date: takeover && firstOwn ? iso(firstOwn.at) : cur.to,
           ...(takeover && firstOwn ? { release: firstOwn.name } : {}),
@@ -274,7 +281,9 @@ export function aggregateHistory(
           daysSinceFirstSeen: Math.round(((takeover && firstOwn ? firstOwn.at : wTo) - first.get(curTop)!) / DAY),
           before: ownBefore,
           after: own,
-        });
+        };
+        changes.push(change);
+        opts.actors?.set(change, curTop);
       }
     }
     if (cur.commits >= R.minSignedCommits && prev.commits >= R.minSignedCommits && Math.abs(cur.signedShare - prev.signedShare) >= R.signedChange) {
@@ -303,10 +312,14 @@ export function aggregateHistory(
     const days = Math.round((r.at - (first.get(r.by) ?? r.at)) / DAY);
     // Only meaningful once the repository itself is older than the threshold.
     if (days < R.newReleaserDays && idx > 0 && (r.at - firstAt) / DAY >= R.newReleaserDays) {
-      changes.push({ kind: 'release_by_new_person', date: iso(r.at), release: r.name, daysSinceFirstSeen: days, text: `Release ${r.name} was made by an account first seen in this repository ${days} days earlier.` });
+      const c: CommitHistoryChange = { kind: 'release_by_new_person', date: iso(r.at), release: r.name, daysSinceFirstSeen: days, text: `Release ${r.name} was made by an account first seen in this repository ${days} days earlier.` };
+      changes.push(c);
+      opts.actors?.set(c, r.by);
     }
     if (idx >= R.handoverAfterReleases) {
-      changes.push({ kind: 'release_handover', date: iso(r.at), release: r.name, daysSinceFirstSeen: days, before: idx, text: `Release ${r.name} (release ${idx + 1} in this repository) is the first made by this account; it was first seen in this repository ${days} days earlier.` });
+      const c: CommitHistoryChange = { kind: 'release_handover', date: iso(r.at), release: r.name, daysSinceFirstSeen: days, before: idx, text: `Release ${r.name} (release ${idx + 1} in this repository) is the first made by this account; it was first seen in this repository ${days} days earlier.` };
+      changes.push(c);
+      opts.actors?.set(c, r.by);
     }
   });
   changes.sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind));

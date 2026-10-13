@@ -84,6 +84,8 @@ export interface AccountIndexerOptions {
   fixturesDir?: string;
   /** Disk cache (default the per-user cache dir; false disables). */
   cacheDir?: string | false;
+  /** Disk budget of the HTTP cache in MB (Tier 0.6, --cache-max-mb). */
+  cacheMaxMb?: number;
   /** Re-fetch a package's registry data after this long (default 24 h). */
   ttlMs?: number;
   /** Packuments fetched at once (default 4; the HttpClient still spaces requests per host). */
@@ -132,7 +134,7 @@ export class AccountIndexer {
     const key = `${offline}\u0000${fixturesDir ?? ''}`;
     let c = this.clients.get(key);
     if (!c) {
-      c = new HttpClient({ offline, ...(fixturesDir !== undefined ? { fixturesDir } : {}), cacheDir: this.opts.cacheDir === undefined ? join(defaultCacheDir(), 'http') : this.opts.cacheDir });
+      c = new HttpClient({ offline, ...(fixturesDir !== undefined ? { fixturesDir } : {}), ...(this.opts.cacheMaxMb !== undefined ? { cacheMaxMb: this.opts.cacheMaxMb } : {}), cacheDir: this.opts.cacheDir === undefined ? join(defaultCacheDir(), 'http') : this.opts.cacheDir });
       this.clients.set(key, c);
     }
     return c;

@@ -120,6 +120,7 @@ export function createServer(opts: CreateServerOptions = {}) {
     ...(config.fixturesDir !== undefined ? { fixturesDir: config.fixturesDir } : {}),
     ...(opts.scanOptions?.http ? { http: opts.scanOptions.http } : {}),
     ...(opts.scanOptions?.cacheDir !== undefined ? { cacheDir: opts.scanOptions.cacheDir } : {}),
+    ...(opts.scanOptions?.cacheMaxMb !== undefined ? { cacheMaxMb: opts.scanOptions.cacheMaxMb } : {}),
     log,
     ...(opts.accounts ?? {}),
   });

@@ -7,7 +7,7 @@
  *     rateLimit { cost remaining }
  *     repository(owner, name) {
  *       defaultBranchRef { target { ... on Commit {
- *         history(first: 100) { nodes { oid author { user { login } } signature { isValid state } } }
+ *         history(first: 100) { nodes { oid author { user { login } } signature { isValid state signer { login } } } }
  *       } } }
  *       c0: object(oid: "<latest commit of an unmapped person>") { ... on Commit { author { user { login } } } }
  *       …
@@ -65,7 +65,7 @@ export function buildMappingQueries(owner: string, name: string, lookups: readon
     const verify = i === 0 && opts.verify !== false;
     const parts = [
       verify
-        ? `defaultBranchRef { target { ... on Commit { history(first: ${VERIFY_COMMITS}) { nodes { oid author { user { login } } signature { isValid state } } } } } }`
+        ? `defaultBranchRef { target { ... on Commit { history(first: ${VERIFY_COMMITS}) { nodes { oid author { user { login } } signature { isValid state signer { login } } } } } } }`
         : '',
       ...chunk.map((l, j) => `c${j}: object(oid: "${l.oid}") { ... on Commit { author { user { login } } } }`),
     ].filter(Boolean);
@@ -84,6 +84,8 @@ export interface MappingResult {
   /** oid → login, for the verified commits */
   commitLogins: Map<string, string>;
   verified?: { checked: number; verified: number };
+  /** oid → login of the account whose key made a signature GitHub verified (Tier 0.6: strong evidence). */
+  signerLogins?: Map<string, string>;
 }
 
 /** Read one response. Unknown shapes give an empty result, never a throw. */
@@ -97,8 +99,12 @@ export function parseMappingResponse(q: MappingQuery, body: unknown, into: Mappi
   const nodes = (repo.defaultBranchRef as { target?: { history?: { nodes?: unknown[] } } } | null)?.target?.history?.nodes;
   if (Array.isArray(nodes)) {
     let verified = 0;
-    for (const n of nodes as { oid?: unknown; author?: { user?: { login?: unknown } | null }; signature?: { isValid?: unknown } | null }[]) {
-      if (n?.signature?.isValid === true) verified++;
+    for (const n of nodes as { oid?: unknown; author?: { user?: { login?: unknown } | null }; signature?: { isValid?: unknown; signer?: { login?: unknown } | null } | null }[]) {
+      if (n?.signature?.isValid === true) {
+        verified++;
+        const signer = n.signature.signer?.login;
+        if (typeof n.oid === 'string' && typeof signer === 'string' && LOGIN_RE.test(signer)) (into.signerLogins ??= new Map()).set(n.oid, signer.toLowerCase());
+      }
       const login = n?.author?.user?.login;
       if (typeof n?.oid === 'string' && typeof login === 'string' && LOGIN_RE.test(login)) into.commitLogins.set(n.oid, login.toLowerCase());
     }

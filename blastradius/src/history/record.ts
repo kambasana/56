@@ -87,6 +87,13 @@ export interface HistoryRecord {
    * Activity before it is unknown, so first-seen dates near it mean "on or before" (aggregate.ts).
    */
   shallowSince?: number;
+  /**
+   * Tier 0.6: the repository owner's verified organisation domain (GitHub) that the npm publishers'
+   * registry addresses were compared with, and the versions published from an address at that
+   * domain (or a subdomain). Only the comparison is kept, never an address.
+   */
+  npmOrgDomain?: string;
+  npmOrgDomainVersions?: string[];
 }
 
 /** Replace ids (e.g. hashed ids GitHub mapped to a login). Ids mapping to the same login merge. */
@@ -103,6 +110,7 @@ export function renameIds(rec: HistoryRecord, map: ReadonlyMap<string, string>):
     ...(rec.names ? { names: renameNames(rec.names, r) } : {}),
     ...(rec.loginNames ? { loginNames: rec.loginNames } : {}),
     ...(rec.shallowSince !== undefined ? { shallowSince: rec.shallowSince } : {}),
+    ...(rec.npmOrgDomain ? { npmOrgDomain: rec.npmOrgDomain, npmOrgDomainVersions: rec.npmOrgDomainVersions ?? [] } : {}),
   };
 }
 

@@ -17,7 +17,7 @@
  * Responses are untrusted data: size-capped while streaming and parsed with JSON.parse only.
  */
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, stat, unlink, utimes, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defaultCacheDir } from './paths.js';
 import { ensureEnvProxy } from './proxy.js';
@@ -79,6 +79,11 @@ export interface HttpClientOptions {
   cacheDir?: string | false;
   /** Default TTL in ms (default 24h). */
   defaultTtlMs?: number;
+  /**
+   * Disk budget of the cache in MB (default DEFAULT_HTTP_CACHE_MAX_MB, Tier 0.6). Before a write would
+   * pass it, the least recently used entries (by file time, refreshed on every cache hit) are deleted.
+   */
+  cacheMaxMb?: number;
   /** Offline mode. Defaults to process.env.BLASTRADIUS_OFFLINE === '1'. */
   offline?: boolean;
   /** In-memory fixtures: key (see fixtureKey) or plain URL → JSON value / FixtureEnvelope-like {status, response}. */
@@ -190,6 +195,14 @@ const DAY = 24 * 60 * 60 * 1000;
 const DENIED_STATUSES = new Set([401, 403, 407]);
 /** Tolerated clock skew for cache timestamps written by another process. */
 const CACHE_CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+/**
+ * Default disk budget of the HTTP response cache, MB (Tier 0.6: superset's cache reached 1,145 MB,
+ * more than the clone cache's 600 MB budget). Least recently used entries are deleted to stay under it.
+ */
+export const DEFAULT_HTTP_CACHE_MAX_MB = 500;
+/** After an eviction the cache is brought down to this share of the budget, so it does not evict on every write. */
+const CACHE_EVICT_TO = 0.9;
 
 /** Normalise the request body to the exact string that is sent (or undefined). */
 function encodeBody(body: unknown): string | undefined {
@@ -304,11 +317,18 @@ export class HttpClient {
   }
   /** Number of transport calls made (for metrics / tests). */
   requestCount = 0;
+  private readonly cacheMaxBytes: number;
+  /** path → size and last use (ms), loaded from the cache directory on first use. */
+  private cacheIndex: Promise<Map<string, { size: number; used: number }>> | undefined;
+  private cacheBytes = 0;
+  private cachePeakBytes = 0;
+  private cacheEvicted = 0;
 
   constructor(opts: HttpClientOptions = {}) {
     this.transport = opts.transport ?? defaultTransport;
     this.cacheDir = opts.cacheDir === undefined ? join(defaultCacheDir(), 'http') : opts.cacheDir;
     this.defaultTtlMs = opts.defaultTtlMs ?? DAY;
+    this.cacheMaxBytes = Math.max(1, opts.cacheMaxMb ?? DEFAULT_HTTP_CACHE_MAX_MB) * 1e6;
     this.offline = opts.offline ?? process.env.BLASTRADIUS_OFFLINE === '1';
     this.fixturesDir = opts.fixturesDir ?? process.env.BLASTRADIUS_FIXTURES ?? undefined;
     this.minIntervalMs = opts.minIntervalMs ?? 100;
@@ -510,6 +530,7 @@ export class HttpClient {
       // A missing, non-finite or future storedAt would make the entry fresh forever: reject it.
       if (typeof entry.storedAt !== 'number' || !Number.isFinite(entry.storedAt)) return undefined;
       if (entry.storedAt > this.now() + CACHE_CLOCK_SKEW_MS) return undefined;
+      await this.touchCache(p);
       return entry;
     } catch {
       return undefined;
@@ -521,12 +542,79 @@ export class HttpClient {
     if (!p || !this.cacheDir) return;
     try {
       await mkdir(this.cacheDir, { recursive: true });
+      const data = JSON.stringify(entry);
+      const index = await this.loadCacheIndex();
+      const size = Buffer.byteLength(data);
       const tmp = `${p}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-      await writeFile(tmp, JSON.stringify(entry));
+      await writeFile(tmp, data);
       await rename(tmp, p);
+      this.cacheBytes += size - (index.get(p)?.size ?? 0);
+      index.set(p, { size, used: Date.now() });
+      if (this.cacheBytes > this.cacheMaxBytes) await this.evictCache(index, p);
+      this.cachePeakBytes = Math.max(this.cachePeakBytes, this.cacheBytes);
     } catch {
       // Cache is best-effort.
     }
+  }
+
+  /** Mark an entry used (file time, so the order survives restarts). Best-effort. */
+  private async touchCache(p: string): Promise<void> {
+    const now = Date.now();
+    const e = this.cacheIndex ? (await this.cacheIndex).get(p) : undefined;
+    if (e) e.used = now;
+    await utimes(p, now / 1000, now / 1000).catch(() => {});
+  }
+
+  /** Sizes and last use of the cache files, read once; an over-budget cache is trimmed at once. */
+  private loadCacheIndex(): Promise<Map<string, { size: number; used: number }>> {
+    this.cacheIndex ??= (async () => {
+      const index = new Map<string, { size: number; used: number }>();
+      if (!this.cacheDir) return index;
+      let names: string[] = [];
+      try {
+        names = (await readdir(this.cacheDir)).filter((n) => n.endsWith('.json'));
+      } catch {
+        return index;
+      }
+      for (const n of names) {
+        const p = join(this.cacheDir, n);
+        try {
+          const st = await stat(p);
+          if (!st.isFile()) continue;
+          index.set(p, { size: st.size, used: Math.max(st.mtimeMs, st.atimeMs) });
+          this.cacheBytes += st.size;
+        } catch {
+          // removed meanwhile
+        }
+      }
+      if (this.cacheBytes > this.cacheMaxBytes) await this.evictCache(index);
+      this.cachePeakBytes = this.cacheBytes;
+      return index;
+    })();
+    return this.cacheIndex;
+  }
+
+  /** Delete least recently used entries until the cache is under CACHE_EVICT_TO of its budget. */
+  private async evictCache(index: Map<string, { size: number; used: number }>, keep?: string): Promise<void> {
+    const target = this.cacheMaxBytes * CACHE_EVICT_TO;
+    const order = [...index].filter(([p]) => p !== keep).sort((a, b) => a[1].used - b[1].used || a[0].localeCompare(b[0]));
+    const victims: string[] = [];
+    for (const [p, e] of order) {
+      if (this.cacheBytes <= target) break;
+      index.delete(p);
+      this.cacheBytes -= e.size;
+      victims.push(p);
+    }
+    this.cacheEvicted += victims.length;
+    for (const p of victims) await unlink(p).catch(() => {});
+  }
+
+  /** Tier 0.6: the disk cache's budget and use so far (undefined when the disk cache is off). */
+  async cacheUsage(): Promise<{ maxMb: number; peakMb: number; sizeMb: number; evicted: number } | undefined> {
+    if (!this.cacheDir) return undefined;
+    await this.loadCacheIndex();
+    const mb = (b: number) => Math.round(b / 1e6);
+    return { maxMb: mb(this.cacheMaxBytes), peakMb: mb(Math.max(this.cachePeakBytes, this.cacheBytes)), sizeMb: mb(this.cacheBytes), evicted: this.cacheEvicted };
   }
 }
 

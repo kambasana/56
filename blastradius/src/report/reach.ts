@@ -76,6 +76,7 @@ const SCOPE_ONLY: Record<ComponentScope, string> = {
   runtime: 'runtime, not a production project',
   peer: 'peer dependency only',
   optional: 'optional dependency only',
+  extra: 'Python extra only (installed on request)',
   ci: 'CI / build only',
   dev: 'dev/test dependencies only',
   unreachable: 'not reached',

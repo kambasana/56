@@ -97,7 +97,7 @@ export function slimPackument(data: Record<string, unknown>): Packument {
   const out = pick(data, PACKUMENT_FIELDS);
   // The README is dropped; only a declared maintenance status found in it is kept (plan S3, P3).
   // Recorded fixtures carry the derived value instead of the README.
-  const declared = typeof data.readme === 'string' ? declaredStatusOf(data.readme) : data._declaredStatus;
+  const declared = typeof data.readme === 'string' ? declaredStatusOf(data.readme, typeof data.name === 'string' ? data.name : undefined) : data._declaredStatus;
   if (declared) out._declaredStatus = declared;
   if (isObject(data.versions)) {
     const versions: Record<string, unknown> = {};

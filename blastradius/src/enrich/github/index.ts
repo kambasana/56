@@ -76,6 +76,8 @@ export interface GithubEnricherOptions {
    * $OPENCOLLECTIVE_API_KEY, sent only to the real Open Collective API.
    */
   openCollectiveApiKey?: string;
+  /** Tier 0.6: look up the verified domain of organisation owners (default true). */
+  orgDomains?: boolean;
 }
 
 const SOURCE = 'github';
@@ -119,6 +121,7 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
       // FUNDING.yml lookups by URL for this run: the owner-wide .github repo is shared by every repo
       // of that owner, and concurrent lookups would otherwise fetch it once per repo.
       const rawRequests = new Map<string, Promise<{ status: number; body: string }>>();
+      const orgRequests = new Map<string, Promise<string | undefined>>();
       const meta = (evidence: string[]) => ({ source: SOURCE, fetchedAt: ctx.now, evidence: [...new Set(evidence)] });
 
       await mapLimit(repoKeys, Math.max(1, opts.concurrency ?? 8), async (key) => {
@@ -134,6 +137,10 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
           canonicalOwner = info.owner;
           canonicalRepo = info.name;
           const ownerValue: RepoOwnerValue = { repo: `github.com/${info.owner}/${info.name}`, owner: info.owner, ownerType: info.ownerType, url: info.htmlUrl };
+          if (info.ownerType === 'Organization' && opts.orgDomains !== false) {
+            const domain = await orgDomain(info.owner);
+            if (domain) ownerValue.verifiedDomain = domain;
+          }
           const archivedValue: ArchivedValue = { archived: info.archived, repo: `github.com/${owner}/${repo}` };
           if (info.pushedAt) archivedValue.lastPushAt = info.pushedAt;
           for (const s of subjects) {
@@ -214,6 +221,31 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
         return parsed;
       }
 
+      /** Tier 0.6: the verified organisation's website domain (one lookup per owner per run). */
+      function orgDomain(owner: string): Promise<string | undefined> {
+        const key = owner.toLowerCase();
+        let p = orgRequests.get(key);
+        if (!p) {
+          p = (async () => {
+            if (state.apiBlocked || !LOGIN_RE.test(owner)) return undefined;
+            const headers: Record<string, string> = { accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28' };
+            if (token) headers.authorization = `Bearer ${token}`;
+            try {
+              const res = await ctx.http.request(`${apiBase}/orgs/${owner}`, { headers });
+              if (res.status === 403 || res.status === 429) state.apiBlocked = true;
+              if (res.status !== 200) return undefined;
+              return parseOrgDomain(JSON.parse(res.body));
+            } catch (err) {
+              // Optional evidence: an offline miss or an unreachable host only means no domain.
+              skipped.add(err);
+              return undefined;
+            }
+          })();
+          orgRequests.set(key, p);
+        }
+        return p;
+      }
+
       async function fetchFundingYml(owner: string, repo: string): Promise<{ value: FundingValue; url: string } | undefined> {
         const candidates = [
           ...FUNDING_PATHS.repo.map((p) => ({ owner, repo, path: p })),
@@ -256,6 +288,22 @@ export function createGithubEnricher(opts: GithubEnricherOptions = {}): Enricher
       }
     },
   };
+}
+
+/**
+ * Tier 0.6: GET /orgs/{org} (https://docs.github.com/en/rest/orgs/orgs#get-an-organization): the
+ * hostname of `blog` when `is_verified` is true (GitHub shows the "Verified" badge only after the
+ * organisation proved it owns its domain), without a leading "www.". Undefined otherwise.
+ */
+export function parseOrgDomain(body: unknown): string | undefined {
+  if (!isObject(body) || body.is_verified !== true || typeof body.blog !== 'string' || !body.blog.trim()) return undefined;
+  try {
+    const raw = body.blog.trim();
+    const host = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`).hostname.toLowerCase().replace(/^www\./, '');
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host) ? host : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 interface ParsedRepo {

@@ -204,7 +204,7 @@ export function gateScore(args: {
   } else {
     rule = 'non_runtime_cap';
     score = Math.min(score, NON_RUNTIME_MAX_SCORE);
-    detail = `${scope === 'ci' ? 'CI / build environment only' : scope === 'dev' ? 'Dev / test dependency only' : 'Not reached from any project file'}${via}: kept below high and ranked after runtime findings.`;
+    detail = `${scope === 'ci' ? 'CI / build environment only' : scope === 'dev' ? 'Dev / test dependency only' : scope === 'extra' ? 'Python extra only (pip installs it only on request)' : 'Not reached from any project file'}${via}: kept below high and ranked after runtime findings.`;
   }
   // Posture and provenance only break ties: a fraction of a point, never across a level.
   const tie = round(clamp01(args.postureRisk) * POSTURE_TIEBREAK_POINTS, 1);

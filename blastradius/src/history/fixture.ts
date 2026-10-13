@@ -34,6 +34,9 @@ export interface HistoryFixture {
   names?: Record<string, string>;
   /** GitHub login → salted key of the login read as a display name (Tier 0.5, see HistoryRecord.loginNames). */
   loginNames?: Record<string, string>;
+  /** Tier 0.6 (HistoryRecord.npmOrgDomain / npmOrgDomainVersions). */
+  npmOrgDomain?: string;
+  npmOrgDomainVersions?: string[];
   /** Shallow clone: earliest commit read, in days since 1970-01-01 (see HistoryRecord.shallowSince). */
   shallowSinceDay?: number;
 }
@@ -71,6 +74,7 @@ export function encodeFixture(rec: HistoryRecord, note: string, recordedAt: Date
     ...(rec.names ? { names: rec.names } : {}),
     ...(rec.loginNames ? { loginNames: rec.loginNames } : {}),
     ...(rec.shallowSince !== undefined ? { shallowSinceDay: rec.shallowSince / 86400 } : {}),
+    ...(rec.npmOrgDomain ? { npmOrgDomain: rec.npmOrgDomain, npmOrgDomainVersions: rec.npmOrgDomainVersions ?? [] } : {}),
   };
 }
 
@@ -89,6 +93,7 @@ export function decodeFixture(f: HistoryFixture): HistoryRecord {
     ...(f.names ? { names: f.names } : {}),
     ...(f.loginNames ? { loginNames: f.loginNames } : {}),
     ...(f.shallowSinceDay !== undefined ? { shallowSince: f.shallowSinceDay * 86400 } : {}),
+    ...(f.npmOrgDomain ? { npmOrgDomain: f.npmOrgDomain, npmOrgDomainVersions: f.npmOrgDomainVersions ?? [] } : {}),
   };
 }
 

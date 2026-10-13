@@ -60,6 +60,8 @@ export interface ScanOptions {
   fixturesDir?: string;
   /** HTTP cache directory; false disables the disk cache (default: per-user cache dir, see core/paths.ts). */
   cacheDir?: string | false;
+  /** Disk budget of the HTTP cache in MB (Tier 0.6, --cache-max-mb; default DEFAULT_HTTP_CACHE_MAX_MB). */
+  cacheMaxMb?: number;
   /** Reference time for decay and history (backtests). Defaults to now. */
   now?: Date;
   /** Incident KB directory (default: the bundled kb/incidents). */
@@ -185,6 +187,7 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
     new HttpClient({
       offline: opts.offline,
       ...(opts.fixturesDir !== undefined ? { fixturesDir: opts.fixturesDir } : {}),
+      ...(opts.cacheMaxMb !== undefined ? { cacheMaxMb: opts.cacheMaxMb } : {}),
       cacheDir,
     });
   const historical = opts.now !== undefined && opts.now.getTime() < Date.now() - 24 * 60 * 60 * 1000;
@@ -293,9 +296,11 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
   if (history) result.history = history;
   if (agenticReport) result.agentic = agenticReport;
   // Stability labels (plan §4, P3): repo-level facts only; not risk, no effect on findings.
+  const httpCache = await http.cacheUsage?.();
   result.stability = buildStabilityReport(inventory, facts, now, {
     advisoriesChecked: osvComplete,
     ...(historySelection ? { historySelection } : {}),
+    ...(httpCache ? { httpCache } : {}),
     historyStatus: opts.history ? 'done' : opts.historyPending ? 'pending' : 'off',
   });
 
@@ -326,17 +331,18 @@ export async function scan(opts: ScanOptions): Promise<ScanOutput> {
  * scan's own facts and rebuild the history and stability sections. Everything else in the result
  * (findings, exposure) stays as it was, so the exposure answer can be shown before history is read.
  */
-export async function addHistory(out: Pick<ScanOutput, 'result' | 'inventory' | 'facts' | 'osvComplete'>, opts: { now: Date; http?: HttpClient; offline?: boolean; cacheDir?: string | false; history?: Omit<HistoryEnricherOptions, 'repoFacts'> }): Promise<{ history?: HistoryReport; stability: StabilityReport }> {
+export async function addHistory(out: Pick<ScanOutput, 'result' | 'inventory' | 'facts' | 'osvComplete'>, opts: { now: Date; http?: HttpClient; offline?: boolean; cacheDir?: string | false; cacheMaxMb?: number; history?: Omit<HistoryEnricherOptions, 'repoFacts'> }): Promise<{ history?: HistoryReport; stability: StabilityReport }> {
   const facts = [...out.facts];
   let historySelection: HistorySelection | undefined;
   const h = opts.history ?? {};
   const cache = h.cache ?? (typeof opts.cacheDir === 'string' ? { dir: join(opts.cacheDir, 'git-history') } : undefined);
   const enricher = createHistoryEnricher({ ...h, ...(cache ? { cache } : {}), repoFacts: () => facts, onSelection: (sel) => (historySelection = sel) });
-  const http = opts.http ?? new HttpClient({ offline: opts.offline === true, cacheDir: opts.cacheDir === undefined ? join(defaultCacheDir(), 'http') : opts.cacheDir });
+  const http = opts.http ?? new HttpClient({ offline: opts.offline === true, ...(opts.cacheMaxMb !== undefined ? { cacheMaxMb: opts.cacheMaxMb } : {}), cacheDir: opts.cacheDir === undefined ? join(defaultCacheDir(), 'http') : opts.cacheDir });
   const warnings: string[] = [];
   facts.push(...(await enricher.enrich(out.inventory, { http, now: opts.now, offline: opts.offline === true || http.offline, warn: (m) => warnings.push(m) })));
   const history = buildHistoryReport(facts);
-  const stability = buildStabilityReport(out.inventory, facts, opts.now, { advisoriesChecked: out.osvComplete === true, ...(historySelection ? { historySelection } : {}), historyStatus: 'done' });
+  const httpCache = await http.cacheUsage?.();
+  const stability = buildStabilityReport(out.inventory, facts, opts.now, { advisoriesChecked: out.osvComplete === true, ...(historySelection ? { historySelection } : {}), ...(httpCache ? { httpCache } : {}), historyStatus: 'done' });
   return { ...(history ? { history } : {}), stability };
 }
 

@@ -127,13 +127,15 @@ export const COMPROMISED_RELEASE_TYPES: readonly IncidentType[] = Object.freeze(
 
 /**
  * Inbound blast radius (PLAN §3.6 step 4). `peer` and `optional` are treated as runtime (Tier 0.5):
- * npm installs both by default, so they are in the production install.
+ * npm installs both by default, so they are in the production install. A Python `extra` (Tier 0.6)
+ * is installed only on request: weighted like dev.
  */
 export const SCOPE_EXPOSURE: Readonly<Record<DepScope, number>> = Object.freeze({
   runtime: 1,
   peer: 1,
   build: 0.8,
   dev: 0.3,
+  extra: 0.3,
   optional: 1,
 });
 export const INSTALL_SCRIPT_EXPOSURE = 0.9;

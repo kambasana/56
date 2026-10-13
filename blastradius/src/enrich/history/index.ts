@@ -14,21 +14,22 @@ import path from 'node:path';
 import { defaultCacheDir } from '../../core/paths.js';
 import type { EnrichContext, Enricher } from '../../core/plugin.js';
 import { makeFact, npmNameFromPurl, parsePurl, unversionedPurl } from '../../core/types.js';
-import type { Fact, Inventory, PurlString, ReleasePublishersValue } from '../../core/types.js';
-import { aggregateHistory, mappingLookups } from '../../history/aggregate.js';
+import type { CommitHistoryChange, Fact, IdentityMergeTotals, Inventory, PurlString, ReleasePublishersValue } from '../../core/types.js';
+import { mappingLookups } from '../../history/aggregate.js';
 import { cacheKey, CloneBudget, ensureClone, pruneCache, readHistory, runGit, type GitRun, type HistoryCacheOptions } from '../../history/git.js';
 import { addMonths } from '../../history/aggregate.js';
 import { GraphqlBudget, mapLogins, DEFAULT_BUDGET_POINTS } from '../../history/graphql.js';
 import { isPrereleaseVersion, npmContinuity } from '../../history/continuity.js';
 import { isHistoryRepoUrl } from '../../history/repo-url.js';
 import { loadSalt, localIdentity } from '../../history/identity.js';
-import { renameIds, type HistoryRecord } from '../../history/record.js';
-import { mergeIdentities } from '../../history/merge.js';
+import type { HistoryRecord } from '../../history/record.js';
+import { aggregateMerged, keepDespiteNameMatch, mergeIdentities, renameMerge } from '../../history/merge.js';
 import { isReleaseBot } from '../../history/bots.js';
 import { mapLimit } from '../depsdev/util.js';
 import { orderRepos } from '../../stability/priority.js';
 import { sameRepo } from '../../stability/repo.js';
 import { fetchPackument, isObject } from '../npm/registry.js';
+import { fetchProvenanceSource, type ProvenanceSource } from '../npm/attestation.js';
 
 export interface HistoryEnricherOptions {
   /** Facts produced earlier in the scan (the `repo` facts). */
@@ -70,6 +71,12 @@ export interface HistoryEnricherOptions {
    * tests inject recorded answers. Asked only for observations that would otherwise count.
    */
   siblingLookup?: (account: string, owner: string, exclude: string) => Promise<SiblingRelease | undefined>;
+  /**
+   * Tier 0.6: the repository whose CI built an npm release (npm provenance, SLSA v1). Default: the
+   * npm attestations endpoint (src/enrich/npm/attestation.ts); tests inject recorded answers. Asked
+   * only for recent S5a observations that would otherwise count.
+   */
+  provenanceLookup?: (name: string, version: string) => Promise<ProvenanceSource | undefined>;
   /** Receives the GraphQL budget after the run (tests, logs). */
   onBudget?: (b: GraphqlBudget) => void;
 }
@@ -88,6 +95,8 @@ export interface HistorySelection {
   tooLarge?: string[];
   /** Disk budget (MB), per-clone cap (MB), the largest the cache got (MB), clones evicted, shallow window (months; 0 = full). */
   budget?: { maxMb: number; perCloneMb: number; peakMb: number; evicted: number; shallowMonths: number };
+  /** Tier 0.6: identity merges per evidence type over the repositories read. */
+  identity?: IdentityMergeTotals;
 }
 
 export const DEFAULT_HISTORY_MAX = 300;
@@ -218,13 +227,22 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       // (agent-base: TooTallNate/proxy-agents, not the archived node-agent-base).
       const latestRepo = new Map<PurlString, string>();
       for (const f of opts.repoFacts()) if (f.kind === 'release_age' && f.value.latestRepository) latestRepo.set(unversionedPurl(f.subject), f.value.latestRepository.url);
+      // Tier 0.6: a package with no declared repository for its version in use (PyPI geographiclib
+      // 2.0) is read at the repository its latest release declares.
+      const declaredRepo = new Set<PurlString>();
+      for (const f of opts.repoFacts()) if (f.kind === 'repo') declaredRepo.add(unversionedPurl(f.subject));
+      const repoLike: { subject: PurlString; value: { url: string; directory?: string } }[] = [];
       for (const f of opts.repoFacts()) {
+        if (f.kind === 'repo') repoLike.push({ subject: f.subject, value: f.value });
+        else if (f.kind === 'release_age' && f.value.latestRepository && parsePurl(f.subject).type === 'pypi' && !declaredRepo.has(unversionedPurl(f.subject))) repoLike.push({ subject: unversionedPurl(f.subject), value: f.value.latestRepository });
+      }
+      for (const f of repoLike) {
         // A package in a monorepo subdirectory gets the facts of the whole repository (repo-level by
         // design; the stability label says so). One clone per repository either way.
-        if (f.kind !== 'repo') continue;
         // Tier 0.5: no clone whose result would be thrown away (CI actions, container images).
         if (HISTORY_SKIPPED_ECOSYSTEMS.has(parsePurl(f.subject).type)) continue;
-        const latest = latestRepo.get(unversionedPurl(f.subject));
+        // PyPI: deps.dev's repository for the version in use stays; the latest release's only fills a gap.
+        const latest = parsePurl(f.subject).type === 'pypi' ? undefined : latestRepo.get(unversionedPurl(f.subject));
         let url = (latest && !sameRepo(latest, f.value.url) ? latest : f.value.url).replace(/\.git$/, '').replace(/\/+$/, '');
         // GitHub owner and repository names are case-insensitive: one clone per repository.
         if (url.startsWith('https://github.com/')) url = url.toLowerCase();
@@ -240,14 +258,24 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       // sibling-publisher check and to keep a monorepo's per-package release tags with their package.
       const ownerOf = new Map<PurlString, string>();
       const dirOf = new Map<PurlString, string>();
-      for (const f of opts.repoFacts()) {
-        if (f.kind !== 'repo') continue;
+      for (const f of repoLike) {
         const k = unversionedPurl(f.subject);
         const owner = /^https:\/\/[^/]+\/([^/]+)\//.exec((latestRepo.get(k) ?? f.value.url).toLowerCase())?.[1];
         if (owner && !ownerOf.has(k)) ownerOf.set(k, owner);
         if (f.value.directory && !dirOf.has(k)) dirOf.set(k, f.value.directory);
       }
       const established = siblingPublishers(publishersOf, ownerOf);
+      // Tier 0.6: the repository owner's verified organisation domain (GitHub enricher), per package.
+      const domainOf = new Map<PurlString, string>();
+      for (const f of opts.repoFacts()) if (f.kind === 'repo_owner' && f.value.verifiedDomain) domainOf.set(unversionedPurl(f.subject), f.value.verifiedDomain.toLowerCase());
+      const provenanceCache = new Map<string, Promise<ProvenanceSource | undefined>>();
+      const provenanceLookup = opts.provenanceLookup ?? ((name: string, version: string) => (ctx.offline ? Promise.resolve(undefined) : fetchProvenanceSource(ctx.http, name, version)));
+      const provenanceOf = (name: string, version: string) => {
+        const key = `${name}@${version}`;
+        let p = provenanceCache.get(key);
+        if (!p) provenanceCache.set(key, (p = provenanceLookup(name, version).catch(() => undefined)));
+        return p;
+      };
       // Versions in use per package (Tier 0.5: a pre-release says nothing about a stable line in use).
       const inUse = new Map<PurlString, string[]>();
       for (const c of inv.components) {
@@ -286,6 +314,8 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
       const shallowSince = shallowMonths > 0 ? addMonths(ctx.now, -shallowMonths) : undefined;
       const cache: HistoryCacheOptions = { ...(shallowSince ? { shallowSince } : {}), ...opts.cache, dir: cacheDir, ...(disk ? { budget: disk } : {}) };
       selection.tooLarge = [];
+      const idTotals: IdentityMergeTotals = { repos: 0, npmPublisher: 0, githubLogin: 0, signingKey: 0, mailmapRepos: 0, displayName: 0, loginName: 0, keptDespiteNameMatch: 0 };
+      selection.identity = idTotals;
       // The salt is loaded only when a repository is actually read (recorded histories are already hashed).
       let salt = opts.salt;
       const getSalt = () => (salt ??= loadSalt(path.join(cacheDir, '..', 'history-salt')));
@@ -328,24 +358,32 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
         if (!rec.npmPublisherIds && !ctx.offline && !opts.recorded) {
           const links: Record<string, string> = {};
           const ids: Record<string, string[]> = {};
+          // Tier 0.6: the owner's verified organisation domain, to compare registry addresses with.
+          const orgDomain = [...(byRepo.get(url) ?? [])].map((s) => domainOf.get(s)).find((d) => d !== undefined);
+          const orgVersions = new Set<string>();
           for (const subject of byRepo.get(url) ?? []) {
             if (!publishersOf.has(subject)) continue;
-            const l = await publisherLinks(ctx, subject, rec, getSalt);
-            for (const [a, list] of Object.entries(l)) {
+            const l = await publisherLinks(ctx, subject, rec, getSalt, orgDomain);
+            for (const [a, list] of Object.entries(l.links)) {
               links[a] ??= list[0]!;
               ids[a] = [...new Set([...(ids[a] ?? []), ...list])];
             }
+            for (const v of l.orgDomainVersions) orgVersions.add(v);
           }
-          rec = { ...rec, npmPublishers: { ...(rec.npmPublishers ?? {}), ...links }, npmPublisherIds: ids };
+          rec = { ...rec, npmPublishers: { ...(rec.npmPublishers ?? {}), ...links }, npmPublisherIds: ids, ...(orgDomain ? { npmOrgDomain: orgDomain, npmOrgDomainVersions: [...orgVersions].sort() } : {}) };
         }
         // Tier 0 identity merge: display name plus overlapping activity, then the npm publisher
         // (.mailmap was applied by git while reading).
         const npmAccounts = [...new Set([...(byRepo.get(url) ?? [])].flatMap((s) => publishersOf.get(s)?.accounts.map((a) => a.name) ?? []))];
-        const merged = mergeIdentities(rec, { npmAccounts });
+        // Tier 0.6: strong evidence (npm publisher, GitHub's mapping) merges for every signal;
+        // display names are weak evidence and merge only for the CAF and contributor counts.
+        let merged = mergeIdentities(rec, { npmAccounts });
         rec = merged.rec;
         if (merged.namesAvailable) via.splice(1, 0, 'display-name');
         if (rec.npmPublisherIds) via.splice(via.indexOf('salted-hash'), 0, 'npm-publisher');
         const gh = GITHUB_REPO_RE.exec(url);
+        let githubLogin = 0;
+        let signingKey = 0;
         if (gh && token && !ctx.offline) {
           try {
             const m = await mapLogins(ctx.http, { owner: gh[1]!, name: gh[2]! }, mappingLookups(rec, ctx.now), { token, budget });
@@ -354,27 +392,49 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
               const login = m.commitLogins.get(c.oid);
               if (login && c.author.startsWith('hash:') && !rename.has(c.author)) rename.set(c.author, login);
             }
-            rec = renameIds(rec, rename);
+            githubLogin = rename.size;
+            // A signature GitHub verified ties the commit's address to the key owner's account.
+            for (const c of rec.commits) {
+              const login = m.signerLogins?.get(c.oid);
+              if (login && c.author.startsWith('hash:') && !rename.has(c.author)) {
+                rename.set(c.author, login);
+                signingKey++;
+              }
+            }
+            merged = renameMerge(merged, rename);
+            rec = merged.rec;
             verified = m.verified;
             via.splice(2, 0, 'github-graphql');
           } catch {
             mappingFailed++;
           }
         }
-        const agg = aggregateHistory(rec, ctx.now, {
+        const agg = aggregateMerged(merged, ctx.now, {
           ...(verified ? { verified } : {}),
           identityVia: via,
           // Identities are resolved when display names were compared or GitHub mapped logins.
           identityResolved: merged.namesAvailable || verified !== undefined,
-          merged: merged.merged,
+          merged: { ...merged.merged, githubLogin, signingKey },
         });
         if (!agg) {
           selection.failed.push(url);
           return;
         }
         selection.read.push(url);
+        const mc = agg.history.identity.merged;
+        idTotals.repos++;
+        if (rec.mailmap) idTotals.mailmapRepos++;
+        if (mc) {
+          idTotals.npmPublisher += mc.npmPublisher;
+          idTotals.githubLogin += mc.githubLogin ?? 0;
+          idTotals.signingKey += mc.signingKey ?? 0;
+          idTotals.displayName += mc.displayName;
+          idTotals.loginName += mc.loginName ?? 0;
+          idTotals.keptDespiteNameMatch += mc.keptDespiteNameMatch ?? 0;
+        }
         const meta = { source: 'git', fetchedAt: ctx.now, evidence: [url] };
         for (const subject of byRepo.get(url) ?? []) {
+          let npmKept = 0;
           facts.push(makeFact('contributors', subject, agg.contributors, meta));
           // S5a npm side (P3): per package, from the npm publishers matched to this history.
           const pubs = publishersOf.get(subject);
@@ -390,7 +450,17 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
           const known = (account: string, atMs: number) => established(subject, account, atMs);
           // publisherByVersion covers the 36 months before the scan (src/stability/cadence.ts).
           const window36 = new Date(ctx.now.getTime() - 3 * 365 * 86_400_000).toISOString().slice(0, 10);
-          const npm = npmContinuity(rec, pubs, ctx.now, { establishedElsewhere: known, stableOnly });
+          const npmStrong = npmContinuity(rec, pubs, ctx.now, { establishedElsewhere: known, stableOnly });
+          // Tier 0.6: an npm-side observation a name-only merge would hide is kept, annotated.
+          const npmWeak = merged.weakRec === rec ? npmStrong : npmContinuity(merged.weakRec, pubs, ctx.now, { establishedElsewhere: known, stableOnly });
+          const accountOf = (c: { release?: string }) => pubs.accounts.find((a) => (stableOnly ? a.firstStableVersion : a.firstVersion) === c.release)?.name;
+          const kept = keepDespiteNameMatch(merged, npmStrong.changes, npmWeak.changes, (c) => {
+            const a = accountOf(c);
+            return a && rec.npmPublishers && Object.hasOwn(rec.npmPublishers, a) ? rec.npmPublishers[a] : undefined;
+          });
+          const npm = { ...npmStrong, changes: kept.changes };
+          npmKept += kept.kept;
+          idTotals.keptDespiteNameMatch += kept.kept;
           // Tier 0: a git-side release observation is not a new person's release when the release
           // went to npm through trusted publishing (the project's CI) or a release bot, or was
           // published by an account that already published a sibling package (same owner or scope).
@@ -418,7 +488,7 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
           };
           const name = subjectName(subject);
           const ownTag = (c: { release?: string }) => c.release === undefined || tagBelongsTo(c.release, name, dirOf.get(subject));
-          let changes = [...agg.history.changes.filter((c) => ownTag(c) && !notNew(c)), ...npm.changes];
+          let changes: CommitHistoryChange[] = [...agg.history.changes.filter((c) => ownTag(c) && !notNew(c)), ...npm.changes];
           // Tier 0.5: the npm account that published the release already published a package of the
           // same repository owner that is not in this scan (fastify's climba03003 on process-warning).
           // Only for recent S5a observations (the labels' window), so the lookups stay few.
@@ -435,9 +505,34 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
             if (!by || isReleaseBot(by)) continue;
             if (await externalSibling(by, ownerOf.get(subject), name, Date.parse(`${c.date}T00:00:00Z`))) drop.add(c);
           }
+          // Tier 0.6: the release's npm publisher wrote from an address at the repository owner's
+          // verified organisation domain: an organisation member, not a newcomer. Deterministic
+          // domain evidence only (GitHub's verified domain, the registry's address); none: kept.
+          const orgDomain = domainOf.get(subject);
+          const orgVersions = orgDomain && rec.npmOrgDomain === orgDomain ? new Set(rec.npmOrgDomainVersions ?? []) : undefined;
+          if (orgVersions) for (const c of changes) if (S5A_KINDS.has(c.kind) && c.release !== undefined && orgVersions.has(releaseVersion(c.release))) drop.add(c);
           if (drop.size) changes = changes.filter((c) => !drop.has(c));
+          // Tier 0.6: a release built and published by this repository's CI (npm provenance) is
+          // lower-risk context: marked, and the labels keep it out of the Watch rules.
+          if (parsePurl(subject).type === 'npm') {
+            const out: CommitHistoryChange[] = [];
+            for (const c of changes) {
+              if (!S5A_KINDS.has(c.kind) || c.release === undefined || c.date < recentCut) {
+                out.push(c);
+                continue;
+              }
+              const prov = await provenanceOf(name, releaseVersion(c.release));
+              if (prov && sameRepo(prov.repository, url)) {
+                const where = `${prov.repository.replace(/^https:\/\//, '')}${prov.workflow ? `/${prov.workflow}` : ''}`;
+                out.push({ ...c, ciProvenance: where, text: `${c.text} The release has npm provenance: built and published by this repository's CI (${where}).` });
+              } else out.push(c);
+            }
+            changes = out;
+          }
+          const m0 = agg.history.identity.merged;
           const history = {
             ...agg.history,
+            ...(m0 ? { identity: { ...agg.history.identity, merged: { ...m0, keptDespiteNameMatch: (m0.keptDespiteNameMatch ?? 0) + npmKept } } } : {}),
             changes: changes.sort((a, b) => b.date.localeCompare(a.date) || a.kind.localeCompare(b.kind)),
             npmPublishers: { total: npm.accounts, matched: npm.matched },
           };
@@ -464,16 +559,17 @@ export function createHistoryEnricher(opts: HistoryEnricherOptions): Enricher {
  * publisher (`_npmUser.email`), hashed in memory with the history salt; only matches are kept and
  * the addresses are dropped at once. Empty on any failure (no observation without a match).
  */
-async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: HistoryRecord, salt: () => Buffer | string): Promise<Record<string, string[]>> {
+async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: HistoryRecord, salt: () => Buffer | string, orgDomain?: string): Promise<{ links: Record<string, string[]>; orgDomainVersions: string[] }> {
   const p = parsePurl(subject);
-  if (p.type !== 'npm') return {};
+  const none = { links: {}, orgDomainVersions: [] };
+  if (p.type !== 'npm') return none;
   let packument;
   try {
     packument = await fetchPackument(ctx.http, npmNameFromPurl(p));
   } catch {
-    return {};
+    return none;
   }
-  if (!packument || !isObject(packument.versions)) return {};
+  if (!packument || !isObject(packument.versions)) return none;
   const ids = new Set<string>();
   for (const c of rec.commits) {
     ids.add(c.author);
@@ -482,13 +578,23 @@ async function publisherLinks(ctx: EnrichContext, subject: PurlString, rec: Hist
   for (const t of rec.tags) ids.add(t.by);
   // Every version's address, not only the first: an account whose address changed links both ids.
   const out: Record<string, string[]> = {};
-  for (const m of Object.values(packument.versions)) {
+  const orgDomainVersions: string[] = [];
+  for (const [version, m] of Object.entries(packument.versions)) {
     const u = isObject(m) && isObject(m._npmUser) ? m._npmUser : undefined;
     if (typeof u?.name !== 'string' || typeof u.email !== 'string') continue;
+    // Tier 0.6: only whether the address is at the owner's verified domain is kept.
+    if (orgDomain && isAtDomain(u.email, orgDomain)) orgDomainVersions.push(version);
     const id = localIdentity(u.email, salt());
     if (!ids.has(id)) continue;
     const l = (out[u.name] ??= []);
     if (!l.includes(id)) l.push(id);
   }
-  return out;
+  return { links: out, orgDomainVersions };
+}
+
+/** An address at `domain` or one of its subdomains ("a@greatexpectations.io", "a@eng.greatexpectations.io"). */
+export function isAtDomain(email: string, domain: string): boolean {
+  const host = email.trim().toLowerCase().split('@')[1] ?? '';
+  const d = domain.toLowerCase();
+  return host === d || host.endsWith(`.${d}`);
 }

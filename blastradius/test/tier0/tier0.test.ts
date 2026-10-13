@@ -201,7 +201,8 @@ describe('Tier 0 · flask (uv.lock subset at d086db85, recorded OSV, deps.dev, C
     expect(inventory.components.every((c) => c.ecosystem === 'pypi')).toBe(true);
     expect(scopes.get('pkg:pypi/werkzeug@3.1.8')).toBe('runtime');
     expect(scopes.get('pkg:pypi/jinja2@3.1.6')).toBe('runtime');
-    expect(scopes.get('pkg:pypi/asgiref@3.12.1')).toBe('optional');
+    // Tier 0.6: flask's own extras are installed only on request (scope `extra`, not production).
+    expect(scopes.get('pkg:pypi/asgiref@3.12.1')).toBe('extra');
     expect([...scopes].find(([p]) => p.startsWith('pkg:pypi/ruff@'))?.[1]).toBe('dev');
     expect(inventory.components.find((c) => c.name === 'werkzeug')?.integrity).toMatch(/^sha256-/);
     expect(result.notAnalysed).toBeUndefined(); // pyproject.toml is resolved by uv.lock

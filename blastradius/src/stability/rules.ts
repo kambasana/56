@@ -74,6 +74,7 @@ export const LABEL_RULES = {
   watch_inactive: 'Watch: S3 inactive (CAF not 1, or unknown)',
   watch_ended: 'Watch: S3 ended, not in production or declared only',
   watch_moved: 'Watch: moved to another repository and still released (upgrade)',
+  watch_stub_types: 'Watch: stub type definitions (the typed package ships its own types; remove)',
   watch_no_recent_release: 'Watch: no release in 18 months (git history not read)',
   watch_funding_concentrated_declining: 'Watch: F2 concentrated and F3 declining',
   watch_release_continuity: 'Watch: S5a release continuity',

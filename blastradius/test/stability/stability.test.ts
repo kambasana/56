@@ -163,7 +163,9 @@ describe('control repositories and the hand-review sample', () => {
     // published those releases had already published sibling jshttp packages (a team member).
     // Tier 0 scope removed 4 Watch (bcrypt-pbkdf, ecc-jsbn, tweetnacl, vue) and 1 Unknown (jsbn);
     // Tier 0.5 (optional and peer are production again) brings exactly those 5 back.
-    expect(by).toEqual({ fragile: 46, watch: 154, steady: 17, unknown: 10 });
+    // Tier 0.6: @types/arcgis-js-api (Esri/a11y-map) is a deprecated stub ("arcgis-js-api provides its
+    // own type definitions"): Watch "Remove: stub types", not Fragile ended (was 46 / 154).
+    expect(by).toEqual({ fragile: 45, watch: 155, steady: 17, unknown: 10 });
     // The hand-review population (labelled production packages) gains the same 4 Watch (Tier 0.5).
     expect(pop).toHaveLength(197);
     const finished = [...all.values()].filter((p) => p.rules.some((r) => r.rule === 'watch_finished_single_contributor_inactive'));

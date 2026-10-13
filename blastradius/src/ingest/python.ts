@@ -276,7 +276,7 @@ export function parsePyproject(text: string): PyprojectDeps {
   for (const list of Object.values(tomlTable(project?.['optional-dependencies']) ?? {})) {
     for (const r of tomlArray(list)) {
       const p = typeof r === 'string' ? pep508Name(r) : undefined;
-      if (p) add(p.name, 'optional', p.spec);
+      if (p) add(p.name, 'extra', p.spec);
     }
   }
   for (const list of Object.values(tomlTable(doc['dependency-groups']) ?? {})) {
@@ -289,7 +289,7 @@ export function parsePyproject(text: string): PyprojectDeps {
     for (const [k, v] of Object.entries(tomlTable(t) ?? {})) {
       if (k.toLowerCase() === 'python' || !isValidPypiName(k)) continue;
       const optional = scope === 'runtime' && tomlTable(v)?.['optional'] === true;
-      add(k, optional ? 'optional' : scope, typeof v === 'string' ? v : tomlString(tomlTable(v)?.['version']));
+      add(k, optional ? 'extra' : scope, typeof v === 'string' ? v : tomlString(tomlTable(v)?.['version']));
     }
   };
   poetryDeps(poetry?.['dependencies'], 'runtime');
@@ -398,8 +398,9 @@ export function parseUvLock(text: string, opts: LockImporterMap): PythonParseRes
     };
     link(pkg['dependencies'], 'runtime');
     for (const [extra, list] of Object.entries(tomlTable(pkg['optional-dependencies']) ?? {})) {
-      // A project's own extras are optional; a dependency's extras count only when requested.
-      link(list, !local && requestedExtras.get(id)?.has(extra) ? 'runtime' : 'optional');
+      // A project's own extras are installed only on request (Tier 0.6: scope `extra`, not
+      // production); a dependency's extras count only when requested.
+      link(list, !local && requestedExtras.get(id)?.has(extra) ? 'runtime' : 'extra');
     }
     for (const list of Object.values(tomlTable(pkg['dev-dependencies']) ?? {})) link(list, 'dev');
   }
@@ -454,7 +455,7 @@ export function parsePoetryLock(text: string, assetId: string, pyproject?: Pypro
       const specs = Array.isArray(spec) ? spec : [spec];
       const opt = specs.every((s) => tomlTable(s)?.['optional'] === true);
       const childDev = info.get(to)?.dev ?? false;
-      const scope: DepScope = dev || childDev ? 'dev' : optional || opt ? 'optional' : 'runtime';
+      const scope: DepScope = dev || childDev ? 'dev' : optional || opt ? 'extra' : 'runtime';
       col.edge({ from, to, scope, direct: false });
     }
   }
@@ -468,7 +469,7 @@ export function parsePoetryLock(text: string, assetId: string, pyproject?: Pypro
     if (pyproject === undefined) warnings.push('poetry.lock without pyproject.toml: direct dependencies inferred from the lockfile');
     for (const [purl, { dev, optional }] of info) {
       if (depended.has(purl)) continue;
-      col.edge({ from: assetId, to: purl, scope: dev ? 'dev' : optional ? 'optional' : 'runtime', direct: true });
+      col.edge({ from: assetId, to: purl, scope: dev ? 'dev' : optional ? 'extra' : 'runtime', direct: true });
     }
   }
   return col.result(unresolved, warnings);

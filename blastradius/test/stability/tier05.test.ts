@@ -87,9 +87,11 @@ describe('Tier 0.5 (2): identity merge and release continuity, recorded historie
     const at = new Date(PARSE);
     const v510 = (rec: typeof h) => aggregateHistory(rec, at)!.history.changes.find((c) => c.kind === 'release_by_new_person' && c.release === 'v5.1.0');
     // Without the npm account tie the short name merges nothing: the tag's address is new that day.
-    expect(v510(mergeIdentities(h).rec)?.daysSinceFirstSeen).toBe(0);
-    // With it, the address is the login seen 43 days earlier (the login's own commits).
-    expect(v510(mergeIdentities(h, { npmAccounts: ['climba03003'] }).rec)?.daysSinceFirstSeen).toBe(43);
+    expect(v510(mergeIdentities(h).weakRec)?.daysSinceFirstSeen).toBe(0);
+    // With it, the address is the login seen 43 days earlier (the login's own commits) — in the weak
+    // (name-only) view. Tier 0.6: the strong view, which every continuity signal reads, keeps them apart.
+    expect(v510(mergeIdentities(h, { npmAccounts: ['climba03003'] }).weakRec)?.daysSinceFirstSeen).toBe(43);
+    expect(v510(mergeIdentities(h, { npmAccounts: ['climba03003'] }).rec)?.daysSinceFirstSeen).toBe(0);
     // Still under 180 days: the cross-registry sibling rule decides (recorded npm answer: fast-json-stringify, 2026-02-06).
     const noSib = await tier0IdentityLabel('process-warning', '2.3.2', { asOf: PARSE, noSiblings: true });
     expect(s5aRule(noSib.entry)).toBe(true);
@@ -98,7 +100,7 @@ describe('Tier 0.5 (2): identity merge and release continuity, recorded historie
     expect(entry.s5a.filter((e) => e.date > '2025-10-12')).toEqual([]);
   });
 
-  it('react-native-sound: "RomualdPercereau" = "Romuald Percereau"; the takeover is gone and its date and day count agree', async () => {
+  it('react-native-sound: "RomualdPercereau" matches the login romualdpercereau by name only (Tier 0.6: weak); the takeover is kept, annotated, and its date and day count agree', async () => {
     const h = await tier0IdentityHistory('react-native-sound');
     const at = new Date(JITSI);
     const raw = aggregateHistory(h, at)!.history.changes.find((c) => c.kind === 'release_takeover')!;
@@ -106,16 +108,27 @@ describe('Tier 0.5 (2): identity merge and release continuity, recorded historie
     expect(raw).toMatchObject({ date: '2025-10-14', release: 'v0.13.0', daysSinceFirstSeen: 161 });
     expect(raw.text).toMatch(/first seen in this repository on 2025-05-06/);
     const merged = mergeIdentities(h);
-    expect(merged.merged.displayName).toBeGreaterThanOrEqual(1);
-    expect(aggregateHistory(merged.rec, at)!.history.changes.filter((c) => c.kind === 'release_takeover' && c.date > '2025-01-01')).toEqual([]);
+    expect(merged.merged.displayName + merged.merged.loginName).toBeGreaterThanOrEqual(1);
+    // The name-only view would hide the takeover (what Tier 0.5 did) …
+    expect(aggregateHistory(merged.weakRec, at)!.history.changes.filter((c) => c.kind === 'release_takeover' && c.date > '2025-01-01')).toEqual([]);
+    // … the strong view keeps it: no npm account, mailmap or GitHub mapping ties the two addresses.
+    expect(aggregateHistory(merged.rec, at)!.history.changes.filter((c) => c.kind === 'release_takeover' && c.date > '2025-01-01')).toHaveLength(1);
     const { entry } = await tier0IdentityLabel('react-native-sound', '0.11.2', { asOf: JITSI });
-    expect(s5aRule(entry)).toBe(false);
+    expect(s5aRule(entry)).toBe(true);
+    const s5a = entry.s5a.find((e) => e.kind === 'release_takeover' && e.release === 'v0.13.0')!;
+    expect(s5a.possiblySameAs).toBe('the GitHub login romualdpercereau');
+    expect(s5a.text).toMatch(/Possibly the same person as the GitHub login romualdpercereau \(name match only, unverified\)\.$/);
   });
 
-  it('react-native-video: the 7.0.0-beta.9 pre-release says nothing about 6.19.1 in use; "fnwk" commits join the login fnwk', async () => {
+  it('react-native-video: the 7.0.0-beta.9 pre-release says nothing about 6.19.1 in use; "fnwk" commits match the login fnwk by name only (Tier 0.6: 6.19.3 kept, annotated)', async () => {
     const { entry } = await tier0IdentityLabel('react-native-video', '6.19.1', { asOf: JITSI });
-    expect(s5aRule(entry)).toBe(false);
-    expect(entry.s5a.filter((e) => e.release === '7.0.0-beta.9' || e.release === '6.19.3')).toEqual([]);
+    expect(entry.s5a.filter((e) => e.release === '7.0.0-beta.9')).toEqual([]);
+    // Tier 0.5 hid 6.19.3 through the display-name tie "fnwk" = login fnwk. That tie is weak: the
+    // observation is kept, with the possible match named.
+    const v = entry.s5a.filter((e) => e.release === '6.19.3');
+    expect(v.map((e) => e.kind)).toEqual(['npm_release_by_new_account']);
+    expect(v[0]!.possiblySameAs).toBe('the GitHub login fnwk');
+    expect(s5aRule(entry)).toBe(true);
   });
 
   it('stack-trace: an account that published 1.0.0-pre1 in 2021 is no newcomer at its first stable release 1.0.0 (2026)', async () => {
@@ -259,23 +272,24 @@ describe('Tier 0.5 (2b): PyPI release continuity has no npm publisher: Trusted P
 });
 
 describe('Tier 0.5 (3): PyPI upkeep is labelled, or counted as Unknown with the reason', () => {
-  it('flask: its 7 runtime (and 2 optional) PyPI packages get labels from the PyPI release record and Scorecard (recorded deps.dev / PyPI responses)', async () => {
+  it('flask: its 7 runtime PyPI packages get labels from the PyPI release record and Scorecard (recorded deps.dev / PyPI responses)', async () => {
     const { report, facts, warnings } = await tier05PypiReport('flask');
     expect(warnings).toEqual([]);
     const prod = report.packages.filter((p) => p.production);
-    // The 7 runtime packages, plus asgiref and python-dotenv (flask's optional extras): since Stream X's
-    // scope change (src/core/scope.ts) optional and peer count as installed, so production is 9.
-    expect(prod.map((p) => p.name).sort()).toEqual(['asgiref', 'blinker', 'click', 'colorama', 'itsdangerous', 'jinja2', 'markupsafe', 'python-dotenv', 'werkzeug']);
+    // The 7 runtime packages. Tier 0.5 counted asgiref and python-dotenv too (9) because flask's extras
+    // were read as npm-style optional dependencies; Tier 0.6 gives extras their own scope `extra`,
+    // which is not production (pip installs extras only on request).
+    expect(prod.map((p) => p.name).sort()).toEqual(['blinker', 'click', 'colorama', 'itsdangerous', 'jinja2', 'markupsafe', 'werkzeug']);
     for (const p of prod) {
       expect(p.package.startsWith('pkg:pypi/'), p.name).toBe(true);
       if (p.label === 'unknown') expect(p.missing.length, p.name).toBeGreaterThan(0);
       expect(p.basis, p.name).toMatch(/pypi|none/);
     }
-    expect(report.coverage!.production).toEqual({ total: 9, unknown: prod.filter((p) => p.label === 'unknown').length });
+    expect(report.coverage!.production).toEqual({ total: 7, unknown: prod.filter((p) => p.label === 'unknown').length });
     expect(report.coverage!.line).toMatch(/^Upkeep assessed for \d+ of 93 \(PyPI \d+ of 93; Scorecard \/ registry fallback \d+\)/);
     expect(report.coverage!.line).toContain('production Unknown');
     // The release record came from PyPI itself: release dates, the last release, evidence on pypi.org.
-    expect(facts.filter((f) => f.kind === 'release_age' && f.source === 'pypi').length).toBeGreaterThanOrEqual(9);
+    expect(facts.filter((f) => f.kind === 'release_age' && f.source === 'pypi').length).toBeGreaterThanOrEqual(7);
     const werkzeug = prod.find((p) => p.name === 'werkzeug')!;
     expect(werkzeug.context.find((c) => c.signal === 'S4')!.text).toMatch(/^Last release 3\.1\.\d+ on 2026-/);
     expect(werkzeug.context.find((c) => c.signal === 'S4')!.evidence).toEqual(['https://pypi.org/project/werkzeug/']);
