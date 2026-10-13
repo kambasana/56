@@ -1,0 +1,6 @@
+{
+"_note": "Recorded live 2026-10-11T02:45:09.827Z by test/licenses/record.ts; response trimmed to the fields the licences enricher reads.",
+"request": {"url":"https://api.deps.dev/v3/systems/npm/packages/duplexer"},
+"status": 200,
+"response": {"packageKey":{"system":"NPM","name":"duplexer"},"versions":[{"versionKey":{"system":"NPM","name":"duplexer","version":"0.0.1"},"publishedAt":"2012-08-10T03:46:14Z"},{"versionKey":{"system":"NPM","name":"duplexer","version":"0.0.2"},"publishedAt":"2012-08-14T18:39:16Z"},{"versionKey":{"system":"NPM","name":"duplexer","version":"0.0.3"},"publishedAt":"2013-01-31T21:09:08Z"},{"versionKey":{"system":"NPM","name":"duplexer","version":"0.0.4"},"publishedAt":"2013-03-27T21:14:37Z"},{"versionKey":{"system":"NPM","name":"duplexer","version":"0.1.0"},"publishedAt":"2013-04-01T16:03:23Z"},{"versionKey":{"system":"NPM","name":"duplexer","version":"0.1.1"},"publishedAt":"2013-04-26T17:39:31Z"},{"versionKey":{"system":"NPM","name":"duplexer","version":"0.1.2"},"publishedAt":"2020-08-12T08:27:19Z"}]}
+}
