@@ -1,0 +1,86 @@
+/** Short plain-text terminal summary of a ScanResult. Values are untrusted: strip control chars. */
+import { levelForScore, type Finding, type RiskLevel, type ScanResult } from './core/types.js';
+import { isProductionScope, SCOPE_LABEL } from './core/scope.js';
+import { notAnalysedLine } from './ingest/manifests.js';
+import { coverageLine, degradedSources, degradedLine } from './report/coverage.js';
+
+export const LEVELS: readonly RiskLevel[] = ['critical', 'high', 'medium', 'low'];
+const RANK: Record<RiskLevel, number> = { critical: 3, high: 2, medium: 1, low: 0 };
+
+export function countByLevel(result: ScanResult): Record<RiskLevel, number> {
+  const out: Record<RiskLevel, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const f of result.findings) out[f.level]++;
+  return out;
+}
+
+/**
+ * True when some finding, or some outbound (publishing workflow) finding, is at or above
+ * `threshold`. Outbound scores use the same 0–100 level bands as SARIF.
+ */
+export function failsThreshold(result: ScanResult, threshold: RiskLevel): boolean {
+  if (result.findings.some((f) => RANK[f.level] >= RANK[threshold])) return true;
+  return (result.outbound ?? []).some((o) => Number.isFinite(o.score) && RANK[levelForScore(Math.min(100, o.score))] >= RANK[threshold]);
+}
+
+function clean(s: string, max = 160): string {
+  // eslint-disable-next-line no-control-regex
+  const t = s.replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, ' ');
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
+}
+
+function topReason(f: Finding): string {
+  const r = f.reasons[0];
+  return r ? `${r.factor}: ${clean(r.detail)}` : '(no reason recorded)';
+}
+
+export function formatSummary(result: ScanResult, opts: { top?: number; files?: readonly string[] } = {}): string {
+  const top = opts.top ?? 5;
+  const c = countByLevel(result);
+  const inv = result.inventory;
+  const lines: string[] = [];
+  lines.push(`blastradius: ${clean(result.target)}`);
+  lines.push(`  inventory: ${inv.assets} asset(s), ${inv.components} component(s), ${inv.edges} edge(s)`);
+  const na = result.notAnalysed ?? [];
+  // Loud and first: a scan that skipped manifests is not an all-clear.
+  if (na.length > 0) {
+    lines.push(`  !! ${clean(notAnalysedLine(na), 400)}`);
+    for (const e of na.slice(0, 10)) lines.push(`     - ${clean(e.file, 120)}: ${clean(e.reason, 120)}${e.packages !== undefined ? ` (~${e.packages} packages)` : ''}`);
+    if (na.length > 10) lines.push(`     - … ${na.length - 10} more (see report)`);
+  }
+  const degraded = degradedSources(result);
+  if (degraded.length > 0) lines.push(`  !! ${clean(degradedLine(degraded), 600)}`);
+  if (result.coverage?.sources?.length) lines.push(`  sources:   ${clean(coverageLine(result.coverage.sources ?? []), 300)}`);
+  lines.push(`  findings:  critical ${c.critical} | high ${c.high} | medium ${c.medium} | low ${c.low}`);
+  const scoped = result.findings.some((f) => f.scope !== undefined);
+  if (scoped) {
+    const prod = result.findings.filter((f) => isProductionScope(f.scope)).length;
+    lines.push(`  in production (runtime, peer, optional): ${prod} of ${result.findings.length} finding(s); the rest are CI or dev-only and listed after them`);
+  }
+  if (result.findings.length > 0) {
+    lines.push(`  top ${Math.min(top, result.findings.length)}${scoped ? ', production first' : ''}:`);
+    for (const f of result.findings.slice(0, top)) {
+      const assets = f.blastRadius.assets.length;
+      lines.push(
+        `    [${f.level.toUpperCase()}] ${f.score.toFixed(1).padStart(5)}  ${clean(f.purl, 100)}${f.scope ? `  [${SCOPE_LABEL[f.scope]}]` : ''}  (reaches ${assets} asset${assets === 1 ? '' : 's'}, blast ${f.blastRadius.score})`,
+      );
+      lines.push(`           ${topReason(f)}`);
+      if (f.installedFrom) lines.push(`           ${clean(f.installedFrom.note, 200)}`);
+      if (f.gate && f.gate.rule !== 'runtime') lines.push(`           rank: ${clean(f.gate.detail, 240)}`);
+    }
+  }
+  if (result.outbound && result.outbound.length > 0) {
+    const worst = result.outbound[0]!;
+    lines.push(`  outbound: ${result.outbound.length} workflow(s); highest ${clean(worst.assetId, 100)} score ${worst.score}`);
+  }
+  const st = result.stability;
+  if (st?.coverage) lines.push(`  upkeep:    ${clean(st.coverage.line, 1200)}`);
+  if (st?.decisions?.length) {
+    lines.push(`  upkeep decisions (production): ${st.decisions.length}`);
+    for (const d of st.decisions.slice(0, top)) lines.push(`    [${d.label.toUpperCase()}] ${clean(d.action, 300)}`);
+  }
+  const w = result.warnings?.length ?? 0;
+  if (w > 0) lines.push(`  warnings: ${w} (see report)`);
+  if (na.length > 0) lines.push(`  !! ${clean(notAnalysedLine(na), 400)} (not covered by these findings; --strict fails the scan)`);
+  for (const f of opts.files ?? []) lines.push(`  wrote ${f}`);
+  return lines.join('\n') + '\n';
+}
