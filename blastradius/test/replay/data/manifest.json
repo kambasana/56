@@ -1,0 +1,299 @@
+{
+ "recordedAt": "2026-10-07T15:06:27.221Z",
+ "licences": {
+  "registry": "npm public registry metadata",
+  "advisories": "OSV (CC-BY-4.0 / per source)",
+  "repos": "each repo under its own licence; only lockfiles and package.json are kept"
+ },
+ "items": [
+  {
+   "kind": "advisory",
+   "id": "GHSA-4x49-vf9v-38px",
+   "url": "https://osv.dev/vulnerability/GHSA-4x49-vf9v-38px",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-73qr-pfmq-6rp8",
+   "url": "https://osv.dev/vulnerability/GHSA-73qr-pfmq-6rp8",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-97m3-w2cp-4xx6",
+   "url": "https://osv.dev/vulnerability/GHSA-97m3-w2cp-4xx6",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-9x64-5r7x-2q53",
+   "url": "https://osv.dev/vulnerability/GHSA-9x64-5r7x-2q53",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-cxm3-wv7p-598c",
+   "url": "https://osv.dev/vulnerability/GHSA-cxm3-wv7p-598c",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-f29h-pxvx-f335",
+   "url": "https://osv.dev/vulnerability/GHSA-f29h-pxvx-f335",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-g2q5-5433-rhrf",
+   "url": "https://osv.dev/vulnerability/GHSA-g2q5-5433-rhrf",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-mh6f-8j2x-4483",
+   "url": "https://osv.dev/vulnerability/GHSA-mh6f-8j2x-4483",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "GHSA-pjwm-rvh2-c87w",
+   "url": "https://osv.dev/vulnerability/GHSA-pjwm-rvh2-c87w",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "MAL-2025-41443",
+   "url": "https://osv.dev/vulnerability/MAL-2025-41443",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "MAL-2025-46969",
+   "url": "https://osv.dev/vulnerability/MAL-2025-46969",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "MAL-2025-46974",
+   "url": "https://osv.dev/vulnerability/MAL-2025-46974",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "advisory",
+   "id": "MAL-2025-6022",
+   "url": "https://osv.dev/vulnerability/MAL-2025-6022",
+   "source": "OSV npm export (all.zip)",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "davglass/registry-static",
+   "commit": "344aa499dc88b329be0f08d4f1202eb4e11f3137",
+   "url": "https://github.com/davglass/registry-static/tree/344aa499dc88b329be0f08d4f1202eb4e11f3137",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "environment": "prod",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "Esri/a11y-map",
+   "commit": "a1f8b3e33ff5d0bfe1e33006f1af63e91c76baa0",
+   "url": "https://github.com/Esri/a11y-map/tree/a1f8b3e33ff5d0bfe1e33006f1af63e91c76baa0",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "environment": "dev",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "Esger/Pentominos2",
+   "commit": "86c582c0f7fead7c7003ac5d575497de9a073f79",
+   "url": "https://github.com/Esger/Pentominos2/tree/86c582c0f7fead7c7003ac5d575497de9a073f79",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "environment": "prod",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "project-qwerty/project-qwerty",
+   "commit": "6842cfb61b8236e0f768b383e277ebbc6874ac90",
+   "url": "https://github.com/project-qwerty/project-qwerty/tree/6842cfb61b8236e0f768b383e277ebbc6874ac90",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "environment": "prod",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "FinnLeh/vs-code-obsidian",
+   "commit": "9c4ac83970cafe94da2c0ec0cad045bb076ee220",
+   "url": "https://github.com/FinnLeh/vs-code-obsidian/tree/9c4ac83970cafe94da2c0ec0cad045bb076ee220",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "environment": "dev",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "repo",
+   "repo": "telefonicaid/logops",
+   "commit": "5310b7516caf857ef4ecafc966fe8f9e9f77db81",
+   "url": "https://github.com/telefonicaid/logops/tree/5310b7516caf857ef4ecafc966fe8f9e9f77db81",
+   "files": [
+    "package.json",
+    "package-lock.json"
+   ],
+   "environment": "prod",
+   "fetchedAt": "2026-10-07T15:06:27.221Z"
+  },
+  {
+   "kind": "packument",
+   "name": "chalk",
+   "url": "https://registry.npmjs.org/chalk",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 11,
+   "reconstructed": [
+    "5.6.1"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "coa",
+   "url": "https://registry.npmjs.org/coa",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 7,
+   "reconstructed": [
+    "2.0.3"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "debug",
+   "url": "https://registry.npmjs.org/debug",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 14,
+   "reconstructed": [
+    "4.4.2"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "eslint-config-prettier",
+   "url": "https://registry.npmjs.org/eslint-config-prettier",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 22,
+   "reconstructed": [
+    "8.10.1",
+    "10.1.6"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "event-stream",
+   "url": "https://registry.npmjs.org/event-stream",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 8,
+   "reconstructed": [
+    "3.3.6"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "flatmap-stream",
+   "url": "https://registry.npmjs.org/flatmap-stream",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 1,
+   "reconstructed": [
+    "0.1.1"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "node-ipc",
+   "url": "https://registry.npmjs.org/node-ipc",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 18,
+   "reconstructed": [
+    "10.1.1",
+    "10.1.2",
+    "9.2.2"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "nx",
+   "url": "https://registry.npmjs.org/nx",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 211,
+   "reconstructed": [
+    "21.5.0",
+    "20.9.0"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "peacenotwar",
+   "url": "https://registry.npmjs.org/peacenotwar",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 3,
+   "reconstructed": []
+  },
+  {
+   "kind": "packument",
+   "name": "rc",
+   "url": "https://registry.npmjs.org/rc",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 5,
+   "reconstructed": [
+    "1.2.9"
+   ]
+  },
+  {
+   "kind": "packument",
+   "name": "ua-parser-js",
+   "url": "https://registry.npmjs.org/ua-parser-js",
+   "fetchedAt": "2026-10-07T22:32:34.018Z",
+   "recorded": true,
+   "versions": 20,
+   "reconstructed": [
+    "0.7.29",
+    "0.8.0",
+    "1.0.0"
+   ]
+  }
+ ],
+ "registryRecordedAt": "2026-10-07T22:32:34.018Z"
+}

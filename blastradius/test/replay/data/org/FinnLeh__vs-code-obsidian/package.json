@@ -1,0 +1,108 @@
+{
+  "name": "obsidian-code-sync",
+  "displayName": "Obsidian Code Sync",
+  "description": "Extension to sync code files with Obsidian notes.",
+  "version": "0.1.1",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:obsidian-code-sync.saveToObsidian",
+    "onCommand:obsidian-code-sync.setObsidianPath"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "obsidian-code-sync.saveToObsidian",
+        "title": "Obsidian: Save Current File to Obsidian",
+        "icon": "$(save)"
+      },
+      {
+        "command": "obsidian-code-sync.setObsidianPath",
+        "title": "Obsidian: Set Vault Path"
+      }
+    ],
+    "configuration": {
+      "title": "Obsidian Code Sync",
+      "properties": {
+        "obsidianSync.obsidianPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to your Obsidian vault directory"
+        },
+        "obsidianSync.autoSync": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically sync files to Obsidian on save"
+        },
+        "obsidianSync.subfolder": {
+          "type": "string",
+          "default": "Code",
+          "description": "Subfolder within Obsidian vault to save code files"
+        },
+        "obsidianSync.addTimestamp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add timestamp to the markdown file"
+        }
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "obsidian-code-sync.saveToObsidian",
+          "when": "resourceScheme == file",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "obsidian-code-sync.saveToObsidian",
+          "when": "editorIsOpen"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "obsidian-code-sync.saveToObsidian",
+        "key": "ctrl+alt+o",
+        "mac": "cmd+alt+o",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "build": "node esbuild.js --production"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "@types/vscode": "^1.75.0",
+    "esbuild": "^0.19.0",
+    "typescript": "^4.3.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FinnLeh/vscode-obsidian-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FinnLeh/vscode-obsidian-sync/issues"
+  },
+  "license": "MIT",
+  "publisher": "FinnLehmann",
+  "icon": "images/icon.png",
+  "keywords": [
+    "obsidian",
+    "markdown",
+    "code",
+    "sync",
+    "documentation"
+  ]
+}

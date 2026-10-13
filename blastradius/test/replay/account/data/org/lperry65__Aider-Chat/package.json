@@ -1,0 +1,94 @@
+{
+  "name": "aider-extension",
+  "displayName": "Aider Extension",
+  "description": "An extension that provides a Copilot-like experience for interacting with Aider via the CLI.",
+  "version": "0.1.0",
+  "publisher": "lperry65",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "activationEvents": [
+    "onView:aiderChatView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.startAider",
+        "title": "Start Aider"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aider-sidebar",
+          "title": "Aider",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "aider-sidebar": [
+        {
+          "id": "aiderChatView",
+          "name": "Chat",
+          "type": "webview",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run lint",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\"",
+    "type-check": "tsc --noEmit",
+    "test": "node ./out/src/test/runTest.js",
+    "prepare": "husky install",
+    "rebuild": "electron-rebuild"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.50.0",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "electron-rebuild": "^3.2.9",
+    "eslint": "^8.57.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^16.1.6",
+    "prettier": "^3.6.2",
+    "ts-loader": "^9.5.4",
+    "typescript": "^4.2.0",
+    "undici": "^5.28.4",
+    "vscode-test": "^1.4.0",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "^1.1.0",
+    "@xterm/addon-attach": "^0.11.0",
+    "@xterm/addon-canvas": "^0.7.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "js-yaml": "^4.1.0"
+  }
+}

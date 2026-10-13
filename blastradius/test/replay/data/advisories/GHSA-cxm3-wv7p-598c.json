@@ -1,0 +1,306 @@
+{
+ "id": "GHSA-cxm3-wv7p-598c",
+ "aliases": [
+  "CVE-2025-10894",
+  "MAL-2025-41436",
+  "MAL-2025-41437",
+  "MAL-2025-41438",
+  "MAL-2025-41439",
+  "MAL-2025-41441",
+  "MAL-2025-41442",
+  "MAL-2025-41443"
+ ],
+ "published": "2025-08-27T16:42:47Z",
+ "modified": "2026-08-10T05:15:13.440647993Z",
+ "summary": "Malicious versions of Nx were published",
+ "database_specific": {
+  "cwe_ids": [
+   "CWE-506"
+  ],
+  "severity": "CRITICAL"
+ },
+ "affected": [
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "21.5.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/key",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/key"
+   },
+   "versions": [
+    "3.2.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/enterprise-cloud",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/enterprise-cloud"
+   },
+   "versions": [
+    "3.2.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/devkit",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/devkit"
+   },
+   "versions": [
+    "21.5.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/js",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/js"
+   },
+   "versions": [
+    "21.5.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/workspace",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/workspace"
+   },
+   "versions": [
+    "21.5.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/eslint",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/eslint"
+   },
+   "versions": [
+    "21.5.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/node",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/node"
+   },
+   "versions": [
+    "21.5.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "20.9.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "20.10.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "21.6.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "20.11.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "21.7.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "21.8.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "nx",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/nx"
+   },
+   "versions": [
+    "20.12.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/node",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/node"
+   },
+   "versions": [
+    "20.9.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/devkit",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/devkit"
+   },
+   "versions": [
+    "20.9.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/js",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/js"
+   },
+   "versions": [
+    "20.9.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/workspace",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/workspace"
+   },
+   "versions": [
+    "20.9.0"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  },
+  {
+   "package": {
+    "name": "@nx/key",
+    "ecosystem": "npm",
+    "purl": "pkg:npm/%40nx/key"
+   },
+   "versions": [
+    "5.0.7"
+   ],
+   "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/08/GHSA-cxm3-wv7p-598c/GHSA-cxm3-wv7p-598c.json"
+   }
+  }
+ ],
+ "references": [
+  {
+   "type": "WEB",
+   "url": "https://github.com/nrwl/nx/security/advisories/GHSA-cxm3-wv7p-598c"
+  },
+  {
+   "type": "ADVISORY",
+   "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-10894"
+  },
+  {
+   "type": "WEB",
+   "url": "https://github.com/nrwl/nx/issues/32522"
+  },
+  {
+   "type": "WEB",
+   "url": "https://github.com/nrwl/nx/issues/32523"
+  },
+  {
+   "type": "WEB",
+   "url": "https://github.com/nrwl/nx/pull/32458"
+  }
+ ]
+}
