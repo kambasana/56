@@ -1,0 +1,31 @@
+name: CI
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: node:20
+    services:
+      redis:
+        image: redis:7.2.4
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+      - uses: tj-actions/changed-files@main
+      - uses: github/codeql-action/init@v3.24.0
+      - uses: ./.github/actions/local-thing
+      - uses: docker://alpine:3.19
+      - run: npm test
+        env:
+          TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  lint:
+    uses: acme/shared-workflows/.github/workflows/lint.yml@v1
+    secrets: inherit
