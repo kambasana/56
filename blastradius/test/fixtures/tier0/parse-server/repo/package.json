@@ -1,0 +1,15 @@
+{
+  "name": "parse-server",
+  "version": "9.10.5-alpha.6",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "express": "5.2.1",
+    "@parse/push-adapter": "8.5.5"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/cli": "7.28.6",
+    "@semantic-release/github": "12.0.6",
+    "mongodb-runner": "6.8.3"
+  }
+}
